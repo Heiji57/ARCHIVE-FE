@@ -1,6 +1,8 @@
+import { ensureSettings } from "@/app/model/reducer";
+import { DEFAULT_SETTINGS } from "@/app/model/settings";
 import type { PersistedAppState } from "@/app/model/types";
 
-const STORAGE_KEY = "archive-app-state-v3";
+const STORAGE_KEY = "archive-app-state-v4";
 
 export function loadAppState(fallback: PersistedAppState): PersistedAppState {
   if (typeof window === "undefined") {
@@ -21,6 +23,11 @@ export function loadAppState(fallback: PersistedAppState): PersistedAppState {
         ? parsed.entries
         : fallback.entries,
       githubConfig: parsed.githubConfig ?? fallback.githubConfig,
+      notifications: Array.isArray(parsed.notifications)
+        ? parsed.notifications
+        : fallback.notifications,
+      settings: ensureSettings(parsed.settings ?? DEFAULT_SETTINGS),
+      pendingSummary: parsed.pendingSummary ?? null,
     };
   } catch {
     return fallback;

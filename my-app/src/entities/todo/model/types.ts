@@ -6,6 +6,7 @@ export interface Todo {
   completed: boolean;
   dateKey: string;
   createdAt: string;
+  completedAt?: string | null;
   status: TaskStatus;
   description: string;
 }

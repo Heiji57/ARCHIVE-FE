@@ -1,12 +1,14 @@
 import { seedState } from "@/app/config/seedState";
 import { loadAppState } from "@/app/lib/storage";
-import type { AppState } from "@/app/model/types";
+import { DEFAULT_SETTINGS } from "@/app/model/settings";
+import type { AppState, PersistedAppState } from "@/app/model/types";
 
 export function getInitialAppState(): AppState {
-  const persisted = loadAppState(seedState);
-
-  return {
-    ...persisted,
-    notifications: [],
+  const fallback: PersistedAppState = {
+    ...seedState,
+    notifications: seedState.notifications ?? [],
+    settings: seedState.settings ?? { ...DEFAULT_SETTINGS },
+    pendingSummary: seedState.pendingSummary ?? null,
   };
+  return loadAppState(fallback);
 }

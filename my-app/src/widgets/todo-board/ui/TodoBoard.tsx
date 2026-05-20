@@ -1,44 +1,87 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowRight,
   CalendarDays,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Sparkles,
 } from "lucide-react";
 import { useArchiveApp } from "@/app/providers/useArchiveApp";
+import { getVisibleBoardTodos } from "@/entities/todo/lib/selectors";
 import type { TaskStatus, Todo } from "@/entities/todo/model/types";
 import { StatusIcon } from "@/entities/todo/ui/StatusIcon";
 import { Pill, type PillTone } from "@/shared/ui/pill/Pill";
-import { addDays, toDateKey, todayKey } from "@/shared/lib/date";
+import {
+  addDays,
+  addMonths,
+  endOfWeek,
+  formatYearMonth,
+  fromDateKey,
+  getMonthGrid,
+  startOfMonth,
+  startOfWeek,
+  toDateKey,
+  todayKey,
+} from "@/shared/lib/date";
+import { useTranslation } from "@/shared/lib/i18n";
+import type { TranslationKey } from "@/shared/lib/i18n";
 
 const EN_DAYS = ["S", "M", "T", "W", "T", "F", "S"];
 
 const COLS: Array<{
   id: TaskStatus;
-  label: string;
-  ko: string;
+  labelKey: TranslationKey;
+  koKey: TranslationKey;
   tone: PillTone;
 }> = [
-  { id: "not-start", label: "Not Started", ko: "시작 전", tone: "ghost" },
-  { id: "in-progress", label: "In Progress", ko: "진행 중", tone: "blue" },
-  { id: "done", label: "Done", ko: "완료", tone: "green" },
+  {
+    id: "not-start",
+    labelKey: "todo.col.notStart.label",
+    koKey: "todo.col.notStart.ko",
+    tone: "ghost",
+  },
+  {
+    id: "in-progress",
+    labelKey: "todo.col.inProgress.label",
+    koKey: "todo.col.inProgress.ko",
+    tone: "blue",
+  },
+  {
+    id: "done",
+    labelKey: "todo.col.done.label",
+    koKey: "todo.col.done.ko",
+    tone: "green",
+  },
 ];
 
-// ─── DatePickerPopover ───────────────────────────────────────────────────────
+// ─── DatePickerPopover (month-navigable) ─────────────────────────────────────
 
 interface DatePickerPopoverProps {
   value: string;
   onChange: (v: string) => void;
   onClose: () => void;
+  anchorRight?: boolean;
 }
 
-function DatePickerPopover({ value, onChange, onClose }: DatePickerPopoverProps) {
+function DatePickerPopover({
+  value,
+  onChange,
+  onClose,
+  anchorRight = true,
+}: DatePickerPopoverProps) {
+  const { t } = useTranslation();
   const today = new Date();
-  const days = Array.from({ length: 14 }, (_, i) => addDays(today, i));
+  const seedDate = value ? fromDateKey(value) : today;
+  const [cursor, setCursor] = useState(startOfMonth(seedDate));
+
+  const monthDays = useMemo(() => getMonthGrid(cursor), [cursor]);
+  const monthLabel = formatYearMonth(cursor);
+
   const quickOptions = [
-    { v: toDateKey(today), label: "오늘" },
-    { v: toDateKey(addDays(today, 1)), label: "내일" },
-    { v: toDateKey(addDays(today, 5)), label: "이번 주말" },
+    { v: toDateKey(today), label: t("todo.quick.today") },
+    { v: toDateKey(addDays(today, 1)), label: t("todo.quick.tomorrow") },
+    { v: toDateKey(addDays(today, 5)), label: t("todo.quick.weekend") },
   ];
 
   return (
@@ -51,7 +94,8 @@ function DatePickerPopover({ value, onChange, onClose }: DatePickerPopoverProps)
         style={{
           position: "absolute",
           top: "calc(100% + 8px)",
-          right: 0,
+          right: anchorRight ? 0 : undefined,
+          left: anchorRight ? undefined : 0,
           zIndex: 31,
           background: "var(--color-tile-2)",
           border: "1px solid var(--color-divider-soft)",
@@ -65,10 +109,17 @@ function DatePickerPopover({ value, onChange, onClose }: DatePickerPopoverProps)
           className="t-eyebrow"
           style={{ margin: "4px 8px 8px", color: "var(--color-body-muted)" }}
         >
-          Quick Date
+          {t("todo.picker.quickDate")}
         </p>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 2, marginBottom: 8 }}>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 2,
+            marginBottom: 8,
+          }}
+        >
           {quickOptions.map((o) => (
             <button
               key={o.v}
@@ -84,24 +135,83 @@ function DatePickerPopover({ value, onChange, onClose }: DatePickerPopoverProps)
               }}
             >
               {o.label}{" "}
-              <span style={{ color: "var(--color-body-muted)", marginLeft: 6, fontSize: 11 }}>
+              <span
+                style={{
+                  color: "var(--color-body-muted)",
+                  marginLeft: 6,
+                  fontSize: 11,
+                }}
+              >
                 {o.v}
               </span>
             </button>
           ))}
         </div>
 
-        <p
-          className="t-eyebrow"
-          style={{ margin: "8px 8px 6px", color: "var(--color-body-muted)" }}
+        {/* Month header */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            margin: "8px 6px",
+          }}
         >
-          Calendar
-        </p>
+          <button
+            type="button"
+            aria-label={t("todo.picker.prev")}
+            onClick={() => setCursor((c) => addMonths(c, -1))}
+            className="btn-icon"
+            style={{ width: 28, height: 28 }}
+          >
+            <ChevronLeft size={14} />
+          </button>
+          <span style={{ fontSize: 13, fontWeight: 600 }}>{monthLabel}</span>
+          <button
+            type="button"
+            aria-label={t("todo.picker.next")}
+            onClick={() => setCursor((c) => addMonths(c, 1))}
+            className="btn-icon"
+            style={{ width: 28, height: 28 }}
+          >
+            <ChevronRight size={14} />
+          </button>
+        </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4 }}>
-          {days.map((d) => {
+        {/* Day-of-week header */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(7, 1fr)",
+            gap: 4,
+            margin: "0 0 4px",
+          }}
+        >
+          {EN_DAYS.map((d, i) => (
+            <span
+              key={i}
+              style={{
+                textAlign: "center",
+                fontSize: 10,
+                color: "var(--color-body-muted)",
+              }}
+            >
+              {d}
+            </span>
+          ))}
+        </div>
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(7, 1fr)",
+            gap: 4,
+          }}
+        >
+          {monthDays.map((d) => {
             const k = toDateKey(d);
             const sel = k === value;
+            const inMonth = d.getMonth() === cursor.getMonth();
             return (
               <button
                 key={k}
@@ -110,18 +220,22 @@ function DatePickerPopover({ value, onChange, onClose }: DatePickerPopoverProps)
                 style={{
                   aspectRatio: "1 / 1",
                   borderRadius: "var(--r-sm)",
-                  background: sel ? "var(--color-primary)" : "var(--color-tile-3)",
-                  color: sel ? "#fff" : "var(--color-ink)",
+                  background: sel
+                    ? "var(--color-primary)"
+                    : "var(--color-tile-3)",
+                  color: sel
+                    ? "#fff"
+                    : inMonth
+                      ? "var(--color-ink)"
+                      : "var(--color-ink-muted-48)",
                   fontSize: 12,
                   fontWeight: 500,
                   display: "flex",
-                  flexDirection: "column",
                   alignItems: "center",
                   justifyContent: "center",
                 }}
               >
-                <span style={{ fontSize: 10, opacity: 0.6 }}>{EN_DAYS[d.getDay()]}</span>
-                <span>{d.getDate()}</span>
+                {d.getDate()}
               </button>
             );
           })}
@@ -136,10 +250,16 @@ function DatePickerPopover({ value, onChange, onClose }: DatePickerPopoverProps)
 interface KanbanCardProps {
   todo: Todo;
   isDone: boolean;
-  onUpdate: (id: string, patch: Partial<Pick<Todo, "title" | "status" | "description" | "dateKey">>) => void;
+  onUpdate: (
+    id: string,
+    patch: Partial<Pick<Todo, "title" | "status" | "description" | "dateKey">>,
+  ) => void;
 }
 
 function KanbanCard({ todo, isDone, onUpdate }: KanbanCardProps) {
+  const { t } = useTranslation();
+  const [dateOpen, setDateOpen] = useState(false);
+
   const advance = () => {
     const next: TaskStatus =
       todo.status === "not-start"
@@ -165,7 +285,7 @@ function KanbanCard({ todo, isDone, onUpdate }: KanbanCardProps) {
       <button
         type="button"
         onClick={advance}
-        title="상태 변경"
+        title={t("todo.card.advance")}
         style={{ marginTop: 2, flexShrink: 0 }}
       >
         <StatusIcon status={todo.status} size={16} />
@@ -203,22 +323,39 @@ function KanbanCard({ todo, isDone, onUpdate }: KanbanCardProps) {
           <div style={{ height: 4 }} />
         )}
 
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-          <Pill tone="outline">
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", position: "relative" }}>
+          <Pill
+            tone="outline"
+            as="button"
+            onClick={() => setDateOpen((v) => !v)}
+            title={t("todo.card.changeDate")}
+          >
             <CalendarDays size={10} />
             {todo.dateKey}
           </Pill>
           <Pill tone="outline" as="button" onClick={advance}>
             <ArrowRight size={10} />
-            다음 단계
+            {t("todo.card.nextStep")}
           </Pill>
+
+          {dateOpen ? (
+            <DatePickerPopover
+              value={todo.dateKey}
+              onChange={(v) => {
+                onUpdate(todo.id, { dateKey: v });
+                setDateOpen(false);
+              }}
+              onClose={() => setDateOpen(false)}
+              anchorRight={false}
+            />
+          ) : null}
         </div>
       </div>
     </div>
   );
 }
 
-// ─── KanbanColumn ─────────────────────────────────────────────────────────────
+// ─── KanbanColumn ────────────────────────────────────────────────────────────
 
 interface KanbanColumnProps {
   col: (typeof COLS)[number];
@@ -227,6 +364,7 @@ interface KanbanColumnProps {
 }
 
 function KanbanColumn({ col, items, onUpdate }: KanbanColumnProps) {
+  const { t } = useTranslation();
   const isDone = col.id === "done";
   const dotColor =
     col.id === "in-progress"
@@ -265,11 +403,24 @@ function KanbanColumn({ col, items, onUpdate }: KanbanColumnProps) {
             }}
           />
           <div>
-            <p style={{ margin: 0, fontSize: 15, fontWeight: 600, letterSpacing: "-0.2px" }}>
-              {col.label}
+            <p
+              style={{
+                margin: 0,
+                fontSize: 15,
+                fontWeight: 600,
+                letterSpacing: "-0.2px",
+              }}
+            >
+              {t(col.labelKey)}
             </p>
-            <p style={{ margin: 0, fontSize: 11, color: "var(--color-body-muted)" }}>
-              {col.ko}
+            <p
+              style={{
+                margin: 0,
+                fontSize: 11,
+                color: "var(--color-body-muted)",
+              }}
+            >
+              {t(col.koKey)}
             </p>
           </div>
         </div>
@@ -281,13 +432,22 @@ function KanbanColumn({ col, items, onUpdate }: KanbanColumnProps) {
         {items.length === 0 ? (
           <div
             className="dashed"
-            style={{ height: 96, fontSize: 12, color: "var(--color-ink-muted-48)" }}
+            style={{
+              height: 96,
+              fontSize: 12,
+              color: "var(--color-ink-muted-48)",
+            }}
           >
-            아직 이 열에 배치된 카드가 없습니다.
+            {t("todo.col.empty")}
           </div>
         ) : (
-          items.map((t) => (
-            <KanbanCard key={t.id} todo={t} onUpdate={onUpdate} isDone={isDone} />
+          items.map((todoItem) => (
+            <KanbanCard
+              key={todoItem.id}
+              todo={todoItem}
+              onUpdate={onUpdate}
+              isDone={isDone}
+            />
           ))
         )}
       </div>
@@ -295,13 +455,29 @@ function KanbanColumn({ col, items, onUpdate }: KanbanColumnProps) {
   );
 }
 
-// ─── TodoBoard ────────────────────────────────────────────────────────────────
+// ─── TodoBoard ───────────────────────────────────────────────────────────────
+
+type DateFilter =
+  | { kind: "all" }
+  | { kind: "today" }
+  | { kind: "week" }
+  | { kind: "specific"; dateKey: string };
 
 export function TodoBoard() {
   const { state, addTodo, updateTodo, pushNotification } = useArchiveApp();
+  const { t } = useTranslation();
   const [input, setInput] = useState("");
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickedDate, setPickedDate] = useState(todayKey);
+  const [filter, setFilter] = useState<DateFilter>({ kind: "all" });
+  const [filterDateOpen, setFilterDateOpen] = useState(false);
+
+  // Re-tick periodically so 24h-hide updates without manual refresh.
+  const [, forceTick] = useState(0);
+  useEffect(() => {
+    const id = window.setInterval(() => forceTick((n) => n + 1), 60 * 1000);
+    return () => window.clearInterval(id);
+  }, []);
 
   const today = new Date();
   const todayK = toDateKey(today);
@@ -309,10 +485,26 @@ export function TodoBoard() {
 
   const pickedLabel =
     pickedDate === todayK
-      ? "오늘"
+      ? t("todo.quick.today")
       : pickedDate === tomorrowK
-        ? "내일"
+        ? t("todo.quick.tomorrow")
         : pickedDate;
+
+  const filteredTodos = useMemo(() => {
+    const visible = getVisibleBoardTodos(state.todos);
+    if (filter.kind === "all") return visible;
+    if (filter.kind === "today")
+      return visible.filter((t) => t.dateKey === todayK);
+    if (filter.kind === "week") {
+      const ws = startOfWeek(today).getTime();
+      const we = endOfWeek(today).getTime();
+      return visible.filter((t) => {
+        const x = fromDateKey(t.dateKey).getTime();
+        return x >= ws && x <= we;
+      });
+    }
+    return visible.filter((t) => t.dateKey === filter.dateKey);
+  }, [state.todos, filter, todayK, today]);
 
   const grouped = useMemo(() => {
     const g: Record<TaskStatus, Todo[]> = {
@@ -320,11 +512,11 @@ export function TodoBoard() {
       "in-progress": [],
       done: [],
     };
-    for (const t of state.todos) {
-      g[t.status]?.push(t);
+    for (const item of filteredTodos) {
+      g[item.status]?.push(item);
     }
     return g;
-  }, [state.todos]);
+  }, [filteredTodos]);
 
   const submit = (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -332,11 +524,13 @@ export function TodoBoard() {
     addTodo(input.trim(), pickedDate, { status: "not-start" });
     pushNotification(
       "success",
-      "할 일 추가됨",
+      t("todo.notif.added.title"),
       `"${input.trim()}" — ${pickedDate}`,
     );
     setInput("");
   };
+
+  const filterDateAnchor = useRef<HTMLDivElement | null>(null);
 
   return (
     <div className="page" style={{ paddingTop: 40 }}>
@@ -347,12 +541,17 @@ export function TodoBoard() {
           border: "1px solid var(--color-divider-soft)",
           borderRadius: "var(--r-xl)",
           padding: "28px 32px",
-          marginBottom: 40,
+          marginBottom: 28,
         }}
       >
         <form
           onSubmit={submit}
-          style={{ display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap" }}
+          style={{
+            display: "flex",
+            gap: 14,
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
         >
           <div
             style={{
@@ -367,11 +566,14 @@ export function TodoBoard() {
               border: "1px solid var(--color-divider-soft)",
             }}
           >
-            <Sparkles size={18} style={{ color: "var(--color-primary)", flexShrink: 0 }} />
+            <Sparkles
+              size={18}
+              style={{ color: "var(--color-primary)", flexShrink: 0 }}
+            />
             <input
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="자연어로 적어보세요 — 예: 내일까지 API 캐시 정리"
+              placeholder={t("todo.quickCapture.placeholder")}
               style={{ flex: 1, fontSize: 16, minWidth: 0 }}
             />
           </div>
@@ -400,15 +602,86 @@ export function TodoBoard() {
             ) : null}
           </div>
 
-          <button type="submit" className="btn btn-primary" style={{ padding: "12px 24px" }}>
-            Enter <ArrowRight size={14} />
+          <button
+            type="submit"
+            className="btn btn-primary"
+            style={{ padding: "12px 24px" }}
+          >
+            {t("todo.quickCapture.enter")} <ArrowRight size={14} />
           </button>
         </form>
 
-        <p style={{ margin: "14px 0 0", fontSize: 13, color: "var(--color-body-muted)" }}>
-          입력하는 순간 칸반에 정렬됩니다. 날짜를 비워두면 오늘로 추가합니다.
+        <p
+          style={{
+            margin: "14px 0 0",
+            fontSize: 13,
+            color: "var(--color-body-muted)",
+          }}
+        >
+          {t("todo.quickCapture.hint")}
         </p>
       </section>
+
+      {/* Filter row */}
+      <div className="todo-filter-row">
+        <button
+          type="button"
+          className="todo-filter-btn"
+          data-active={filter.kind === "all"}
+          onClick={() => setFilter({ kind: "all" })}
+        >
+          {t("todo.filter.all")}
+        </button>
+        <button
+          type="button"
+          className="todo-filter-btn"
+          data-active={filter.kind === "today"}
+          onClick={() => setFilter({ kind: "today" })}
+        >
+          {t("todo.filter.today")}
+        </button>
+        <button
+          type="button"
+          className="todo-filter-btn"
+          data-active={filter.kind === "week"}
+          onClick={() => setFilter({ kind: "week" })}
+        >
+          {t("todo.filter.thisWeek")}
+        </button>
+        <div style={{ position: "relative" }} ref={filterDateAnchor}>
+          <button
+            type="button"
+            className="todo-filter-btn"
+            data-active={filter.kind === "specific"}
+            onClick={() => setFilterDateOpen((v) => !v)}
+          >
+            <CalendarDays size={11} style={{ marginRight: 4 }} />
+            {filter.kind === "specific"
+              ? filter.dateKey
+              : t("todo.filter.pickDate")}
+          </button>
+          {filterDateOpen ? (
+            <DatePickerPopover
+              value={filter.kind === "specific" ? filter.dateKey : todayK}
+              onChange={(v) => {
+                setFilter({ kind: "specific", dateKey: v });
+                setFilterDateOpen(false);
+              }}
+              onClose={() => setFilterDateOpen(false)}
+              anchorRight={false}
+            />
+          ) : null}
+        </div>
+        {filter.kind !== "all" ? (
+          <button
+            type="button"
+            className="todo-filter-btn"
+            onClick={() => setFilter({ kind: "all" })}
+          >
+            {t("todo.filter.clear")}
+          </button>
+        ) : null}
+      </div>
 
       <div
         style={{

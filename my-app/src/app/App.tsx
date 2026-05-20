@@ -10,8 +10,12 @@ import { CalendarPage } from "@/pages/calendar/ui/CalendarPage";
 import { RetrospectivesPage } from "@/pages/retrospectives/ui/RetrospectivesPage";
 import { SettingsPage } from "@/pages/settings/ui/SettingsPage";
 import { TodosPage } from "@/pages/todos/ui/TodosPage";
+import { DndProvider } from "@/shared/lib/dnd";
+import { I18nProvider } from "@/shared/lib/i18n";
 import { AppShell } from "@/widgets/app-shell/ui/AppShell";
 import { ToastViewport } from "@/widgets/notifications/ui/ToastViewport";
+import { SummaryFloatingChip } from "@/widgets/summary/ui/SummaryFloatingChip";
+import { SummaryOverlay } from "@/widgets/summary/ui/SummaryOverlay";
 
 export default function App() {
   const [route, setRoute] = useState<AppRoute>(() =>
@@ -43,8 +47,25 @@ export default function App() {
 
   return (
     <AppProvider>
-      <AppContent route={route} onNavigate={navigate} />
+      <LocalizedShell route={route} onNavigate={navigate} />
     </AppProvider>
+  );
+}
+
+function LocalizedShell({
+  route,
+  onNavigate,
+}: {
+  route: AppRoute;
+  onNavigate: (route: AppRoute) => void;
+}) {
+  const { state } = useArchiveApp();
+  return (
+    <I18nProvider locale={state.settings.locale}>
+      <DndProvider>
+        <AppContent route={route} onNavigate={onNavigate} />
+      </DndProvider>
+    </I18nProvider>
   );
 }
 
@@ -55,7 +76,7 @@ function AppContent({
   route: AppRoute;
   onNavigate: (route: AppRoute) => void;
 }) {
-  const { state, dismissNotification } = useArchiveApp();
+  const { state } = useArchiveApp();
   const pages = useMemo(
     () => ({
       calendar: <CalendarPage onNavigate={onNavigate} />,
@@ -71,10 +92,9 @@ function AppContent({
       <AppShell route={route} onNavigate={onNavigate}>
         {pages[route]}
       </AppShell>
-      <ToastViewport
-        notifications={state.notifications}
-        onDismiss={dismissNotification}
-      />
+      <ToastViewport notifications={state.notifications} />
+      <SummaryOverlay />
+      <SummaryFloatingChip />
     </>
   );
 }

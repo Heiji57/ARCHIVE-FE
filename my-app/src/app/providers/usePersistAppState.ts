@@ -8,6 +8,16 @@ export function usePersistAppState(state: AppState) {
       todos: state.todos,
       entries: state.entries,
       githubConfig: state.githubConfig,
+      notifications: state.notifications,
+      settings: state.settings,
+      pendingSummary: state.pendingSummary,
     });
-  }, [state.entries, state.githubConfig, state.todos]);
+  }, [
+    state.entries,
+    state.githubConfig,
+    state.todos,
+    state.notifications,
+    state.settings,
+    state.pendingSummary,
+  ]);
 }

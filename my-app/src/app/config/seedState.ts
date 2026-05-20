@@ -1,3 +1,4 @@
+import { DEFAULT_SETTINGS } from "@/app/model/settings";
 import type { PersistedAppState } from "@/app/model/types";
 import { addDays, toDateKey } from "@/shared/lib/date";
 
@@ -15,6 +16,7 @@ export const seedState: PersistedAppState = {
       completed: true,
       dateKey: "2023-10-25",
       createdAt: baseDate.toISOString(),
+      completedAt: baseDate.toISOString(),
       status: "done",
       description: "백엔드 API 명세를 문서화하고 팀 공유용 요약까지 정리합니다.",
     },
@@ -24,6 +26,7 @@ export const seedState: PersistedAppState = {
       completed: false,
       dateKey: "2023-10-26",
       createdAt: addDays(baseDate, 1).toISOString(),
+      completedAt: null,
       status: "in-progress",
       description: "주요 조회 API에 Redis 캐시 레이어를 붙이고 만료 정책을 검토합니다.",
     },
@@ -33,6 +36,7 @@ export const seedState: PersistedAppState = {
       completed: true,
       dateKey: "2023-10-26",
       createdAt: addDays(baseDate, 1).toISOString(),
+      completedAt: addDays(baseDate, 1).toISOString(),
       status: "done",
       description: "주간 회고와 다음 스프린트 우선순위를 논의하는 회의입니다.",
     },
@@ -42,6 +46,7 @@ export const seedState: PersistedAppState = {
       completed: false,
       dateKey: "2023-10-27",
       createdAt: addDays(baseDate, 2).toISOString(),
+      completedAt: null,
       status: "not-start",
       description: "페이지별 라우팅을 정리하고 공통 레이아웃과 연결합니다.",
     },
@@ -51,6 +56,7 @@ export const seedState: PersistedAppState = {
       completed: false,
       dateKey: "2023-10-27",
       createdAt: addDays(baseDate, 2).toISOString(),
+      completedAt: null,
       status: "not-start",
       description: "GitHub 계정 연결과 토큰 저장 흐름을 설계합니다.",
     },
@@ -133,4 +139,7 @@ export const seedState: PersistedAppState = {
     ],
     autoRetrospectiveEnabled: true,
   },
+  notifications: [],
+  settings: { ...DEFAULT_SETTINGS },
+  pendingSummary: null,
 };

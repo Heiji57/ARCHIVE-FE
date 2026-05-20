@@ -15,7 +15,8 @@ import type { AppRoute } from "@/app/model/types";
 import { useArchiveApp } from "@/app/providers/useArchiveApp";
 import { findTodoById } from "@/entities/todo/lib/selectors";
 import type { TaskStatus, Todo } from "@/entities/todo/model/types";
-import { STATUS_LABELS, StatusIcon } from "@/entities/todo/ui/StatusIcon";
+import { StatusIcon } from "@/entities/todo/ui/StatusIcon";
+import { useDraggable, useDropTarget } from "@/shared/lib/dnd";
 import { Pill } from "@/shared/ui/pill/Pill";
 import {
   addDays,
@@ -27,23 +28,27 @@ import {
   startOfWeek,
   toDateKey,
 } from "@/shared/lib/date";
+import { useTranslation, type TranslationKey } from "@/shared/lib/i18n";
 
-const EN_DAYS = ["S", "M", "T", "W", "T", "F", "S"] as const;
-const KO_DAYS = [
-  "일요일",
-  "월요일",
-  "화요일",
-  "수요일",
-  "목요일",
-  "금요일",
-  "토요일",
-] as const;
+const DAY_ABBR_KEYS: TranslationKey[] = [
+  "calendar.days.sun", "calendar.days.mon", "calendar.days.tue",
+  "calendar.days.wed", "calendar.days.thu", "calendar.days.fri", "calendar.days.sat",
+];
 
-type TodoPatch = Partial<Pick<Todo, "title" | "status" | "description" | "dateKey">>;
+const DAY_FULL_KEYS: TranslationKey[] = [
+  "calendar.days.sunday", "calendar.days.monday", "calendar.days.tuesday",
+  "calendar.days.wednesday", "calendar.days.thursday", "calendar.days.friday", "calendar.days.saturday",
+];
 
-// ─── TaskCard (week grid) ─────────────────────────────────────────────────────
+const TODO_DRAG_KIND = "todo";
 
-function TaskCard({
+type TodoPatch = Partial<
+  Pick<Todo, "title" | "status" | "description" | "dateKey">
+>;
+
+// ─── DraggableTaskCard (week grid) ───────────────────────────────────────────
+
+function DraggableTaskCard({
   todo,
   active,
   onSelect,
@@ -52,10 +57,13 @@ function TaskCard({
   active: boolean;
   onSelect: () => void;
 }) {
+  const drag = useDraggable({ kind: TODO_DRAG_KIND, data: { id: todo.id } });
   return (
     <button
       type="button"
       onClick={onSelect}
+      data-draggable="true"
+      {...drag}
       style={{
         textAlign: "left",
         background: active ? "var(--color-tile-4)" : "var(--color-tile-2)",
@@ -109,19 +117,98 @@ function TaskCard({
   );
 }
 
-// ─── WeekGrid ─────────────────────────────────────────────────────────────────
+function DraggableMonthChip({
+  todo,
+  onSelect,
+}: {
+  todo: Todo;
+  onSelect: () => void;
+}) {
+  const drag = useDraggable({ kind: TODO_DRAG_KIND, data: { id: todo.id } });
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      data-draggable="true"
+      {...drag}
+      style={{
+        textAlign: "left",
+        fontSize: 11,
+        padding: "3px 6px",
+        borderRadius: 4,
+        background:
+          todo.status === "done"
+            ? "var(--color-tile-3)"
+            : todo.status === "in-progress"
+              ? "rgba(10, 132, 255, 0.16)"
+              : "var(--color-tile-2)",
+        color:
+          todo.status === "done"
+            ? "var(--color-body-muted)"
+            : todo.status === "in-progress"
+              ? "var(--color-primary-on-dark)"
+              : "var(--color-ink)",
+        overflow: "hidden",
+        whiteSpace: "nowrap",
+        textOverflow: "ellipsis",
+        textDecoration: todo.status === "done" ? "line-through" : "none",
+        width: "100%",
+      }}
+    >
+      {todo.title}
+    </button>
+  );
+}
+
+// ─── DayCell (drop target wrapper) ───────────────────────────────────────────
+
+function DayCell({
+  dateKey,
+  onDropTodo,
+  children,
+  style,
+}: {
+  dateKey: string;
+  onDropTodo: (todoId: string, dateKey: string) => void;
+  children: React.ReactNode;
+  style?: React.CSSProperties;
+}) {
+  const { ref, isOver, isActive } = useDropTarget<typeof TODO_DRAG_KIND>(
+    TODO_DRAG_KIND,
+    (payload) => {
+      const data = payload.data as { id: string };
+      onDropTodo(data.id, dateKey);
+    },
+  );
+
+  return (
+    <div
+      ref={ref}
+      data-drop-active={isActive}
+      data-drop-over={isOver}
+      style={style}
+    >
+      {children}
+    </div>
+  );
+}
+
+// ─── WeekGrid ────────────────────────────────────────────────────────────────
 
 function WeekGrid({
   cursor,
   byDate,
   selectedId,
   onSelect,
+  onDropTodo,
 }: {
   cursor: Date;
   byDate: Record<string, Todo[]>;
   selectedId: string | null;
   onSelect: (id: string) => void;
+  onDropTodo: (todoId: string, dateKey: string) => void;
 }) {
+  const { t } = useTranslation();
   const start = startOfWeek(cursor);
   const days = Array.from({ length: 7 }, (_, i) => addDays(start, i));
   const anchorKey = toDateKey(DEMO_ANCHOR_DATE);
@@ -144,8 +231,10 @@ function WeekGrid({
         const items = byDate[k] ?? [];
 
         return (
-          <div
+          <DayCell
             key={k}
+            dateKey={k}
+            onDropTodo={onDropTodo}
             style={{
               background: todayCell
                 ? "rgba(10, 132, 255, 0.07)"
@@ -175,7 +264,7 @@ function WeekGrid({
                     margin: 0,
                   }}
                 >
-                  {EN_DAYS[d.getDay()]}
+                  {t(DAY_ABBR_KEYS[d.getDay()])}
                 </p>
                 <p
                   style={{
@@ -196,63 +285,60 @@ function WeekGrid({
                     color: "var(--color-body-muted)",
                   }}
                 >
-                  {KO_DAYS[d.getDay()]}
+                  {t(DAY_FULL_KEYS[d.getDay()])}
                 </p>
               </div>
               {todayCell ? (
                 <Pill tone="blue" style={{ fontSize: 10 }}>
-                  TODAY
+                  {t("calendar.today")}
                 </Pill>
               ) : null}
             </div>
 
-            {/* Task cards */}
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {items.map((t) => (
-                <TaskCard
-                  key={t.id}
-                  todo={t}
-                  active={selectedId === t.id}
-                  onSelect={() => onSelect(t.id)}
+              {items.map((item) => (
+                <DraggableTaskCard
+                  key={item.id}
+                  todo={item}
+                  active={selectedId === item.id}
+                  onSelect={() => onSelect(item.id)}
                 />
               ))}
 
               <button
                 type="button"
                 className="dashed"
-                style={{
-                  padding: "10px 12px",
-                  fontSize: 12,
-                  gap: 4,
-                }}
+                style={{ padding: "10px 12px", fontSize: 12, gap: 4 }}
               >
-                <Plus size={12} /> 새 카드
+                <Plus size={12} /> {t("calendar.addCard")}
               </button>
             </div>
-          </div>
+          </DayCell>
         );
       })}
     </div>
   );
 }
 
-// ─── MonthGrid ────────────────────────────────────────────────────────────────
+// ─── MonthGrid ───────────────────────────────────────────────────────────────
 
 function MonthGrid({
   cursor,
   byDate,
   onSelect,
+  onDropTodo,
 }: {
   cursor: Date;
   byDate: Record<string, Todo[]>;
   onSelect: (id: string) => void;
+  onDropTodo: (todoId: string, dateKey: string) => void;
 }) {
   const cells = getMonthGrid(cursor);
   const anchorKey = toDateKey(DEMO_ANCHOR_DATE);
+  const { t } = useTranslation();
 
   return (
     <div>
-      {/* Day header row */}
       <div
         style={{
           display: "grid",
@@ -260,7 +346,7 @@ function MonthGrid({
           marginBottom: 8,
         }}
       >
-        {EN_DAYS.map((d, i) => (
+        {DAY_ABBR_KEYS.map((key, i) => (
           <div
             key={i}
             style={{
@@ -269,16 +355,14 @@ function MonthGrid({
               letterSpacing: "0.18em",
               fontWeight: 600,
               textTransform: "uppercase",
-              color:
-                i === 0 ? "var(--color-warn)" : "var(--color-body-muted)",
+              color: i === 0 ? "var(--color-warn)" : "var(--color-body-muted)",
             }}
           >
-            {d}
+            {t(key)}
           </div>
         ))}
       </div>
 
-      {/* Calendar cells */}
       <div
         style={{
           display: "grid",
@@ -299,8 +383,10 @@ function MonthGrid({
           const more = items.length - visible.length;
 
           return (
-            <div
+            <DayCell
               key={k}
+              dateKey={k}
+              onDropTodo={onDropTodo}
               style={{
                 background: todayCell
                   ? "rgba(10, 132, 255, 0.08)"
@@ -341,44 +427,18 @@ function MonthGrid({
                       textTransform: "uppercase",
                     }}
                   >
-                    TODAY
+                    {t("calendar.today")}
                   </span>
                 ) : null}
               </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-                {visible.map((t) => (
-                  <button
-                    key={t.id}
-                    type="button"
-                    onClick={() => onSelect(t.id)}
-                    style={{
-                      textAlign: "left",
-                      fontSize: 11,
-                      padding: "3px 6px",
-                      borderRadius: 4,
-                      background:
-                        t.status === "done"
-                          ? "var(--color-tile-3)"
-                          : t.status === "in-progress"
-                            ? "rgba(10, 132, 255, 0.16)"
-                            : "var(--color-tile-2)",
-                      color:
-                        t.status === "done"
-                          ? "var(--color-body-muted)"
-                          : t.status === "in-progress"
-                            ? "var(--color-primary-on-dark)"
-                            : "var(--color-ink)",
-                      overflow: "hidden",
-                      whiteSpace: "nowrap",
-                      textOverflow: "ellipsis",
-                      textDecoration:
-                        t.status === "done" ? "line-through" : "none",
-                      width: "100%",
-                    }}
-                  >
-                    {t.title}
-                  </button>
+                {visible.map((item) => (
+                  <DraggableMonthChip
+                    key={item.id}
+                    todo={item}
+                    onSelect={() => onSelect(item.id)}
+                  />
                 ))}
                 {more > 0 ? (
                   <p
@@ -388,11 +448,11 @@ function MonthGrid({
                       color: "var(--color-body-muted)",
                     }}
                   >
-                    +{more}개 더 보기
+                    {t("calendar.moreItems", { n: more })}
                   </p>
                 ) : null}
               </div>
-            </div>
+            </DayCell>
           );
         })}
       </div>
@@ -400,7 +460,7 @@ function MonthGrid({
   );
 }
 
-// ─── TaskDetailPanel ──────────────────────────────────────────────────────────
+// ─── TaskDetailPanel ─────────────────────────────────────────────────────────
 
 function TaskDetailPanel({
   todo,
@@ -414,11 +474,16 @@ function TaskDetailPanel({
   onGoToRetro: () => void;
 }) {
   const [statusOpen, setStatusOpen] = useState(false);
+  const { t } = useTranslation();
   const d = fromDateKey(todo.dateKey);
+  const STATUS_LABEL: Record<TaskStatus, string> = {
+    "not-start": t("todo.col.notStart.ko"),
+    "in-progress": t("todo.col.inProgress.ko"),
+    done: t("todo.col.done.ko"),
+  };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-      {/* Panel header */}
       <div
         style={{
           padding: "20px 24px 16px",
@@ -436,7 +501,7 @@ function TaskDetailPanel({
             className="t-eyebrow"
             style={{ color: "var(--color-body-muted)", margin: 0 }}
           >
-            Task Detail
+            {t("calendar.taskDetail.title")}
           </p>
           <div style={{ display: "flex", gap: 4 }}>
             <button type="button" className="btn-icon" aria-label="More">
@@ -463,7 +528,6 @@ function TaskDetailPanel({
         </p>
       </div>
 
-      {/* Panel body */}
       <div
         style={{
           flex: 1,
@@ -474,13 +538,12 @@ function TaskDetailPanel({
           gap: 18,
         }}
       >
-        {/* Status */}
         <div>
           <p
             className="t-eyebrow"
             style={{ margin: "0 0 8px", color: "var(--color-body-muted)" }}
           >
-            Status
+            {t("calendar.taskDetail.status")}
           </p>
           <div style={{ position: "relative" }}>
             <button
@@ -500,10 +563,14 @@ function TaskDetailPanel({
               }}
             >
               <span
-                style={{ display: "inline-flex", gap: 8, alignItems: "center" }}
+                style={{
+                  display: "inline-flex",
+                  gap: 8,
+                  alignItems: "center",
+                }}
               >
                 <StatusIcon status={todo.status} size={16} />
-                {STATUS_LABELS[todo.status]}
+                {STATUS_LABEL[todo.status]}
               </span>
               <ChevronDown size={14} />
             </button>
@@ -543,7 +610,7 @@ function TaskDetailPanel({
                       }}
                     >
                       <StatusIcon status={s} size={14} />
-                      {STATUS_LABELS[s]}
+                      {STATUS_LABEL[s]}
                     </button>
                   ),
                 )}
@@ -552,13 +619,12 @@ function TaskDetailPanel({
           </div>
         </div>
 
-        {/* Title */}
         <div>
           <p
             className="t-eyebrow"
             style={{ margin: "0 0 8px", color: "var(--color-body-muted)" }}
           >
-            Title · 제목
+            {t("calendar.taskDetail.titleField")}
           </p>
           <input
             value={todo.title}
@@ -578,13 +644,12 @@ function TaskDetailPanel({
           />
         </div>
 
-        {/* Date */}
         <div>
           <p
             className="t-eyebrow"
             style={{ margin: "0 0 8px", color: "var(--color-body-muted)" }}
           >
-            Date · 기간
+            {t("calendar.taskDetail.date")}
           </p>
           <input
             type="date"
@@ -603,24 +668,22 @@ function TaskDetailPanel({
           />
         </div>
 
-        {/* Description */}
         <div>
           <p
             className="t-eyebrow"
             style={{ margin: "0 0 8px", color: "var(--color-body-muted)" }}
           >
-            Description · 상세 설명
+            {t("calendar.taskDetail.description")}
           </p>
           <textarea
             value={todo.description ?? ""}
             onChange={(e) => onUpdate({ description: e.target.value })}
             className="editor-area"
             style={{ minHeight: 160, fontSize: 14 }}
-            placeholder="작업의 맥락이나 참고 링크를 적어두세요."
+            placeholder={t("calendar.taskDetail.descPlaceholder")}
           />
         </div>
 
-        {/* AI Auto-Retrospective callout */}
         <div
           style={{
             padding: "16px 18px",
@@ -643,7 +706,7 @@ function TaskDetailPanel({
                   letterSpacing: "-0.1px",
                 }}
               >
-                AI Auto-Retrospective
+                {t("calendar.taskDetail.aiRetro")}
               </p>
               <p
                 style={{
@@ -653,8 +716,7 @@ function TaskDetailPanel({
                   lineHeight: 1.5,
                 }}
               >
-                이 작업의 진행 흐름을 회고에 묶어두면, 일요일에 자동으로 주간
-                요약이 생성됩니다.
+                {t("calendar.taskDetail.aiRetroDesc")}
               </p>
               <button
                 type="button"
@@ -662,7 +724,7 @@ function TaskDetailPanel({
                 className="btn btn-primary"
                 style={{ padding: "8px 16px", fontSize: 13 }}
               >
-                회고 에디터로 이동 <ArrowRight size={12} />
+                {t("calendar.taskDetail.goToRetro")} <ArrowRight size={12} />
               </button>
             </div>
           </div>
@@ -672,14 +734,15 @@ function TaskDetailPanel({
   );
 }
 
-// ─── CalendarDashboard ────────────────────────────────────────────────────────
+// ─── CalendarDashboard ───────────────────────────────────────────────────────
 
 export function CalendarDashboard({
   onNavigate,
 }: {
   onNavigate: (route: AppRoute) => void;
 }) {
-  const { state, updateTodo } = useArchiveApp();
+  const { state, updateTodo, moveTodo } = useArchiveApp();
+  const { t } = useTranslation();
   const [view, setView] = useState<"week" | "month">("week");
   const [cursor, setCursor] = useState(DEMO_ANCHOR_DATE);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -690,9 +753,9 @@ export function CalendarDashboard({
 
   const byDate = useMemo(() => {
     const m: Record<string, Todo[]> = {};
-    for (const t of state.todos) {
-      if (!m[t.dateKey]) m[t.dateKey] = [];
-      m[t.dateKey].push(t);
+    for (const item of state.todos) {
+      if (!m[item.dateKey]) m[item.dateKey] = [];
+      m[item.dateKey].push(item);
     }
     return m;
   }, [state.todos]);
@@ -702,16 +765,18 @@ export function CalendarDashboard({
       setCursor((prev) => addDays(prev, dir * 7));
     } else {
       setCursor(
-        (prev) =>
-          new Date(prev.getFullYear(), prev.getMonth() + dir, 15, 12),
+        (prev) => new Date(prev.getFullYear(), prev.getMonth() + dir, 15, 12),
       );
     }
+  };
+
+  const handleDropTodo = (todoId: string, dateKey: string) => {
+    moveTodo(todoId, dateKey);
   };
 
   return (
     <div>
       <div className="page" style={{ paddingTop: 40 }}>
-        {/* View toolbar */}
         <div
           style={{
             display: "flex",
@@ -730,7 +795,7 @@ export function CalendarDashboard({
                 aria-pressed={view === "week"}
                 onClick={() => setView("week")}
               >
-                1 Week
+                {t("calendar.view.week")}
               </button>
               <button
                 type="button"
@@ -738,13 +803,11 @@ export function CalendarDashboard({
                 aria-pressed={view === "month"}
                 onClick={() => setView("month")}
               >
-                1 Month
+                {t("calendar.view.month")}
               </button>
             </div>
             <h2 className="t-display-md" style={{ margin: 0 }}>
-              {view === "week"
-                ? `${formatMonthLabel(cursor)} · 이번 주`
-                : formatMonthLabel(cursor)}
+              {formatMonthLabel(cursor)}
             </h2>
           </div>
 
@@ -754,42 +817,42 @@ export function CalendarDashboard({
               className="btn btn-utility"
               onClick={() => navigate(-1)}
             >
-              ← 이전
+              {t("calendar.nav.prev")}
             </button>
             <button
               type="button"
               className="btn btn-utility"
               onClick={() => setCursor(DEMO_ANCHOR_DATE)}
             >
-              오늘로
+              {t("calendar.nav.today")}
             </button>
             <button
               type="button"
               className="btn btn-utility"
               onClick={() => navigate(1)}
             >
-              다음 →
+              {t("calendar.nav.next")}
             </button>
           </div>
         </div>
 
-        {/* Calendar grid */}
         {view === "week" ? (
           <WeekGrid
             cursor={cursor}
             byDate={byDate}
             selectedId={selectedId}
             onSelect={setSelectedId}
+            onDropTodo={handleDropTodo}
           />
         ) : (
           <MonthGrid
             cursor={cursor}
             byDate={byDate}
             onSelect={setSelectedId}
+            onDropTodo={handleDropTodo}
           />
         )}
 
-        {/* Legend */}
         <div
           style={{
             marginTop: 40,
@@ -799,39 +862,34 @@ export function CalendarDashboard({
             flexWrap: "wrap",
           }}
         >
-          <p
-            className="t-eyebrow"
-            style={{ color: "var(--color-body-muted)", margin: 0 }}
-          >
-            Legend
-          </p>
           <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
             <span style={legendItemStyle}>
-              <Circle size={14} style={{ color: "var(--color-ink-muted-48)" }} />
-              To Do · 시작 전
+              <Circle
+                size={14}
+                style={{ color: "var(--color-ink-muted-48)" }}
+              />
+              {t("calendar.legend.notStart")}
             </span>
             <span style={legendItemStyle}>
               <PlayCircle size={14} style={{ color: "var(--color-primary)" }} />
-              In Progress · 진행 중
+              {t("calendar.legend.inProgress")}
             </span>
             <span style={legendItemStyle}>
               <CheckCircle2
                 size={14}
                 style={{ color: "var(--color-status-done)" }}
               />
-              Done · 완료
+              {t("calendar.legend.done")}
             </span>
           </div>
         </div>
       </div>
 
-      {/* Slide panel overlay */}
       <div
         className={`side-panel-overlay ${selectedId ? "open" : ""}`}
         onClick={() => setSelectedId(null)}
       />
 
-      {/* Slide panel */}
       <aside
         className={`side-panel ${selectedId ? "open" : ""}`}
         aria-hidden={!selectedId}

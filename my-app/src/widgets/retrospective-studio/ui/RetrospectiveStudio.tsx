@@ -1,38 +1,73 @@
 import { useMemo, useState } from "react";
-import { BookOpen, Check, CheckCircle, Clock, GitCommit, Search } from "lucide-react";
+import {
+  BookOpen,
+  Check,
+  CheckCircle,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  GitCommit,
+  Lock,
+  Search,
+  Sparkles,
+} from "lucide-react";
 import { DEMO_ANCHOR_DATE_KEY } from "@/app/config/demo";
 import { useArchiveApp } from "@/app/providers/useArchiveApp";
 import { getEntriesByRetroType } from "@/entities/entry/lib/selectors";
-import type { JournalEntry, RetrospectiveType } from "@/entities/entry/model/types";
+import type {
+  JournalEntry,
+  RetrospectiveType,
+} from "@/entities/entry/model/types";
+import type { SummaryKind } from "@/entities/summary/model/types";
 import { Pill } from "@/shared/ui/pill/Pill";
-import { formatFullDate, fromDateKey } from "@/shared/lib/date";
+import {
+  formatFullDate,
+  fromDateKey,
+  getISOWeek,
+} from "@/shared/lib/date";
+import { useTranslation } from "@/shared/lib/i18n";
+import type { TranslationKey } from "@/shared/lib/i18n";
 
-const RETRO_FILTERS: Array<{ id: RetrospectiveType; label: string }> = [
-  { id: "daily", label: "일간" },
-  { id: "weekly", label: "주간" },
-  { id: "monthly", label: "월간" },
-  { id: "yearly", label: "연간" },
+const PAGE_SIZE = 8;
+
+const RETRO_FILTERS: Array<{
+  id: RetrospectiveType;
+  labelKey: TranslationKey;
+}> = [
+  { id: "daily", labelKey: "retro.filter.daily" },
+  { id: "weekly", labelKey: "retro.filter.weekly" },
+  { id: "monthly", labelKey: "retro.filter.monthly" },
+  { id: "yearly", labelKey: "retro.filter.yearly" },
 ];
 
-const RETRO_LABEL: Record<RetrospectiveType, string> = {
-  daily: "Daily Retrospective",
-  weekly: "Weekly Retrospective",
-  monthly: "Monthly Retrospective",
-  yearly: "Yearly Retrospective",
+const RETRO_LABEL_KEY: Record<RetrospectiveType, TranslationKey> = {
+  daily: "retro.filter.daily",
+  weekly: "retro.filter.weekly",
+  monthly: "retro.filter.monthly",
+  yearly: "retro.filter.yearly",
 };
 
 const MOCK_COMMITS = [
-  { repo: "archive-backend", message: "feat: add user auth api", sha: "a1b2c3d" },
-  { repo: "archive-backend", message: "fix: redis connection timeout", sha: "f9e8d7c" },
+  {
+    repo: "archive-backend",
+    message: "feat: add user auth api",
+    sha: "a1b2c3d",
+  },
+  {
+    repo: "archive-backend",
+    message: "fix: redis connection timeout",
+    sha: "f9e8d7c",
+  },
 ] as const;
 
-// ─── RetroEditor ──────────────────────────────────────────────────────────────
+// ─── RetroEditor ─────────────────────────────────────────────────────────────
 
 function RetroEditor({
   entry,
   completedTodos,
   githubConnectedAs,
   githubTargetRepo,
+  isGithubConnected,
   onUpdate,
   onSave,
 }: {
@@ -40,15 +75,16 @@ function RetroEditor({
   completedTodos: { id: string; title: string }[];
   githubConnectedAs: string;
   githubTargetRepo: string;
+  isGithubConnected: boolean;
   onUpdate: (patch: Partial<Pick<JournalEntry, "title" | "content">>) => void;
   onSave: () => void;
 }) {
+  const { t } = useTranslation();
   const d = fromDateKey(entry.dateKey);
-  const retroLabel = RETRO_LABEL[entry.retroType] ?? "Retrospective";
+  const retroLabel = t(RETRO_LABEL_KEY[entry.retroType]);
 
   return (
     <article>
-      {/* Editor header */}
       <div
         style={{
           display: "flex",
@@ -63,18 +99,30 @@ function RetroEditor({
           <p className="t-eyebrow" style={{ margin: "0 0 6px" }}>
             {retroLabel}
           </p>
-          <p style={{ margin: 0, fontSize: 14, color: "var(--color-body-muted)" }}>
+          <p
+            style={{
+              margin: 0,
+              fontSize: 14,
+              color: "var(--color-body-muted)",
+            }}
+          >
             {formatFullDate(d)}
           </p>
         </div>
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-          {entry.synced ? (
-            <Pill tone="green">
-              <Check size={10} /> GitHub에 동기화됨
-            </Pill>
+          {isGithubConnected ? (
+            entry.synced ? (
+              <Pill tone="green">
+                <Check size={10} /> {t("retro.editor.synced")}
+              </Pill>
+            ) : (
+              <Pill tone="warn">
+                <Clock size={10} /> {t("retro.editor.pending")}
+              </Pill>
+            )
           ) : (
-            <Pill tone="warn">
-              <Clock size={10} /> 동기화 대기 중
+            <Pill tone="ghost">
+              <Lock size={10} /> {t("settings.github.notConnected")}
             </Pill>
           )}
           <button
@@ -82,17 +130,27 @@ function RetroEditor({
             onClick={onSave}
             className="btn btn-primary"
             style={{ padding: "10px 22px" }}
+            disabled={!isGithubConnected}
+            title={
+              !isGithubConnected ? t("retro.github.connectFromSettings") : ""
+            }
           >
-            <GitCommit size={14} /> 저장 · 동기화
+            <GitCommit size={14} /> {t("retro.editor.save")}
           </button>
         </div>
       </div>
 
-      {/* Title */}
+      {!isGithubConnected ? (
+        <div className="disconnect-banner">
+          <Lock size={14} style={{ color: "var(--color-warn)" }} />
+          <span>{t("retro.github.notConnected")}</span>
+        </div>
+      ) : null}
+
       <input
         value={entry.title}
         onChange={(e) => onUpdate({ title: e.target.value })}
-        placeholder="제목을 적어주세요"
+        placeholder={t("retro.editor.titlePlaceholder")}
         style={{
           width: "100%",
           fontFamily: "var(--font-display)",
@@ -113,23 +171,22 @@ function RetroEditor({
           lineHeight: 1.4,
         }}
       >
-        오늘의 작업과 커밋, 배운 점을 한 흐름으로 묶어보세요.
+        {t("retro.editor.sub")}
       </p>
 
-      {/* Completed Todos */}
       <section className="section-card" style={{ marginBottom: 16 }}>
         <div className="section-card-head">
           <div className="avatar avatar-sm avatar-done">
             <CheckCircle size={14} strokeWidth={2.6} />
           </div>
-          <p className="section-card-title">완료한 작업 · Completed</p>
+          <p className="section-card-title">{t("retro.editor.completed")}</p>
         </div>
 
         {completedTodos.length > 0 ? (
           <ul style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {completedTodos.map((t) => (
+            {completedTodos.map((tdo) => (
               <li
-                key={t.id}
+                key={tdo.id}
                 style={{
                   padding: "10px 12px",
                   borderRadius: "var(--r-sm)",
@@ -140,78 +197,94 @@ function RetroEditor({
                   alignItems: "center",
                 }}
               >
-                <CheckCircle size={14} style={{ color: "var(--color-status-done)" }} />
-                <span style={{ flex: 1 }}>{t.title}</span>
+                <CheckCircle
+                  size={14}
+                  style={{ color: "var(--color-status-done)" }}
+                />
+                <span style={{ flex: 1 }}>{tdo.title}</span>
               </li>
             ))}
           </ul>
         ) : (
-          <p style={{ margin: 0, fontSize: 13, color: "var(--color-body-muted)" }}>
-            오늘 완료된 작업이 없습니다.
+          <p
+            style={{
+              margin: 0,
+              fontSize: 13,
+              color: "var(--color-body-muted)",
+            }}
+          >
+            {t("retro.editor.noCompleted")}
           </p>
         )}
       </section>
 
-      {/* Commits */}
-      <section className="section-card-tile-2" style={{ marginBottom: 16 }}>
-        <div className="section-card-head">
-          <div className="avatar avatar-sm avatar-primary">
-            <GitCommit size={14} />
-          </div>
-          <p className="section-card-title">오늘의 커밋 · Commits</p>
-          <span
-            style={{
-              marginLeft: "auto",
-              fontSize: 12,
-              color: "var(--color-body-muted)",
-            }}
-          >
-            @{githubConnectedAs}/{githubTargetRepo}
-          </span>
-        </div>
-
-        <ul
-          className="t-mono"
-          style={{ display: "flex", flexDirection: "column", gap: 6 }}
-        >
-          {MOCK_COMMITS.map((c) => (
-            <li
-              key={c.sha}
+      {isGithubConnected ? (
+        <section className="section-card-tile-2" style={{ marginBottom: 16 }}>
+          <div className="section-card-head">
+            <div className="avatar avatar-sm avatar-primary">
+              <GitCommit size={14} />
+            </div>
+            <p className="section-card-title">{t("retro.editor.commits")}</p>
+            <span
               style={{
-                padding: "10px 14px",
-                borderRadius: "var(--r-sm)",
-                background: "var(--color-tile-3)",
-                fontSize: 13,
-                lineHeight: 1.5,
-                display: "flex",
-                gap: 14,
-                alignItems: "center",
-                flexWrap: "wrap",
+                marginLeft: "auto",
+                fontSize: 12,
+                color: "var(--color-body-muted)",
               }}
             >
-              <span style={{ color: "var(--color-primary-on-dark)", fontWeight: 600 }}>
-                {c.repo}
-              </span>
-              <span style={{ color: "var(--color-body-muted)" }}>:</span>
-              <span style={{ flex: 1, minWidth: 200 }}>{c.message}</span>
-              <span style={{ color: "var(--color-ink-muted-48)" }}>({c.sha})</span>
-            </li>
-          ))}
-        </ul>
-      </section>
+              @{githubConnectedAs}/{githubTargetRepo}
+            </span>
+          </div>
 
-      {/* Learned */}
+          <ul
+            className="t-mono"
+            style={{ display: "flex", flexDirection: "column", gap: 6 }}
+          >
+            {MOCK_COMMITS.map((c) => (
+              <li
+                key={c.sha}
+                style={{
+                  padding: "10px 14px",
+                  borderRadius: "var(--r-sm)",
+                  background: "var(--color-tile-3)",
+                  fontSize: 13,
+                  lineHeight: 1.5,
+                  display: "flex",
+                  gap: 14,
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                }}
+              >
+                <span
+                  style={{
+                    color: "var(--color-primary-on-dark)",
+                    fontWeight: 600,
+                  }}
+                >
+                  {c.repo}
+                </span>
+                <span style={{ color: "var(--color-body-muted)" }}>:</span>
+                <span style={{ flex: 1, minWidth: 200 }}>{c.message}</span>
+                <span style={{ color: "var(--color-ink-muted-48)" }}>
+                  ({c.sha})
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
       <section className="section-card">
         <div className="section-card-head">
           <div className="avatar avatar-sm avatar-tile">
             <BookOpen size={14} />
           </div>
-          <p className="section-card-title">배운 점과 아쉬운 점 · Learned</p>
+          <p className="section-card-title">{t("retro.editor.learned")}</p>
         </div>
         <textarea
           value={entry.content}
           onChange={(e) => onUpdate({ content: e.target.value })}
-          placeholder="오늘 알게 된 것, 다음에 더 잘하고 싶은 것을 자유롭게 적어주세요."
+          placeholder={t("retro.editor.learnedPlaceholder")}
           className="editor-area"
           style={{ minHeight: 260 }}
         />
@@ -220,55 +293,125 @@ function RetroEditor({
   );
 }
 
-// ─── RetrospectiveStudio ──────────────────────────────────────────────────────
+// ─── RetrospectiveStudio ─────────────────────────────────────────────────────
 
 export function RetrospectiveStudio() {
-  const { state, updateEntry, pushNotification } = useArchiveApp();
+  const { state, updateEntry, pushNotification, startSummary } =
+    useArchiveApp();
+  const { t } = useTranslation();
   const [retroFilter, setRetroFilter] = useState<RetrospectiveType>("daily");
   const [search, setSearch] = useState("");
+  const [yearFilter, setYearFilter] = useState<string>("all");
+  const [monthFilter, setMonthFilter] = useState<string>("all");
+  const [weekFilter, setWeekFilter] = useState<string>("all");
+  const [page, setPage] = useState(0);
+
+  const resetPage = () => setPage(0);
 
   const filteredEntries = useMemo(() => {
     const byType = getEntriesByRetroType(state.entries, retroFilter);
-    const q = search.toLowerCase();
-    const matched = q
-      ? byType.filter(
-          (e) => e.title.toLowerCase().includes(q) || e.dateKey.includes(q),
-        )
-      : byType;
-    return [...matched].sort((a, b) => b.dateKey.localeCompare(a.dateKey));
-  }, [state.entries, retroFilter, search]);
+    const q = search.toLowerCase().trim();
+
+    let list = byType;
+
+    if (yearFilter !== "all") {
+      list = list.filter((e) => e.dateKey.startsWith(`${yearFilter}-`));
+    }
+    if (monthFilter !== "all") {
+      list = list.filter((e) => e.dateKey.slice(5, 7) === monthFilter);
+    }
+    if (weekFilter !== "all") {
+      list = list.filter((e) => {
+        const w = getISOWeek(fromDateKey(e.dateKey));
+        return String(w) === weekFilter;
+      });
+    }
+    if (q) {
+      list = list.filter(
+        (e) =>
+          e.title.toLowerCase().includes(q) ||
+          e.dateKey.includes(q) ||
+          e.content.toLowerCase().includes(q),
+      );
+    }
+    return [...list].sort((a, b) => b.dateKey.localeCompare(a.dateKey));
+  }, [state.entries, retroFilter, search, yearFilter, monthFilter, weekFilter]);
+
+  const allOfType = useMemo(
+    () => getEntriesByRetroType(state.entries, retroFilter),
+    [state.entries, retroFilter],
+  );
+
+  const years = useMemo(() => {
+    const s = new Set(allOfType.map((e) => e.dateKey.slice(0, 4)));
+    return Array.from(s).sort((a, b) => b.localeCompare(a));
+  }, [allOfType]);
+  const months = [
+    "01",
+    "02",
+    "03",
+    "04",
+    "05",
+    "06",
+    "07",
+    "08",
+    "09",
+    "10",
+    "11",
+    "12",
+  ];
+  const weeks = useMemo(() => {
+    const s = new Set(
+      allOfType.map((e) => String(getISOWeek(fromDateKey(e.dateKey)))),
+    );
+    return Array.from(s).sort((a, b) => Number(a) - Number(b));
+  }, [allOfType]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredEntries.length / PAGE_SIZE));
+  const pageStart = page * PAGE_SIZE;
+  const pageEntries = filteredEntries.slice(pageStart, pageStart + PAGE_SIZE);
 
   const [selectedId, setSelectedId] = useState<string | null>(
     () => filteredEntries[0]?.id ?? null,
   );
 
   const active =
-    state.entries.find((e) => e.id === selectedId) ??
-    filteredEntries[0] ??
-    null;
+    state.entries.find((e) => e.id === selectedId) ?? filteredEntries[0] ?? null;
 
   const completedTodos = useMemo(
     () =>
       active
         ? state.todos.filter(
-            (t) => t.dateKey === active.dateKey && t.status === "done",
+            (todoItem) =>
+              todoItem.dateKey === active.dateKey &&
+              todoItem.status === "done",
           )
         : [],
     [state.todos, active],
   );
 
+  const isGithubConnected = Boolean(
+    state.githubConfig && state.githubConfig.enabled,
+  );
   const githubConnectedAs = state.githubConfig?.connectedAs ?? "developer";
   const githubTargetRepo =
     state.githubConfig?.targetRepository ?? "archive-journal";
 
   const handleSave = () => {
     if (!active) return;
+    if (!isGithubConnected) return;
     updateEntry(active.id, { synced: true });
     pushNotification(
       "success",
-      "GitHub에 동기화됨",
+      t("retro.editor.synced"),
       `${active.title} · @${githubConnectedAs}/${githubTargetRepo}`,
+      { category: "sync" },
     );
+  };
+
+  const handleSummarize = (kind: SummaryKind) => {
+    const target = active?.dateKey ?? DEMO_ANCHOR_DATE_KEY;
+    startSummary(kind, target);
   };
 
   return (
@@ -281,7 +424,6 @@ export function RetrospectiveStudio() {
         gap: 32,
       }}
     >
-      {/* ── Sidebar ─────────────────────────────────── */}
       <aside
         style={{
           background: "var(--color-tile-1)",
@@ -297,7 +439,7 @@ export function RetrospectiveStudio() {
           className="t-eyebrow"
           style={{ margin: "0 0 6px", color: "var(--color-body-muted)" }}
         >
-          History
+          {t("retro.history")}
         </p>
         <h3
           style={{
@@ -308,7 +450,7 @@ export function RetrospectiveStudio() {
             letterSpacing: "-0.02em",
           }}
         >
-          회고 아카이브
+          {t("retro.archive")}
         </h3>
         <p
           style={{
@@ -318,10 +460,9 @@ export function RetrospectiveStudio() {
             lineHeight: 1.5,
           }}
         >
-          매일·매주·매월·매년의 흐름이 한 곳에 모입니다.
+          {t("retro.archiveDescription")}
         </p>
 
-        {/* Filter tabs */}
         <div
           style={{
             display: "grid",
@@ -337,7 +478,10 @@ export function RetrospectiveStudio() {
             <button
               key={f.id}
               type="button"
-              onClick={() => setRetroFilter(f.id)}
+              onClick={() => {
+                setRetroFilter(f.id);
+                resetPage();
+              }}
               style={{
                 padding: "7px 4px",
                 borderRadius: "var(--r-pill)",
@@ -351,12 +495,69 @@ export function RetrospectiveStudio() {
                     : "var(--color-body-muted)",
               }}
             >
-              {f.label}
+              {t(f.labelKey)}
             </button>
           ))}
         </div>
 
-        {/* Search */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr 1fr",
+            gap: 6,
+            marginBottom: 12,
+          }}
+        >
+          <select
+            className="select"
+            value={yearFilter}
+            onChange={(e) => {
+              setYearFilter(e.target.value);
+              resetPage();
+            }}
+            title={t("retro.filter.year")}
+          >
+            <option value="all">{t("retro.filter.allYears")}</option>
+            {years.map((y) => (
+              <option key={y} value={y}>
+                {y}
+              </option>
+            ))}
+          </select>
+          <select
+            className="select"
+            value={monthFilter}
+            onChange={(e) => {
+              setMonthFilter(e.target.value);
+              resetPage();
+            }}
+            title={t("retro.filter.month")}
+          >
+            <option value="all">{t("retro.filter.allMonths")}</option>
+            {months.map((m) => (
+              <option key={m} value={m}>
+                {m}
+              </option>
+            ))}
+          </select>
+          <select
+            className="select"
+            value={weekFilter}
+            onChange={(e) => {
+              setWeekFilter(e.target.value);
+              resetPage();
+            }}
+            title={t("retro.filter.week")}
+          >
+            <option value="all">{t("retro.filter.allWeeks")}</option>
+            {weeks.map((w) => (
+              <option key={w} value={w}>
+                W{w}
+              </option>
+            ))}
+          </select>
+        </div>
+
         <div
           style={{
             display: "flex",
@@ -372,28 +573,30 @@ export function RetrospectiveStudio() {
           <Search size={14} style={{ color: "var(--color-body-muted)" }} />
           <input
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="검색..."
+            onChange={(e) => {
+              setSearch(e.target.value);
+              resetPage();
+            }}
+            placeholder={t("retro.search")}
             style={{ flex: 1, fontSize: 13, minWidth: 0 }}
           />
         </div>
 
-        {/* Entry list */}
         <div
           style={{
             display: "flex",
             flexDirection: "column",
             gap: 6,
-            maxHeight: 540,
+            maxHeight: 420,
             overflow: "auto",
           }}
         >
-          {filteredEntries.length === 0 ? (
+          {pageEntries.length === 0 ? (
             <div className="dashed" style={{ height: 80, fontSize: 12 }}>
-              해당 유형의 회고가 없습니다.
+              {t("retro.empty")}
             </div>
           ) : (
-            filteredEntries.map((e) => {
+            pageEntries.map((e) => {
               const isActive = e.id === active?.id;
               const isToday = e.dateKey === DEMO_ANCHOR_DATE_KEY;
               const isDraft = !e.synced;
@@ -454,17 +657,26 @@ export function RetrospectiveStudio() {
 
                   <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
                     {isToday ? (
-                      <Pill tone="blue" style={{ fontSize: 10, padding: "3px 8px" }}>
-                        Today
+                      <Pill
+                        tone="blue"
+                        style={{ fontSize: 10, padding: "3px 8px" }}
+                      >
+                        {t("retro.badge.today")}
                       </Pill>
                     ) : null}
                     {isDraft ? (
-                      <Pill tone="warn" style={{ fontSize: 10, padding: "3px 8px" }}>
-                        Draft
+                      <Pill
+                        tone="warn"
+                        style={{ fontSize: 10, padding: "3px 8px" }}
+                      >
+                        {t("retro.badge.draft")}
                       </Pill>
                     ) : (
-                      <Pill tone="green" style={{ fontSize: 10, padding: "3px 8px" }}>
-                        Synced
+                      <Pill
+                        tone="green"
+                        style={{ fontSize: 10, padding: "3px 8px" }}
+                      >
+                        {t("retro.badge.synced")}
                       </Pill>
                     )}
                   </div>
@@ -473,9 +685,69 @@ export function RetrospectiveStudio() {
             })
           )}
         </div>
+
+        {totalPages > 1 ? (
+          <div className="pager">
+            <button
+              type="button"
+              className="pager-btn"
+              disabled={page === 0}
+              onClick={() => setPage((p) => Math.max(0, p - 1))}
+            >
+              <ChevronLeft size={12} /> {t("retro.pager.prev")}
+            </button>
+            <span>
+              {t("retro.pager.page", {
+                current: page + 1,
+                total: totalPages,
+              })}
+            </span>
+            <button
+              type="button"
+              className="pager-btn"
+              disabled={page >= totalPages - 1}
+              onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+            >
+              {t("retro.pager.next")} <ChevronRight size={12} />
+            </button>
+          </div>
+        ) : null}
+
+        <div
+          style={{
+            marginTop: 16,
+            display: "flex",
+            flexDirection: "column",
+            gap: 6,
+          }}
+        >
+          <button
+            type="button"
+            className="btn btn-utility"
+            onClick={() => handleSummarize("weekly")}
+            style={{ fontSize: 12, padding: "8px 12px" }}
+          >
+            <Sparkles size={12} /> {t("retro.summarize.weekly")}
+          </button>
+          <button
+            type="button"
+            className="btn btn-utility"
+            onClick={() => handleSummarize("monthly")}
+            style={{ fontSize: 12, padding: "8px 12px" }}
+          >
+            <Sparkles size={12} /> {t("retro.summarize.monthly")}
+          </button>
+          <button
+            type="button"
+            className="btn btn-utility"
+            onClick={() => handleSummarize("yearly")}
+            style={{ fontSize: 12, padding: "8px 12px" }}
+          >
+            <Sparkles size={12} /> {t("retro.summarize.yearly")}
+          </button>
+        </div>
       </aside>
 
-      {/* ── Editor ─────────────────────────────────── */}
       <main>
         {active ? (
           <RetroEditor
@@ -484,12 +756,13 @@ export function RetrospectiveStudio() {
             completedTodos={completedTodos}
             githubConnectedAs={githubConnectedAs}
             githubTargetRepo={githubTargetRepo}
+            isGithubConnected={isGithubConnected}
             onUpdate={(patch) => updateEntry(active.id, patch)}
             onSave={handleSave}
           />
         ) : (
           <div className="dashed" style={{ minHeight: 360 }}>
-            회고를 선택하세요.
+            {t("retro.empty")}
           </div>
         )}
       </main>

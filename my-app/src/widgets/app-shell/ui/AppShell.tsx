@@ -1,14 +1,17 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import {
   Bell,
   BookOpen,
   Calendar,
   ListTodo,
-  Search,
   Settings,
 } from "lucide-react";
 import type { AppRoute } from "@/app/model/types";
 import { useArchiveApp } from "@/app/providers/useArchiveApp";
+import { useTranslation } from "@/shared/lib/i18n";
+import type { TranslationKey } from "@/shared/lib/i18n";
+import { GlobalSearch } from "@/widgets/global-search/ui/GlobalSearch";
+import { NotificationPanel } from "@/widgets/notifications/ui/NotificationPanel";
 
 interface AppShellProps {
   route: AppRoute;
@@ -18,55 +21,63 @@ interface AppShellProps {
 
 const ROUTE_META: Record<
   AppRoute,
-  { eyebrow: string; title: string; subtitle: string }
+  { eyebrow: TranslationKey; title: TranslationKey; subtitle: TranslationKey }
 > = {
   calendar: {
-    eyebrow: "Planning Canvas",
-    title: "오늘의 캘린더",
-    subtitle:
-      "일정과 작업을 한 화면에서 살펴봅니다. 작업 카드를 누르면 우측에서 디테일이 펼쳐집니다.",
+    eyebrow: "subheader.calendar.eyebrow",
+    title: "subheader.calendar.title",
+    subtitle: "subheader.calendar.subtitle",
   },
   todos: {
-    eyebrow: "Quick Capture",
-    title: "Editorial Kanban",
-    subtitle:
-      "자연어로 적는 순간 칸반에 정렬됩니다. 시작 전 / 진행 중 / 완료 세 열로 흐름을 정리하세요.",
+    eyebrow: "subheader.todos.eyebrow",
+    title: "subheader.todos.title",
+    subtitle: "subheader.todos.subtitle",
   },
   retrospectives: {
-    eyebrow: "Writing Ledger",
-    title: "Retrospectives",
-    subtitle:
-      "완료한 작업과 오늘의 커밋을 한 흐름으로 묶고, GitHub 저장소에 자동 동기화합니다.",
+    eyebrow: "subheader.retrospectives.eyebrow",
+    title: "subheader.retrospectives.title",
+    subtitle: "subheader.retrospectives.subtitle",
   },
   settings: {
-    eyebrow: "Integrations and Templates",
-    title: "Settings",
-    subtitle:
-      "GitHub 연결 범위와, AI 자동 회고 템플릿을 자유롭게 조정합니다.",
+    eyebrow: "subheader.settings.eyebrow",
+    title: "subheader.settings.title",
+    subtitle: "subheader.settings.subtitle",
   },
 };
 
 const NAV_ITEMS: Array<{
   route: AppRoute;
-  label: string;
+  labelKey: TranslationKey;
   icon: typeof Calendar;
 }> = [
-  { route: "calendar", label: "Calendar", icon: Calendar },
-  { route: "todos", label: "To-Dos", icon: ListTodo },
-  { route: "retrospectives", label: "Retrospectives", icon: BookOpen },
-  { route: "settings", label: "Settings", icon: Settings },
+  { route: "calendar", labelKey: "nav.calendar", icon: Calendar },
+  { route: "todos", labelKey: "nav.todos", icon: ListTodo },
+  { route: "retrospectives", labelKey: "nav.retrospectives", icon: BookOpen },
+  { route: "settings", labelKey: "nav.settings", icon: Settings },
 ];
 
 export function AppShell({ route, children, onNavigate }: AppShellProps) {
   const { state } = useArchiveApp();
+  const { t } = useTranslation();
+  const [notifOpen, setNotifOpen] = useState(false);
   const meta = ROUTE_META[route];
-  const syncEnabled = state.githubConfig?.enabled ?? false;
-  const minsAgo = state.githubConfig?.lastSyncedAt
-    ? Math.max(
-        1,
-        Math.round((Date.now() - new Date(state.githubConfig.lastSyncedAt).getTime()) / 60000),
-      )
-    : 0;
+
+  const isGithubConnected = Boolean(
+    state.githubConfig && state.githubConfig.enabled,
+  );
+  const minsAgo =
+    state.githubConfig?.lastSyncedAt
+      ? Math.max(
+          1,
+          Math.round(
+            (Date.now() -
+              new Date(state.githubConfig.lastSyncedAt).getTime()) /
+              60000,
+          ),
+        )
+      : 0;
+
+  const unreadCount = state.notifications.filter((n) => !n.read).length;
 
   return (
     <div className="app-shell-root">
@@ -79,7 +90,7 @@ export function AppShell({ route, children, onNavigate }: AppShellProps) {
             onClick={() => onNavigate("calendar")}
           >
             <span className="gn-logo">A</span>
-            <span>A.R.C.H.I.V.E</span>
+            <span>{t("nav.brand")}</span>
           </button>
 
           <div className="gn-links" role="tablist">
@@ -95,7 +106,7 @@ export function AppShell({ route, children, onNavigate }: AppShellProps) {
                   onClick={() => onNavigate(item.route)}
                 >
                   <Icon size={14} />
-                  <span>{item.label}</span>
+                  <span>{t(item.labelKey)}</span>
                 </button>
               );
             })}
@@ -104,16 +115,32 @@ export function AppShell({ route, children, onNavigate }: AppShellProps) {
           <div className="gn-right">
             <div
               className="sync-chip"
-              title={syncEnabled ? `${minsAgo}분 전 동기화됨` : "동기화 끊김"}
+              title={
+                isGithubConnected
+                  ? t("sync.minutesAgo", { n: minsAgo })
+                  : t("sync.disconnected")
+              }
             >
-              <span className={`sync-dot ${syncEnabled ? "" : "offline"}`} />
-              <span>{syncEnabled ? `Synced · ${minsAgo}m` : "Offline"}</span>
+              <span
+                className={`sync-dot ${isGithubConnected ? "" : "offline"}`}
+              />
+              <span>
+                {isGithubConnected
+                  ? t("sync.synced", { n: minsAgo })
+                  : t("sync.offline")}
+              </span>
             </div>
-            <button type="button" className="btn-icon" aria-label="Search">
-              <Search size={16} />
-            </button>
-            <button type="button" className="btn-icon" aria-label="Notifications">
+
+            <GlobalSearch onNavigate={onNavigate} />
+
+            <button
+              type="button"
+              className="btn-icon"
+              aria-label={t("notif.panel.title")}
+              onClick={() => setNotifOpen(true)}
+            >
               <Bell size={16} />
+              {unreadCount > 0 ? <span className="badge-dot" /> : null}
             </button>
           </div>
         </div>
@@ -123,14 +150,14 @@ export function AppShell({ route, children, onNavigate }: AppShellProps) {
       <header className="sub-header">
         <div className="sub-header-inner">
           <div className="sub-header-text">
-            <p className="t-eyebrow sub-header-eyebrow">{meta.eyebrow}</p>
-            <h1 className="t-hero sub-header-title">{meta.title}</h1>
-            <p className="sub-header-sub">{meta.subtitle}</p>
+            <p className="t-eyebrow sub-header-eyebrow">{t(meta.eyebrow)}</p>
+            <h1 className="t-hero sub-header-title">{t(meta.title)}</h1>
+            <p className="sub-header-sub">{t(meta.subtitle)}</p>
           </div>
           <div className="sub-header-right">
             <SyncStatusCard
-              syncEnabled={syncEnabled}
-              connectedAs={state.githubConfig?.connectedAs ?? "developer"}
+              isConnected={isGithubConnected}
+              connectedAs={state.githubConfig?.connectedAs ?? ""}
               minsAgo={minsAgo}
             />
           </div>
@@ -139,19 +166,26 @@ export function AppShell({ route, children, onNavigate }: AppShellProps) {
 
       {/* Page content */}
       <main className="app-shell-main">{children}</main>
+
+      {/* Notification panel */}
+      <NotificationPanel
+        open={notifOpen}
+        onClose={() => setNotifOpen(false)}
+      />
     </div>
   );
 }
 
 function SyncStatusCard({
-  syncEnabled,
+  isConnected,
   connectedAs,
   minsAgo,
 }: {
-  syncEnabled: boolean;
+  isConnected: boolean;
   connectedAs: string;
   minsAgo: number;
 }) {
+  const { t } = useTranslation();
   return (
     <div
       style={{
@@ -174,9 +208,9 @@ function SyncStatusCard({
           className="t-eyebrow"
           style={{ color: "var(--color-body-muted)", margin: 0 }}
         >
-          Sync Status
+          {t("sync.status")}
         </p>
-        <span className={`sync-dot ${syncEnabled ? "" : "offline"}`} />
+        <span className={`sync-dot ${isConnected ? "" : "offline"}`} />
       </div>
       <p
         style={{
@@ -186,12 +220,12 @@ function SyncStatusCard({
           letterSpacing: "-0.2px",
         }}
       >
-        {syncEnabled ? "GitHub 연결됨" : "연결 없음"}
+        {isConnected ? t("sync.connected") : t("sync.disconnected")}
       </p>
       <p style={{ margin: 0, fontSize: 12, color: "var(--color-body-muted)" }}>
-        {syncEnabled
-          ? `@${connectedAs} · ${minsAgo}분 전 동기화`
-          : "Settings에서 연결하세요"}
+        {isConnected
+          ? `@${connectedAs} · ${t("sync.minutesAgo", { n: minsAgo })}`
+          : t("sync.connectInSettings")}
       </p>
     </div>
   );
