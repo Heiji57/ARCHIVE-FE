@@ -1,4 +1,4 @@
-import { SettingsStudio } from "@/widgets/settings-studio/ui/SettingsStudio";
+import { SettingsStudio } from "@/widgets/settings-studio";
 
 export function SettingsPage() {
   return <SettingsStudio />;

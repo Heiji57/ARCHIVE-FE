@@ -10,8 +10,8 @@ import type { AppRoute } from "@/app/model/types";
 import { useArchiveApp } from "@/app/providers/useArchiveApp";
 import { useTranslation } from "@/shared/lib/i18n";
 import type { TranslationKey } from "@/shared/lib/i18n";
-import { GlobalSearch } from "@/widgets/global-search/ui/GlobalSearch";
-import { NotificationPanel } from "@/widgets/notifications/ui/NotificationPanel";
+import { GlobalSearch } from "@/widgets/global-search";
+import { NotificationPanel } from "@/widgets/notifications";
 
 interface AppShellProps {
   route: AppRoute;

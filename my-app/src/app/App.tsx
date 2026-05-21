@@ -12,10 +12,9 @@ import { SettingsPage } from "@/pages/settings/ui/SettingsPage";
 import { TodosPage } from "@/pages/todos/ui/TodosPage";
 import { DndProvider } from "@/shared/lib/dnd";
 import { I18nProvider } from "@/shared/lib/i18n";
-import { AppShell } from "@/widgets/app-shell/ui/AppShell";
-import { ToastViewport } from "@/widgets/notifications/ui/ToastViewport";
-import { SummaryFloatingChip } from "@/widgets/summary/ui/SummaryFloatingChip";
-import { SummaryOverlay } from "@/widgets/summary/ui/SummaryOverlay";
+import { AppShell } from "@/widgets/app-shell";
+import { ToastViewport } from "@/widgets/notifications";
+import { SummaryFloatingChip, SummaryOverlay } from "@/widgets/summary";
 
 export default function App() {
   const [route, setRoute] = useState<AppRoute>(() =>

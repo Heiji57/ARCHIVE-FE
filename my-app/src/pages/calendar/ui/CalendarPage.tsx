@@ -1,5 +1,5 @@
 import type { AppRoute } from "@/app/model/types";
-import { CalendarDashboard } from "@/widgets/calendar-dashboard/ui/CalendarDashboard";
+import { CalendarDashboard } from "@/widgets/calendar-dashboard";
 
 export function CalendarPage({
   onNavigate,
