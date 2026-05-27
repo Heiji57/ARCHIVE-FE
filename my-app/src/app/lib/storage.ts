@@ -2,7 +2,7 @@ import { ensureSettings } from "@/app/model/reducer";
 import { DEFAULT_SETTINGS } from "@/app/model/settings";
 import type { PersistedAppState } from "@/app/model/types";
 
-const STORAGE_KEY = "archive-app-state-v4";
+const STORAGE_KEY = "archive-app-state-v5";
 
 export function loadAppState(fallback: PersistedAppState): PersistedAppState {
   if (typeof window === "undefined") {
@@ -28,6 +28,8 @@ export function loadAppState(fallback: PersistedAppState): PersistedAppState {
         : fallback.notifications,
       settings: ensureSettings(parsed.settings ?? DEFAULT_SETTINGS),
       pendingSummary: parsed.pendingSummary ?? null,
+      currentUser: parsed.currentUser ?? null,
+      rememberMe: parsed.rememberMe ?? false,
     };
   } catch {
     return fallback;

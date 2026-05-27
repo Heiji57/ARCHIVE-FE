@@ -185,7 +185,70 @@ export type TranslationKey =
   | "common.delete"
   | "common.close"
   | "common.on"
-  | "common.off";
+  | "common.off"
+  // Auth — common
+  | "auth.divider.or"
+  | "auth.error.network"
+  | "auth.error.unknown"
+  | "auth.consoleHint"
+  // Auth — login
+  | "auth.login.title"
+  | "auth.login.subtitle"
+  | "auth.login.email"
+  | "auth.login.password"
+  | "auth.login.rememberMe"
+  | "auth.login.forgotPassword"
+  | "auth.login.submit"
+  | "auth.login.submitting"
+  | "auth.login.noAccount"
+  | "auth.login.signupLink"
+  | "auth.login.error.invalidCredentials"
+  | "auth.login.error.userNotFound"
+  // Auth — signup
+  | "auth.signup.title"
+  | "auth.signup.subtitle"
+  | "auth.signup.step1"
+  | "auth.signup.step2"
+  | "auth.signup.step3"
+  | "auth.signup.email"
+  | "auth.signup.emailNext"
+  | "auth.signup.emailSending"
+  | "auth.signup.code"
+  | "auth.signup.codeVerify"
+  | "auth.signup.codeResend"
+  | "auth.signup.codeResendIn"
+  | "auth.signup.password"
+  | "auth.signup.passwordHint"
+  | "auth.signup.passwordConfirm"
+  | "auth.signup.passwordMismatch"
+  | "auth.signup.displayName"
+  | "auth.signup.displayNamePlaceholder"
+  | "auth.signup.terms"
+  | "auth.signup.submit"
+  | "auth.signup.submitting"
+  | "auth.signup.haveAccount"
+  | "auth.signup.loginLink"
+  | "auth.signup.back"
+  | "auth.signup.error.alreadyRegistered"
+  | "auth.signup.error.invalidCode"
+  | "auth.signup.error.expired"
+  | "auth.signup.error.cooldown"
+  | "auth.signup.error.notVerified"
+  // Auth — forgot password
+  | "auth.forgot.title"
+  | "auth.forgot.subtitle"
+  | "auth.forgot.emailSubmit"
+  | "auth.forgot.codeSubmit"
+  | "auth.forgot.newPasswordSubmit"
+  | "auth.forgot.success"
+  | "auth.forgot.error.userNotFound"
+  | "auth.forgot.backToLogin"
+  // Auth — OAuth
+  | "auth.oauth.github"
+  | "auth.oauth.google"
+  | "auth.oauth.processing"
+  // Auth — header
+  | "auth.header.logout";
 
 type Dict = Record<TranslationKey, string>;
 
@@ -382,6 +445,69 @@ const ko: Dict = {
   "common.close": "닫기",
   "common.on": "켜짐",
   "common.off": "꺼짐",
+
+  "auth.divider.or": "또는",
+  "auth.error.network": "네트워크 연결을 확인해주세요.",
+  "auth.error.unknown": "알 수 없는 오류가 발생했어요.",
+  "auth.consoleHint": "이메일은 발송되지 않습니다. 브라우저 개발자 도구 콘솔에서 인증 코드를 확인하세요.",
+
+  "auth.login.title": "다시 만나서 반가워요",
+  "auth.login.subtitle": "ARCHIVE 계정으로 로그인",
+  "auth.login.email": "이메일",
+  "auth.login.password": "비밀번호",
+  "auth.login.rememberMe": "로그인 상태 유지",
+  "auth.login.forgotPassword": "비밀번호를 잊으셨나요?",
+  "auth.login.submit": "로그인",
+  "auth.login.submitting": "로그인 중…",
+  "auth.login.noAccount": "아직 계정이 없으신가요?",
+  "auth.login.signupLink": "회원가입",
+  "auth.login.error.invalidCredentials": "이메일 또는 비밀번호가 올바르지 않습니다.",
+  "auth.login.error.userNotFound": "등록되지 않은 이메일이에요.",
+
+  "auth.signup.title": "ARCHIVE 시작하기",
+  "auth.signup.subtitle": "이메일 인증 후 가입할 수 있어요",
+  "auth.signup.step1": "이메일",
+  "auth.signup.step2": "코드 확인",
+  "auth.signup.step3": "프로필",
+  "auth.signup.email": "이메일",
+  "auth.signup.emailNext": "인증 코드 받기",
+  "auth.signup.emailSending": "코드 발송 중…",
+  "auth.signup.code": "인증 코드 (6자리)",
+  "auth.signup.codeVerify": "코드 확인",
+  "auth.signup.codeResend": "코드 재전송",
+  "auth.signup.codeResendIn": "{n}초 후 재전송",
+  "auth.signup.password": "비밀번호",
+  "auth.signup.passwordHint": "최소 8자 이상",
+  "auth.signup.passwordConfirm": "비밀번호 확인",
+  "auth.signup.passwordMismatch": "비밀번호가 일치하지 않습니다.",
+  "auth.signup.displayName": "닉네임",
+  "auth.signup.displayNamePlaceholder": "다른 사용자에게 보일 이름",
+  "auth.signup.terms": "이용약관 및 개인정보 처리방침에 동의합니다.",
+  "auth.signup.submit": "가입 완료",
+  "auth.signup.submitting": "가입 처리 중…",
+  "auth.signup.haveAccount": "이미 계정이 있으신가요?",
+  "auth.signup.loginLink": "로그인",
+  "auth.signup.back": "이전",
+  "auth.signup.error.alreadyRegistered": "이미 가입된 이메일이에요.",
+  "auth.signup.error.invalidCode": "잘못된 코드입니다.",
+  "auth.signup.error.expired": "코드가 만료됐어요. 재전송 해주세요.",
+  "auth.signup.error.cooldown": "잠시 후 다시 시도해주세요.",
+  "auth.signup.error.notVerified": "이메일 인증을 먼저 완료해주세요.",
+
+  "auth.forgot.title": "비밀번호 재설정",
+  "auth.forgot.subtitle": "가입한 이메일로 인증 코드를 보내드려요",
+  "auth.forgot.emailSubmit": "재설정 링크 받기",
+  "auth.forgot.codeSubmit": "코드 확인",
+  "auth.forgot.newPasswordSubmit": "비밀번호 변경",
+  "auth.forgot.success": "비밀번호가 변경되었어요. 다시 로그인해주세요.",
+  "auth.forgot.error.userNotFound": "등록되지 않은 이메일이에요.",
+  "auth.forgot.backToLogin": "로그인으로 돌아가기",
+
+  "auth.oauth.github": "GitHub으로 계속하기",
+  "auth.oauth.google": "Google로 계속하기",
+  "auth.oauth.processing": "처리 중…",
+
+  "auth.header.logout": "로그아웃",
 };
 
 const en: Dict = {
@@ -580,6 +706,69 @@ const en: Dict = {
   "common.close": "Close",
   "common.on": "On",
   "common.off": "Off",
+
+  "auth.divider.or": "or",
+  "auth.error.network": "Please check your network connection.",
+  "auth.error.unknown": "Something went wrong.",
+  "auth.consoleHint": "No real email is sent. Check the verification code in your browser's developer console.",
+
+  "auth.login.title": "Welcome back",
+  "auth.login.subtitle": "Sign in to your ARCHIVE account",
+  "auth.login.email": "Email",
+  "auth.login.password": "Password",
+  "auth.login.rememberMe": "Stay signed in",
+  "auth.login.forgotPassword": "Forgot password?",
+  "auth.login.submit": "Sign in",
+  "auth.login.submitting": "Signing in…",
+  "auth.login.noAccount": "Don't have an account?",
+  "auth.login.signupLink": "Sign up",
+  "auth.login.error.invalidCredentials": "Incorrect email or password.",
+  "auth.login.error.userNotFound": "This email isn't registered.",
+
+  "auth.signup.title": "Start with ARCHIVE",
+  "auth.signup.subtitle": "Verify your email to create an account",
+  "auth.signup.step1": "Email",
+  "auth.signup.step2": "Verify",
+  "auth.signup.step3": "Profile",
+  "auth.signup.email": "Email",
+  "auth.signup.emailNext": "Send verification code",
+  "auth.signup.emailSending": "Sending code…",
+  "auth.signup.code": "Verification code (6 digits)",
+  "auth.signup.codeVerify": "Verify code",
+  "auth.signup.codeResend": "Resend code",
+  "auth.signup.codeResendIn": "Resend in {n}s",
+  "auth.signup.password": "Password",
+  "auth.signup.passwordHint": "At least 8 characters",
+  "auth.signup.passwordConfirm": "Confirm password",
+  "auth.signup.passwordMismatch": "Passwords don't match.",
+  "auth.signup.displayName": "Display name",
+  "auth.signup.displayNamePlaceholder": "How others will see you",
+  "auth.signup.terms": "I agree to the Terms of Service and Privacy Policy.",
+  "auth.signup.submit": "Create account",
+  "auth.signup.submitting": "Creating account…",
+  "auth.signup.haveAccount": "Already have an account?",
+  "auth.signup.loginLink": "Sign in",
+  "auth.signup.back": "Back",
+  "auth.signup.error.alreadyRegistered": "This email is already registered.",
+  "auth.signup.error.invalidCode": "Invalid code.",
+  "auth.signup.error.expired": "Code expired. Please resend.",
+  "auth.signup.error.cooldown": "Please wait a moment and try again.",
+  "auth.signup.error.notVerified": "Please verify your email first.",
+
+  "auth.forgot.title": "Reset password",
+  "auth.forgot.subtitle": "We'll send a verification code to your email",
+  "auth.forgot.emailSubmit": "Send reset code",
+  "auth.forgot.codeSubmit": "Verify code",
+  "auth.forgot.newPasswordSubmit": "Change password",
+  "auth.forgot.success": "Password changed. Please sign in again.",
+  "auth.forgot.error.userNotFound": "This email isn't registered.",
+  "auth.forgot.backToLogin": "Back to sign in",
+
+  "auth.oauth.github": "Continue with GitHub",
+  "auth.oauth.google": "Continue with Google",
+  "auth.oauth.processing": "Processing…",
+
+  "auth.header.logout": "Sign out",
 };
 
 const zh: Dict = {
@@ -772,6 +961,69 @@ const zh: Dict = {
   "common.close": "关闭",
   "common.on": "开",
   "common.off": "关",
+
+  "auth.divider.or": "或",
+  "auth.error.network": "请检查您的网络连接。",
+  "auth.error.unknown": "发生未知错误。",
+  "auth.consoleHint": "不会发送真实邮件。请在浏览器开发者工具的控制台中查看验证码。",
+
+  "auth.login.title": "欢迎回来",
+  "auth.login.subtitle": "登录您的 ARCHIVE 账户",
+  "auth.login.email": "邮箱",
+  "auth.login.password": "密码",
+  "auth.login.rememberMe": "保持登录状态",
+  "auth.login.forgotPassword": "忘记密码？",
+  "auth.login.submit": "登录",
+  "auth.login.submitting": "正在登录…",
+  "auth.login.noAccount": "还没有账户？",
+  "auth.login.signupLink": "注册",
+  "auth.login.error.invalidCredentials": "邮箱或密码不正确。",
+  "auth.login.error.userNotFound": "该邮箱未注册。",
+
+  "auth.signup.title": "开始使用 ARCHIVE",
+  "auth.signup.subtitle": "验证邮箱后创建账户",
+  "auth.signup.step1": "邮箱",
+  "auth.signup.step2": "验证",
+  "auth.signup.step3": "资料",
+  "auth.signup.email": "邮箱",
+  "auth.signup.emailNext": "发送验证码",
+  "auth.signup.emailSending": "正在发送…",
+  "auth.signup.code": "验证码（6位）",
+  "auth.signup.codeVerify": "验证码",
+  "auth.signup.codeResend": "重新发送",
+  "auth.signup.codeResendIn": "{n} 秒后可重新发送",
+  "auth.signup.password": "密码",
+  "auth.signup.passwordHint": "至少 8 位字符",
+  "auth.signup.passwordConfirm": "确认密码",
+  "auth.signup.passwordMismatch": "两次密码不一致。",
+  "auth.signup.displayName": "昵称",
+  "auth.signup.displayNamePlaceholder": "其他用户看到的名称",
+  "auth.signup.terms": "我同意服务条款和隐私政策。",
+  "auth.signup.submit": "完成注册",
+  "auth.signup.submitting": "注册中…",
+  "auth.signup.haveAccount": "已有账户？",
+  "auth.signup.loginLink": "登录",
+  "auth.signup.back": "返回",
+  "auth.signup.error.alreadyRegistered": "该邮箱已注册。",
+  "auth.signup.error.invalidCode": "验证码无效。",
+  "auth.signup.error.expired": "验证码已过期，请重新发送。",
+  "auth.signup.error.cooldown": "请稍后重试。",
+  "auth.signup.error.notVerified": "请先验证邮箱。",
+
+  "auth.forgot.title": "重置密码",
+  "auth.forgot.subtitle": "我们将向您的邮箱发送验证码",
+  "auth.forgot.emailSubmit": "发送重置码",
+  "auth.forgot.codeSubmit": "验证码",
+  "auth.forgot.newPasswordSubmit": "更改密码",
+  "auth.forgot.success": "密码已修改，请重新登录。",
+  "auth.forgot.error.userNotFound": "该邮箱未注册。",
+  "auth.forgot.backToLogin": "返回登录",
+
+  "auth.oauth.github": "使用 GitHub 继续",
+  "auth.oauth.google": "使用 Google 继续",
+  "auth.oauth.processing": "处理中…",
+
+  "auth.header.logout": "退出登录",
 };
 
 const ja: Dict = {
@@ -967,6 +1219,69 @@ const ja: Dict = {
   "common.close": "閉じる",
   "common.on": "オン",
   "common.off": "オフ",
+
+  "auth.divider.or": "または",
+  "auth.error.network": "ネットワーク接続を確認してください。",
+  "auth.error.unknown": "不明なエラーが発生しました。",
+  "auth.consoleHint": "実際のメールは送信されません。ブラウザの開発者ツールのコンソールで認証コードを確認してください。",
+
+  "auth.login.title": "おかえりなさい",
+  "auth.login.subtitle": "ARCHIVE アカウントにサインイン",
+  "auth.login.email": "メール",
+  "auth.login.password": "パスワード",
+  "auth.login.rememberMe": "ログイン状態を保持",
+  "auth.login.forgotPassword": "パスワードをお忘れですか？",
+  "auth.login.submit": "サインイン",
+  "auth.login.submitting": "サインイン中…",
+  "auth.login.noAccount": "アカウントをお持ちでない方は",
+  "auth.login.signupLink": "新規登録",
+  "auth.login.error.invalidCredentials": "メールまたはパスワードが正しくありません。",
+  "auth.login.error.userNotFound": "登録されていないメールです。",
+
+  "auth.signup.title": "ARCHIVE をはじめる",
+  "auth.signup.subtitle": "メール認証を完了してアカウントを作成",
+  "auth.signup.step1": "メール",
+  "auth.signup.step2": "認証",
+  "auth.signup.step3": "プロフィール",
+  "auth.signup.email": "メール",
+  "auth.signup.emailNext": "認証コードを送信",
+  "auth.signup.emailSending": "送信中…",
+  "auth.signup.code": "認証コード (6桁)",
+  "auth.signup.codeVerify": "コードを確認",
+  "auth.signup.codeResend": "コードを再送信",
+  "auth.signup.codeResendIn": "{n} 秒後に再送信可能",
+  "auth.signup.password": "パスワード",
+  "auth.signup.passwordHint": "8文字以上",
+  "auth.signup.passwordConfirm": "パスワード（確認）",
+  "auth.signup.passwordMismatch": "パスワードが一致しません。",
+  "auth.signup.displayName": "ニックネーム",
+  "auth.signup.displayNamePlaceholder": "他のユーザーに表示される名前",
+  "auth.signup.terms": "利用規約とプライバシーポリシーに同意します。",
+  "auth.signup.submit": "登録完了",
+  "auth.signup.submitting": "登録処理中…",
+  "auth.signup.haveAccount": "既にアカウントをお持ちの方は",
+  "auth.signup.loginLink": "サインイン",
+  "auth.signup.back": "戻る",
+  "auth.signup.error.alreadyRegistered": "このメールは既に登録されています。",
+  "auth.signup.error.invalidCode": "コードが正しくありません。",
+  "auth.signup.error.expired": "コードの有効期限が切れました。再送信してください。",
+  "auth.signup.error.cooldown": "少し待ってから再度お試しください。",
+  "auth.signup.error.notVerified": "先にメール認証を完了してください。",
+
+  "auth.forgot.title": "パスワードのリセット",
+  "auth.forgot.subtitle": "登録されたメールに認証コードを送ります",
+  "auth.forgot.emailSubmit": "リセットコードを送信",
+  "auth.forgot.codeSubmit": "コードを確認",
+  "auth.forgot.newPasswordSubmit": "パスワードを変更",
+  "auth.forgot.success": "パスワードが変更されました。再度サインインしてください。",
+  "auth.forgot.error.userNotFound": "登録されていないメールです。",
+  "auth.forgot.backToLogin": "サインインに戻る",
+
+  "auth.oauth.github": "GitHub で続ける",
+  "auth.oauth.google": "Google で続ける",
+  "auth.oauth.processing": "処理中…",
+
+  "auth.header.logout": "サインアウト",
 };
 
 export const DICTIONARIES: Record<Locale, Dict> = { ko, en, zh, ja };

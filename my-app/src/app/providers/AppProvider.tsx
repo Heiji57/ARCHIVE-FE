@@ -1,4 +1,12 @@
 import { useCallback, useEffect, useReducer, useRef, type ReactNode } from "react";
+import {
+  mockCompleteSignup,
+  mockLogin,
+  mockOAuthLogin,
+  mockRequestEmailCode,
+  mockResetPassword,
+  mockVerifyEmailCode,
+} from "@/app/lib/mockAuth";
 import { detectOverdueSchedules } from "@/app/lib/scheduleSummary";
 import { buildSummaryEntry, KIND_TO_TYPE } from "@/app/lib/summaryFactory";
 import { getInitialAppState } from "@/app/model/initialState";
@@ -7,6 +15,7 @@ import type { AppSettings, Locale } from "@/app/model/settings";
 import type {
   ArchiveAppContextValue,
   PushNotificationOptions,
+  SignupInput,
 } from "@/app/model/types";
 import { AppContext } from "@/app/providers/context";
 import { usePersistAppState } from "@/app/providers/usePersistAppState";
@@ -16,6 +25,7 @@ import type {
   NoticeType,
   NotificationItem,
 } from "@/entities/notification/model/types";
+import type { OAuthProvider, User } from "@/entities/user/model/types";
 import {
   SUMMARY_DURATION_MS,
   type SummaryKind,
@@ -270,6 +280,46 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (summaryTimerRef.current) window.clearTimeout(summaryTimerRef.current);
       dispatch({ type: "summary/cancel" });
     },
+    // ─── Auth ────────────────────────────────────────────────────────────
+    login: async (email, password, rememberMe) => {
+      const result = await mockLogin(email, password);
+      if (result.ok) {
+        dispatch({
+          type: "auth/login",
+          payload: { user: result.user, rememberMe },
+        });
+      }
+      return result;
+    },
+    logout: () => {
+      dispatch({ type: "auth/logout" });
+    },
+    requestEmailCode: (email, mode) => mockRequestEmailCode(email, { mode }),
+    verifyEmailCode: (email, code) => mockVerifyEmailCode(email, code),
+    completeSignup: async (input: SignupInput) => {
+      const result = await mockCompleteSignup(input);
+      if (result.ok) {
+        dispatch({
+          type: "auth/login",
+          payload: { user: result.user, rememberMe: input.rememberMe },
+        });
+      }
+      return result;
+    },
+    oauthLogin: async (provider: OAuthProvider) => {
+      const result = await mockOAuthLogin(provider);
+      if (result.ok) {
+        dispatch({
+          type: "auth/login",
+          payload: { user: result.user, rememberMe: true },
+        });
+      }
+      return result;
+    },
+    resetPassword: (email, code, newPassword) =>
+      mockResetPassword(email, code, newPassword),
+    updateProfile: (patch: Partial<Pick<User, "displayName" | "avatarUrl">>) =>
+      dispatch({ type: "auth/updateProfile", payload: { patch } }),
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

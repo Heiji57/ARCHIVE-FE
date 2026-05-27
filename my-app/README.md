@@ -1,73 +1,89 @@
-# React + TypeScript + Vite
+# ARCHIVE
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+**ARCHIVE**는 개발자를 위한 개인 생산성 관리 웹 애플리케이션입니다.
 
-Currently, two official plugins are available:
+할 일 관리, 일정 계획, 회고 작성을 하나의 공간에서 처리하고, GitHub 커밋 기록과 연동해 AI가 자동으로 회고 요약을 생성해주는 것을 목표로 합니다.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+---
 
-## React Compiler
+## 왜 만들었나
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+개발자는 매일 코드를 작성하고, 할 일을 관리하고, 주기적으로 회고를 씁니다. 그런데 이 세 가지가 항상 다른 도구에 흩어져 있습니다. Notion에 할 일을 쓰고, 구글 캘린더로 일정을 보고, 회고는 또 다른 곳에 따로 적습니다.
 
-## Expanding the ESLint configuration
+ARCHIVE는 이 흐름을 하나로 연결합니다. 오늘 완료한 할 일과 GitHub 커밋이 자동으로 회고의 재료가 되고, AI가 그것을 바탕으로 요약을 작성해줍니다.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+---
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## 핵심 기능
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+### 할 일 보드 (Todo)
+- 칸반 방식의 3단계 상태 관리: `시작 전 → 진행 중 → 완료`
+- 날짜(`dateKey: "YYYY-MM-DD"`) 기반으로 할 일을 배정
+- 오늘 / 이번 주 / 날짜 선택 필터
+- 빠른 추가 (Quick Capture) 입력창
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+### 캘린더 (Calendar)
+- 주간(Week) / 월간(Month) 뷰 전환
+- 할 일을 드래그 앤 드롭으로 날짜 간 이동
+- 할 일 클릭 시 상세 패널에서 상태, 날짜, 설명 편집
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### 회고 (Retrospectives)
+- 일간 / 주간 / 월간 / 연간 4가지 회고 타입
+- 작성된 할 일과 GitHub 커밋 목록이 회고 항목에 자동 연결
+- 검색, 연도/월/주 필터, 페이지네이션 지원
+- AI 요약 버튼: 해당 기간의 내용을 요약 생성 (현재 Mock)
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### 설정 (Settings)
+- GitHub 계정 연결 (현재 Mock — OAuth 서버 미구현)
+- 언어 변경: 한국어 / English / 中文 / 日本語
+- AI 자동 요약 스케줄 설정: 주간 / 월간 / 연간 토글
+- 알림 보존 기간 설정
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+### 알림 시스템
+- 앱 내 토스트 알림 + 알림 패널
+- 할 일 추가, 상태 변경, AI 요약 완료 등에 자동 발송
+
+### 전역 검색
+- 할 일, 회고 항목을 동시에 검색
+- 결과 클릭 시 해당 페이지로 이동
+
+---
+
+## 현재 상태
+
+**프론트엔드 전용 SPA**로 동작 중입니다. 모든 데이터는 브라우저 `localStorage`에 저장됩니다.
+
+서버가 없기 때문에 아래 기능은 현재 Mock으로 처리되어 있습니다:
+
+| 기능 | 현재 | 실제 구현 예정 |
+|---|---|---|
+| GitHub OAuth 연결 | 데모 계정 하드코딩 | FastAPI 서버 |
+| GitHub 커밋 조회 | 가짜 커밋 배열 | GitHub API |
+| AI 요약 생성 | 6초 대기 후 완료 처리 | Anthropic API |
+| 자동 요약 스케줄 | 앱 실행 시만 체크 | 서버 Cron Job |
+| 로그인/회원가입 | 미구현 | FastAPI + JWT |
+
+---
+
+## 기술 선택
+
+| 항목 | 선택 | 이유 |
+|---|---|---|
+| UI | React 19 | — |
+| 언어 | TypeScript | 타입 안정성 |
+| 빌드 | Vite | 빠른 개발 서버 |
+| 상태 관리 | useReducer + Context | 외부 라이브러리 없이 충분한 규모 |
+| 스타일 | 직접 작성한 전역 CSS | 디자인 시스템 완전 통제 |
+| 아이콘 | lucide-react | — |
+| 아키텍처 | Feature-Sliced Design (FSD) | 레이어 간 의존성 방향 강제 |
+| DnD | 직접 구현 (Pointer Events) | 외부 라이브러리 의존 제거 |
+| i18n | 직접 구현 | 4개 언어, 타입 안전 번역 키 |
+
+외부 UI 라이브러리(MUI, shadcn 등), 라우팅 라이브러리(React Router 등), 상태 관리 라이브러리(Zustand, Redux 등)는 **사용하지 않습니다.**
+
+---
+
+## 개발 참고 문서
+
+코드 수정 시 반드시 [`develop.md`](./develop.md)를 먼저 읽으세요.  
+FSD 레이어 규칙, 상태 관리 패턴, i18n 키 추가 방법, 컴포넌트 설계 규칙이 기술되어 있습니다.

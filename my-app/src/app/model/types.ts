@@ -10,6 +10,7 @@ import type {
   SummaryKind,
 } from "@/entities/summary/model/types";
 import type { TaskStatus, Todo } from "@/entities/todo/model/types";
+import type { OAuthProvider, User } from "@/entities/user/model/types";
 import type { AppSettings, Locale } from "@/app/model/settings";
 
 export type AppRoute = "calendar" | "todos" | "retrospectives" | "settings";
@@ -21,6 +22,8 @@ export interface PersistedAppState {
   notifications: NotificationItem[];
   settings: AppSettings;
   pendingSummary: PendingSummary | null;
+  currentUser: User | null;
+  rememberMe: boolean;
 }
 
 export type AppState = PersistedAppState;
@@ -68,4 +71,55 @@ export interface ArchiveAppContextValue {
   minimizeSummary: () => void;
   completeSummary: () => void;
   cancelSummary: () => void;
+  // ─── Auth ────────────────────────────────────────────────────────────────
+  login: (
+    email: string,
+    password: string,
+    rememberMe: boolean,
+  ) => Promise<LoginResult>;
+  logout: () => void;
+  requestEmailCode: (
+    email: string,
+    mode?: "signup" | "reset",
+  ) => Promise<RequestCodeResult>;
+  verifyEmailCode: (email: string, code: string) => Promise<VerifyCodeResult>;
+  completeSignup: (input: SignupInput) => Promise<SignupResult>;
+  oauthLogin: (provider: OAuthProvider) => Promise<LoginResult>;
+  resetPassword: (
+    email: string,
+    code: string,
+    newPassword: string,
+  ) => Promise<ResetPasswordResult>;
+  updateProfile: (
+    patch: Partial<Pick<User, "displayName" | "avatarUrl">>,
+  ) => void;
 }
+
+// ─── Auth result types ──────────────────────────────────────────────────────
+
+export interface SignupInput {
+  email: string;
+  password: string;
+  displayName: string;
+  rememberMe: boolean;
+}
+
+export type LoginResult =
+  | { ok: true; user: User }
+  | { ok: false; error: "invalid-credentials" | "user-not-found" };
+
+export type RequestCodeResult =
+  | { ok: true }
+  | { ok: false; error: "already-registered" | "cooldown" };
+
+export type VerifyCodeResult =
+  | { ok: true }
+  | { ok: false; error: "invalid-code" | "expired" | "not-requested" };
+
+export type SignupResult =
+  | { ok: true; user: User }
+  | { ok: false; error: "email-not-verified" | "already-registered" };
+
+export type ResetPasswordResult =
+  | { ok: true }
+  | { ok: false; error: "invalid-code" | "user-not-found" };

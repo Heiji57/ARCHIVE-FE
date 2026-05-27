@@ -196,6 +196,27 @@ export function appReducer(state: AppState, action: AppAction): AppState {
     case "summary/complete":
       return { ...state, pendingSummary: null };
 
+    case "auth/login":
+      return {
+        ...state,
+        currentUser: action.payload.user,
+        rememberMe: action.payload.rememberMe,
+      };
+
+    case "auth/logout":
+      return {
+        ...state,
+        currentUser: null,
+        rememberMe: false,
+      };
+
+    case "auth/updateProfile":
+      if (!state.currentUser) return state;
+      return {
+        ...state,
+        currentUser: { ...state.currentUser, ...action.payload.patch },
+      };
+
     default:
       return state;
   }

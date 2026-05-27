@@ -4,6 +4,7 @@ import {
   BookOpen,
   Calendar,
   ListTodo,
+  LogOut,
   Settings,
 } from "lucide-react";
 import type { AppRoute } from "@/app/model/types";
@@ -57,10 +58,12 @@ const NAV_ITEMS: Array<{
 ];
 
 export function AppShell({ route, children, onNavigate }: AppShellProps) {
-  const { state } = useArchiveApp();
+  const { state, logout } = useArchiveApp();
   const { t } = useTranslation();
   const [notifOpen, setNotifOpen] = useState(false);
   const meta = ROUTE_META[route];
+  const currentUser = state.currentUser;
+  const initial = currentUser?.displayName?.[0]?.toUpperCase() ?? "?";
 
   const isGithubConnected = Boolean(
     state.githubConfig && state.githubConfig.enabled,
@@ -142,6 +145,23 @@ export function AppShell({ route, children, onNavigate }: AppShellProps) {
               <Bell size={16} />
               {unreadCount > 0 ? <span className="badge-dot" /> : null}
             </button>
+
+            {currentUser ? (
+              <span className="user-chip" title={currentUser.email}>
+                <span className="user-avatar">{initial}</span>
+                <span>{currentUser.displayName}</span>
+                <button
+                  type="button"
+                  className="btn-icon"
+                  aria-label={t("auth.header.logout")}
+                  title={t("auth.header.logout")}
+                  onClick={() => logout()}
+                  style={{ marginLeft: 2 }}
+                >
+                  <LogOut size={14} />
+                </button>
+              </span>
+            ) : null}
           </div>
         </div>
       </nav>

@@ -142,4 +142,6 @@ export const seedState: PersistedAppState = {
   notifications: [],
   settings: { ...DEFAULT_SETTINGS },
   pendingSummary: null,
+  currentUser: null,
+  rememberMe: false,
 };

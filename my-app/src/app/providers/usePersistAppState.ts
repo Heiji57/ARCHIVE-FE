@@ -11,6 +11,8 @@ export function usePersistAppState(state: AppState) {
       notifications: state.notifications,
       settings: state.settings,
       pendingSummary: state.pendingSummary,
+      currentUser: state.currentUser,
+      rememberMe: state.rememberMe,
     });
   }, [
     state.entries,
@@ -19,5 +21,7 @@ export function usePersistAppState(state: AppState) {
     state.notifications,
     state.settings,
     state.pendingSummary,
+    state.currentUser,
+    state.rememberMe,
   ]);
 }

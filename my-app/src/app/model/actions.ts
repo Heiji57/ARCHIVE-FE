@@ -6,6 +6,7 @@ import type {
   SummaryKind,
 } from "@/entities/summary/model/types";
 import type { Todo } from "@/entities/todo/model/types";
+import type { User } from "@/entities/user/model/types";
 import type { AppSettings, Locale } from "@/app/model/settings";
 
 export type AppAction =
@@ -61,4 +62,13 @@ export type AppAction =
   | { type: "summary/minimize" }
   | { type: "summary/complete" }
   | { type: "summary/cancel" }
-  | { type: "summary/setPending"; payload: { pending: PendingSummary | null } };
+  | { type: "summary/setPending"; payload: { pending: PendingSummary | null } }
+  | {
+      type: "auth/login";
+      payload: { user: User; rememberMe: boolean };
+    }
+  | { type: "auth/logout" }
+  | {
+      type: "auth/updateProfile";
+      payload: { patch: Partial<Pick<User, "displayName" | "avatarUrl">> };
+    };
