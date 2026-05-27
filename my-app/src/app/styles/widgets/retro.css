@@ -11,3 +11,47 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ---------- Retro sidebar list item ---------- */
+.retro-list-item {
+  text-align: left;
+  padding: 12px 14px;
+  border-radius: var(--r-md);
+  background: var(--color-tile-2);
+  color: var(--color-ink);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.retro-list-item[data-active="true"] {
+  background: var(--color-ink);
+  color: var(--color-canvas);
+}
+.retro-list-item-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.retro-list-item-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.retro-list-item-date {
+  font-size: 10px;
+  color: var(--color-body-muted);
+  flex-shrink: 0;
+}
+.retro-list-item[data-active="true"] .retro-list-item-date {
+  color: var(--color-ink-muted-48);
+}
+.retro-list-item-badges {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}

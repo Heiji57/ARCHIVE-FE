@@ -150,6 +150,14 @@
   text-transform: uppercase;
   letter-spacing: 0.1em;
 }
+.auth-step-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.auth-step-sep {
+  opacity: 0.4;
+}
 .auth-step-dot {
   width: 6px;
   height: 6px;

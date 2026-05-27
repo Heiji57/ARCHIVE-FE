@@ -3,6 +3,49 @@
   padding-top: 40px;
 }
 
+/* Toolbar (view toggle + month label + nav buttons) */
+.calendar-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 28px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.calendar-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.calendar-toolbar-title {
+  margin: 0;
+}
+.calendar-toolbar-nav {
+  display: flex;
+  gap: 8px;
+}
+
+/* Status legend row below the grid */
+.calendar-legend {
+  margin-top: 40px;
+  display: flex;
+  gap: 28px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.calendar-legend-group {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+.calendar-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--color-body-muted);
+}
+
 /* Todo chip inside MonthGrid cells */
 .todo-month-chip {
   display: block;

@@ -60,3 +60,32 @@
   color: var(--color-body-muted);
 }
 .notif-item-close:hover { color: var(--color-ink); }
+
+/* Body wrapper inside a row */
+.notif-item-content {
+  flex: 1;
+  min-width: 0;
+  padding-right: 18px;
+}
+
+/* Side panel pieces (header subtitle, empty placeholder, retention note) */
+.notif-panel-subtitle {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--color-body-muted);
+}
+.notif-panel-empty {
+  height: 140px;
+  font-size: 13px;
+  color: var(--color-body-muted);
+}
+.notif-panel-retention {
+  margin: 16px 4px 0;
+  font-size: 11px;
+  color: var(--color-ink-muted-48);
+  text-align: center;
+}
+.notif-panel-action {
+  font-size: 12px;
+  padding: 8px 14px;
+}

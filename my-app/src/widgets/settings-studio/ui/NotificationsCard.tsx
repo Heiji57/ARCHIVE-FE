@@ -20,37 +20,21 @@ export function NotificationsCard() {
         title={t("settings.notifications.retention.label")}
       />
 
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 10,
-          background: "var(--color-tile-3)",
-          padding: "12px 14px",
-          borderRadius: "var(--r-md)",
-        }}
-      >
+      <div className="notif-retention-box">
         <input
           type="number"
           min={1}
           max={365}
           value={draft}
+          className="notif-retention-input"
           onChange={(e) => setDraft(Number(e.target.value) || 0)}
           onBlur={() => {
             const clamped = Math.max(1, Math.min(365, draft || 30));
             setDraft(clamped);
             setNotificationRetention(clamped);
           }}
-          style={{
-            width: 80,
-            fontSize: 16,
-            fontWeight: 600,
-            textAlign: "center",
-            background: "transparent",
-            color: "var(--color-ink)",
-          }}
         />
-        <span style={{ fontSize: 13, color: "var(--color-body-muted)" }}>
+        <span className="notif-retention-unit">
           {t("settings.notifications.retention.unit")}
         </span>
       </div>

@@ -22,33 +22,11 @@ export function SettingsCardHeader({
   trailing,
 }: SettingsCardHeaderProps) {
   return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 14,
-        marginBottom: 22,
-      }}
-    >
+    <div className="settings-card-header">
       <div className={`avatar avatar-md avatar-${iconVariant}`}>{icon}</div>
-      <div style={{ flex: 1 }}>
-        <p
-          className="t-eyebrow"
-          style={{ margin: "0 0 4px", color: "var(--color-body-muted)" }}
-        >
-          {eyebrow}
-        </p>
-        <h3
-          style={{
-            margin: 0,
-            fontSize: 22,
-            fontFamily: "var(--font-display)",
-            fontWeight: 600,
-            letterSpacing: "-0.02em",
-          }}
-        >
-          {title}
-        </h3>
+      <div className="settings-card-header-body">
+        <p className="t-eyebrow settings-card-header-eyebrow">{eyebrow}</p>
+        <h3 className="settings-card-header-title">{title}</h3>
       </div>
       {trailing ?? null}
     </div>

@@ -37,55 +37,23 @@ export function QuickCapture({ onSubmit }: QuickCaptureProps) {
   };
 
   return (
-    <section
-      style={{
-        background: "var(--color-tile-1)",
-        border: "1px solid var(--color-divider-soft)",
-        borderRadius: "var(--r-xl)",
-        padding: "28px 32px",
-        marginBottom: 28,
-      }}
-    >
-      <form
-        onSubmit={submit}
-        style={{
-          display: "flex",
-          gap: 14,
-          alignItems: "center",
-          flexWrap: "wrap",
-        }}
-      >
-        <div
-          style={{
-            flex: 1,
-            minWidth: 280,
-            display: "flex",
-            alignItems: "center",
-            gap: 12,
-            padding: "12px 18px",
-            background: "var(--color-tile-3)",
-            borderRadius: "var(--r-pill)",
-            border: "1px solid var(--color-divider-soft)",
-          }}
-        >
-          <Sparkles
-            size={18}
-            style={{ color: "var(--color-primary)", flexShrink: 0 }}
-          />
+    <section className="quick-capture">
+      <form onSubmit={submit} className="quick-capture-form">
+        <div className="quick-capture-input-wrap">
+          <Sparkles size={18} />
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder={t("todo.quickCapture.placeholder")}
-            style={{ flex: 1, fontSize: 16, minWidth: 0 }}
+            className="quick-capture-input"
           />
         </div>
 
-        <div style={{ position: "relative" }}>
+        <div className="quick-capture-date-wrap">
           <button
             type="button"
             onClick={() => setPickerOpen((p) => !p)}
-            className="btn btn-utility"
-            style={{ padding: "11px 18px" }}
+            className="btn btn-utility quick-capture-date-btn"
           >
             <CalendarDays size={14} />
             {pickedLabel}
@@ -106,20 +74,13 @@ export function QuickCapture({ onSubmit }: QuickCaptureProps) {
 
         <button
           type="submit"
-          className="btn btn-primary"
-          style={{ padding: "12px 24px" }}
+          className="btn btn-primary quick-capture-submit"
         >
           {t("todo.quickCapture.enter")} <ArrowRight size={14} />
         </button>
       </form>
 
-      <p
-        style={{
-          margin: "14px 0 0",
-          fontSize: 13,
-          color: "var(--color-body-muted)",
-        }}
-      >
+      <p className="quick-capture-hint">
         {t("todo.quickCapture.hint")}
       </p>
     </section>
