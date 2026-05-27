@@ -174,13 +174,6 @@ export function AppShell({ route, children, onNavigate }: AppShellProps) {
             <h1 className="t-hero sub-header-title">{t(meta.title)}</h1>
             <p className="sub-header-sub">{t(meta.subtitle)}</p>
           </div>
-          <div className="sub-header-right">
-            <SyncStatusCard
-              isConnected={isGithubConnected}
-              connectedAs={state.githubConfig?.connectedAs ?? ""}
-              minsAgo={minsAgo}
-            />
-          </div>
         </div>
       </header>
 
@@ -192,61 +185,6 @@ export function AppShell({ route, children, onNavigate }: AppShellProps) {
         open={notifOpen}
         onClose={() => setNotifOpen(false)}
       />
-    </div>
-  );
-}
-
-function SyncStatusCard({
-  isConnected,
-  connectedAs,
-  minsAgo,
-}: {
-  isConnected: boolean;
-  connectedAs: string;
-  minsAgo: number;
-}) {
-  const { t } = useTranslation();
-  return (
-    <div
-      style={{
-        background: "var(--color-tile-2)",
-        borderRadius: "var(--r-lg)",
-        padding: "16px 20px",
-        minWidth: 248,
-        border: "1px solid var(--color-divider-soft)",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 12,
-        }}
-      >
-        <p
-          className="t-eyebrow"
-          style={{ color: "var(--color-body-muted)", margin: 0 }}
-        >
-          {t("sync.status")}
-        </p>
-        <span className={`sync-dot ${isConnected ? "" : "offline"}`} />
-      </div>
-      <p
-        style={{
-          margin: "8px 0 2px",
-          fontSize: 17,
-          fontWeight: 600,
-          letterSpacing: "-0.2px",
-        }}
-      >
-        {isConnected ? t("sync.connected") : t("sync.disconnected")}
-      </p>
-      <p style={{ margin: 0, fontSize: 12, color: "var(--color-body-muted)" }}>
-        {isConnected
-          ? `@${connectedAs} · ${t("sync.minutesAgo", { n: minsAgo })}`
-          : t("sync.connectInSettings")}
-      </p>
     </div>
   );
 }
