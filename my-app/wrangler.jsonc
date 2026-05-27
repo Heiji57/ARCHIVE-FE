@@ -1,0 +1,20 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "archive-fe",
+  "compatibility_date": "2026-05-27",
+  "observability": {
+    "enabled": true
+  },
+  "assets": {
+    "directory": "./dist",
+    // single-page-application 은 내부적으로 /* → /index.html 규칙을 생성해
+    // Cloudflare의 URL 정규화(.html 제거)와 충돌하는 무한 루프를 유발함.
+    // 404-page 모드: 매칭되는 파일이 없으면 dist/404.html 을 서빙.
+    // vite.config.ts 에서 빌드 후 index.html → 404.html 로 복사하므로
+    // 모든 클라이언트 라우트에서 React 앱이 정상 로드됨.
+    "not_found_handling": "404-page"
+  },
+  "compatibility_flags": [
+    "nodejs_compat"
+  ]
+}
