@@ -6,12 +6,20 @@ import { Lock } from "lucide-react";
  */
 export interface DisconnectBannerProps {
   message: string;
+  className?: string;
   style?: React.CSSProperties;
 }
 
-export function DisconnectBanner({ message, style }: DisconnectBannerProps) {
+export function DisconnectBanner({
+  message,
+  className,
+  style,
+}: DisconnectBannerProps) {
   return (
-    <div className="disconnect-banner" style={style}>
+    <div
+      className={["disconnect-banner", className].filter(Boolean).join(" ")}
+      style={style}
+    >
       <Lock size={14} />
       <span>{message}</span>
     </div>
