@@ -1,0 +1,51 @@
+/* ---------- Cards ---------- */
+.card {
+  background: var(--color-tile-1);
+  border-radius: var(--r-lg);
+  border: 1px solid var(--color-divider-soft);
+}
+
+.card-elevated {
+  background: var(--color-tile-2);
+}
+
+.card-recessed {
+  background: var(--color-tile-3);
+  border-color: transparent;
+}
+
+/* section-card variants */
+.section-card {
+  background: var(--color-tile-1);
+  border: 1px solid var(--color-divider-soft);
+  border-radius: var(--r-lg);
+  padding: 22px 26px;
+}
+
+.section-card-tile-2 {
+  background: var(--color-tile-2);
+  border: 1px solid var(--color-divider-soft);
+  border-radius: var(--r-lg);
+  padding: 22px 26px;
+}
+
+.section-card-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.section-card-title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+}
+
+.settings-card {
+  background: var(--color-tile-1);
+  border: 1px solid var(--color-divider-soft);
+  border-radius: var(--r-xl);
+  padding: 28px 28px 32px;
+}

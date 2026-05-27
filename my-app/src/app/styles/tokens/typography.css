@@ -1,0 +1,14 @@
+/* ---------- Typography tokens ---------- */
+:root {
+  --font-display:
+    "SF Pro Display", -apple-system, BlinkMacSystemFont, system-ui,
+    "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-text:
+    "SF Pro Text", -apple-system, BlinkMacSystemFont, system-ui,
+    "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-mono:
+    ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+
+  /* density */
+  --headline-tracking: -0.04em;
+}

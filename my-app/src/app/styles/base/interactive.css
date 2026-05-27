@@ -1,0 +1,25 @@
+/* ---------- Scrollbar / selection / focus ---------- */
+::selection {
+  background: rgba(10, 132, 255, 0.32);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #2c2c2e;
+  border-radius: 999px;
+  border: 2px solid var(--color-canvas);
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-primary-focus);
+  outline-offset: 2px;
+  border-radius: 4px;
+}

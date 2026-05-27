@@ -1,0 +1,161 @@
+/* ---------- TextField / Checkbox / Toggle / Select / Editor ---------- */
+
+/* Shared TextField */
+.text-field { display: flex; flex-direction: column; gap: 6px; }
+.text-field-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-body-muted);
+}
+.text-field-control {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 44px;
+  background: var(--color-tile-3);
+  border: 1px solid var(--color-divider-soft);
+  border-radius: var(--r-md);
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+.text-field-control:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.18);
+}
+.text-field.is-invalid .text-field-control {
+  border-color: var(--color-warn);
+  box-shadow: 0 0 0 3px rgba(255, 159, 10, 0.18);
+}
+.text-field-input {
+  flex: 1;
+  height: 100%;
+  padding: 0 14px;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--color-ink);
+  font-size: 14px;
+}
+.text-field-input::placeholder { color: var(--color-ink-muted-48); }
+.text-field-leading,
+.text-field-trailing {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-body-muted);
+  padding: 0 12px;
+}
+.text-field-leading { border-right: 1px solid var(--color-divider-soft); }
+.text-field-trailing { border-left: 1px solid var(--color-divider-soft); }
+.text-field-hint { font-size: 11px; color: var(--color-body-muted); margin: 0; }
+.text-field-error { font-size: 12px; color: var(--color-warn); margin: 0; }
+
+/* Shared Checkbox (native input) */
+.checkbox-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+.checkbox-input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}
+.checkbox-label { font-size: 13px; color: var(--color-body); }
+
+/* iOS-style toggle (custom button) */
+.ios-toggle {
+  position: relative;
+  width: 51px;
+  height: 31px;
+  background: var(--color-tile-4);
+  border-radius: 999px;
+  transition: background 200ms;
+  flex-shrink: 0;
+  cursor: pointer;
+  border: 0;
+  padding: 0;
+}
+
+.ios-toggle[aria-checked="true"] {
+  background: var(--color-primary);
+}
+
+.ios-toggle::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 27px;
+  height: 27px;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
+  transition: transform 200ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.ios-toggle[aria-checked="true"]::after {
+  transform: translateX(20px);
+}
+
+/* Custom checkbox (.cb) */
+.cb {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  background: var(--color-tile-3);
+  border: 1.5px solid var(--color-ink-muted-32);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: transparent;
+  transition: all 120ms;
+  cursor: pointer;
+  padding: 0;
+}
+
+.cb[aria-checked="true"] {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+
+/* Select dropdown */
+.select {
+  height: 32px;
+  padding: 0 28px 0 12px;
+  background: var(--color-tile-3);
+  border: 1px solid var(--color-divider-soft);
+  border-radius: var(--r-sm);
+  font-size: 13px;
+  color: var(--color-ink);
+  appearance: none;
+  cursor: pointer;
+  background-image: linear-gradient(45deg, transparent 50%, var(--color-body-muted) 50%), linear-gradient(135deg, var(--color-body-muted) 50%, transparent 50%);
+  background-position: calc(100% - 14px) 50%, calc(100% - 9px) 50%;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+.select:focus { outline: 2px solid var(--color-primary); outline-offset: -2px; }
+
+/* Editor textarea */
+.editor-area {
+  width: 100%;
+  min-height: 280px;
+  font-family: var(--font-text);
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--color-ink);
+  resize: vertical;
+  padding: 18px 20px;
+  border-radius: var(--r-md);
+  background: var(--color-tile-3);
+  border: 1px solid var(--color-divider-soft);
+  transition: border-color 120ms;
+}
+
+.editor-area:focus {
+  border-color: var(--color-primary);
+}

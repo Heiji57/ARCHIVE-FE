@@ -1,0 +1,32 @@
+/* ---------- Drag & Drop ---------- */
+[data-draggable="true"] {
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+[data-draggable="true"]:active {
+  cursor: grabbing;
+}
+[data-drop-active="true"] {
+  outline: 2px dashed var(--color-primary);
+  outline-offset: -4px;
+}
+[data-drop-over="true"] {
+  background: rgba(10, 132, 255, 0.16) !important;
+  outline: 2px solid var(--color-primary);
+  outline-offset: -4px;
+}
+
+.drag-ghost {
+  position: fixed;
+  pointer-events: none;
+  z-index: 100;
+  background: var(--color-tile-1);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--r-md);
+  padding: 8px 12px;
+  box-shadow: var(--shadow-toast);
+  font-size: 13px;
+  max-width: 260px;
+  opacity: 0.92;
+}
