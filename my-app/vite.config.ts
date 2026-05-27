@@ -3,6 +3,8 @@ import path from "node:path";
 import react from "@vitejs/plugin-react";
 import { defineConfig, type Plugin } from "vite";
 
+import { cloudflare } from "@cloudflare/vite-plugin";
+
 /**
  * Cloudflare Pages SPA fallback:
  * 파일을 찾지 못하면 404.html 을 서빙하므로,
@@ -19,7 +21,7 @@ function cloudflareSpaFallback(): Plugin {
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), cloudflareSpaFallback()],
+  plugins: [react(), cloudflareSpaFallback(), cloudflare()],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
