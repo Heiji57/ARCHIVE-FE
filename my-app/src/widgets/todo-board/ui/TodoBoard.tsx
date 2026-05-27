@@ -21,18 +21,12 @@ export function TodoBoard() {
   };
 
   return (
-    <div className="page" style={{ paddingTop: 40 }}>
+    <div className="page todo-page">
       <QuickCapture onSubmit={handleSubmit} />
 
       <TodoFilterRow filter={filter} onChange={setFilter} todayKey={todayK} />
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-          gap: 20,
-        }}
-      >
+      <div className="kanban-grid">
         {COLS.map((col) => (
           <KanbanColumn
             key={col.id}

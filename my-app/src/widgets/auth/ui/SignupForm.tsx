@@ -261,7 +261,7 @@ function StepProgress({ step }: { step: Step }) {
         const active = idx === currentIdx;
         const done = idx < currentIdx;
         return (
-          <span key={s.id} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+          <span key={s.id} className="auth-step-row">
             <span
               className="auth-step-dot"
               data-active={active ? "true" : undefined}
@@ -270,7 +270,7 @@ function StepProgress({ step }: { step: Step }) {
             <span className="auth-step-label" data-active={active ? "true" : undefined}>
               {s.label}
             </span>
-            {idx < steps.length - 1 ? <span style={{ opacity: 0.4 }}>›</span> : null}
+            {idx < steps.length - 1 ? <span className="auth-step-sep">›</span> : null}
           </span>
         );
       })}

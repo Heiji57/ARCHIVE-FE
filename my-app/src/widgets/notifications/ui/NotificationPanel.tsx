@@ -63,13 +63,7 @@ export function NotificationPanel({ open, onClose }: Props) {
         <header className="side-panel-header">
           <div>
             <h2 className="side-panel-title">{t("notif.panel.title")}</h2>
-            <p
-              style={{
-                margin: "4px 0 0",
-                fontSize: 12,
-                color: "var(--color-body-muted)",
-              }}
-            >
+            <p className="notif-panel-subtitle">
               {unread > 0
                 ? t("notif.panel.unread", { n: unread })
                 : t("notif.panel.subtitle")}
@@ -87,10 +81,7 @@ export function NotificationPanel({ open, onClose }: Props) {
 
         <div className="side-panel-body">
           {sorted.length === 0 ? (
-            <div
-              className="dashed"
-              style={{ height: 140, fontSize: 13, color: "var(--color-body-muted)" }}
-            >
+            <div className="dashed notif-panel-empty">
               {t("notif.panel.empty")}
             </div>
           ) : (
@@ -104,14 +95,7 @@ export function NotificationPanel({ open, onClose }: Props) {
             ))
           )}
 
-          <p
-            style={{
-              margin: "16px 4px 0",
-              fontSize: 11,
-              color: "var(--color-ink-muted-48)",
-              textAlign: "center",
-            }}
-          >
+          <p className="notif-panel-retention">
             {t("notif.panel.retention", { n: retention })}
           </p>
         </div>
@@ -119,27 +103,24 @@ export function NotificationPanel({ open, onClose }: Props) {
         <footer className="side-panel-footer">
           <button
             type="button"
-            className="btn btn-utility"
+            className="btn btn-utility notif-panel-action"
             onClick={markAllNotificationsRead}
             disabled={unread === 0}
-            style={{ fontSize: 12, padding: "8px 14px" }}
           >
             {t("notif.panel.markAllRead")}
           </button>
           <button
             type="button"
-            className="btn btn-utility"
+            className="btn btn-utility notif-panel-action"
             onClick={clearReadNotifications}
-            style={{ fontSize: 12, padding: "8px 14px" }}
           >
             <Trash2 size={12} /> {t("notif.panel.clearRead")}
           </button>
           <button
             type="button"
-            className="btn btn-utility"
+            className="btn btn-utility notif-panel-action"
             onClick={clearAllNotifications}
             disabled={sorted.length === 0}
-            style={{ fontSize: 12, padding: "8px 14px" }}
           >
             {t("notif.panel.clearAll")}
           </button>
@@ -169,7 +150,7 @@ function NotifRow({
       <div className={`notif-item-icon ${notif.type}`}>
         <Icon size={14} />
       </div>
-      <div style={{ flex: 1, minWidth: 0, paddingRight: 18 }}>
+      <div className="notif-item-content">
         <p className="notif-item-title">{notif.title}</p>
         <p className="notif-item-message">{notif.message}</p>
         <p className="notif-item-time">{formatRelative(notif.timestamp)}</p>

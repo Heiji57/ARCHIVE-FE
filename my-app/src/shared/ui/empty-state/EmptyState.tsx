@@ -21,7 +21,6 @@ export function EmptyState({
       style={{
         minHeight,
         fontSize,
-        color: "var(--color-ink-muted-48)",
         ...style,
       }}
     >

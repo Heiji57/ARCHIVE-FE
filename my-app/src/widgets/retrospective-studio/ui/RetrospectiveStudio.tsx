@@ -62,15 +62,7 @@ export function RetrospectiveStudio() {
   };
 
   return (
-    <div
-      className="page"
-      style={{
-        paddingTop: 32,
-        display: "grid",
-        gridTemplateColumns: "320px 1fr",
-        gap: 32,
-      }}
-    >
+    <div className="page retro-page">
       <RetroSidebar
         filterState={filterState}
         active={active}

@@ -1,0 +1,6 @@
+/* ---------- Shadow tokens ---------- */
+:root {
+  --shadow-product: rgba(0, 0, 0, 0.45) 3px 5px 30px 0;
+  --shadow-toast: 0 12px 36px rgba(0, 0, 0, 0.6), 0 2px 8px rgba(0, 0, 0, 0.4);
+  --shadow-panel: 0 24px 60px rgba(0, 0, 0, 0.7);
+}

@@ -23,17 +23,8 @@ export function CalendarToolbar({
   const { t } = useTranslation();
 
   return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        marginBottom: 28,
-        gap: 16,
-        flexWrap: "wrap",
-      }}
-    >
-      <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+    <div className="calendar-toolbar">
+      <div className="calendar-toolbar-left">
         <div className="seg">
           <button
             type="button"
@@ -52,12 +43,12 @@ export function CalendarToolbar({
             {t("calendar.view.month")}
           </button>
         </div>
-        <h2 className="t-display-md" style={{ margin: 0 }}>
+        <h2 className="t-display-md calendar-toolbar-title">
           {formatMonthLabel(cursor)}
         </h2>
       </div>
 
-      <div style={{ display: "flex", gap: 8 }}>
+      <div className="calendar-toolbar-nav">
         <button type="button" className="btn btn-utility" onClick={onPrev}>
           {t("calendar.nav.prev")}
         </button>

@@ -16,30 +16,9 @@ function DraggableMonthChipImpl({ todo, onSelect }: DraggableMonthChipProps) {
       type="button"
       onClick={onSelect}
       data-draggable="true"
+      data-status={todo.status}
+      className="todo-month-chip"
       {...drag}
-      style={{
-        textAlign: "left",
-        fontSize: 11,
-        padding: "3px 6px",
-        borderRadius: 4,
-        background:
-          todo.status === "done"
-            ? "var(--color-tile-3)"
-            : todo.status === "in-progress"
-              ? "rgba(10, 132, 255, 0.16)"
-              : "var(--color-tile-2)",
-        color:
-          todo.status === "done"
-            ? "var(--color-body-muted)"
-            : todo.status === "in-progress"
-              ? "var(--color-primary-on-dark)"
-              : "var(--color-ink)",
-        overflow: "hidden",
-        whiteSpace: "nowrap",
-        textOverflow: "ellipsis",
-        textDecoration: todo.status === "done" ? "line-through" : "none",
-        width: "100%",
-      }}
     >
       {todo.title}
     </button>

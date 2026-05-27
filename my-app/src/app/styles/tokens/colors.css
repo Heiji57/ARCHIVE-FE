@@ -1,0 +1,55 @@
+/* ---------- Color tokens ---------- */
+:root {
+  color-scheme: dark;
+
+  --color-primary: #0a84ff;
+  --color-primary-focus: #409cff;
+  --color-primary-on-dark: #2997ff;
+  --color-primary-hover: #409cff;
+  --color-on-primary: #ffffff;
+  --color-on-dark: #f5f5f7;
+
+  --color-ink: #f5f5f7;
+  --color-body: #f5f5f7;
+  --color-body-muted: #a1a1a6;
+  --color-ink-muted-80: #a1a1a6;
+  --color-ink-muted-48: #636366;
+  --color-ink-muted-32: #48484a;
+
+  --color-canvas: #000000;
+  --color-canvas-parchment: #1c1c1e;
+  --color-surface-pearl: #1c1c1e;
+
+  --color-tile-1: #1c1c1e;
+  --color-tile-2: #2c2c2e;
+  --color-tile-3: #0d0d0d;
+  --color-tile-4: #3a3a3c;
+
+  --color-divider-soft: rgba(255, 255, 255, 0.06);
+  --color-hairline: #2c2c2e;
+  --color-chip-translucent: rgba(118, 118, 128, 0.24);
+
+  /* status */
+  --color-status-done: #30d158;
+  --color-status-progress: #0a84ff;
+  --color-status-todo: #8e8e93;
+  --color-warn: #ff9f0a;
+
+  --ring-soft: rgba(10, 132, 255, 0.28);
+
+  /* legacy aliases */
+  --ink: #f5f5f7;
+  --ink-muted: #a1a1a6;
+  --ink-muted-soft: #8e8e93;
+  --ink-muted-32: #48484a;
+  --canvas: #000000;
+  --canvas-parchment: #1c1c1e;
+  --surface-deep: #0d0d0d;
+  --surface-dark: #2c2c2e;
+  --surface-dark-alt: #3a3a3c;
+  --surface-black: #000000;
+  --hairline: #2c2c2e;
+  --hairline-strong: #3a3a3c;
+  --divider-soft: rgba(255, 255, 255, 0.06);
+  --chip-translucent: rgba(118, 118, 128, 0.24);
+}

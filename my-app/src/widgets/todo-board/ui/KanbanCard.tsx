@@ -30,66 +30,31 @@ function KanbanCardImpl({ todo, isDone, onUpdate }: KanbanCardProps) {
   };
 
   return (
-    <div
-      style={{
-        background: isDone ? "var(--color-tile-3)" : "var(--color-tile-2)",
-        borderRadius: "var(--r-md)",
-        border: "1px solid var(--color-divider-soft)",
-        padding: "12px 14px 14px 10px",
-        display: "flex",
-        gap: 10,
-        alignItems: "flex-start",
-      }}
-    >
+    <div className="kanban-card" data-done={isDone ? "true" : undefined}>
       <button
         type="button"
         onClick={advance}
         title={t("todo.card.advance")}
-        style={{ marginTop: 2, flexShrink: 0 }}
+        className="kanban-card-status-btn"
       >
         <StatusIcon status={todo.status} size={16} />
       </button>
 
-      <div style={{ flex: 1, minWidth: 0 }}>
+      <div className="kanban-card-body">
         <p
-          style={{
-            margin: 0,
-            fontSize: 14,
-            fontWeight: 500,
-            letterSpacing: "-0.16px",
-            textDecoration: isDone ? "line-through" : "none",
-            color: isDone ? "var(--color-body-muted)" : "var(--color-ink)",
-          }}
+          className="kanban-card-title"
+          data-done={isDone ? "true" : undefined}
         >
           {todo.title}
         </p>
 
         {todo.description ? (
-          <p
-            style={{
-              margin: "4px 0 8px",
-              fontSize: 12,
-              color: "var(--color-body-muted)",
-              display: "-webkit-box",
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: "vertical",
-              overflow: "hidden",
-            }}
-          >
-            {todo.description}
-          </p>
+          <p className="kanban-card-desc">{todo.description}</p>
         ) : (
-          <div style={{ height: 4 }} />
+          <div className="kanban-card-spacer" />
         )}
 
-        <div
-          style={{
-            display: "flex",
-            gap: 6,
-            flexWrap: "wrap",
-            position: "relative",
-          }}
-        >
+        <div className="kanban-card-actions">
           <Pill
             tone="outline"
             as="button"

@@ -1,0 +1,44 @@
+/* ---------- Pills (small label/tag chips) ---------- */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: var(--r-pill);
+  font-size: 12px;
+  letter-spacing: -0.06px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.pill-blue {
+  background: rgba(10, 132, 255, 0.16);
+  color: var(--color-primary-on-dark);
+}
+
+.pill-green {
+  background: rgba(48, 209, 88, 0.16);
+  color: var(--color-status-done);
+}
+
+.pill-warn {
+  background: rgba(255, 159, 10, 0.16);
+  color: var(--color-warn);
+}
+
+.pill-ghost {
+  background: var(--color-chip-translucent);
+  color: var(--color-ink);
+}
+
+.pill-outline {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--color-divider-soft);
+  color: var(--color-body-muted);
+}
+
+/* Compact size variant (used for small status badges) */
+.pill-sm {
+  font-size: 10px;
+  padding: 3px 8px;
+}

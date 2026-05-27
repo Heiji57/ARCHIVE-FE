@@ -1,0 +1,89 @@
+/* ---------- Summary overlay & floating chip ---------- */
+.summary-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(8px);
+  z-index: 95;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.summary-overlay-card {
+  background: var(--color-tile-1);
+  border: 1px solid var(--color-divider-soft);
+  border-radius: var(--r-xl);
+  padding: 40px 44px;
+  max-width: 460px;
+  width: calc(100% - 48px);
+  text-align: center;
+  box-shadow: var(--shadow-toast);
+}
+.summary-overlay-spinner {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 3px solid var(--color-tile-4);
+  border-top-color: var(--color-primary);
+  animation: summary-spin 900ms linear infinite;
+  margin: 0 auto 22px;
+}
+@keyframes summary-spin {
+  to { transform: rotate(360deg); }
+}
+.summary-overlay-title {
+  margin: 0 0 8px;
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.summary-overlay-message {
+  margin: 0 0 22px;
+  font-size: 14px;
+  color: var(--color-body-muted);
+  line-height: 1.55;
+}
+
+.summary-chip {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 88;
+  background: var(--color-tile-2);
+  border: 1px solid var(--color-divider-soft);
+  border-radius: var(--r-pill);
+  padding: 10px 16px 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: var(--shadow-toast);
+  font-size: 13px;
+  cursor: pointer;
+  transition: transform 160ms ease, background 160ms ease;
+}
+.summary-chip:hover {
+  transform: translateY(-1px);
+  background: var(--color-tile-4);
+}
+.summary-chip-spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--color-tile-4);
+  border-top-color: var(--color-primary);
+  animation: summary-spin 900ms linear infinite;
+}
+
+.summary-chip svg {
+  color: var(--color-primary);
+}
+
+/* Larger minimize action button inside the overlay card */
+.summary-overlay-action {
+  padding: 10px 20px;
+}
+.summary-overlay-action:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}

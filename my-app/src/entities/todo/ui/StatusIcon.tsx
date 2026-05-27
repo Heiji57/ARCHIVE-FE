@@ -12,20 +12,17 @@ interface StatusIconProps {
 export function StatusIcon({ status, size = 16 }: StatusIconProps) {
   if (status === "done") {
     return (
-      <CheckCircle2
-        size={size}
-        style={{ color: "var(--color-status-done)" }}
-      />
+      <CheckCircle2 size={size} className="status-icon" data-status="done" />
     );
   }
 
   if (status === "in-progress") {
     return (
-      <PlayCircle size={size} style={{ color: "var(--color-primary)" }} />
+      <PlayCircle size={size} className="status-icon" data-status="in-progress" />
     );
   }
 
-  return <Circle size={size} style={{ color: "var(--color-ink-muted-48)" }} />;
+  return <Circle size={size} className="status-icon" data-status="not-start" />;
 }
 
 export const STATUS_LABELS: Record<TaskStatus, string> = {

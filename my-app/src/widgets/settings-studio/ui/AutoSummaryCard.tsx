@@ -17,14 +17,7 @@ export function AutoSummaryCard() {
         eyebrow={t("settings.section.autoSummary")}
         title="AI Auto-Summary"
       />
-      <p
-        style={{
-          margin: "0 0 16px",
-          fontSize: 13,
-          color: "var(--color-body-muted)",
-          lineHeight: 1.55,
-        }}
-      >
+      <p className="settings-card-description">
         {t("settings.autoSummary.description")}
       </p>
 

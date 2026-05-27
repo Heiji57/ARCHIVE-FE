@@ -8,32 +8,9 @@ import { SettingsCardHeader } from "./SettingsCardHeader";
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
-    <div
-      style={{
-        display: "flex",
-        gap: 12,
-        alignItems: "baseline",
-        fontSize: 13,
-      }}
-    >
-      <span
-        style={{
-          color: "var(--color-body-muted)",
-          minWidth: 110,
-          fontSize: 12,
-        }}
-      >
-        {label}
-      </span>
-      <span
-        style={{
-          color: "var(--color-ink)",
-          fontFamily: "var(--font-mono)",
-          fontSize: 13,
-        }}
-      >
-        {value}
-      </span>
+    <div className="github-info-row">
+      <span className="github-info-label">{label}</span>
+      <span className="github-info-value">{value}</span>
     </div>
   );
 }
@@ -82,17 +59,7 @@ export function GithubCard() {
 
       {isConnected && config ? (
         <>
-          <div
-            style={{
-              background: "var(--color-tile-3)",
-              borderRadius: "var(--r-lg)",
-              padding: "14px 18px",
-              marginBottom: 14,
-              display: "grid",
-              gridTemplateColumns: "minmax(0, 1fr)",
-              gap: 10,
-            }}
-          >
+          <div className="github-info-box">
             <Row
               label={t("settings.github.connectedAs")}
               value={`@${config.connectedAs ?? "—"}`}
@@ -117,9 +84,8 @@ export function GithubCard() {
 
           <button
             type="button"
-            className="btn btn-utility"
+            className="btn btn-utility settings-action-btn"
             onClick={handleDisconnect}
-            style={{ padding: "10px 18px" }}
           >
             <Link2Off size={14} /> {t("settings.github.disconnect")}
           </button>
@@ -128,13 +94,12 @@ export function GithubCard() {
         <>
           <DisconnectBanner
             message={t("retro.github.notConnected")}
-            style={{ marginBottom: 16 }}
+            className="settings-disconnect-banner"
           />
           <button
             type="button"
-            className="btn btn-primary"
+            className="btn btn-primary settings-action-btn"
             onClick={handleConnect}
-            style={{ padding: "10px 18px" }}
           >
             <Link2 size={14} /> {t("settings.github.connect")}
           </button>

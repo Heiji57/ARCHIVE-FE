@@ -1,0 +1,24 @@
+/* ---------- Todo filter row ---------- */
+.todo-filter-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+.todo-filter-btn {
+  padding: 8px 14px;
+  border-radius: var(--r-pill);
+  font-size: 12px;
+  font-weight: 500;
+  background: var(--color-tile-3);
+  border: 1px solid var(--color-divider-soft);
+  color: var(--color-body-muted);
+  transition: background 120ms ease;
+}
+.todo-filter-btn:hover { background: var(--color-tile-4); }
+.todo-filter-btn[data-active="true"] {
+  background: var(--color-ink);
+  color: var(--color-canvas);
+  border-color: var(--color-ink);
+}

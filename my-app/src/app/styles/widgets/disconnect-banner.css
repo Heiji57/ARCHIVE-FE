@@ -1,0 +1,18 @@
+/* ---------- GitHub disconnected banner ---------- */
+.disconnect-banner {
+  background: rgba(255, 159, 10, 0.1);
+  border: 1px solid rgba(255, 159, 10, 0.3);
+  border-radius: var(--r-md);
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--color-ink);
+  margin-bottom: 16px;
+}
+
+.disconnect-banner svg {
+  color: var(--color-warn);
+  flex-shrink: 0;
+}

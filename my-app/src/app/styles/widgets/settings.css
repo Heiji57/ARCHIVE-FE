@@ -1,0 +1,127 @@
+/* ---------- Settings page layout ---------- */
+.settings-page {
+  padding-top: 32px;
+  padding-bottom: 80px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  gap: 24px;
+}
+
+/* Description paragraph inside a settings card (under its header) */
+.settings-card-description {
+  margin: 0 0 16px;
+  font-size: 13px;
+  color: var(--color-body-muted);
+  line-height: 1.55;
+}
+
+/* Shared settings card header (avatar + eyebrow/title) */
+.settings-card-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 22px;
+}
+.settings-card-header-body {
+  flex: 1;
+}
+.settings-card-header-eyebrow {
+  margin: 0 0 4px;
+  color: var(--color-body-muted);
+}
+.settings-card-header-title {
+  margin: 0;
+  font-size: 22px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+/* Locale picker grid (LanguageCard) */
+.locale-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 8px;
+}
+.locale-btn {
+  text-align: left;
+  padding: 12px 14px;
+  border-radius: var(--r-md);
+  background: var(--color-tile-3);
+  color: var(--color-ink);
+  border: 1px solid var(--color-divider-soft);
+}
+.locale-btn[data-active="true"] {
+  background: var(--color-ink);
+  color: var(--color-canvas);
+  border-color: var(--color-ink);
+}
+.locale-btn-native {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+.locale-btn-label {
+  margin: 2px 0 0;
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+/* Notification retention input row */
+.notif-retention-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--color-tile-3);
+  padding: 12px 14px;
+  border-radius: var(--r-md);
+}
+.notif-retention-input {
+  width: 80px;
+  font-size: 16px;
+  font-weight: 600;
+  text-align: center;
+  background: transparent;
+  color: var(--color-ink);
+}
+.notif-retention-unit {
+  font-size: 13px;
+  color: var(--color-body-muted);
+}
+
+/* GitHub card — info table */
+.github-info-box {
+  background: var(--color-tile-3);
+  border-radius: var(--r-lg);
+  padding: 14px 18px;
+  margin-bottom: 14px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+}
+.github-info-row {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+  font-size: 13px;
+}
+.github-info-label {
+  color: var(--color-body-muted);
+  min-width: 110px;
+  font-size: 12px;
+}
+.github-info-value {
+  color: var(--color-ink);
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+
+/* Settings action buttons (Connect / Disconnect) */
+.settings-action-btn {
+  padding: 10px 18px;
+}
+
+/* DisconnectBanner spacing override inside Settings cards */
+.settings-disconnect-banner {
+  margin-bottom: 16px;
+}

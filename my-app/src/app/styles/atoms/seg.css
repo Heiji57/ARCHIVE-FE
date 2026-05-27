@@ -1,0 +1,23 @@
+/* ---------- Segmented control ---------- */
+.seg {
+  display: inline-flex;
+  padding: 4px;
+  background: var(--color-tile-1);
+  border-radius: var(--r-pill);
+  border: 1px solid var(--color-divider-soft);
+}
+
+.seg-btn {
+  padding: 8px 18px;
+  border-radius: var(--r-pill);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-body-muted);
+  letter-spacing: -0.1px;
+  transition: background 120ms, color 120ms;
+}
+
+.seg-btn[aria-pressed="true"] {
+  background: var(--color-tile-4);
+  color: var(--color-ink);
+}

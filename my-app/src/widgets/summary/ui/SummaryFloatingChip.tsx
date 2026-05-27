@@ -19,7 +19,7 @@ export function SummaryFloatingChip() {
       title={t("summary.processing.message")}
     >
       <div className="summary-chip-spinner" />
-      <Sparkles size={14} style={{ color: "var(--color-primary)" }} />
+      <Sparkles size={14} />
       <span>{kindLabel} {t("summary.processing.title")}</span>
     </div>
   );

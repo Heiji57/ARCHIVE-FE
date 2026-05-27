@@ -39,14 +39,9 @@ export function SummaryOverlay() {
         </p>
         <button
           type="button"
-          className="btn btn-utility"
+          className="btn btn-utility summary-overlay-action"
           onClick={minimizeSummary}
           disabled={!canMinimize}
-          style={{
-            padding: "10px 20px",
-            opacity: canMinimize ? 1 : 0.4,
-            cursor: canMinimize ? "pointer" : "not-allowed",
-          }}
         >
           <Minimize2 size={14} /> {t("summary.minimize")}
         </button>
