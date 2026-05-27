@@ -11,3 +11,8 @@
   color: var(--color-ink);
   margin-bottom: 16px;
 }
+
+.disconnect-banner svg {
+  color: var(--color-warn);
+  flex-shrink: 0;
+}

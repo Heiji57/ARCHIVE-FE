@@ -44,14 +44,14 @@ export function TodoFilterRow({ filter, onChange, todayKey }: TodoFilterRowProps
       >
         {t("todo.filter.thisWeek")}
       </button>
-      <div style={{ position: "relative" }} ref={filterDateAnchor}>
+      <div className="todo-filter-date-wrap" ref={filterDateAnchor}>
         <button
           type="button"
           className="todo-filter-btn"
           data-active={filter.kind === "specific"}
           onClick={() => setFilterDateOpen((v) => !v)}
         >
-          <CalendarDays size={11} style={{ marginRight: 4 }} />
+          <CalendarDays size={11} />
           {filter.kind === "specific"
             ? filter.dateKey
             : t("todo.filter.pickDate")}

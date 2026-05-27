@@ -38,7 +38,7 @@ export function CalendarDashboard({ onNavigate }: CalendarDashboardProps) {
 
   return (
     <div>
-      <div className="page" style={{ paddingTop: 40 }}>
+      <div className="page calendar-page">
         <CalendarToolbar
           view={view}
           cursor={cursor}

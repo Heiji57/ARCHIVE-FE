@@ -27,6 +27,7 @@
 @import "./atoms/seg.css";
 @import "./atoms/pager.css";
 @import "./atoms/placeholder.css";
+@import "./atoms/status-icon.css";
 
 /* 5. Layout (shell, nav, sub-header, side-panel, responsive) */
 @import "./layout/shell.css";
@@ -42,6 +43,10 @@
 @import "./widgets/summary.css";
 @import "./widgets/auth.css";
 @import "./widgets/todo-filter.css";
+@import "./widgets/settings.css";
+@import "./widgets/calendar.css";
+@import "./widgets/retro.css";
+@import "./widgets/todo-board.css";
 @import "./widgets/disconnect-banner.css";
 @import "./widgets/dnd.css";
 

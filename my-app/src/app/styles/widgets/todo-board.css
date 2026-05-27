@@ -1,0 +1,26 @@
+/* ---------- Todo board (kanban) layout ---------- */
+.todo-page {
+  padding-top: 40px;
+}
+
+.kanban-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+}
+
+@media (max-width: 900px) {
+  .kanban-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Wrapper around a filter button that anchors a popover */
+.todo-filter-date-wrap {
+  position: relative;
+}
+
+/* Calendar icon inside the date-filter button */
+.todo-filter-btn svg {
+  margin-right: 4px;
+}

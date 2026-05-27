@@ -11,18 +11,8 @@ export interface ToggleRowProps {
 
 export function ToggleRow({ label, on, onChange }: ToggleRowProps) {
   return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        padding: "12px 14px",
-        background: "var(--color-tile-3)",
-        borderRadius: "var(--r-md)",
-        marginBottom: 8,
-      }}
-    >
-      <span style={{ fontSize: 14 }}>{label}</span>
+    <div className="toggle-row">
+      <span className="toggle-row-label">{label}</span>
       <button
         type="button"
         role="switch"

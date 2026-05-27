@@ -1,0 +1,28 @@
+/* ---------- Calendar page layout ---------- */
+.calendar-page {
+  padding-top: 40px;
+}
+
+/* Todo chip inside MonthGrid cells */
+.todo-month-chip {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font-size: 11px;
+  padding: 3px 6px;
+  border-radius: 4px;
+  background: var(--color-tile-2);
+  color: var(--color-ink);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.todo-month-chip[data-status="done"] {
+  background: var(--color-tile-3);
+  color: var(--color-body-muted);
+  text-decoration: line-through;
+}
+.todo-month-chip[data-status="in-progress"] {
+  background: rgba(10, 132, 255, 0.16);
+  color: var(--color-primary-on-dark);
+}

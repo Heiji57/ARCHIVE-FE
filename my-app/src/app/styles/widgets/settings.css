@@ -1,0 +1,16 @@
+/* ---------- Settings page layout ---------- */
+.settings-page {
+  padding-top: 32px;
+  padding-bottom: 80px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  gap: 24px;
+}
+
+/* Description paragraph inside a settings card (under its header) */
+.settings-card-description {
+  margin: 0 0 16px;
+  font-size: 13px;
+  color: var(--color-body-muted);
+  line-height: 1.55;
+}

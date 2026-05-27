@@ -46,6 +46,13 @@
   letter-spacing: 0;
 }
 
+/* SVG brand mark inside .gn-brand */
+.gn-brand-mark {
+  width: 22px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
 .gn-links {
   display: flex;
   gap: 4px;

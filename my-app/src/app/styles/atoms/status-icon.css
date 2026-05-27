@@ -1,0 +1,10 @@
+/* ---------- Todo status icon (CheckCircle / PlayCircle / Circle) ---------- */
+.status-icon[data-status="done"] {
+  color: var(--color-status-done);
+}
+.status-icon[data-status="in-progress"] {
+  color: var(--color-primary);
+}
+.status-icon[data-status="not-start"] {
+  color: var(--color-ink-muted-48);
+}

@@ -26,8 +26,13 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(
 
     return (
       <div
-        className={`text-field ${error ? "is-invalid" : ""}`}
-        style={{ width: fullWidth ? "100%" : undefined }}
+        className={[
+          "text-field",
+          error ? "is-invalid" : "",
+          fullWidth ? "" : "text-field-auto",
+        ]
+          .filter(Boolean)
+          .join(" ")}
       >
         {label ? (
           <label htmlFor={fieldId} className="text-field-label">

@@ -41,6 +41,10 @@
   background: var(--color-tile-4);
 }
 
+.user-chip .btn-icon {
+  margin-left: 2px;
+}
+
 .user-avatar {
   width: 22px;
   height: 22px;

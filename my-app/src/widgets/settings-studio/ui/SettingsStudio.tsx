@@ -6,16 +6,7 @@ import { NotificationsCard } from "./NotificationsCard";
 
 export function SettingsStudio() {
   return (
-    <div
-      className="page"
-      style={{
-        paddingTop: 32,
-        paddingBottom: 80,
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))",
-        gap: 24,
-      }}
-    >
+    <div className="page settings-page">
       <GithubCard />
       <LanguageCard />
       <AutoSummaryCard />

@@ -95,7 +95,7 @@ export function AppShell({ route, children, onNavigate }: AppShellProps) {
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 36 32"
-              style={{ width: 22, height: 20, flexShrink: 0 }}
+              className="gn-brand-mark"
               aria-hidden="true"
             >
               <path d="M 22 4 L 33 9 L 33 19 L 22 14 Z" fill="#f5f5f7" opacity="0.5" />
@@ -170,7 +170,6 @@ export function AppShell({ route, children, onNavigate }: AppShellProps) {
                   aria-label={t("auth.header.logout")}
                   title={t("auth.header.logout")}
                   onClick={() => logout()}
-                  style={{ marginLeft: 2 }}
                 >
                   <LogOut size={14} />
                 </button>

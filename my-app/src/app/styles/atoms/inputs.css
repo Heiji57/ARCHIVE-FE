@@ -1,7 +1,8 @@
 /* ---------- TextField / Checkbox / Toggle / Select / Editor ---------- */
 
 /* Shared TextField */
-.text-field { display: flex; flex-direction: column; gap: 6px; }
+.text-field { display: flex; flex-direction: column; gap: 6px; width: 100%; }
+.text-field-auto { width: auto; }
 .text-field-label {
   font-size: 12px;
   font-weight: 500;
@@ -64,6 +65,20 @@
   cursor: pointer;
 }
 .checkbox-label { font-size: 13px; color: var(--color-body); }
+
+/* Toggle row (label + iOS toggle) */
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  background: var(--color-tile-3);
+  border-radius: var(--r-md);
+  margin-bottom: 8px;
+}
+.toggle-row-label {
+  font-size: 14px;
+}
 
 /* iOS-style toggle (custom button) */
 .ios-toggle {

@@ -12,7 +12,7 @@ export interface DisconnectBannerProps {
 export function DisconnectBanner({ message, style }: DisconnectBannerProps) {
   return (
     <div className="disconnect-banner" style={style}>
-      <Lock size={14} style={{ color: "var(--color-warn)" }} />
+      <Lock size={14} />
       <span>{message}</span>
     </div>
   );

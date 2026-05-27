@@ -74,3 +74,16 @@
   border-top-color: var(--color-primary);
   animation: summary-spin 900ms linear infinite;
 }
+
+.summary-chip svg {
+  color: var(--color-primary);
+}
+
+/* Larger minimize action button inside the overlay card */
+.summary-overlay-action {
+  padding: 10px 20px;
+}
+.summary-overlay-action:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}

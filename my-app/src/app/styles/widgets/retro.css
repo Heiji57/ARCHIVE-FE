@@ -1,0 +1,13 @@
+/* ---------- Retrospective page layout ---------- */
+.retro-page {
+  padding-top: 32px;
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 32px;
+}
+
+@media (max-width: 900px) {
+  .retro-page {
+    grid-template-columns: 1fr;
+  }
+}
