@@ -3,14 +3,13 @@ import { EditorContent, ReactRenderer, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { Placeholder } from "@tiptap/extension-placeholder";
 import { Table, TableCell, TableHeader, TableRow } from "@tiptap/extension-table";
-import { Markdown } from "tiptap-markdown";
 import { Callout } from "./extensions/Callout";
 import { ToggleNode, ToggleSummary, ToggleBody } from "./extensions/Toggle";
 import { SlashCommandExtension } from "./extensions/SlashCommand";
 import { SlashMenu, type SlashMenuRef } from "./components/SlashMenu";
 import { TableControls } from "./components/TableControls";
 import { CalloutTypePicker } from "./components/CalloutTypePicker";
-import { preprocessMarkdown, postprocessMarkdown } from "./markdown";
+import { markdownToHtml, htmlToMarkdown } from "./markdown";
 
 export interface RichEditorProps {
   value: string;
@@ -24,7 +23,7 @@ interface PopupHandle {
   destroy: () => void;
 }
 
-/** 슬래시 메뉴를 위한 간단한 floating popup (Tippy 등 외부 의존성 없이 구현) */
+/** 슬래시 메뉴를 위한 간단한 floating popup */
 function createPopup(): PopupHandle {
   const el = document.createElement("div");
   el.className = "slash-menu-popup";
@@ -43,7 +42,6 @@ function createPopup(): PopupHandle {
       const vw = window.innerWidth;
       const vh = window.innerHeight;
       el.style.visibility = "visible";
-      // 우선 커서 아래에 배치, 공간 부족 시 위로
       const popupRect = el.getBoundingClientRect();
       const margin = 8;
       let top = rect.bottom + margin;
@@ -88,12 +86,6 @@ export default function RichEditor({
       ToggleNode,
       ToggleSummary,
       ToggleBody,
-      Markdown.configure({
-        html: true,
-        linkify: true,
-        breaks: true,
-        transformPastedText: true,
-      }),
       SlashCommandExtension.configure({
         render: () => ({
           onStart: (props) => {
@@ -127,20 +119,20 @@ export default function RichEditor({
         }),
       }),
     ],
-    content: preprocessMarkdown(value),
+    content: markdownToHtml(value),
     autofocus: false,
     onUpdate: ({ editor: ed }) => {
-      const md = ed.storage.markdown.getMarkdown();
-      onChange(postprocessMarkdown(md));
+      const md = htmlToMarkdown(ed.getHTML());
+      onChange(md);
     },
   });
 
-  // value prop이 외부에서 바뀌면 (예: 다른 회고록 선택) 에디터 내용 교체
+  // 외부에서 value가 바뀌면 에디터 내용 교체 (다른 회고록 선택 시)
   useEffect(() => {
     if (!editor) return;
-    const current = postprocessMarkdown(editor.storage.markdown.getMarkdown());
-    if (current !== value) {
-      editor.commands.setContent(preprocessMarkdown(value));
+    const currentMd = htmlToMarkdown(editor.getHTML());
+    if (currentMd !== value) {
+      editor.commands.setContent(markdownToHtml(value));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value, editor]);
