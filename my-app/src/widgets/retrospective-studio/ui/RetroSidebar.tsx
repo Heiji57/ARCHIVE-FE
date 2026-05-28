@@ -1,8 +1,8 @@
-import { ChevronLeft, ChevronRight, Search, Sparkles } from "lucide-react";
-import { DEMO_ANCHOR_DATE_KEY } from "@/app/config/demo";
+import { ChevronLeft, ChevronRight, Plus, Search, Sparkles } from "lucide-react";
 import type { JournalEntry } from "@/entities/entry/model/types";
 import type { SummaryKind } from "@/entities/summary/model/types";
 import { EmptyState } from "@/shared/ui/empty-state/EmptyState";
+import { todayKey } from "@/shared/lib/date";
 import { useTranslation } from "@/shared/lib/i18n";
 import {
   MONTHS,
@@ -16,6 +16,7 @@ export interface RetroSidebarProps {
   active: JournalEntry | null;
   onSelect: (id: string) => void;
   onSummarize: (kind: SummaryKind) => void;
+  onNewDaily: () => void;
 }
 
 export function RetroSidebar({
@@ -23,7 +24,9 @@ export function RetroSidebar({
   active,
   onSelect,
   onSummarize,
+  onNewDaily,
 }: RetroSidebarProps) {
+  const todayDateKey = todayKey();
   const { t } = useTranslation();
   const {
     retroFilter,
@@ -75,7 +78,7 @@ export function RetroSidebar({
       </h3>
       <p
         style={{
-          margin: "0 0 16px",
+          margin: "0 0 12px",
           fontSize: 12,
           color: "var(--color-body-muted)",
           lineHeight: 1.5,
@@ -83,6 +86,17 @@ export function RetroSidebar({
       >
         {t("retro.archiveDescription")}
       </p>
+
+      {/* 오늘의 일일 회고 작성 버튼 */}
+      <button
+        type="button"
+        className="btn btn-primary"
+        onClick={onNewDaily}
+        style={{ width: "100%", marginBottom: 14, justifyContent: "center" }}
+      >
+        <Plus size={14} />
+        {t("retro.newDaily")}
+      </button>
 
       {/* Type tabs */}
       <div
@@ -209,7 +223,7 @@ export function RetroSidebar({
               key={e.id}
               entry={e}
               isActive={e.id === active?.id}
-              isToday={e.dateKey === DEMO_ANCHOR_DATE_KEY}
+              isToday={e.dateKey === todayDateKey}
               onSelect={onSelect}
             />
           ))

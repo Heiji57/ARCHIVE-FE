@@ -51,6 +51,7 @@ export interface ArchiveAppContextValue {
       Pick<JournalEntry, "title" | "content" | "synced" | "retroType">
     >,
   ) => void;
+  createDailyEntry: (dateKey: string) => { entry: JournalEntry; existed: boolean };
   saveGitHubConfig: (config: GitHubConfig | null) => void;
   pushNotification: (
     type: NoticeType,

@@ -31,21 +31,6 @@
   color: var(--color-ink);
 }
 
-.gn-logo {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: var(--color-ink);
-  color: var(--color-canvas);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 13px;
-  letter-spacing: 0;
-}
-
 /* SVG brand mark inside .gn-brand */
 .gn-brand-mark {
   width: 22px;

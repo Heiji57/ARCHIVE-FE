@@ -5,6 +5,7 @@ import {
   Clock,
   GitCommit,
   Lock,
+  Save,
 } from "lucide-react";
 import type { JournalEntry } from "@/entities/entry/model/types";
 import { DisconnectBanner } from "@/shared/ui/disconnect-banner/DisconnectBanner";
@@ -63,6 +64,20 @@ export function RetroEditor({
           </p>
         </div>
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          {/* 자동 저장 안내 */}
+          <span
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 4,
+              fontSize: 11,
+              color: "var(--color-body-muted)",
+            }}
+          >
+            <Save size={11} />
+            {t("retro.editor.autoSaved")}
+          </span>
+
           {isGithubConnected ? (
             entry.synced ? (
               <Pill tone="green">

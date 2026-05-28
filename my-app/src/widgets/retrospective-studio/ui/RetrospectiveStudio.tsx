@@ -3,13 +3,14 @@ import { DEMO_ANCHOR_DATE_KEY } from "@/app/config/demo";
 import { useArchiveApp } from "@/app/providers/useArchiveApp";
 import type { SummaryKind } from "@/entities/summary/model/types";
 import { EmptyState } from "@/shared/ui/empty-state/EmptyState";
+import { todayKey } from "@/shared/lib/date";
 import { useTranslation } from "@/shared/lib/i18n";
 import { useRetroFilter } from "../model/useRetroFilter";
 import { RetroEditor } from "./RetroEditor";
 import { RetroSidebar } from "./RetroSidebar";
 
 export function RetrospectiveStudio() {
-  const { state, updateEntry, pushNotification, startSummary } =
+  const { state, updateEntry, createDailyEntry, pushNotification, startSummary } =
     useArchiveApp();
   const { t } = useTranslation();
 
@@ -61,6 +62,19 @@ export function RetrospectiveStudio() {
     startSummary(kind, target);
   };
 
+  const handleNewDaily = () => {
+    const dateKey = todayKey();
+    const { entry, existed } = createDailyEntry(dateKey);
+    if (existed) {
+      pushNotification("info", t("retro.newDaily.duplicate"), dateKey);
+    } else {
+      pushNotification("success", t("retro.newDaily.created"), dateKey);
+    }
+    // 일간 탭으로 전환하고 해당 항목 선택
+    filterState.setRetroFilter("daily");
+    setSelectedId(entry.id);
+  };
+
   return (
     <div className="page retro-page">
       <RetroSidebar
@@ -68,6 +82,7 @@ export function RetrospectiveStudio() {
         active={active}
         onSelect={setSelectedId}
         onSummarize={handleSummarize}
+        onNewDaily={handleNewDaily}
       />
 
       <main>

@@ -131,6 +131,10 @@ export type TranslationKey =
   | "retro.badge.synced"
   | "retro.github.notConnected"
   | "retro.github.connectFromSettings"
+  | "retro.newDaily"
+  | "retro.newDaily.duplicate"
+  | "retro.newDaily.created"
+  | "retro.editor.autoSaved"
   // Summary overlay
   | "summary.processing.title"
   | "summary.processing.message"
@@ -388,6 +392,10 @@ const ko: Dict = {
   "retro.badge.synced": "Synced",
   "retro.github.notConnected": "GitHub 미연결 — 커밋과 동기화 비활성화됨",
   "retro.github.connectFromSettings": "Settings에서 GitHub 계정을 연결하세요.",
+  "retro.newDaily": "오늘의 일일 회고 작성",
+  "retro.newDaily.duplicate": "오늘의 회고록이 이미 존재합니다",
+  "retro.newDaily.created": "오늘의 일일 회고가 생성되었습니다",
+  "retro.editor.autoSaved": "변경사항은 자동으로 저장됩니다",
 
   "summary.processing.title": "AI 요약 처리 중",
   "summary.processing.message":
@@ -648,6 +656,10 @@ const en: Dict = {
   "retro.badge.synced": "Synced",
   "retro.github.notConnected": "GitHub not connected — commits & sync disabled",
   "retro.github.connectFromSettings": "Connect a GitHub account from Settings.",
+  "retro.newDaily": "Write today's daily retrospective",
+  "retro.newDaily.duplicate": "Today's retrospective already exists",
+  "retro.newDaily.created": "Today's daily retrospective has been created",
+  "retro.editor.autoSaved": "Changes are saved automatically",
 
   "summary.processing.title": "AI summary in progress",
   "summary.processing.message":
@@ -905,6 +917,10 @@ const zh: Dict = {
   "retro.badge.synced": "已同步",
   "retro.github.notConnected": "GitHub 未连接 — 提交与同步已停用",
   "retro.github.connectFromSettings": "请在设置中连接 GitHub 账户。",
+  "retro.newDaily": "写今日每日回顾",
+  "retro.newDaily.duplicate": "今天的回顾已经存在",
+  "retro.newDaily.created": "今天的每日回顾已创建",
+  "retro.editor.autoSaved": "更改将自动保存",
 
   "summary.processing.title": "AI 摘要处理中",
   "summary.processing.message": "正在分析回顾内容,请稍候。",
@@ -1163,6 +1179,10 @@ const ja: Dict = {
   "retro.github.notConnected": "GitHub 未接続 — コミットと同期は無効です",
   "retro.github.connectFromSettings":
     "設定から GitHub アカウントを接続してください。",
+  "retro.newDaily": "今日の日次振り返りを書く",
+  "retro.newDaily.duplicate": "今日の振り返りはすでに存在します",
+  "retro.newDaily.created": "今日の日次振り返りが作成されました",
+  "retro.editor.autoSaved": "変更は自動的に保存されます",
 
   "summary.processing.title": "AI サマリー処理中",
   "summary.processing.message": "振り返り内容を分析しています。少々お待ちを。",

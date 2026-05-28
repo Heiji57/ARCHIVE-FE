@@ -20,6 +20,7 @@ import type {
 import { AppContext } from "@/app/providers/context";
 import { usePersistAppState } from "@/app/providers/usePersistAppState";
 import { findEntryByDateKeyAndType } from "@/entities/entry/lib/selectors";
+import type { JournalEntry } from "@/entities/entry/model/types";
 import type {
   NoticeCategory,
   NoticeType,
@@ -247,6 +248,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
     },
     updateEntry: (id, patch) => {
       dispatch({ type: "entry/update", payload: { id, patch } });
+    },
+    createDailyEntry: (dateKey) => {
+      const existing = state.entries.find(
+        (e) => e.dateKey === dateKey && e.retroType === "daily",
+      );
+      if (existing) return { entry: existing, existed: true };
+      const entry: JournalEntry = {
+        id: createId("entry"),
+        dateKey,
+        title: `${dateKey} 일일 회고`,
+        content: "",
+        retroType: "daily",
+        synced: false,
+        updatedAt: new Date().toISOString(),
+      };
+      dispatch({ type: "entry/upsert", payload: { entry } });
+      return { entry, existed: false };
     },
     saveGitHubConfig: (config) => {
       dispatch({ type: "github/save", payload: { config } });
