@@ -3,16 +3,28 @@ import { Plus, Trash2 } from "lucide-react";
 import type { Editor } from "@tiptap/react";
 
 /**
- * 표 호버 시 우측/하단에 + 버튼, 좌상단에 삭제 버튼을 띄움.
- * + 클릭 시 숫자 입력 팝업 → Enter로 행/열 추가.
+ * Notion 스타일 표 컨트롤.
+ *  - 우측 세로 +바: 표 높이만큼 — 드래그하면 우측으로 끌어당긴 거리만큼 열 추가
+ *  - 하단 가로 +바: 표 너비만큼 — 드래그하면 아래로 끌어당긴 거리만큼 행 추가
+ *  - 좌상단 휴지통: 표 삭제
+ *
+ * 드래그 동작: 약 80px(셀 평균)마다 1행/열 추가.
  */
+
+const ROW_DRAG_THRESHOLD = 32; // px (행 1개 추가에 필요한 드래그 거리)
+const COL_DRAG_THRESHOLD = 90; // px
+
 export function TableControls({ editor }: { editor: Editor }) {
-  const wrapperRef = useRef<HTMLDivElement | null>(null);
   const [target, setTarget] = useState<HTMLTableElement | null>(null);
   const [rect, setRect] = useState<DOMRect | null>(null);
-  const [popover, setPopover] = useState<null | "col" | "row">(null);
-  const [count, setCount] = useState<string>("1");
+  const dragRef = useRef<{
+    axis: "col" | "row";
+    startX: number;
+    startY: number;
+    added: number;
+  } | null>(null);
 
+  // 호버한 표 추적
   useEffect(() => {
     const container = editor.view.dom;
     if (!container) return;
@@ -34,18 +46,18 @@ export function TableControls({ editor }: { editor: Editor }) {
       if (table) updateForElement(table);
     };
 
-    const onScrollOrResize = () => {
-      if (target) setRect(target.getBoundingClientRect());
-    };
-
     const onMouseLeave = (e: MouseEvent) => {
-      const related = e.relatedTarget as Node | null;
-      if (related && wrapperRef.current?.contains(related)) return;
+      const related = e.relatedTarget as HTMLElement | null;
+      // 핸들 자신 위에 있으면 유지
+      if (related?.closest?.(".rich-table-handle, .rich-table-btn")) return;
       if (related && target?.contains(related)) return;
-      // 팝오버가 열려있으면 유지
-      if (popover) return;
+      if (dragRef.current) return; // 드래그 중이면 유지
       setTarget(null);
       setRect(null);
+    };
+
+    const onScrollOrResize = () => {
+      if (target) setRect(target.getBoundingClientRect());
     };
 
     container.addEventListener("mouseover", onMouseOver);
@@ -59,23 +71,49 @@ export function TableControls({ editor }: { editor: Editor }) {
       window.removeEventListener("scroll", onScrollOrResize, true);
       window.removeEventListener("resize", onScrollOrResize);
     };
-  }, [editor, target, popover]);
+  }, [editor, target]);
 
-  if (!target || !rect) return null;
-
-  const handleAddCol = () => {
-    const n = Math.max(1, Math.min(20, parseInt(count, 10) || 1));
-    // 표 안 첫 셀로 포커스 이동 후 마지막 열 추가
-    for (let i = 0; i < n; i += 1) editor.chain().focus().addColumnAfter().run();
-    setPopover(null);
-    setCount("1");
+  // 드래그 처리
+  const startDrag = (axis: "col" | "row", e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!target) return;
+    dragRef.current = {
+      axis,
+      startX: e.clientX,
+      startY: e.clientY,
+      added: 0,
+    };
+    document.addEventListener("mousemove", onDrag);
+    document.addEventListener("mouseup", onDragEnd);
+    document.body.style.cursor = axis === "col" ? "ew-resize" : "ns-resize";
   };
 
-  const handleAddRow = () => {
-    const n = Math.max(1, Math.min(50, parseInt(count, 10) || 1));
-    for (let i = 0; i < n; i += 1) editor.chain().focus().addRowAfter().run();
-    setPopover(null);
-    setCount("1");
+  const onDrag = (e: MouseEvent) => {
+    const d = dragRef.current;
+    if (!d || !target) return;
+    const delta = d.axis === "col" ? e.clientX - d.startX : e.clientY - d.startY;
+    const threshold = d.axis === "col" ? COL_DRAG_THRESHOLD : ROW_DRAG_THRESHOLD;
+    const targetAdded = Math.max(0, Math.floor(delta / threshold));
+    // 드래그 거리가 늘어난 만큼 칸 추가 (줄어들면 제거 — 마지막 추가분만)
+    while (d.added < targetAdded) {
+      if (d.axis === "col") editor.chain().focus().addColumnAfter().run();
+      else editor.chain().focus().addRowAfter().run();
+      d.added += 1;
+    }
+    while (d.added > targetAdded) {
+      // 드래그 중에는 줄이지 않음 — 단순하게 가자 (방향 거꾸로면 무시)
+      break;
+    }
+    // 표 사이즈가 바뀌었으니 rect 다시
+    setRect(target.getBoundingClientRect());
+  };
+
+  const onDragEnd = () => {
+    dragRef.current = null;
+    document.removeEventListener("mousemove", onDrag);
+    document.removeEventListener("mouseup", onDragEnd);
+    document.body.style.cursor = "";
   };
 
   const handleDelete = () => {
@@ -84,51 +122,60 @@ export function TableControls({ editor }: { editor: Editor }) {
     setRect(null);
   };
 
+  if (!target || !rect) return null;
+
   return (
-    <div ref={wrapperRef} className="rich-table-controls" aria-hidden="false">
-      {/* 우측 + 버튼 (열 추가) */}
-      <button
-        type="button"
-        className="rich-table-btn rich-table-btn-col"
+    <>
+      {/* 우측 +바 — 표 높이 전체 */}
+      <div
+        className="rich-table-handle rich-table-handle-col"
         style={{
           position: "fixed",
-          left: rect.right + 4,
-          top: rect.top + rect.height / 2 - 12,
+          left: rect.right + 2,
+          top: rect.top,
+          height: rect.height,
         }}
-        onClick={() => {
-          setPopover("col");
-          setCount("1");
+        onMouseDown={(e) => startDrag("col", e)}
+        onClick={(e) => {
+          // 클릭(드래그 없이)이면 1개만 추가
+          if (!dragRef.current || dragRef.current.added === 0) {
+            e.stopPropagation();
+            editor.chain().focus().addColumnAfter().run();
+          }
         }}
-        title="열 추가"
+        title="우측으로 드래그하여 열 추가"
       >
         <Plus size={12} />
-      </button>
+      </div>
 
-      {/* 하단 + 버튼 (행 추가) */}
-      <button
-        type="button"
-        className="rich-table-btn rich-table-btn-row"
+      {/* 하단 +바 — 표 너비 전체 */}
+      <div
+        className="rich-table-handle rich-table-handle-row"
         style={{
           position: "fixed",
-          left: rect.left + rect.width / 2 - 12,
-          top: rect.bottom + 4,
+          left: rect.left,
+          top: rect.bottom + 2,
+          width: rect.width,
         }}
-        onClick={() => {
-          setPopover("row");
-          setCount("1");
+        onMouseDown={(e) => startDrag("row", e)}
+        onClick={(e) => {
+          if (!dragRef.current || dragRef.current.added === 0) {
+            e.stopPropagation();
+            editor.chain().focus().addRowAfter().run();
+          }
         }}
-        title="행 추가"
+        title="아래로 드래그하여 행 추가"
       >
         <Plus size={12} />
-      </button>
+      </div>
 
-      {/* 좌상단 삭제 버튼 */}
+      {/* 좌상단 삭제 */}
       <button
         type="button"
         className="rich-table-btn rich-table-btn-delete"
         style={{
           position: "fixed",
-          left: rect.left - 24,
+          left: rect.left - 28,
           top: rect.top - 4,
         }}
         onClick={handleDelete}
@@ -136,50 +183,6 @@ export function TableControls({ editor }: { editor: Editor }) {
       >
         <Trash2 size={12} />
       </button>
-
-      {/* 개수 입력 팝오버 */}
-      {popover ? (
-        <div
-          className="rich-table-popover"
-          style={{
-            position: "fixed",
-            left: popover === "col" ? rect.right + 28 : rect.left + rect.width / 2,
-            top: popover === "col" ? rect.top + rect.height / 2 - 16 : rect.bottom + 28,
-          }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <span className="rich-table-popover-label">
-            {popover === "col" ? "열" : "행"}:
-          </span>
-          <input
-            autoFocus
-            type="number"
-            min={1}
-            max={popover === "col" ? 20 : 50}
-            value={count}
-            onChange={(e) => setCount(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                if (popover === "col") handleAddCol();
-                else handleAddRow();
-              }
-              if (e.key === "Escape") {
-                e.preventDefault();
-                setPopover(null);
-              }
-            }}
-            className="rich-table-popover-input"
-          />
-          <button
-            type="button"
-            onClick={popover === "col" ? handleAddCol : handleAddRow}
-            className="rich-table-popover-add"
-          >
-            추가
-          </button>
-        </div>
-      ) : null}
-    </div>
+    </>
   );
 }

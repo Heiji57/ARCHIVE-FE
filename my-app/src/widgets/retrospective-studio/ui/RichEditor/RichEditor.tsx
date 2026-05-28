@@ -12,6 +12,7 @@ import { ToggleNode } from "./extensions/Toggle";
 import { SlashMenu, type SlashMenuRef } from "./components/SlashMenu";
 import { TableControls } from "./components/TableControls";
 import { CalloutTypePicker } from "./components/CalloutTypePicker";
+import { BlockHandle } from "./components/BlockHandle";
 import { filterCommands, type SlashCommandItem } from "./commands";
 import { markdownToHtml, htmlToMarkdown } from "./markdown";
 
@@ -163,6 +164,7 @@ export default function RichEditor({
   return (
     <div className="rich-editor">
       <EditorContent editor={editor} className="rich-editor-content" />
+      <BlockHandle editor={editor} />
       <TableControls editor={editor} />
       <CalloutTypePicker editor={editor} />
       {popup.open && popup.rect ? (
