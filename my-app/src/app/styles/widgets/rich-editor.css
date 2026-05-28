@@ -1,13 +1,12 @@
-/* ---------- Rich Editor (TipTap) ---------- */
+/* ============================================================
+   Rich Editor — Notion-style blocks (다크 모드)
+   ============================================================ */
 
 .rich-editor {
   position: relative;
   min-height: 320px;
-  background: #ffffff;
-  color: #1d1d1f;
-  border-radius: var(--r-md, 12px);
-  padding: 24px 28px;
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  color: rgba(255, 255, 255, 0.92);
+  padding: 8px 0;
 }
 
 .rich-editor-content {
@@ -17,163 +16,222 @@
 .rich-editor .ProseMirror {
   outline: none;
   min-height: 260px;
-  font-size: 15px;
-  line-height: 1.65;
-  color: #1d1d1f;
-}
-
-/* placeholder 색 (라이트 배경) */
-.rich-editor .ProseMirror p.is-editor-empty:first-child::before {
-  color: rgba(0, 0, 0, 0.35);
+  font-size: 16px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.92);
+  font-family:
+    "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "SF Pro Text",
+    sans-serif;
+  caret-color: rgba(255, 255, 255, 0.9);
 }
 
 .rich-editor .ProseMirror > * + * {
-  margin-top: 0.6em;
+  margin-top: 4px;
 }
 
-.rich-editor .ProseMirror p.is-editor-empty:first-child::before {
+/* Placeholder — Notion 다크 톤 */
+.rich-editor .ProseMirror p.is-editor-empty:first-child::before,
+.rich-editor .ProseMirror p.is-empty::before {
   content: attr(data-placeholder);
   float: left;
-  color: rgba(0, 0, 0, 0.35);
+  color: rgba(255, 255, 255, 0.28);
   pointer-events: none;
   height: 0;
 }
 
-/* Headings */
+/* ---------- Headings (Notion) ---------- */
 .rich-editor .ProseMirror h1 {
-  font-family: var(--font-display);
-  font-size: 28px;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  margin: 1em 0 0.4em;
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin: 28px 0 4px;
+  line-height: 1.25;
+  color: rgba(255, 255, 255, 0.96);
 }
 .rich-editor .ProseMirror h2 {
-  font-family: var(--font-display);
-  font-size: 22px;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  margin: 0.9em 0 0.4em;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin: 22px 0 2px;
+  line-height: 1.3;
+  color: rgba(255, 255, 255, 0.96);
 }
 .rich-editor .ProseMirror h3 {
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 600;
-  margin: 0.8em 0 0.4em;
+  margin: 18px 0 0;
+  line-height: 1.3;
+  color: rgba(255, 255, 255, 0.96);
 }
 .rich-editor .ProseMirror h4 {
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 600;
-  margin: 0.7em 0 0.3em;
+  margin: 14px 0 0;
+  color: rgba(255, 255, 255, 0.94);
 }
 .rich-editor .ProseMirror h5 {
   font-size: 14px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  margin: 0.7em 0 0.3em;
-  color: rgba(0, 0, 0, 0.6);
+  margin: 12px 0 0;
+  color: rgba(255, 255, 255, 0.7);
 }
 
-.rich-editor .ProseMirror h1,
-.rich-editor .ProseMirror h2,
-.rich-editor .ProseMirror h3,
-.rich-editor .ProseMirror h4 {
-  color: #1d1d1f;
+/* ---------- Paragraphs ---------- */
+.rich-editor .ProseMirror p {
+  margin: 2px 0;
+  min-height: 1.5em;
 }
 
-/* Lists */
+/* ---------- Lists (Notion) ---------- */
 .rich-editor .ProseMirror ul,
 .rich-editor .ProseMirror ol {
-  padding-left: 1.4em;
+  padding-left: 1.6em;
+  margin: 2px 0;
 }
+.rich-editor .ProseMirror ul {
+  list-style: none;
+}
+.rich-editor .ProseMirror ul li {
+  position: relative;
+}
+.rich-editor .ProseMirror ul li::before {
+  content: "";
+  position: absolute;
+  left: -1em;
+  top: 0.7em;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.86);
+}
+.rich-editor .ProseMirror ul ul li::before {
+  background: transparent;
+  border: 1.5px solid rgba(255, 255, 255, 0.86);
+}
+.rich-editor .ProseMirror ul ul ul li::before {
+  background: rgba(255, 255, 255, 0.86);
+  border: none;
+  border-radius: 2px;
+  width: 6px;
+  height: 6px;
+}
+
+.rich-editor .ProseMirror ol {
+  list-style: decimal;
+}
+.rich-editor .ProseMirror ol li {
+  padding-left: 4px;
+}
+.rich-editor .ProseMirror ol li::marker {
+  color: rgba(255, 255, 255, 0.92);
+  font-weight: 500;
+}
+
 .rich-editor .ProseMirror li {
-  margin: 0.2em 0;
+  margin: 2px 0;
 }
 .rich-editor .ProseMirror li > p {
   margin: 0;
+  display: inline-block;
 }
 
-/* Quote */
+/* ---------- Quote (Notion) ---------- */
 .rich-editor .ProseMirror blockquote {
-  border-left: 3px solid rgba(0, 0, 0, 0.15);
-  padding: 0.2em 0 0.2em 1em;
-  color: rgba(0, 0, 0, 0.65);
-  font-style: italic;
+  border-left: 3px solid rgba(255, 255, 255, 0.86);
+  padding: 2px 0 2px 14px;
+  margin: 6px 0;
+  color: rgba(255, 255, 255, 0.86);
+  font-style: normal;
+  font-size: 1.05em;
+}
+.rich-editor .ProseMirror blockquote p {
+  margin: 0;
 }
 
-/* Divider */
+/* ---------- Divider ---------- */
 .rich-editor .ProseMirror hr {
   border: none;
-  border-top: 1px solid rgba(0, 0, 0, 0.12);
-  margin: 1.6em 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+  margin: 18px 0;
 }
 
-/* Inline code */
+/* ---------- Inline code (Notion) ---------- */
 .rich-editor .ProseMirror code {
-  background: rgba(0, 0, 0, 0.06);
-  color: #d6336c;
-  padding: 0.1em 0.4em;
+  background: rgba(255, 255, 255, 0.12);
+  color: #eb5757;
+  padding: 0.15em 0.4em;
   border-radius: 4px;
-  font-family: var(--font-mono, monospace);
-  font-size: 0.92em;
+  font-family:
+    "JetBrains Mono", "SF Mono", Monaco, Consolas, monospace;
+  font-size: 0.88em;
 }
 
-/* Code block */
+/* ---------- Code block (Notion) ---------- */
 .rich-editor .ProseMirror pre {
-  background: #f5f5f7;
-  color: #1d1d1f;
-  padding: 12px 14px;
-  border-radius: var(--r-sm);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.92);
+  padding: 14px 16px;
+  border-radius: 6px;
   overflow-x: auto;
-  font-family: var(--font-mono, monospace);
-  font-size: 13px;
+  font-family:
+    "JetBrains Mono", "SF Mono", Monaco, Consolas, monospace;
+  font-size: 13.5px;
   line-height: 1.55;
+  margin: 6px 0;
 }
 .rich-editor .ProseMirror pre code {
   background: transparent;
+  color: inherit;
   padding: 0;
   font-size: inherit;
 }
 
-/* Tables */
+/* ---------- Tables (Notion) ---------- */
 .rich-editor .ProseMirror table,
 .rich-editor .ProseMirror .rich-table {
   border-collapse: collapse;
   table-layout: fixed;
   width: 100%;
-  margin: 1em 0;
+  margin: 10px 0;
   overflow: hidden;
 }
 .rich-editor .ProseMirror th,
 .rich-editor .ProseMirror td {
-  border: 1px solid rgba(0, 0, 0, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.16);
   padding: 8px 10px;
   vertical-align: top;
   min-width: 80px;
   position: relative;
+  color: rgba(255, 255, 255, 0.92);
 }
 .rich-editor .ProseMirror th {
-  background: #f5f5f7;
+  background: rgba(255, 255, 255, 0.06);
   font-weight: 600;
   text-align: left;
+  color: rgba(255, 255, 255, 0.96);
 }
 .rich-editor .ProseMirror td p,
 .rich-editor .ProseMirror th p {
   margin: 0;
 }
 .rich-editor .ProseMirror .selectedCell {
-  background: rgba(10, 132, 255, 0.12);
+  background: rgba(35, 131, 226, 0.18);
 }
 
-/* Toggle (details/summary) */
+/* ---------- Toggle (Notion ▶) ---------- */
 .rich-editor .ProseMirror .rich-toggle {
-  border-left: 2px solid rgba(0, 0, 0, 0.15);
-  padding: 4px 0 4px 10px;
-  margin: 0.4em 0;
+  padding: 2px 0;
+  margin: 4px 0;
 }
 .rich-editor .ProseMirror .rich-toggle-summary {
   cursor: pointer;
-  font-weight: 500;
+  font-weight: 400;
   list-style: none;
+  padding: 2px 0;
+  color: rgba(255, 255, 255, 0.92);
+  user-select: none;
 }
 .rich-editor .ProseMirror .rich-toggle-summary::-webkit-details-marker {
   display: none;
@@ -181,121 +239,139 @@
 .rich-editor .ProseMirror .rich-toggle-summary::before {
   content: "▸";
   display: inline-block;
-  width: 1em;
-  color: rgba(0, 0, 0, 0.5);
-  transition: transform 120ms;
+  width: 1.2em;
+  color: rgba(255, 255, 255, 0.55);
+  transition: transform 150ms ease;
+  font-size: 11px;
+  position: relative;
+  top: -1px;
 }
 .rich-editor .ProseMirror details[open] > .rich-toggle-summary::before {
   transform: rotate(90deg);
 }
 .rich-editor .ProseMirror .rich-toggle-body {
-  padding-left: 1em;
-  margin-top: 4px;
+  padding-left: 1.6em;
+  margin-top: 2px;
+  color: rgba(255, 255, 255, 0.86);
 }
 
-/* Callout */
+/* ---------- Callout (Notion style) ---------- */
 .rich-editor .ProseMirror .rich-callout {
-  border-left: 4px solid var(--callout-bar, #0a84ff);
-  background: var(--callout-bg, #f1f6ff);
-  border-radius: var(--r-sm, 8px);
-  padding: 12px 16px;
-  margin: 0.6em 0;
-  color: #1d1d1f;
+  position: relative;
+  padding: 14px 16px 14px 48px;
+  margin: 8px 0;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.92);
 }
-.rich-editor .ProseMirror .rich-callout[data-callout-type="NOTE"] {
-  --callout-bar: #0969da;
-  --callout-bg: #ddf4ff;
+.rich-editor .ProseMirror .rich-callout::before {
+  position: absolute;
+  left: 14px;
+  top: 12px;
+  font-size: 18px;
+  line-height: 1;
 }
-.rich-editor .ProseMirror .rich-callout[data-callout-type="TIP"] {
-  --callout-bar: #1a7f37;
-  --callout-bg: #dafbe1;
+.rich-editor .ProseMirror .rich-callout[data-callout-type="NOTE"]::before {
+  content: "💡";
 }
-.rich-editor .ProseMirror .rich-callout[data-callout-type="IMPORTANT"] {
-  --callout-bar: #8250df;
-  --callout-bg: #fbefff;
+.rich-editor .ProseMirror .rich-callout[data-callout-type="TIP"]::before {
+  content: "✨";
 }
-.rich-editor .ProseMirror .rich-callout[data-callout-type="WARNING"] {
-  --callout-bar: #9a6700;
-  --callout-bg: #fff8c5;
+.rich-editor .ProseMirror .rich-callout[data-callout-type="IMPORTANT"]::before {
+  content: "❗";
 }
-.rich-editor .ProseMirror .rich-callout[data-callout-type="CAUTION"] {
-  --callout-bar: #cf222e;
-  --callout-bg: #ffebe9;
+.rich-editor .ProseMirror .rich-callout[data-callout-type="WARNING"]::before {
+  content: "⚠️";
+}
+.rich-editor .ProseMirror .rich-callout[data-callout-type="CAUTION"]::before {
+  content: "🛑";
+}
+.rich-editor .ProseMirror .rich-callout > p {
+  margin: 0;
 }
 
-/* Link */
+/* ---------- Link ---------- */
 .rich-editor .ProseMirror a {
-  color: #0969da;
+  color: #529cca;
   text-decoration: underline;
   text-underline-offset: 2px;
+  text-decoration-color: rgba(82, 156, 202, 0.4);
 }
 
-/* ---------- Slash menu popup ---------- */
+/* Selection */
+.rich-editor .ProseMirror ::selection {
+  background: rgba(35, 131, 226, 0.35);
+}
+
+/* ============================================================
+   Slash menu popup (다크 + Notion 톤)
+   ============================================================ */
 .slash-menu-popup {
   z-index: 9999;
 }
 .slash-menu {
-  background: var(--color-tile-1);
-  border: 1px solid var(--color-divider-soft);
-  border-radius: var(--r-md);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
-  width: 280px;
+  background: #2f3437;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 6px;
+  box-shadow:
+    rgba(15, 15, 15, 0.05) 0 0 0 1px,
+    rgba(15, 15, 15, 0.1) 0 3px 6px,
+    rgba(15, 15, 15, 0.2) 0 9px 24px;
+  width: 300px;
   max-height: 360px;
   overflow-y: auto;
   padding: 6px;
+  color: rgba(255, 255, 255, 0.81);
 }
 .slash-menu-empty {
   padding: 14px;
   font-size: 13px;
-  color: var(--color-body-muted);
+  color: rgba(255, 255, 255, 0.5);
   text-align: center;
 }
 .slash-menu-group {
   padding: 4px 0;
 }
 .slash-menu-group + .slash-menu-group {
-  border-top: 1px solid var(--color-divider-soft);
+  border-top: 1px solid rgba(255, 255, 255, 0.094);
   margin-top: 4px;
   padding-top: 6px;
 }
 .slash-menu-group-label {
-  padding: 4px 10px 6px;
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--color-body-muted);
+  padding: 6px 10px 4px;
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.5);
 }
 .slash-menu-item {
   display: flex;
   align-items: center;
   gap: 10px;
   width: 100%;
-  padding: 8px 10px;
-  border-radius: var(--r-sm);
+  padding: 6px 10px;
+  border-radius: 4px;
   background: transparent;
   text-align: left;
   cursor: pointer;
-  color: var(--color-ink);
+  color: rgba(255, 255, 255, 0.81);
+  transition: background 80ms;
 }
-.slash-menu-item[data-active="true"] {
-  background: var(--color-tile-3);
-}
+.slash-menu-item[data-active="true"],
 .slash-menu-item:hover {
-  background: var(--color-tile-3);
+  background: rgba(255, 255, 255, 0.055);
 }
 .slash-menu-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: var(--r-sm);
-  background: var(--color-tile-3);
-  color: var(--color-ink);
+  width: 36px;
+  height: 36px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.094);
+  color: rgba(255, 255, 255, 0.81);
   flex-shrink: 0;
-}
-.slash-menu-item[data-active="true"] .slash-menu-icon {
-  background: var(--color-tile-4);
 }
 .slash-menu-body {
   display: flex;
@@ -304,45 +380,44 @@
   flex: 1;
 }
 .slash-menu-title {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
-  color: var(--color-ink);
+  color: rgba(255, 255, 255, 0.92);
 }
 .slash-menu-desc {
-  font-size: 11px;
-  color: var(--color-body-muted);
-  margin-top: 2px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  margin-top: 1px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-/* ---------- Table controls ---------- */
+/* ============================================================
+   Table controls
+   ============================================================ */
 .rich-table-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 22px;
   height: 22px;
-  border-radius: 50%;
-  background: var(--color-tile-3);
-  border: 1px solid var(--color-divider-soft);
-  color: var(--color-body-muted);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  color: rgba(255, 255, 255, 0.7);
   cursor: pointer;
   z-index: 100;
-  transition: background 120ms, color 120ms;
+  transition: all 100ms;
 }
 .rich-table-btn:hover {
-  background: var(--color-primary, #0a84ff);
+  background: rgba(35, 131, 226, 0.5);
   color: white;
-  border-color: var(--color-primary, #0a84ff);
-}
-.rich-table-btn-delete {
-  background: var(--color-tile-3);
+  border-color: rgba(35, 131, 226, 0.8);
 }
 .rich-table-btn-delete:hover {
-  background: #ff453a;
-  border-color: #ff453a;
+  background: rgba(235, 87, 87, 0.6);
+  border-color: rgba(235, 87, 87, 0.8);
   color: white;
 }
 
@@ -351,71 +426,81 @@
   align-items: center;
   gap: 6px;
   padding: 6px 8px;
-  background: var(--color-tile-1);
-  border: 1px solid var(--color-divider-soft);
-  border-radius: var(--r-sm);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  background: #2f3437;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 6px;
+  box-shadow: rgba(15, 15, 15, 0.2) 0 4px 12px;
   z-index: 101;
 }
 .rich-table-popover-label {
-  font-size: 11px;
-  color: var(--color-body-muted);
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
 }
 .rich-table-popover-input {
   width: 50px;
   padding: 4px 6px;
   border-radius: 4px;
-  background: var(--color-tile-3);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.13);
   font-size: 13px;
-  color: var(--color-ink);
+  color: rgba(255, 255, 255, 0.92);
 }
 .rich-table-popover-add {
   padding: 4px 10px;
-  background: var(--color-primary, #0a84ff);
+  background: rgba(35, 131, 226, 0.7);
   color: white;
-  font-size: 11px;
+  font-size: 12px;
   border-radius: 4px;
   cursor: pointer;
+  border: none;
+}
+.rich-table-popover-add:hover {
+  background: rgba(35, 131, 226, 0.9);
 }
 
-/* ---------- Callout type picker ---------- */
+/* ============================================================
+   Callout type picker
+   ============================================================ */
 .rich-callout-picker-btn {
-  width: 24px;
-  height: 24px;
-  border-radius: var(--r-sm);
-  background: var(--color-tile-3);
-  border: 1px solid var(--color-divider-soft);
+  width: 26px;
+  height: 26px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.13);
   cursor: pointer;
-  font-size: 13px;
+  font-size: 14px;
   z-index: 50;
 }
 .rich-callout-picker-btn:hover {
-  background: var(--color-tile-4);
+  background: rgba(255, 255, 255, 0.1);
 }
 .rich-callout-picker {
   display: flex;
   flex-direction: column;
   gap: 2px;
   padding: 4px;
-  background: var(--color-tile-1);
-  border: 1px solid var(--color-divider-soft);
-  border-radius: var(--r-sm);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  background: #2f3437;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 6px;
+  box-shadow: rgba(15, 15, 15, 0.2) 0 4px 12px;
   z-index: 100;
-  min-width: 130px;
+  min-width: 140px;
 }
 .rich-callout-picker-item {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 8px;
+  padding: 6px 10px;
   border-radius: 4px;
-  font-size: 12px;
-  color: var(--color-ink);
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.92);
   cursor: pointer;
   text-align: left;
+  background: transparent;
+  border: none;
+  width: 100%;
 }
 .rich-callout-picker-item:hover,
 .rich-callout-picker-item[data-active="true"] {
-  background: var(--color-tile-3);
+  background: rgba(255, 255, 255, 0.055);
 }
