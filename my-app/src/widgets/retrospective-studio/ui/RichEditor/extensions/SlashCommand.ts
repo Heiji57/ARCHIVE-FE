@@ -1,123 +1,75 @@
 import { Extension } from "@tiptap/core";
-import { Plugin, PluginKey } from "@tiptap/pm/state";
-import type { EditorView } from "@tiptap/pm/view";
 import type { Editor } from "@tiptap/core";
 
 /**
- * 직접 구현한 슬래시 커맨드 (Suggestion plugin 사용 안 함).
+ * 슬래시 커맨드 — Plugin / Suggestion 의존성 없는 단순 구현.
  *
- * 동작:
- *  - `/` 입력 감지 → onOpen 호출 (popup 띄우기)
- *  - 이어지는 입력 → onQuery 호출 (필터링)
- *  - Esc/공백/줄바꿈 → onClose 호출
+ * 동작 원리:
+ *   1. `/` 입력은 그냥 ProseMirror가 그대로 처리 (글자로 들어감)
+ *   2. RichEditor가 editor.on("transaction") + on("selectionUpdate")를 구독
+ *   3. 커서 직전 문자열에서 `/<query>` 패턴 매칭
+ *   4. 매칭되면 popup 표시, 아니면 닫기
  *
- * popup의 키보드(↑↓ Enter)는 RichEditor에서 별도로 keydown 처리.
+ * 즉, 이 Extension은 키바인딩만 처리 (Esc로 popup 닫기 도움)
+ * 나머지는 RichEditor가 함.
  */
-export interface SlashCommandOptions {
-  onOpen: (params: { editor: Editor; range: { from: number; to: number }; clientRect: DOMRect | null }) => void;
-  onQuery: (query: string) => void;
-  onClose: () => void;
-  /** 활성 상태인지 묻기 — popup 열려있을 때 enter/arrow 막기 위해 */
-  isActive: () => boolean;
-  /** 활성 상태에서 키 처리 (true 반환 시 ProseMirror 키 기본 동작 중단) */
-  onKeyDown: (event: KeyboardEvent) => boolean;
-}
 
-const slashKey = new PluginKey("slashCommand");
+export interface SlashCommandOptions {
+  onEscape: () => boolean;
+  onArrowDown: () => boolean;
+  onArrowUp: () => boolean;
+  onEnter: () => boolean;
+}
 
 export const SlashCommandExtension = Extension.create<SlashCommandOptions>({
   name: "slashCommand",
 
   addOptions() {
     return {
-      onOpen: () => {},
-      onQuery: () => {},
-      onClose: () => {},
-      isActive: () => false,
-      onKeyDown: () => false,
+      onEscape: () => false,
+      onArrowDown: () => false,
+      onArrowUp: () => false,
+      onEnter: () => false,
     };
   },
 
-  addProseMirrorPlugins() {
-    const options = this.options;
-    const editor = this.editor;
-
-    return [
-      new Plugin({
-        key: slashKey,
-        state: {
-          init: () => ({ active: false, from: 0, query: "" }),
-          apply(tr, prev) {
-            const meta = tr.getMeta(slashKey);
-            if (meta) return { ...prev, ...meta };
-            // doc/selection 변경에 따라 query 갱신
-            if (prev.active) {
-              const { from } = prev;
-              const head = tr.selection.from;
-              if (head < from) return { active: false, from: 0, query: "" };
-              const text = tr.doc.textBetween(from, head, "\n");
-              if (!text.startsWith("/")) return { active: false, from: 0, query: "" };
-              // 공백 또는 줄바꿈이 들어오면 종료
-              if (/\s/.test(text)) return { active: false, from: 0, query: "" };
-              return { ...prev, query: text.slice(1) };
-            }
-            return prev;
-          },
-        },
-        props: {
-          handleKeyDown(view: EditorView, event: KeyboardEvent) {
-            // active 상태면 popup이 키 처리
-            const state = slashKey.getState(view.state);
-            if (state?.active) {
-              if (options.onKeyDown(event)) return true;
-            }
-
-            if (event.key !== "/") return false;
-            // `/` 입력 → 다음 frame에서 popup 열기
-            requestAnimationFrame(() => {
-              const { from } = view.state.selection;
-              // 같은 위치에서 시작 (직전 textBefore 확인)
-              const $pos = view.state.doc.resolve(from);
-              const before = $pos.nodeBefore?.text ?? "";
-              // 직전 글자가 일반 텍스트면 슬래시 무시(예: "10/24")
-              if (before && !/\s$/.test(before)) return;
-
-              view.dispatch(view.state.tr.setMeta(slashKey, {
-                active: true,
-                from,  // 슬래시가 들어간 위치
-                query: "",
-              }));
-
-              const coords = view.coordsAtPos(from);
-              const rect = new DOMRect(coords.left, coords.top, 0, coords.bottom - coords.top);
-              options.onOpen({ editor, range: { from, to: from + 1 }, clientRect: rect });
-            });
-            return false;  // `/` 자체는 그대로 입력되게
-          },
-        },
-        view() {
-          let lastQuery = "";
-          let lastActive = false;
-          return {
-            update(view) {
-              const state = slashKey.getState(view.state);
-              if (!state) return;
-              if (state.active && !lastActive) {
-                lastActive = true;
-              } else if (!state.active && lastActive) {
-                lastActive = false;
-                options.onClose();
-              }
-              if (state.active && state.query !== lastQuery) {
-                lastQuery = state.query;
-                options.onQuery(state.query);
-              }
-            },
-          };
-        },
-      }),
-    ];
+  addKeyboardShortcuts() {
+    return {
+      Escape: () => this.options.onEscape(),
+      ArrowDown: () => this.options.onArrowDown(),
+      ArrowUp: () => this.options.onArrowUp(),
+      Enter: () => this.options.onEnter(),
+    };
   },
 });
 
-export { slashKey };
+/**
+ * 커서 직전 텍스트에서 `/<query>` 패턴 추출.
+ * 공백/줄바꿈 이전까지의 슬래시 문자열을 반환.
+ */
+export function detectSlashQuery(editor: Editor): {
+  active: boolean;
+  query: string;
+  from: number;
+  to: number;
+} {
+  const { state } = editor;
+  const { selection } = state;
+  const { from } = selection;
+
+  // 현재 위치에서 뒤로 32자까지 확인 (긴 쿼리는 거의 없음)
+  const start = Math.max(0, from - 32);
+  const textBefore = state.doc.textBetween(start, from, "\n", "\n");
+  const match = textBefore.match(/(^|\s)\/([^\s/]*)$/);
+  if (!match) {
+    return { active: false, query: "", from: 0, to: 0 };
+  }
+  const slashOffset = match.index! + match[1].length;
+  const slashFrom = start + slashOffset;
+  return {
+    active: true,
+    query: match[2],
+    from: slashFrom,
+    to: from,
+  };
+}
