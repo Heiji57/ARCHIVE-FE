@@ -40,8 +40,9 @@ export default function RichEditor({
   onChange,
 }: RichEditorProps) {
   const [popup, setPopup] = useState<PopupState>(EMPTY_POPUP);
-  const popupOpenRef = useRef(false);
   const menuRef = useRef<SlashMenuRef | null>(null);
+  // popup 상태를 키 핸들러에서 참조하기 위한 ref
+  const popupOpenRef = useRef(false);
   popupOpenRef.current = popup.open;
 
   const editor = useEditor({
@@ -52,30 +53,7 @@ export default function RichEditor({
       Placeholder.configure({
         placeholder: placeholder ?? "내용을 입력하거나 / 를 눌러 블록 선택...",
       }),
-      SlashCommandExtension.configure({
-        onEscape: () => {
-          if (popupOpenRef.current) {
-            setPopup(EMPTY_POPUP);
-            return true;
-          }
-          return false;
-        },
-        onArrowDown: () =>
-          popupOpenRef.current &&
-          !!menuRef.current?.onKeyDown({
-            event: new KeyboardEvent("keydown", { key: "ArrowDown" }),
-          }),
-        onArrowUp: () =>
-          popupOpenRef.current &&
-          !!menuRef.current?.onKeyDown({
-            event: new KeyboardEvent("keydown", { key: "ArrowUp" }),
-          }),
-        onEnter: () =>
-          popupOpenRef.current &&
-          !!menuRef.current?.onKeyDown({
-            event: new KeyboardEvent("keydown", { key: "Enter" }),
-          }),
-      }),
+      SlashCommandExtension,
     ],
     content: markdownToHtml(value),
     autofocus: false,
@@ -84,7 +62,7 @@ export default function RichEditor({
     },
   });
 
-  // editor 변경 사항 + 선택 변경 시 슬래시 쿼리 감지
+  // 슬래시 쿼리 감지 — transaction/selectionUpdate에서 popup 갱신
   useEffect(() => {
     if (!editor) return;
 
@@ -94,7 +72,6 @@ export default function RichEditor({
         setPopup(EMPTY_POPUP);
         return;
       }
-      // popup이 이미 열려있으면 query만 갱신, 아니면 위치 다시 계산
       const coords = editor.view.coordsAtPos(result.from);
       const rect = new DOMRect(
         coords.left,
@@ -118,6 +95,37 @@ export default function RichEditor({
       editor.off("selectionUpdate", updatePopup);
     };
   }, [editor]);
+
+  // popup이 열려있을 때만 키보드 가로채기 (document 레벨)
+  useEffect(() => {
+    if (!popup.open) return;
+    const handleKey = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      // 에디터 영역 안에서만 가로채기
+      if (!target?.closest(".rich-editor")) return;
+
+      if (event.key === "Escape") {
+        event.preventDefault();
+        event.stopPropagation();
+        setPopup(EMPTY_POPUP);
+        return;
+      }
+      if (
+        event.key === "ArrowDown" ||
+        event.key === "ArrowUp" ||
+        event.key === "Enter"
+      ) {
+        if (menuRef.current?.onKeyDown({ event })) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+      }
+    };
+    document.addEventListener("keydown", handleKey, true);
+    return () => {
+      document.removeEventListener("keydown", handleKey, true);
+    };
+  }, [popup.open]);
 
   // 외부 value 변경 시 동기화
   useEffect(() => {
