@@ -1,10 +1,8 @@
 import { Extension, type Range } from "@tiptap/core";
-import Suggestion, { type SuggestionOptions } from "@tiptap/suggestion";
 import type { Editor } from "@tiptap/core";
-import { filterCommands, type SlashCommandItem } from "../commands";
+import type { SlashCommandItem } from "../commands";
 
 export interface SlashCommandProps {
-  /** 메뉴 렌더링 후 반환되는 컨트롤러 */
   render: () => {
     onStart: (props: SuggestionRenderProps) => void;
     onUpdate: (props: SuggestionRenderProps) => void;
@@ -23,8 +21,8 @@ export interface SuggestionRenderProps {
 }
 
 /**
- * `/` 슬래시 커맨드 — @tiptap/suggestion 기반.
- * 필터링은 commands.ts의 filterCommands가 담당.
+ * 진단용 스텁 — Suggestion plugin 없이 빈 Extension.
+ * 이 버전에서 cached 에러가 사라지면 Suggestion이 원인.
  */
 export const SlashCommandExtension = Extension.create<SlashCommandProps>({
   name: "slashCommand",
@@ -38,21 +36,5 @@ export const SlashCommandExtension = Extension.create<SlashCommandProps>({
         onExit: () => {},
       }),
     };
-  },
-
-  addProseMirrorPlugins() {
-    return [
-      Suggestion({
-        editor: this.editor,
-        char: "/",
-        startOfLine: false,
-        allowSpaces: false,
-        command: ({ editor, range, props }: { editor: Editor; range: Range; props: SlashCommandItem }) => {
-          props.execute(editor, range);
-        },
-        items: ({ query }: { query: string }) => filterCommands(query),
-        render: this.options.render as unknown as SuggestionOptions["render"],
-      }),
-    ];
   },
 });
