@@ -35,6 +35,9 @@ importers:
       '@tiptap/extension-task-list':
         specifier: ^3.23.6
         version: 3.23.6(@tiptap/extension-list@3.23.6(@tiptap/core@3.23.6(@tiptap/pm@3.23.6))(@tiptap/pm@3.23.6))
+      '@tiptap/pm':
+        specifier: ^3.23.6
+        version: 3.23.6
       '@tiptap/react':
         specifier: ^3.23.6
         version: 3.23.6(@floating-ui/dom@1.7.6)(@tiptap/core@3.23.6(@tiptap/pm@3.23.6))(@tiptap/pm@3.23.6)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
