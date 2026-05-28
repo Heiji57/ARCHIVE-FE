@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import {
   BookOpen,
   Check,
@@ -13,6 +14,9 @@ import { Pill } from "@/shared/ui/pill/Pill";
 import { formatFullDate, fromDateKey } from "@/shared/lib/date";
 import { useTranslation } from "@/shared/lib/i18n";
 import { MOCK_COMMITS, RETRO_LABEL_KEY } from "../model/constants";
+
+// TipTap 에디터는 번들 크기가 크므로 회고록 페이지 진입 시에만 로드
+const RichEditor = lazy(() => import("./RichEditor/RichEditor"));
 
 export interface RetroEditorProps {
   entry: JournalEntry;
@@ -246,13 +250,26 @@ export function RetroEditor({
           </div>
           <p className="section-card-title">{t("retro.editor.learned")}</p>
         </div>
-        <textarea
-          value={entry.content}
-          onChange={(e) => onUpdate({ content: e.target.value })}
-          placeholder={t("retro.editor.learnedPlaceholder")}
-          className="editor-area"
-          style={{ minHeight: 260 }}
-        />
+        <Suspense
+          fallback={
+            <div
+              style={{
+                minHeight: 260,
+                padding: 12,
+                fontSize: 13,
+                color: "var(--color-body-muted)",
+              }}
+            >
+              에디터 로딩 중...
+            </div>
+          }
+        >
+          <RichEditor
+            value={entry.content}
+            placeholder={t("retro.editor.learnedPlaceholder")}
+            onChange={(md) => onUpdate({ content: md })}
+          />
+        </Suspense>
       </section>
     </article>
   );

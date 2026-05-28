@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "PowerShell(Head 60)"
+      "PowerShell(Head 60)",
+      "Bash(pnpm add *)"
     ]
   }
 }
