@@ -4,7 +4,7 @@ import StarterKit from "@tiptap/starter-kit";
 import { Placeholder } from "@tiptap/extension-placeholder";
 import { Table, TableCell, TableHeader, TableRow } from "@tiptap/extension-table";
 import { Callout } from "./extensions/Callout";
-import { ToggleNode, ToggleSummary, ToggleBody } from "./extensions/Toggle";
+import { ToggleNode } from "./extensions/Toggle";
 import { SlashCommandExtension } from "./extensions/SlashCommand";
 import { SlashMenu, type SlashMenuRef } from "./components/SlashMenu";
 import { TableControls } from "./components/TableControls";
@@ -84,8 +84,6 @@ export default function RichEditor({
       TableCell,
       Callout,
       ToggleNode,
-      ToggleSummary,
-      ToggleBody,
       SlashCommandExtension.configure({
         render: () => ({
           onStart: (props) => {

@@ -9,22 +9,27 @@ declare module "@tiptap/core" {
 }
 
 /**
- * 토글 노드 — <details>/<summary> 호환.
- * 첫 번째 자식 노드는 summary로 취급, 나머지는 내용.
+ * 토글 노드 — <details>로 직렬화.
+ *
+ * 단순화 버전: 단일 노드. 첫 번째 자식이 summary 역할,
+ * 나머지가 본문이 됨. 별도의 토글 summary/body 서브 노드 없이
+ * 표준 block 콘텐츠를 사용해 ProseMirror 스키마 충돌 회피.
  */
 export const ToggleNode = Node.create({
   name: "toggle",
   group: "block",
-  content: "toggleSummary toggleBody",
+  content: "block+",
   defining: true,
-  isolating: true,
 
   addAttributes() {
     return {
-      open: {
-        default: true,
-        parseHTML: (element) => element.hasAttribute("open"),
-        renderHTML: (attrs) => (attrs.open ? { open: "" } : {}),
+      summary: {
+        default: "토글 제목",
+        parseHTML: (element) => {
+          const summary = element.querySelector(":scope > summary");
+          return summary?.textContent ?? "토글 제목";
+        },
+        renderHTML: () => ({}),
       },
     };
   },
@@ -33,11 +38,16 @@ export const ToggleNode = Node.create({
     return [{ tag: "details" }];
   },
 
-  renderHTML({ HTMLAttributes }) {
+  renderHTML({ node, HTMLAttributes }) {
     return [
       "details",
       mergeAttributes(HTMLAttributes, { class: "rich-toggle" }),
-      0,
+      [
+        "summary",
+        { class: "rich-toggle-summary", contenteditable: "false" },
+        node.attrs.summary,
+      ],
+      ["div", { class: "rich-toggle-body" }, 0],
     ];
   },
 
@@ -49,46 +59,10 @@ export const ToggleNode = Node.create({
           chain()
             .insertContent({
               type: this.name,
-              content: [
-                {
-                  type: "toggleSummary",
-                  content: [{ type: "text", text: "토글 제목" }],
-                },
-                {
-                  type: "toggleBody",
-                  content: [{ type: "paragraph" }],
-                },
-              ],
+              attrs: { summary: "토글 제목" },
+              content: [{ type: "paragraph" }],
             })
             .run(),
     };
-  },
-});
-
-export const ToggleSummary = Node.create({
-  name: "toggleSummary",
-  content: "inline*",
-  defining: true,
-  parseHTML() {
-    return [{ tag: "summary" }];
-  },
-  renderHTML() {
-    return ["summary", { class: "rich-toggle-summary" }, 0];
-  },
-});
-
-export const ToggleBody = Node.create({
-  name: "toggleBody",
-  content: "block+",
-  defining: true,
-  parseHTML() {
-    return [{ tag: 'div[data-toggle-body="true"]' }];
-  },
-  renderHTML() {
-    return [
-      "div",
-      { "data-toggle-body": "true", class: "rich-toggle-body" },
-      0,
-    ];
   },
 });
