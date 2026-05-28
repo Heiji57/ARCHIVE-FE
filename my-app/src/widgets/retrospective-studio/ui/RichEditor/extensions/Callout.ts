@@ -6,22 +6,19 @@ declare module "@tiptap/core" {
   interface Commands<ReturnType> {
     callout: {
       setCallout: (attrs?: { type?: CalloutType }) => ReturnType;
-      toggleCallout: (attrs?: { type?: CalloutType }) => ReturnType;
       setCalloutType: (type: CalloutType) => ReturnType;
     };
   }
 }
 
 /**
- * 콜아웃 노드 — GitHub Alert 호환.
- * 마크다운 직렬화는 외부 preprocessor에서 처리됨 (markdown/serialize.ts).
+ * 콜아웃 — GitHub Alert 호환 (5종).
+ * defining/isolating 제거하여 schema 안정성 우선.
  */
 export const Callout = Node.create({
   name: "callout",
   group: "block",
   content: "block+",
-  defining: true,
-  isolating: true,
 
   addAttributes() {
     return {
@@ -35,11 +32,7 @@ export const Callout = Node.create({
   },
 
   parseHTML() {
-    return [
-      {
-        tag: 'div[data-callout="true"]',
-      },
-    ];
+    return [{ tag: 'div[data-callout="true"]' }];
   },
 
   renderHTML({ HTMLAttributes }) {
@@ -57,12 +50,14 @@ export const Callout = Node.create({
     return {
       setCallout:
         (attrs) =>
-        ({ commands }) =>
-          commands.wrapIn(this.name, { type: attrs?.type ?? "NOTE" }),
-      toggleCallout:
-        (attrs) =>
-        ({ commands }) =>
-          commands.toggleWrap(this.name, { type: attrs?.type ?? "NOTE" }),
+        ({ chain }) =>
+          chain()
+            .insertContent({
+              type: this.name,
+              attrs: { type: attrs?.type ?? "NOTE" },
+              content: [{ type: "paragraph" }],
+            })
+            .run(),
       setCalloutType:
         (type) =>
         ({ commands }) =>

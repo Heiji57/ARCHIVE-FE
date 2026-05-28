@@ -2,13 +2,16 @@ import { useEffect, useRef, useState } from "react";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { Placeholder } from "@tiptap/extension-placeholder";
-// 타입 등록 유지
-import "@tiptap/extension-table";
+import { Table, TableCell, TableHeader, TableRow } from "@tiptap/extension-table";
 import {
   SlashCommandExtension,
   detectSlashQuery,
 } from "./extensions/SlashCommand";
+import { Callout } from "./extensions/Callout";
+import { ToggleNode } from "./extensions/Toggle";
 import { SlashMenu, type SlashMenuRef } from "./components/SlashMenu";
+import { TableControls } from "./components/TableControls";
+import { CalloutTypePicker } from "./components/CalloutTypePicker";
 import { filterCommands, type SlashCommandItem } from "./commands";
 import { markdownToHtml, htmlToMarkdown } from "./markdown";
 
@@ -53,6 +56,15 @@ export default function RichEditor({
       Placeholder.configure({
         placeholder: placeholder ?? "내용을 입력하거나 / 를 눌러 블록 선택...",
       }),
+      Table.configure({
+        resizable: false,
+        HTMLAttributes: { class: "rich-table" },
+      }),
+      TableRow,
+      TableHeader,
+      TableCell,
+      Callout,
+      ToggleNode,
       SlashCommandExtension,
     ],
     content: markdownToHtml(value),
@@ -151,6 +163,8 @@ export default function RichEditor({
   return (
     <div className="rich-editor">
       <EditorContent editor={editor} className="rich-editor-content" />
+      <TableControls editor={editor} />
+      <CalloutTypePicker editor={editor} />
       {popup.open && popup.rect ? (
         <SlashMenuPortal
           rect={popup.rect}

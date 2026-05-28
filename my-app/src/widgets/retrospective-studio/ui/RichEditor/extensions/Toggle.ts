@@ -1,4 +1,4 @@
-import { mergeAttributes, Node } from "@tiptap/core";
+import { InputRule, mergeAttributes, Node } from "@tiptap/core";
 
 declare module "@tiptap/core" {
   interface Commands<ReturnType> {
@@ -9,11 +9,10 @@ declare module "@tiptap/core" {
 }
 
 /**
- * 토글 노드 — <details>로 직렬화.
+ * 토글 노드 — <details>로 직렬화. 단일 노드, summary는 속성.
  *
- * 단순화 버전: 단일 노드. 첫 번째 자식이 summary 역할,
- * 나머지가 본문이 됨. 별도의 토글 summary/body 서브 노드 없이
- * 표준 block 콘텐츠를 사용해 ProseMirror 스키마 충돌 회피.
+ * Input rule: `>>` + 공백 → 토글 변환
+ *  (`>` 는 인용/blockquote와 충돌하므로 `>>`로)
  */
 export const ToggleNode = Node.create({
   name: "toggle",
@@ -64,5 +63,25 @@ export const ToggleNode = Node.create({
             })
             .run(),
     };
+  },
+
+  // InputRule: `>>` + 공백 → 토글
+  addInputRules() {
+    const name = this.name;
+    return [
+      new InputRule({
+        find: /^>>\s$/,
+        handler: ({ chain, range }) => {
+          chain()
+            .deleteRange(range)
+            .insertContent({
+              type: name,
+              attrs: { summary: "토글 제목" },
+              content: [{ type: "paragraph" }],
+            })
+            .run();
+        },
+      }),
+    ];
   },
 });

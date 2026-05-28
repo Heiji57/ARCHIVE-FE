@@ -217,7 +217,18 @@ export const SLASH_COMMANDS: SlashCommandItem[] = [
     execute: (editor, range) =>
       editor.chain().focus().deleteRange(range).toggleOrderedList().run(),
   },
-  // Toggle/Callout 일시 비활성화 — 스키마 충돌 진단 중
+  {
+    id: "toggle",
+    titleKo: "토글 목록",
+    titleEn: "Toggle list",
+    descKo: "펼치고 접을 수 있는 목록 (>>+공백 단축키)",
+    descEn: "Collapsible toggle list",
+    keywords: ["toggle", "details", "fold", "토글", "접기", "トグル", "折叠"],
+    category: "list",
+    icon: "ChevronRight",
+    execute: (editor, range) =>
+      editor.chain().focus().deleteRange(range).setToggle().run(),
+  },
 
   // ─── 블록 (Block) ───────────────────────────────────────────────────────
   {
@@ -232,8 +243,50 @@ export const SLASH_COMMANDS: SlashCommandItem[] = [
     execute: (editor, range) =>
       editor.chain().focus().deleteRange(range).toggleBlockquote().run(),
   },
-  // Callout 일시 비활성화 — 스키마 충돌 진단 중
-  // 표 일시 비활성화 — 진단 중
+  {
+    id: "callout",
+    titleKo: "콜아웃",
+    titleEn: "Callout",
+    descKo: "강조 카드 (정보/팁/경고 등)",
+    descEn: "Highlight card (info / tip / warning)",
+    keywords: [
+      "callout",
+      "note",
+      "alert",
+      "admonition",
+      "콜아웃",
+      "알림",
+      "강조",
+      "コールアウト",
+      "标注",
+    ],
+    category: "block",
+    icon: "Lightbulb",
+    execute: (editor, range) =>
+      editor
+        .chain()
+        .focus()
+        .deleteRange(range)
+        .setCallout({ type: "NOTE" })
+        .run(),
+  },
+  {
+    id: "table",
+    titleKo: "표",
+    titleEn: "Table",
+    descKo: "2×2 표 삽입 (행/열 추가 가능)",
+    descEn: "Insert a 2×2 table (expandable)",
+    keywords: ["table", "표", "テーブル", "表格", "grid"],
+    category: "block",
+    icon: "Table",
+    execute: (editor, range) =>
+      editor
+        .chain()
+        .focus()
+        .deleteRange(range)
+        .insertTable({ rows: 2, cols: 2, withHeaderRow: true })
+        .run(),
+  },
   {
     id: "divider",
     titleKo: "구분선",

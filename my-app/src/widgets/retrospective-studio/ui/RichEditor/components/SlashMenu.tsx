@@ -3,6 +3,7 @@ import {
   useEffect,
   useImperativeHandle,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import {
@@ -54,9 +55,18 @@ export const SlashMenu = forwardRef<SlashMenuRef, SlashMenuProps>(
   function SlashMenu({ items, command }, ref) {
     const { locale } = useTranslation();
     const [selectedIndex, setSelectedIndex] = useState(0);
+    const containerRef = useRef<HTMLDivElement | null>(null);
+    const itemRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
     // 아이템이 바뀌면 첫 번째 선택
     useEffect(() => setSelectedIndex(0), [items]);
+
+    // 선택 변경 시 해당 항목이 보이도록 스크롤
+    useEffect(() => {
+      const el = itemRefs.current[selectedIndex];
+      if (!el || !containerRef.current) return;
+      el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }, [selectedIndex]);
 
     const grouped = useMemo(() => {
       const byCategory: Record<string, SlashCommandItem[]> = {};
@@ -102,8 +112,10 @@ export const SlashMenu = forwardRef<SlashMenuRef, SlashMenuProps>(
     };
 
     let flatIndex = -1;
+    // ref 배열 길이 조정
+    itemRefs.current.length = items.length;
     return (
-      <div className="slash-menu">
+      <div ref={containerRef} className="slash-menu">
         {Object.entries(grouped).map(([category, list]) => (
           <div key={category} className="slash-menu-group">
             <div className="slash-menu-group-label">
@@ -114,9 +126,13 @@ export const SlashMenu = forwardRef<SlashMenuRef, SlashMenuProps>(
               flatIndex += 1;
               const Icon = ICONS[item.icon] ?? Minus;
               const isActive = flatIndex === selectedIndex;
+              const myIndex = flatIndex;
               return (
                 <button
                   key={item.id}
+                  ref={(el) => {
+                    itemRefs.current[myIndex] = el;
+                  }}
                   type="button"
                   className="slash-menu-item"
                   data-active={isActive ? "true" : undefined}
