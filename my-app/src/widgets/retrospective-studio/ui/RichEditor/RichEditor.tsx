@@ -1,10 +1,7 @@
-import { useEffect } from "react";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { Placeholder } from "@tiptap/extension-placeholder";
-// 타입 등록만을 위한 import (실제 사용은 안 함 — 진단 단계)
+// 타입 등록 유지 (다른 파일에서 사용)
 import "@tiptap/extension-table";
-import { markdownToHtml, htmlToMarkdown } from "./markdown";
 
 export interface RichEditorProps {
   value: string;
@@ -13,38 +10,21 @@ export interface RichEditorProps {
 }
 
 /**
- * 진단용 최소 에디터 — StarterKit + Placeholder 만.
- * 베이스가 동작하면 커스텀 확장들을 하나씩 다시 추가.
+ * 진단 단계 #2: TipTap 베이스만. StarterKit만 사용, marked/placeholder 없음.
+ * 이것도 안 되면 React 19 + TipTap v3 호환성 자체에 문제.
  */
 export default function RichEditor({
   value,
-  placeholder,
   onChange,
 }: RichEditorProps) {
   const editor = useEditor({
-    extensions: [
-      StarterKit.configure({
-        heading: { levels: [1, 2, 3, 4, 5] },
-      }),
-      Placeholder.configure({
-        placeholder: placeholder ?? "내용을 입력하세요...",
-      }),
-    ],
-    content: markdownToHtml(value),
+    extensions: [StarterKit],
+    content: value || "<p></p>",
     autofocus: false,
     onUpdate: ({ editor: ed }) => {
-      onChange(htmlToMarkdown(ed.getHTML()));
+      onChange(ed.getHTML());
     },
   });
-
-  useEffect(() => {
-    if (!editor) return;
-    const currentMd = htmlToMarkdown(editor.getHTML());
-    if (currentMd !== value) {
-      editor.commands.setContent(markdownToHtml(value));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [value, editor]);
 
   if (!editor) return null;
 
