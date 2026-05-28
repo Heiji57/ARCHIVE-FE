@@ -2,10 +2,10 @@ import { useEffect, useRef } from "react";
 import { EditorContent, ReactRenderer, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { Placeholder } from "@tiptap/extension-placeholder";
-import { Table, TableCell, TableHeader, TableRow } from "@tiptap/extension-table";
+// Table 일시 비활성화 — 진단 중
+import "@tiptap/extension-table";
 import { SlashCommandExtension } from "./extensions/SlashCommand";
 import { SlashMenu, type SlashMenuRef } from "./components/SlashMenu";
-import { TableControls } from "./components/TableControls";
 import { markdownToHtml, htmlToMarkdown } from "./markdown";
 
 export interface RichEditorProps {
@@ -73,13 +73,6 @@ export default function RichEditor({
       Placeholder.configure({
         placeholder: placeholder ?? "내용을 입력하거나 / 를 눌러 블록 선택...",
       }),
-      Table.configure({
-        resizable: false,
-        HTMLAttributes: { class: "rich-table" },
-      }),
-      TableRow,
-      TableHeader,
-      TableCell,
       SlashCommandExtension.configure({
         render: () => ({
           onStart: (props) => {
@@ -134,7 +127,6 @@ export default function RichEditor({
   return (
     <div className="rich-editor">
       <EditorContent editor={editor} className="rich-editor-content" />
-      <TableControls editor={editor} />
     </div>
   );
 }

@@ -233,23 +233,7 @@ export const SLASH_COMMANDS: SlashCommandItem[] = [
       editor.chain().focus().deleteRange(range).toggleBlockquote().run(),
   },
   // Callout 일시 비활성화 — 스키마 충돌 진단 중
-  {
-    id: "table",
-    titleKo: "표",
-    titleEn: "Table",
-    descKo: "2×2 표 삽입 (행/열 추가 가능)",
-    descEn: "Insert a 2×2 table (expandable)",
-    keywords: ["table", "표", "テーブル", "表格", "grid"],
-    category: "block",
-    icon: "Table",
-    execute: (editor, range) =>
-      editor
-        .chain()
-        .focus()
-        .deleteRange(range)
-        .insertTable({ rows: 2, cols: 2, withHeaderRow: true })
-        .run(),
-  },
+  // 표 일시 비활성화 — 진단 중
   {
     id: "divider",
     titleKo: "구분선",
