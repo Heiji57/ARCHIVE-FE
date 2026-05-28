@@ -227,7 +227,7 @@ export const SLASH_COMMANDS: SlashCommandItem[] = [
     category: "list",
     icon: "ChevronRight",
     execute: (editor, range) =>
-      editor.chain().focus().deleteRange(range).setNode("toggle").run(),
+      editor.chain().focus().deleteRange(range).setToggle().run(),
   },
 
   // ─── 블록 (Block) ───────────────────────────────────────────────────────
@@ -267,7 +267,7 @@ export const SLASH_COMMANDS: SlashCommandItem[] = [
         .chain()
         .focus()
         .deleteRange(range)
-        .setNode("callout", { type: "NOTE" })
+        .setCallout({ type: "NOTE" })
         .run(),
   },
   {

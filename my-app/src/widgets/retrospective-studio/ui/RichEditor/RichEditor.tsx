@@ -2,7 +2,6 @@ import { useEffect, useRef } from "react";
 import { EditorContent, ReactRenderer, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { Placeholder } from "@tiptap/extension-placeholder";
-import { Link } from "@tiptap/extension-link";
 import { Table, TableCell, TableHeader, TableRow } from "@tiptap/extension-table";
 import { Markdown } from "tiptap-markdown";
 import { Callout } from "./extensions/Callout";
@@ -76,15 +75,11 @@ export default function RichEditor({
     extensions: [
       StarterKit.configure({
         heading: { levels: [1, 2, 3, 4, 5] },
-        horizontalRule: {},
-        blockquote: {},
-        bulletList: {},
-        orderedList: {},
+        link: { openOnClick: false, autolink: true },
       }),
       Placeholder.configure({
         placeholder: placeholder ?? "내용을 입력하거나 / 를 눌러 블록 선택...",
       }),
-      Link.configure({ openOnClick: false, autolink: true }),
       Table.configure({ resizable: false, HTMLAttributes: { class: "rich-table" } }),
       TableRow,
       TableHeader,
@@ -145,7 +140,7 @@ export default function RichEditor({
     if (!editor) return;
     const current = postprocessMarkdown(editor.storage.markdown.getMarkdown());
     if (current !== value) {
-      editor.commands.setContent(preprocessMarkdown(value), { emitUpdate: false });
+      editor.commands.setContent(preprocessMarkdown(value));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value, editor]);

@@ -15,6 +15,8 @@ import { formatFullDate, fromDateKey } from "@/shared/lib/date";
 import { useTranslation } from "@/shared/lib/i18n";
 import { MOCK_COMMITS, RETRO_LABEL_KEY } from "../model/constants";
 
+import { EditorErrorBoundary } from "./RichEditor/EditorErrorBoundary";
+
 // TipTap 에디터는 번들 크기가 크므로 회고록 페이지 진입 시에만 로드
 const RichEditor = lazy(() => import("./RichEditor/RichEditor"));
 
@@ -250,26 +252,46 @@ export function RetroEditor({
           </div>
           <p className="section-card-title">{t("retro.editor.learned")}</p>
         </div>
-        <Suspense
-          fallback={
+        <EditorErrorBoundary
+          fallback={(error) => (
             <div
               style={{
-                minHeight: 260,
-                padding: 12,
+                padding: 14,
                 fontSize: 13,
-                color: "var(--color-body-muted)",
+                color: "var(--color-warn, #ff9f0a)",
+                background: "var(--color-tile-3)",
+                borderRadius: "var(--r-sm)",
+                fontFamily: "var(--font-mono, monospace)",
+                whiteSpace: "pre-wrap",
               }}
             >
-              에디터 로딩 중...
+              <strong>에디터를 불러오지 못했습니다.</strong>
+              {"\n"}
+              {error.message}
             </div>
-          }
+          )}
         >
-          <RichEditor
-            value={entry.content}
-            placeholder={t("retro.editor.learnedPlaceholder")}
-            onChange={(md) => onUpdate({ content: md })}
-          />
-        </Suspense>
+          <Suspense
+            fallback={
+              <div
+                style={{
+                  minHeight: 260,
+                  padding: 12,
+                  fontSize: 13,
+                  color: "var(--color-body-muted)",
+                }}
+              >
+                에디터 로딩 중...
+              </div>
+            }
+          >
+            <RichEditor
+              value={entry.content}
+              placeholder={t("retro.editor.learnedPlaceholder")}
+              onChange={(md) => onUpdate({ content: md })}
+            />
+          </Suspense>
+        </EditorErrorBoundary>
       </section>
     </article>
   );
