@@ -217,18 +217,7 @@ export const SLASH_COMMANDS: SlashCommandItem[] = [
     execute: (editor, range) =>
       editor.chain().focus().deleteRange(range).toggleOrderedList().run(),
   },
-  {
-    id: "toggle",
-    titleKo: "토글 목록",
-    titleEn: "Toggle list",
-    descKo: "펼치고 접을 수 있는 목록",
-    descEn: "Collapsible toggle list",
-    keywords: ["toggle", "details", "fold", "토글", "접기", "トグル", "折叠"],
-    category: "list",
-    icon: "ChevronRight",
-    execute: (editor, range) =>
-      editor.chain().focus().deleteRange(range).setToggle().run(),
-  },
+  // Toggle/Callout 일시 비활성화 — 스키마 충돌 진단 중
 
   // ─── 블록 (Block) ───────────────────────────────────────────────────────
   {
@@ -243,33 +232,7 @@ export const SLASH_COMMANDS: SlashCommandItem[] = [
     execute: (editor, range) =>
       editor.chain().focus().deleteRange(range).toggleBlockquote().run(),
   },
-  {
-    id: "callout",
-    titleKo: "콜아웃",
-    titleEn: "Callout",
-    descKo: "강조 카드 (정보/팁/경고 등)",
-    descEn: "Highlight card (info / tip / warning)",
-    keywords: [
-      "callout",
-      "note",
-      "alert",
-      "admonition",
-      "콜아웃",
-      "알림",
-      "강조",
-      "コールアウト",
-      "标注",
-    ],
-    category: "block",
-    icon: "Lightbulb",
-    execute: (editor, range) =>
-      editor
-        .chain()
-        .focus()
-        .deleteRange(range)
-        .setCallout({ type: "NOTE" })
-        .run(),
-  },
+  // Callout 일시 비활성화 — 스키마 충돌 진단 중
   {
     id: "table",
     titleKo: "표",
