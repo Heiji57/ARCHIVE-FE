@@ -1,23 +1,125 @@
 import { useEffect, useRef, useState } from "react";
-import { Copy, GripVertical, Plus, Trash2 } from "lucide-react";
+import {
+  ChevronRight,
+  Copy,
+  GripVertical,
+  Heading1,
+  Heading2,
+  Heading3,
+  Lightbulb,
+  List,
+  ListOrdered,
+  Minus,
+  Plus,
+  Quote,
+  Trash2,
+  Type,
+} from "lucide-react";
 import type { Editor } from "@tiptap/react";
 
 /**
  * Notion 스타일 블록 핸들.
  *
- * 마우스 호버 시 해당 블록 좌측에:
- *   ⊕  — 클릭: 그 블록 다음에 새 빈 단락 추가
- *   ⋮⋮ — 클릭: 작은 메뉴 (블록 삭제 / 복제 / 위·아래)
+ *  ⊕   클릭: 그 블록 다음에 새 빈 단락 추가
+ *  ⋮⋮  클릭: 그 블록을 NodeSelection으로 선택 + 메뉴 표시
  *
- * 표(table)는 별도 TableControls에서 처리하므로 핸들 제외.
+ * NodeSelection 상태에서:
+ *  - Del/Backspace → 자동 삭제 (ProseMirror 기본)
+ *  - Ctrl+C / Ctrl+V → 자동 복사/붙여넣기
+ *
+ * 메뉴: 전환(타입 변경) / 복제 / 삭제
  */
+
+interface TurnIntoOption {
+  id: string;
+  label: string;
+  icon: typeof Type;
+  apply: (editor: Editor, pos: number) => void;
+}
+
+const TURN_INTO_OPTIONS: TurnIntoOption[] = [
+  {
+    id: "p",
+    label: "본문",
+    icon: Type,
+    apply: (e, pos) =>
+      e.chain().focus().setNodeSelection(pos).setNode("paragraph").run(),
+  },
+  {
+    id: "h1",
+    label: "제목 1",
+    icon: Heading1,
+    apply: (e, pos) =>
+      e
+        .chain()
+        .focus()
+        .setNodeSelection(pos)
+        .setNode("heading", { level: 1 })
+        .run(),
+  },
+  {
+    id: "h2",
+    label: "제목 2",
+    icon: Heading2,
+    apply: (e, pos) =>
+      e
+        .chain()
+        .focus()
+        .setNodeSelection(pos)
+        .setNode("heading", { level: 2 })
+        .run(),
+  },
+  {
+    id: "h3",
+    label: "제목 3",
+    icon: Heading3,
+    apply: (e, pos) =>
+      e
+        .chain()
+        .focus()
+        .setNodeSelection(pos)
+        .setNode("heading", { level: 3 })
+        .run(),
+  },
+  {
+    id: "bullet",
+    label: "글머리 기호",
+    icon: List,
+    apply: (e, pos) =>
+      e.chain().focus().setNodeSelection(pos).toggleBulletList().run(),
+  },
+  {
+    id: "ol",
+    label: "번호 매기기",
+    icon: ListOrdered,
+    apply: (e, pos) =>
+      e.chain().focus().setNodeSelection(pos).toggleOrderedList().run(),
+  },
+  {
+    id: "quote",
+    label: "인용",
+    icon: Quote,
+    apply: (e, pos) =>
+      e.chain().focus().setNodeSelection(pos).toggleBlockquote().run(),
+  },
+  {
+    id: "callout",
+    label: "콜아웃",
+    icon: Lightbulb,
+    apply: (e, pos) =>
+      e.chain().focus().setNodeSelection(pos).setCallout({ type: "NOTE" }).run(),
+  },
+];
+
 export function BlockHandle({ editor }: { editor: Editor }) {
   const [hover, setHover] = useState<{
     pos: number;
     rect: DOMRect;
     blockEl: HTMLElement;
+    isTable: boolean;
   } | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [turnIntoOpen, setTurnIntoOpen] = useState(false);
   const hoverRef = useRef(hover);
   hoverRef.current = hover;
   const menuOpenRef = useRef(menuOpen);
@@ -36,17 +138,12 @@ export function BlockHandle({ editor }: { editor: Editor }) {
     };
 
     const onMouseMove = (e: MouseEvent) => {
-      // 메뉴 떠 있을 땐 호버 추적 중단
       if (menuOpenRef.current) return;
       const target = e.target as HTMLElement | null;
       if (!target) return;
-      // 핸들 위에 있으면 그대로 유지
-      if (target.closest(".rich-block-handle")) return;
-      // 표는 TableControls가 처리
-      if (target.closest("table")) {
-        setHover(null);
-        return;
-      }
+      if (target.closest(".rich-block-handle, .rich-block-menu")) return;
+      // 표 사이드 핸들 영역은 무시 (TableControls가 처리)
+      if (target.closest(".rich-table-handle")) return;
       if (!editorDom.contains(target)) {
         setHover(null);
         return;
@@ -62,7 +159,7 @@ export function BlockHandle({ editor }: { editor: Editor }) {
         setHover(null);
         return;
       }
-      // 같은 블록이면 갱신만 안 함 (rerender 줄이기)
+      const isTable = block.tagName === "TABLE";
       const prev = hoverRef.current;
       if (
         prev &&
@@ -72,7 +169,7 @@ export function BlockHandle({ editor }: { editor: Editor }) {
       ) {
         return;
       }
-      setHover({ pos, rect, blockEl: block });
+      setHover({ pos, rect, blockEl: block, isTable });
     };
 
     const onScrollOrResize = () => {
@@ -81,11 +178,10 @@ export function BlockHandle({ editor }: { editor: Editor }) {
       setHover({ ...h, rect: h.blockEl.getBoundingClientRect() });
     };
 
-    // 호버 밖으로 나가도 메뉴 떠 있으면 유지
     const onContainerLeave = (e: MouseEvent) => {
       if (menuOpenRef.current) return;
       const related = e.relatedTarget as HTMLElement | null;
-      if (related?.closest?.(".rich-block-handle")) return;
+      if (related?.closest?.(".rich-block-handle, .rich-block-menu")) return;
       setHover(null);
     };
 
@@ -108,6 +204,7 @@ export function BlockHandle({ editor }: { editor: Editor }) {
       const t = e.target as HTMLElement | null;
       if (t?.closest(".rich-block-menu, .rich-block-handle")) return;
       setMenuOpen(false);
+      setTurnIntoOpen(false);
     };
     document.addEventListener("mousedown", onDown);
     return () => document.removeEventListener("mousedown", onDown);
@@ -115,11 +212,20 @@ export function BlockHandle({ editor }: { editor: Editor }) {
 
   if (!hover) return null;
 
-  const insertAfter = () => {
-    // 그 블록의 끝 다음에 새 빈 단락 삽입
+  const openMenu = () => {
+    // 블록을 NodeSelection으로 선택 → Del/Ctrl+C/Ctrl+V 자동 동작
     try {
-      const $pos = editor.state.doc.resolve(hover.pos);
-      const blockNode = $pos.nodeAfter ?? editor.state.doc.nodeAt(hover.pos);
+      editor.chain().focus().setNodeSelection(hover.pos).run();
+    } catch {
+      /* noop */
+    }
+    setMenuOpen((v) => !v);
+    setTurnIntoOpen(false);
+  };
+
+  const insertAfter = () => {
+    try {
+      const blockNode = editor.state.doc.nodeAt(hover.pos);
       if (!blockNode) return;
       const endPos = hover.pos + blockNode.nodeSize;
       editor
@@ -129,7 +235,6 @@ export function BlockHandle({ editor }: { editor: Editor }) {
         .setTextSelection(endPos + 1)
         .run();
     } catch {
-      // 폴백
       editor.chain().focus().createParagraphNear().run();
     }
     setMenuOpen(false);
@@ -161,13 +266,23 @@ export function BlockHandle({ editor }: { editor: Editor }) {
     setMenuOpen(false);
   };
 
-  const handleSize = 22;
-  const left = hover.rect.left - 56;
+  const turnInto = (option: TurnIntoOption) => {
+    try {
+      option.apply(editor, hover.pos);
+    } catch {
+      /* noop */
+    }
+    setMenuOpen(false);
+    setTurnIntoOpen(false);
+  };
+
+  const HANDLE_SIZE = 22;
+  // 표는 좌측이 핸들로 가려질 수 있어 약간 더 왼쪽으로
+  const left = hover.rect.left - (hover.isTable ? 60 : 56);
   const top = hover.rect.top + 4;
 
   return (
     <>
-      {/* + 아이콘 — 클릭하면 이 블록 다음에 새 빈 단락 */}
       <button
         type="button"
         className="rich-block-handle rich-block-handle-add"
@@ -175,8 +290,8 @@ export function BlockHandle({ editor }: { editor: Editor }) {
           position: "fixed",
           left,
           top,
-          width: handleSize,
-          height: handleSize,
+          width: HANDLE_SIZE,
+          height: HANDLE_SIZE,
         }}
         onClick={insertAfter}
         title="아래에 블록 추가"
@@ -184,19 +299,18 @@ export function BlockHandle({ editor }: { editor: Editor }) {
         <Plus size={14} />
       </button>
 
-      {/* ⋮⋮ 아이콘 — 클릭하면 메뉴 열림 */}
       <button
         type="button"
         className="rich-block-handle rich-block-handle-menu"
         style={{
           position: "fixed",
-          left: left + handleSize + 2,
+          left: left + HANDLE_SIZE + 2,
           top,
-          width: handleSize,
-          height: handleSize,
+          width: HANDLE_SIZE,
+          height: HANDLE_SIZE,
         }}
-        onClick={() => setMenuOpen((v) => !v)}
-        title="블록 메뉴"
+        onClick={openMenu}
+        title="블록 선택 + 메뉴"
       >
         <GripVertical size={14} />
       </button>
@@ -206,18 +320,47 @@ export function BlockHandle({ editor }: { editor: Editor }) {
           className="rich-block-menu"
           style={{
             position: "fixed",
-            left: left + handleSize * 2 + 6,
+            left: left + HANDLE_SIZE * 2 + 6,
             top,
           }}
           onMouseDown={(e) => e.stopPropagation()}
         >
+          {/* 전환 (sub-menu) */}
+          <button
+            type="button"
+            className="rich-block-menu-item rich-block-menu-item-with-arrow"
+            onClick={() => setTurnIntoOpen((v) => !v)}
+          >
+            <Type size={13} />
+            <span>전환</span>
+            <ChevronRight size={12} className="rich-block-menu-arrow" />
+          </button>
+          {turnIntoOpen ? (
+            <div className="rich-block-menu rich-block-menu-sub">
+              {TURN_INTO_OPTIONS.map((opt) => {
+                const Icon = opt.icon;
+                return (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    className="rich-block-menu-item"
+                    onClick={() => turnInto(opt)}
+                  >
+                    <Icon size={13} />
+                    <span>{opt.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
+
           <button
             type="button"
             className="rich-block-menu-item"
             onClick={duplicateBlock}
           >
             <Copy size={13} />
-            <span>복제</span>
+            <span>복제 <kbd className="rich-block-kbd">Ctrl+D</kbd></span>
           </button>
           <button
             type="button"
@@ -225,8 +368,12 @@ export function BlockHandle({ editor }: { editor: Editor }) {
             onClick={deleteBlock}
           >
             <Trash2 size={13} />
-            <span>삭제</span>
+            <span>삭제 <kbd className="rich-block-kbd">Del</kbd></span>
           </button>
+          <div className="rich-block-menu-divider" />
+          <div className="rich-block-menu-hint">
+            <Minus size={10} /> 색 지정은 곧 추가 예정
+          </div>
         </div>
       ) : null}
     </>

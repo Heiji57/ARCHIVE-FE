@@ -1,18 +1,18 @@
 import { useEffect, useRef, useState } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus } from "lucide-react";
 import type { Editor } from "@tiptap/react";
 
 /**
- * Notion 스타일 표 컨트롤.
- *  - 우측 세로 +바: 표 높이만큼 — 드래그하면 우측으로 끌어당긴 거리만큼 열 추가
- *  - 하단 가로 +바: 표 너비만큼 — 드래그하면 아래로 끌어당긴 거리만큼 행 추가
- *  - 좌상단 휴지통: 표 삭제
- *
- * 드래그 동작: 약 80px(셀 평균)마다 1행/열 추가.
+ * 표 사이드 핸들 (Notion 스타일).
+ *  - 우측 세로 +바: 표 높이만큼, 우측 드래그=열 추가, 좌측 드래그=열 삭제
+ *  - 하단 가로 +바: 표 너비만큼, 아래 드래그=행 추가, 위 드래그=행 삭제
+ *  - 클릭만 하면 1개 추가
+ *  - 셀 경계 리사이즈는 TipTap Table 의 resizable: true 가 처리
+ *  - 표 삭제는 BlockHandle 메뉴에서 처리 (별도 휴지통 없음)
  */
 
-const ROW_DRAG_THRESHOLD = 32; // px (행 1개 추가에 필요한 드래그 거리)
-const COL_DRAG_THRESHOLD = 90; // px
+const COL_DRAG_THRESHOLD = 90; // px per column
+const ROW_DRAG_THRESHOLD = 32; // px per row
 
 export function TableControls({ editor }: { editor: Editor }) {
   const [target, setTarget] = useState<HTMLTableElement | null>(null);
@@ -21,7 +21,7 @@ export function TableControls({ editor }: { editor: Editor }) {
     axis: "col" | "row";
     startX: number;
     startY: number;
-    added: number;
+    delta: number; // 이번 드래그 세션에서 추가(+) 또는 삭제(-)된 수
   } | null>(null);
 
   // 호버한 표 추적
@@ -48,10 +48,9 @@ export function TableControls({ editor }: { editor: Editor }) {
 
     const onMouseLeave = (e: MouseEvent) => {
       const related = e.relatedTarget as HTMLElement | null;
-      // 핸들 자신 위에 있으면 유지
-      if (related?.closest?.(".rich-table-handle, .rich-table-btn")) return;
+      if (related?.closest?.(".rich-table-handle")) return;
       if (related && target?.contains(related)) return;
-      if (dragRef.current) return; // 드래그 중이면 유지
+      if (dragRef.current) return;
       setTarget(null);
       setRect(null);
     };
@@ -73,6 +72,43 @@ export function TableControls({ editor }: { editor: Editor }) {
     };
   }, [editor, target]);
 
+  // 마지막 행/열의 셀로 selection을 이동
+  const moveSelectionToTable = (axis: "col" | "row") => {
+    if (!target) return false;
+    const rows = Array.from(target.querySelectorAll("tr"));
+    const lastRow = rows[rows.length - 1];
+    if (!lastRow) return false;
+    const cells = Array.from(lastRow.querySelectorAll("th, td"));
+    const cell = axis === "col" ? cells[cells.length - 1] : cells[0];
+    if (!cell) return false;
+    const pos = editor.view.posAtDOM(cell, 0);
+    if (pos < 0) return false;
+    editor.chain().focus().setTextSelection(pos + 1).run();
+    return true;
+  };
+
+  const addOne = (axis: "col" | "row") => {
+    if (!moveSelectionToTable(axis)) return;
+    if (axis === "col") editor.chain().focus().addColumnAfter().run();
+    else editor.chain().focus().addRowAfter().run();
+  };
+
+  const removeOne = (axis: "col" | "row") => {
+    if (!target) return;
+    const rows = Array.from(target.querySelectorAll("tr"));
+    if (axis === "col") {
+      const lastRow = rows[rows.length - 1];
+      if (!lastRow) return;
+      const cellCount = lastRow.querySelectorAll("th, td").length;
+      if (cellCount <= 1) return; // 최소 1열 유지
+    } else {
+      if (rows.length <= 1) return; // 최소 1행 유지
+    }
+    if (!moveSelectionToTable(axis)) return;
+    if (axis === "col") editor.chain().focus().deleteColumn().run();
+    else editor.chain().focus().deleteRow().run();
+  };
+
   // 드래그 처리
   const startDrag = (axis: "col" | "row", e: React.MouseEvent) => {
     e.preventDefault();
@@ -82,7 +118,7 @@ export function TableControls({ editor }: { editor: Editor }) {
       axis,
       startX: e.clientX,
       startY: e.clientY,
-      added: 0,
+      delta: 0,
     };
     document.addEventListener("mousemove", onDrag);
     document.addEventListener("mouseup", onDragEnd);
@@ -92,20 +128,21 @@ export function TableControls({ editor }: { editor: Editor }) {
   const onDrag = (e: MouseEvent) => {
     const d = dragRef.current;
     if (!d || !target) return;
-    const delta = d.axis === "col" ? e.clientX - d.startX : e.clientY - d.startY;
+    const px = d.axis === "col" ? e.clientX - d.startX : e.clientY - d.startY;
     const threshold = d.axis === "col" ? COL_DRAG_THRESHOLD : ROW_DRAG_THRESHOLD;
-    const targetAdded = Math.max(0, Math.floor(delta / threshold));
-    // 드래그 거리가 늘어난 만큼 칸 추가 (줄어들면 제거 — 마지막 추가분만)
-    while (d.added < targetAdded) {
-      if (d.axis === "col") editor.chain().focus().addColumnAfter().run();
-      else editor.chain().focus().addRowAfter().run();
-      d.added += 1;
+    // 정확한 칸 차이 (양수: 추가, 음수: 삭제)
+    const desired = Math.trunc(px / threshold);
+
+    // 따라잡기: 부족하면 추가, 넘치면 삭제
+    while (d.delta < desired) {
+      addOne(d.axis);
+      d.delta += 1;
     }
-    while (d.added > targetAdded) {
-      // 드래그 중에는 줄이지 않음 — 단순하게 가자 (방향 거꾸로면 무시)
-      break;
+    while (d.delta > desired) {
+      removeOne(d.axis);
+      d.delta -= 1;
     }
-    // 표 사이즈가 바뀌었으니 rect 다시
+
     setRect(target.getBoundingClientRect());
   };
 
@@ -116,17 +153,11 @@ export function TableControls({ editor }: { editor: Editor }) {
     document.body.style.cursor = "";
   };
 
-  const handleDelete = () => {
-    editor.chain().focus().deleteTable().run();
-    setTarget(null);
-    setRect(null);
-  };
-
   if (!target || !rect) return null;
 
   return (
     <>
-      {/* 우측 +바 — 표 높이 전체 */}
+      {/* 우측 세로 +바 — 표 높이 전체 */}
       <div
         className="rich-table-handle rich-table-handle-col"
         style={{
@@ -137,18 +168,17 @@ export function TableControls({ editor }: { editor: Editor }) {
         }}
         onMouseDown={(e) => startDrag("col", e)}
         onClick={(e) => {
-          // 클릭(드래그 없이)이면 1개만 추가
-          if (!dragRef.current || dragRef.current.added === 0) {
+          if (!dragRef.current || dragRef.current.delta === 0) {
             e.stopPropagation();
-            editor.chain().focus().addColumnAfter().run();
+            addOne("col");
           }
         }}
-        title="우측으로 드래그하여 열 추가"
+        title="우측으로 드래그=열 추가, 좌측으로 드래그=열 삭제 (클릭=1개 추가)"
       >
         <Plus size={12} />
       </div>
 
-      {/* 하단 +바 — 표 너비 전체 */}
+      {/* 하단 가로 +바 — 표 너비 전체 */}
       <div
         className="rich-table-handle rich-table-handle-row"
         style={{
@@ -159,30 +189,15 @@ export function TableControls({ editor }: { editor: Editor }) {
         }}
         onMouseDown={(e) => startDrag("row", e)}
         onClick={(e) => {
-          if (!dragRef.current || dragRef.current.added === 0) {
+          if (!dragRef.current || dragRef.current.delta === 0) {
             e.stopPropagation();
-            editor.chain().focus().addRowAfter().run();
+            addOne("row");
           }
         }}
-        title="아래로 드래그하여 행 추가"
+        title="아래로 드래그=행 추가, 위로 드래그=행 삭제 (클릭=1개 추가)"
       >
         <Plus size={12} />
       </div>
-
-      {/* 좌상단 삭제 */}
-      <button
-        type="button"
-        className="rich-table-btn rich-table-btn-delete"
-        style={{
-          position: "fixed",
-          left: rect.left - 28,
-          top: rect.top - 4,
-        }}
-        onClick={handleDelete}
-        title="표 삭제"
-      >
-        <Trash2 size={12} />
-      </button>
     </>
   );
 }

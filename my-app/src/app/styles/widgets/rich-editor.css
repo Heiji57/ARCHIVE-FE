@@ -470,7 +470,7 @@
   cursor: grab;
 }
 
-/* 블록 메뉴 (삭제/복제) */
+/* 블록 메뉴 (Notion 스타일) */
 .rich-block-menu {
   display: flex;
   flex-direction: column;
@@ -478,18 +478,24 @@
   border: 1px solid rgba(255, 255, 255, 0.13);
   border-radius: 6px;
   padding: 4px;
-  min-width: 140px;
+  min-width: 180px;
   box-shadow:
     rgba(15, 15, 15, 0.05) 0 0 0 1px,
     rgba(15, 15, 15, 0.1) 0 3px 6px,
     rgba(15, 15, 15, 0.2) 0 9px 24px;
   z-index: 200;
 }
+.rich-block-menu-sub {
+  position: absolute;
+  left: calc(100% + 4px);
+  top: 0;
+  min-width: 160px;
+}
 .rich-block-menu-item {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 10px;
+  padding: 7px 10px;
   font-size: 13px;
   color: rgba(255, 255, 255, 0.86);
   background: transparent;
@@ -497,15 +503,76 @@
   border-radius: 4px;
   text-align: left;
   cursor: pointer;
+  width: 100%;
+  position: relative;
+}
+.rich-block-menu-item span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
 }
 .rich-block-menu-item:hover {
   background: rgba(255, 255, 255, 0.055);
+}
+.rich-block-menu-item-with-arrow {
+  justify-content: space-between;
+}
+.rich-block-menu-arrow {
+  color: rgba(255, 255, 255, 0.4);
+  margin-left: auto;
 }
 .rich-block-menu-item-danger {
   color: #eb5757;
 }
 .rich-block-menu-item-danger:hover {
   background: rgba(235, 87, 87, 0.12);
+}
+.rich-block-menu-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.094);
+  margin: 4px 0;
+}
+.rich-block-menu-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.4);
+  font-style: italic;
+}
+.rich-block-kbd {
+  margin-left: auto;
+  font-family: var(--font-mono, monospace);
+  font-size: 10px;
+  padding: 1px 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 3px;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+/* NodeSelection 상태일 때 블록 강조 */
+.rich-editor .ProseMirror .ProseMirror-selectednode {
+  outline: 2px solid #2383e2;
+  outline-offset: 1px;
+  border-radius: 3px;
+}
+
+/* 표 컬럼 리사이즈 핸들 (TipTap 내장) */
+.rich-editor .ProseMirror .column-resize-handle {
+  position: absolute;
+  right: -2px;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: rgba(35, 131, 226, 0.5);
+  pointer-events: none;
+}
+.rich-editor .ProseMirror.resize-cursor {
+  cursor: ew-resize;
+  cursor: col-resize;
 }
 
 /* ============================================================
