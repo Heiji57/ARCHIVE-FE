@@ -61,11 +61,24 @@ export const SlashMenu = forwardRef<SlashMenuRef, SlashMenuProps>(
     // 아이템이 바뀌면 첫 번째 선택
     useEffect(() => setSelectedIndex(0), [items]);
 
-    // 선택 변경 시 해당 항목이 보이도록 스크롤
+    // 선택 변경 시 해당 항목이 컨테이너 viewport 안에 들어오도록 스크롤
+    // (scrollIntoView 대신 scrollTop 직접 조작 — CSS scroll-behavior: smooth가
+    //  부드럽게 처리. 화살표 연타 시 이전 애니메이션 잘림 없음)
     useEffect(() => {
       const el = itemRefs.current[selectedIndex];
-      if (!el || !containerRef.current) return;
-      el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      const container = containerRef.current;
+      if (!el || !container) return;
+      const raf = requestAnimationFrame(() => {
+        const elRect = el.getBoundingClientRect();
+        const containerRect = container.getBoundingClientRect();
+        const margin = 6;
+        if (elRect.top < containerRect.top + margin) {
+          container.scrollTop -= containerRect.top + margin - elRect.top;
+        } else if (elRect.bottom > containerRect.bottom - margin) {
+          container.scrollTop += elRect.bottom - containerRect.bottom + margin;
+        }
+      });
+      return () => cancelAnimationFrame(raf);
     }, [selectedIndex]);
 
     const grouped = useMemo(() => {

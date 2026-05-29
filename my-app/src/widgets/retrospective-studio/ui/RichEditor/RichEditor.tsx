@@ -88,22 +88,37 @@ export default function RichEditor({
     const updatePopup = () => {
       const result = detectSlashQuery(editor);
       if (!result.active) {
-        setPopup(EMPTY_POPUP);
+        setPopup((prev) => (prev.open ? EMPTY_POPUP : prev));
         return;
       }
       const coords = editor.view.coordsAtPos(result.from);
-      const rect = new DOMRect(
-        coords.left,
-        coords.top,
-        0,
-        coords.bottom - coords.top,
-      );
-      setPopup({
-        open: true,
-        rect,
-        query: result.query,
-        from: result.from,
-        to: result.to,
+      setPopup((prev) => {
+        // 같은 슬래시 시작 위치면 rect 유지 + query/to만 갱신
+        // → SlashMenuPortal의 위치 재계산 useEffect가 안 돌아 깜빡임 제거
+        if (
+          prev.open &&
+          prev.from === result.from &&
+          prev.rect &&
+          prev.rect.left === coords.left &&
+          prev.rect.top === coords.top
+        ) {
+          if (prev.query === result.query && prev.to === result.to) {
+            return prev;
+          }
+          return { ...prev, query: result.query, to: result.to };
+        }
+        return {
+          open: true,
+          rect: new DOMRect(
+            coords.left,
+            coords.top,
+            0,
+            coords.bottom - coords.top,
+          ),
+          query: result.query,
+          from: result.from,
+          to: result.to,
+        };
       });
     };
 
@@ -208,21 +223,28 @@ function SlashMenuPortal({
   const popupRef = useRef<HTMLDivElement | null>(null);
   const [pos, setPos] = useState({ top: rect.bottom + 8, left: rect.left });
 
+  // rect 의존성 — 좌표값만 안정화하여 동일 위치면 effect skip
+  const rectLeft = rect.left;
+  const rectTop = rect.top;
+  const rectBottom = rect.bottom;
+
   useEffect(() => {
     if (!popupRef.current) return;
     const popupRect = popupRef.current.getBoundingClientRect();
     const vw = window.innerWidth;
     const vh = window.innerHeight;
-    let top = rect.bottom + 8;
-    let left = rect.left;
+    let top = rectBottom + 8;
+    let left = rectLeft;
     if (top + popupRect.height > vh) {
-      top = Math.max(8, rect.top - popupRect.height - 8);
+      top = Math.max(8, rectTop - popupRect.height - 8);
     }
     if (left + popupRect.width > vw) {
       left = Math.max(8, vw - popupRect.width - 8);
     }
-    setPos({ top, left });
-  }, [rect]);
+    setPos((prev) =>
+      prev.top === top && prev.left === left ? prev : { top, left },
+    );
+  }, [rectLeft, rectTop, rectBottom]);
 
   return (
     <div
