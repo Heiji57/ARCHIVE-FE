@@ -111,6 +111,7 @@
   height: 6px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.86);
+  pointer-events: none;
 }
 .rich-editor .ProseMirror ul ul li::before {
   background: transparent;
@@ -140,7 +141,8 @@
 }
 .rich-editor .ProseMirror li > p {
   margin: 0;
-  display: inline-block;
+  /* display: inline-block 제거 — caret이 li 안에서 안 보이던 원인.
+     block 유지 시 ProseMirror가 caret 위치를 정상 계산. */
 }
 
 /* ---------- Quote (Notion) ---------- */
