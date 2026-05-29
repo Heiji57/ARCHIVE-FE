@@ -228,39 +228,57 @@
   background: rgba(35, 131, 226, 0.18);
 }
 
-/* ---------- Toggle (Notion ▶) ---------- */
+/* ---------- Toggle (Notion ▶) — 3개 노드 + NodeView ---------- */
 .rich-editor .ProseMirror .rich-toggle {
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  align-items: start;
   padding: 2px 0;
-  margin: 4px 0;
+  margin: 2px 0;
+}
+.rich-editor .ProseMirror .rich-toggle-arrow {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.55);
+  cursor: pointer;
+  padding: 4px 0 0 4px;
+  display: flex;
+  align-items: flex-start;
+  font-size: 11px;
+  transition: transform 150ms ease;
+  user-select: none;
+  -webkit-user-select: none;
+  line-height: 1;
+}
+.rich-editor .ProseMirror .rich-toggle-arrow:hover {
+  color: rgba(255, 255, 255, 0.95);
+}
+.rich-editor .ProseMirror .rich-toggle[data-open="true"] > .rich-toggle-arrow {
+  transform: rotate(90deg);
+  transform-origin: 6px 8px;
+}
+.rich-editor .ProseMirror .rich-toggle-children {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
 }
 .rich-editor .ProseMirror .rich-toggle-summary {
-  cursor: pointer;
+  display: block;
   font-weight: 400;
-  list-style: none;
   padding: 2px 0;
   color: rgba(255, 255, 255, 0.92);
-  user-select: none;
-}
-.rich-editor .ProseMirror .rich-toggle-summary::-webkit-details-marker {
-  display: none;
-}
-.rich-editor .ProseMirror .rich-toggle-summary::before {
-  content: "▸";
-  display: inline-block;
-  width: 1.2em;
-  color: rgba(255, 255, 255, 0.55);
-  transition: transform 150ms ease;
-  font-size: 11px;
-  position: relative;
-  top: -1px;
-}
-.rich-editor .ProseMirror details[open] > .rich-toggle-summary::before {
-  transform: rotate(90deg);
+  outline: none;
 }
 .rich-editor .ProseMirror .rich-toggle-body {
-  padding-left: 1.6em;
   margin-top: 2px;
   color: rgba(255, 255, 255, 0.86);
+}
+/* 닫혔을 때 body 숨김 */
+.rich-editor
+  .ProseMirror
+  .rich-toggle[data-open="false"]
+  .rich-toggle-body {
+  display: none;
 }
 
 /* ---------- Callout (Notion style) ---------- */

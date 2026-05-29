@@ -8,7 +8,11 @@ import {
   detectSlashQuery,
 } from "./extensions/SlashCommand";
 import { Callout } from "./extensions/Callout";
-import { ToggleNode } from "./extensions/Toggle";
+import {
+  ToggleBody,
+  ToggleNode,
+  ToggleSummary,
+} from "./extensions/Toggle";
 import { SlashMenu, type SlashMenuRef } from "./components/SlashMenu";
 import { TableControls } from "./components/TableControls";
 import { CalloutTypePicker } from "./components/CalloutTypePicker";
@@ -66,6 +70,8 @@ export default function RichEditor({
       TableCell,
       Callout,
       ToggleNode,
+      ToggleSummary,
+      ToggleBody,
       SlashCommandExtension,
     ],
     content: markdownToHtml(value),
