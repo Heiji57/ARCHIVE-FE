@@ -184,6 +184,8 @@ export const SLASH_COMMANDS: SlashCommandItem[] = [
       "bullet",
       "list",
       "ul",
+      "-",
+      "*",
       "글머리",
       "리스트",
       "목록",
@@ -223,7 +225,7 @@ export const SLASH_COMMANDS: SlashCommandItem[] = [
     titleEn: "Toggle list",
     descKo: "펼치고 접을 수 있는 목록 (>>+공백 단축키)",
     descEn: "Collapsible toggle list",
-    keywords: ["toggle", "details", "fold", "토글", "접기", "トグル", "折叠"],
+    keywords: ["toggle", "details", "fold", ">", ">>", "토글", "접기", "トグル", "折叠"],
     category: "list",
     icon: "ChevronRight",
     execute: (editor, range) =>

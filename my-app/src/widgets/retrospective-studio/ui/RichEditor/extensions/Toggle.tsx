@@ -124,6 +124,13 @@ export const ToggleNode = Node.create({
     };
   },
 
+  // 단축키: Ctrl/Cmd + Enter → 펼침/접힘 토글
+  addKeyboardShortcuts() {
+    return {
+      "Mod-Enter": () => this.editor.commands.toggleToggleOpen(),
+    };
+  },
+
   // `>>` + 공백 입력 룰
   addInputRules() {
     const name = this.name;
@@ -166,6 +173,36 @@ export const ToggleSummary = Node.create({
 
   renderHTML() {
     return ["summary", { class: "rich-toggle-summary" }, 0];
+  },
+
+  // 빈 summary에서 Backspace → 부모 toggle 노드 통째 삭제
+  addKeyboardShortcuts() {
+    return {
+      Backspace: ({ editor }) => {
+        const { state } = editor;
+        const { $from, empty } = state.selection;
+        if (!empty) return false;
+        // 현재 위치가 toggleSummary 노드의 시작이고
+        if ($from.parent.type.name !== "toggleSummary") return false;
+        if ($from.parentOffset !== 0) return false;
+        // 비어있는지 (텍스트 길이 0)
+        if ($from.parent.content.size > 0) return false;
+        // 부모 toggle 노드 찾아서 삭제
+        for (let d = $from.depth - 1; d >= 0; d -= 1) {
+          const node = $from.node(d);
+          if (node.type.name === "toggle") {
+            const pos = $from.before(d);
+            editor
+              .chain()
+              .focus()
+              .deleteRange({ from: pos, to: pos + node.nodeSize })
+              .run();
+            return true;
+          }
+        }
+        return false;
+      },
+    };
   },
 });
 

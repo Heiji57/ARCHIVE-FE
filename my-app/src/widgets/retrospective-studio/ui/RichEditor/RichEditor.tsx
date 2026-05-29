@@ -138,6 +138,15 @@ export default function RichEditor({
           event.preventDefault();
           event.stopPropagation();
         }
+        return;
+      }
+      // spacebar — 메뉴 열려있으면 첫 항목(또는 선택된 항목) 실행 후 닫기
+      if (event.key === " " || event.code === "Space") {
+        const enterEvent = new KeyboardEvent("keydown", { key: "Enter" });
+        if (menuRef.current?.onKeyDown({ event: enterEvent })) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
       }
     };
     document.addEventListener("keydown", handleKey, true);
