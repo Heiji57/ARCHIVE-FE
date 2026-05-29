@@ -23,6 +23,8 @@
     "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "SF Pro Text",
     sans-serif;
   caret-color: rgba(255, 255, 255, 0.9);
+  /* 좌측 패딩 — 호버 핸들 영역이 블록 hover 안에 포함되도록 */
+  padding-left: 58px;
 }
 
 .rich-editor .ProseMirror > * + * {

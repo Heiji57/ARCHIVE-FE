@@ -125,6 +125,23 @@ export function BlockHandle({ editor }: { editor: Editor }) {
   const menuOpenRef = useRef(menuOpen);
   menuOpenRef.current = menuOpen;
 
+  // debounced hide — 핸들/메뉴/블록 사이의 짧은 갭을 견디게
+  const hideTimerRef = useRef<number | null>(null);
+  const cancelHide = () => {
+    if (hideTimerRef.current !== null) {
+      window.clearTimeout(hideTimerRef.current);
+      hideTimerRef.current = null;
+    }
+  };
+  const scheduleHide = (ms = 200) => {
+    cancelHide();
+    if (menuOpenRef.current) return;
+    hideTimerRef.current = window.setTimeout(() => {
+      setHover(null);
+      hideTimerRef.current = null;
+    }, ms);
+  };
+
   useEffect(() => {
     const editorDom = editor.view.dom;
     if (!editorDom) return;
@@ -141,18 +158,22 @@ export function BlockHandle({ editor }: { editor: Editor }) {
       if (menuOpenRef.current) return;
       const target = e.target as HTMLElement | null;
       if (!target) return;
-      if (target.closest(".rich-block-handle, .rich-block-menu")) return;
+      if (target.closest(".rich-block-handle, .rich-block-menu")) {
+        cancelHide();
+        return;
+      }
       // 표 사이드 핸들 영역은 무시 (TableControls가 처리)
       if (target.closest(".rich-table-handle")) return;
       if (!editorDom.contains(target)) {
-        setHover(null);
+        scheduleHide();
         return;
       }
       const block = findTopLevelBlock(target);
       if (!block) {
-        setHover(null);
+        scheduleHide();
         return;
       }
+      cancelHide();
       const rect = block.getBoundingClientRect();
       const pos = editor.view.posAtDOM(block, 0);
       if (pos < 0) {
@@ -181,8 +202,11 @@ export function BlockHandle({ editor }: { editor: Editor }) {
     const onContainerLeave = (e: MouseEvent) => {
       if (menuOpenRef.current) return;
       const related = e.relatedTarget as HTMLElement | null;
-      if (related?.closest?.(".rich-block-handle, .rich-block-menu")) return;
-      setHover(null);
+      if (related?.closest?.(".rich-block-handle, .rich-block-menu")) {
+        cancelHide();
+        return;
+      }
+      scheduleHide();
     };
 
     editorDom.addEventListener("mousemove", onMouseMove);
@@ -277,8 +301,9 @@ export function BlockHandle({ editor }: { editor: Editor }) {
   };
 
   const HANDLE_SIZE = 22;
-  // 표는 좌측이 핸들로 가려질 수 있어 약간 더 왼쪽으로
-  const left = hover.rect.left - (hover.isTable ? 60 : 56);
+  // padding-left 58px 안에 두 핸들(22+2+22=46)이 들어가도록 배치
+  // → 블록 영역 내부에 위치하므로 마우스가 핸들로 가는 길에 hover 안 풀림
+  const left = hover.rect.left - 50;
   const top = hover.rect.top + 4;
 
   return (
@@ -293,6 +318,8 @@ export function BlockHandle({ editor }: { editor: Editor }) {
           width: HANDLE_SIZE,
           height: HANDLE_SIZE,
         }}
+        onMouseEnter={cancelHide}
+        onMouseLeave={() => scheduleHide()}
         onClick={insertAfter}
         title="아래에 블록 추가"
       >
@@ -309,6 +336,8 @@ export function BlockHandle({ editor }: { editor: Editor }) {
           width: HANDLE_SIZE,
           height: HANDLE_SIZE,
         }}
+        onMouseEnter={cancelHide}
+        onMouseLeave={() => scheduleHide()}
         onClick={openMenu}
         title="블록 선택 + 메뉴"
       >
@@ -324,6 +353,8 @@ export function BlockHandle({ editor }: { editor: Editor }) {
             top,
           }}
           onMouseDown={(e) => e.stopPropagation()}
+          onMouseEnter={cancelHide}
+          onMouseLeave={() => scheduleHide()}
         >
           {/* 전환 (sub-menu) */}
           <button
