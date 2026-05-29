@@ -48,6 +48,33 @@ interface SlashMenuProps {
   command: (item: SlashCommandItem) => void;
 }
 
+// cubic-bezier(0.4, 0, 0.2, 1) 비슷한 easeOutCubic — Material 부드러움
+const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
+
+/**
+ * 커스텀 부드러운 스크롤 — wraparound 같은 큰 점프를 명시적 easing으로 보간.
+ * token으로 중간 cancel 가능 (화살표 연타 시 이전 애니메이션 중단).
+ */
+function animateScrollTo(
+  el: HTMLElement,
+  targetTop: number,
+  durationMs: number,
+  token: { cancelled: boolean },
+) {
+  const startTop = el.scrollTop;
+  const delta = targetTop - startTop;
+  if (delta === 0) return;
+  const startTime = performance.now();
+  const step = (now: number) => {
+    if (token.cancelled) return;
+    const elapsed = now - startTime;
+    const t = Math.min(1, elapsed / durationMs);
+    el.scrollTop = startTop + delta * easeOutCubic(t);
+    if (t < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+
 /**
  * 슬래시 메뉴 — 키보드(↑↓ + Enter, Esc) 및 마우스 선택 지원.
  */
@@ -57,29 +84,68 @@ export const SlashMenu = forwardRef<SlashMenuRef, SlashMenuProps>(
     const [selectedIndex, setSelectedIndex] = useState(0);
     const containerRef = useRef<HTMLDivElement | null>(null);
     const itemRefs = useRef<Array<HTMLButtonElement | null>>([]);
+    // 진행 중인 scroll 애니메이션 토큰 — 새 호출 시 이전 것 취소
+    const scrollTokenRef = useRef<{ cancelled: boolean } | null>(null);
 
     // 아이템이 바뀌면 첫 번째 선택
     useEffect(() => setSelectedIndex(0), [items]);
 
-    // 선택 변경 시 해당 항목이 컨테이너 viewport 안에 들어오도록 스크롤
-    // (scrollIntoView 대신 scrollTop 직접 조작 — CSS scroll-behavior: smooth가
-    //  부드럽게 처리. 화살표 연타 시 이전 애니메이션 잘림 없음)
+    // 선택 변경 시 해당 항목이 viewport 안에 들어오도록 스크롤
+    //  · 작은 이동(viewport의 절반 미만)  → 브라우저 native scrollTo({ smooth })
+    //  · 큰 점프(wraparound 등)         → 커스텀 rAF + easeOutCubic 으로 280ms 보간
+    //  → 끊김 없이 일관된 부드러움
     useEffect(() => {
       const el = itemRefs.current[selectedIndex];
       const container = containerRef.current;
       if (!el || !container) return;
+
       const raf = requestAnimationFrame(() => {
         const elRect = el.getBoundingClientRect();
         const containerRect = container.getBoundingClientRect();
-        const margin = 6;
+        const margin = 8;
+
+        // 항목이 viewport 안에 있고 가장자리에서 충분히 떨어져 있으면 스크롤 안 함
+        const isVisible =
+          elRect.top >= containerRect.top + margin &&
+          elRect.bottom <= containerRect.bottom - margin;
+        if (isVisible) return;
+
+        // 목표 scrollTop 계산
+        let targetTop = container.scrollTop;
         if (elRect.top < containerRect.top + margin) {
-          container.scrollTop -= containerRect.top + margin - elRect.top;
-        } else if (elRect.bottom > containerRect.bottom - margin) {
-          container.scrollTop += elRect.bottom - containerRect.bottom + margin;
+          targetTop -= containerRect.top + margin - elRect.top;
+        } else {
+          targetTop += elRect.bottom - containerRect.bottom + margin;
+        }
+        const maxScroll = container.scrollHeight - container.clientHeight;
+        targetTop = Math.max(0, Math.min(targetTop, maxScroll));
+
+        const distance = Math.abs(targetTop - container.scrollTop);
+
+        // 이전 커스텀 애니메이션이 진행 중이면 취소
+        if (scrollTokenRef.current) {
+          scrollTokenRef.current.cancelled = true;
+        }
+
+        // 큰 점프(viewport 절반 이상)는 커스텀 easing 으로
+        if (distance > containerRect.height / 2) {
+          const token = { cancelled: false };
+          scrollTokenRef.current = token;
+          animateScrollTo(container, targetTop, 280, token);
+        } else {
+          // 일반 이동은 브라우저 native smooth scroll
+          container.scrollTo({ top: targetTop, behavior: "smooth" });
         }
       });
       return () => cancelAnimationFrame(raf);
     }, [selectedIndex]);
+
+    // 언마운트 시 진행 중 애니메이션 정리
+    useEffect(() => {
+      return () => {
+        if (scrollTokenRef.current) scrollTokenRef.current.cancelled = true;
+      };
+    }, []);
 
     const grouped = useMemo(() => {
       const byCategory: Record<string, SlashCommandItem[]> = {};
