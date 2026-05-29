@@ -343,6 +343,19 @@
    ============================================================ */
 .slash-menu-popup {
   z-index: 9999;
+  animation: slashMenuFadeIn 140ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  transform-origin: top left;
+  will-change: transform, opacity;
+}
+@keyframes slashMenuFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 .slash-menu {
   background: #2f3437;
@@ -357,6 +370,7 @@
   overflow-y: auto;
   padding: 6px;
   color: rgba(255, 255, 255, 0.81);
+  scroll-behavior: smooth;
 }
 .slash-menu-empty {
   padding: 14px;
@@ -389,7 +403,9 @@
   text-align: left;
   cursor: pointer;
   color: rgba(255, 255, 255, 0.81);
-  transition: background 80ms;
+  transition:
+    background 160ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    color 160ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 .slash-menu-item[data-active="true"],
 .slash-menu-item:hover {
@@ -647,7 +663,20 @@
   border-radius: 4px;
   z-index: 50;
   padding: 0;
-  transition: background 100ms;
+  transition:
+    background 150ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    color 150ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  animation: blockHandleFadeIn 120ms ease-out;
+}
+@keyframes blockHandleFadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 .rich-block-handle:hover {
   background: rgba(255, 255, 255, 0.07);
