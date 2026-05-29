@@ -15,7 +15,7 @@ import {
 import type { JournalEntry } from "@/entities/entry/model/types";
 import { DisconnectBanner } from "@/shared/ui/disconnect-banner/DisconnectBanner";
 import { Pill } from "@/shared/ui/pill/Pill";
-import { formatFullDate, fromDateKey } from "@/shared/lib/date";
+import { formatFullDate, fromDateKey, todayKey } from "@/shared/lib/date";
 import { useTranslation } from "@/shared/lib/i18n";
 import { MOCK_COMMITS, RETRO_LABEL_KEY } from "../model/constants";
 
@@ -46,6 +46,9 @@ export function RetroEditor({
   const { t } = useTranslation();
   const d = fromDateKey(entry.dateKey);
   const retroLabel = t(RETRO_LABEL_KEY[entry.retroType]);
+  // "오늘의 커밋" 섹션은 오늘 + daily 회고에만 표시
+  const isTodayDaily =
+    entry.retroType === "daily" && entry.dateKey === todayKey();
 
   // ─── 확장 모드 (제목 + 본문만 가운데 모달로) ──────────────────────────
   const [expanded, setExpanded] = useState(false);
@@ -230,7 +233,7 @@ export function RetroEditor({
             )}
           </section>
 
-          {isGithubConnected ? (
+          {isGithubConnected && isTodayDaily ? (
             <section
               className="section-card-tile-2"
               style={{ marginBottom: 16 }}
