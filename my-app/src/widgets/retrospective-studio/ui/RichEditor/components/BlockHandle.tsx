@@ -111,13 +111,18 @@ const TURN_INTO_OPTIONS: TurnIntoOption[] = [
   },
 ];
 
+interface HoverState {
+  /** top-level block 노드의 시작 position */
+  pos: number;
+  /** top-level block 노드의 끝 position (pos + nodeSize) */
+  endPos: number;
+  rect: DOMRect;
+  blockEl: HTMLElement;
+  isTable: boolean;
+}
+
 export function BlockHandle({ editor }: { editor: Editor }) {
-  const [hover, setHover] = useState<{
-    pos: number;
-    rect: DOMRect;
-    blockEl: HTMLElement;
-    isTable: boolean;
-  } | null>(null);
+  const [hover, setHover] = useState<HoverState | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [turnIntoOpen, setTurnIntoOpen] = useState(false);
   const hoverRef = useRef(hover);
@@ -175,11 +180,31 @@ export function BlockHandle({ editor }: { editor: Editor }) {
       }
       cancelHide();
       const rect = block.getBoundingClientRect();
-      const pos = editor.view.posAtDOM(block, 0);
-      if (pos < 0) {
+      const rawPos = editor.view.posAtDOM(block, 0);
+      if (rawPos < 0) {
         setHover(null);
         return;
       }
+      // top-level block의 정확한 시작 pos와 nodeSize 계산
+      let blockPos = rawPos;
+      let blockSize = 0;
+      try {
+        const $pos = editor.state.doc.resolve(rawPos);
+        if ($pos.depth >= 1) {
+          blockPos = $pos.before(1);
+          blockSize = $pos.node(1).nodeSize;
+        } else {
+          const node = editor.state.doc.nodeAt(rawPos);
+          blockSize = node?.nodeSize ?? 0;
+        }
+      } catch {
+        return;
+      }
+      if (blockSize === 0) {
+        setHover(null);
+        return;
+      }
+      const endPos = blockPos + blockSize;
       const isTable = block.tagName === "TABLE";
       const prev = hoverRef.current;
       if (
@@ -190,7 +215,7 @@ export function BlockHandle({ editor }: { editor: Editor }) {
       ) {
         return;
       }
-      setHover({ pos, rect, blockEl: block, isTable });
+      setHover({ pos: blockPos, endPos, rect, blockEl: block, isTable });
     };
 
     const onScrollOrResize = () => {
@@ -249,14 +274,11 @@ export function BlockHandle({ editor }: { editor: Editor }) {
 
   const insertAfter = () => {
     try {
-      const blockNode = editor.state.doc.nodeAt(hover.pos);
-      if (!blockNode) return;
-      const endPos = hover.pos + blockNode.nodeSize;
       editor
         .chain()
         .focus()
-        .insertContentAt(endPos, { type: "paragraph" })
-        .setTextSelection(endPos + 1)
+        .insertContentAt(hover.endPos, { type: "paragraph" })
+        .setTextSelection(hover.endPos + 1)
         .run();
     } catch {
       editor.chain().focus().createParagraphNear().run();
@@ -266,10 +288,11 @@ export function BlockHandle({ editor }: { editor: Editor }) {
 
   const deleteBlock = () => {
     try {
-      const blockNode = editor.state.doc.nodeAt(hover.pos);
-      if (!blockNode) return;
-      const endPos = hover.pos + blockNode.nodeSize;
-      editor.chain().focus().deleteRange({ from: hover.pos, to: endPos }).run();
+      editor
+        .chain()
+        .focus()
+        .deleteRange({ from: hover.pos, to: hover.endPos })
+        .run();
     } catch {
       /* noop */
     }
@@ -281,9 +304,8 @@ export function BlockHandle({ editor }: { editor: Editor }) {
     try {
       const blockNode = editor.state.doc.nodeAt(hover.pos);
       if (!blockNode) return;
-      const endPos = hover.pos + blockNode.nodeSize;
       const json = blockNode.toJSON();
-      editor.chain().focus().insertContentAt(endPos, json).run();
+      editor.chain().focus().insertContentAt(hover.endPos, json).run();
     } catch {
       /* noop */
     }

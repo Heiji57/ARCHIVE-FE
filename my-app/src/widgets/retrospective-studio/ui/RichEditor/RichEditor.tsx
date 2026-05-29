@@ -58,7 +58,7 @@ export default function RichEditor({
         placeholder: placeholder ?? "내용을 입력하거나 / 를 눌러 블록 선택...",
       }),
       Table.configure({
-        resizable: true,
+        resizable: false,
         HTMLAttributes: { class: "rich-table" },
       }),
       TableRow,

@@ -190,12 +190,15 @@
   font-size: inherit;
 }
 
-/* ---------- Tables (Notion) ---------- */
+/* ---------- Tables (Notion) ----------
+   table-layout:fixed + width:100% → 셀이 균등 분배되어
+   칸을 늘리면 자동으로 좁아짐 (화면 넘어가지 않음). */
 .rich-editor .ProseMirror table,
 .rich-editor .ProseMirror .rich-table {
   border-collapse: collapse;
   table-layout: fixed;
   width: 100%;
+  max-width: 100%;
   margin: 10px 0;
   overflow: hidden;
 }
@@ -204,9 +207,12 @@
   border: 1px solid rgba(255, 255, 255, 0.16);
   padding: 8px 10px;
   vertical-align: top;
-  min-width: 80px;
+  min-width: 0;
+  width: auto;
   position: relative;
   color: rgba(255, 255, 255, 0.92);
+  word-break: break-word;
+  overflow: hidden;
 }
 .rich-editor .ProseMirror th {
   background: rgba(255, 255, 255, 0.06);
@@ -562,19 +568,10 @@
   border-radius: 3px;
 }
 
-/* 표 컬럼 리사이즈 핸들 (TipTap 내장) */
-.rich-editor .ProseMirror .column-resize-handle {
-  position: absolute;
-  right: -2px;
-  top: 0;
-  bottom: 0;
-  width: 4px;
-  background: rgba(35, 131, 226, 0.5);
-  pointer-events: none;
-}
-.rich-editor .ProseMirror.resize-cursor {
-  cursor: ew-resize;
-  cursor: col-resize;
+/* 표 자동 균등 분배 — col 요소가 percent 너비 가지도록 강제 */
+.rich-editor .ProseMirror table colgroup col,
+.rich-editor .ProseMirror .rich-table colgroup col {
+  width: auto !important;
 }
 
 /* ============================================================
