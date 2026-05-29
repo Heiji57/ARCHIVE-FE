@@ -7,6 +7,8 @@
   min-height: 320px;
   color: rgba(255, 255, 255, 0.92);
   padding: 8px 0;
+  /* 기본 폰트 사이즈 — RichEditor 컴포넌트가 inline style로 override */
+  font-size: 16px;
 }
 
 .rich-editor-content {
@@ -16,7 +18,8 @@
 .rich-editor .ProseMirror {
   outline: none;
   min-height: 260px;
-  font-size: 16px;
+  /* font-size는 .rich-editor 컨테이너에서 inherit — RichEditor의 fontSize prop으로 제어 */
+  font-size: inherit;
   line-height: 1.6;
   color: rgba(255, 255, 255, 0.92);
   font-family:
@@ -27,7 +30,6 @@
     "SF Pro Text",
     sans-serif;
   caret-color: rgba(255, 255, 255, 0.9);
-  /* 좌측 패딩 — 호버 핸들 영역이 블록 hover 안에 포함되도록 */
   padding-left: 58px;
 }
 
@@ -45,9 +47,9 @@
   height: 0;
 }
 
-/* ---------- Headings (Notion) ---------- */
+/* ---------- Headings (Notion) — em 단위로 base font-size 따라감 ---------- */
 .rich-editor .ProseMirror h1 {
-  font-size: 30px;
+  font-size: 1.875em; /* 30 / 16 */
   font-weight: 700;
   letter-spacing: -0.01em;
   margin: 28px 0 4px;
@@ -55,7 +57,7 @@
   color: rgba(255, 255, 255, 0.96);
 }
 .rich-editor .ProseMirror h2 {
-  font-size: 24px;
+  font-size: 1.5em; /* 24 / 16 */
   font-weight: 700;
   letter-spacing: -0.01em;
   margin: 22px 0 2px;
@@ -63,20 +65,20 @@
   color: rgba(255, 255, 255, 0.96);
 }
 .rich-editor .ProseMirror h3 {
-  font-size: 20px;
+  font-size: 1.25em; /* 20 / 16 */
   font-weight: 600;
   margin: 18px 0 0;
   line-height: 1.3;
   color: rgba(255, 255, 255, 0.96);
 }
 .rich-editor .ProseMirror h4 {
-  font-size: 17px;
+  font-size: 1.0625em; /* 17 / 16 */
   font-weight: 600;
   margin: 14px 0 0;
   color: rgba(255, 255, 255, 0.94);
 }
 .rich-editor .ProseMirror h5 {
-  font-size: 14px;
+  font-size: 0.875em; /* 14 / 16 */
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -423,6 +425,49 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* ============================================================
+   Retro editor zoom controls
+   ============================================================ */
+.retro-zoom-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+}
+.retro-zoom-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 22px;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.7);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 80ms;
+}
+.retro-zoom-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.95);
+}
+.retro-zoom-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+.retro-zoom-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.55);
+  font-variant-numeric: tabular-nums;
 }
 
 /* ============================================================

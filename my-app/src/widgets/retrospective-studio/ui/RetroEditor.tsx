@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import {
   BookOpen,
   Check,
@@ -7,6 +7,8 @@ import {
   GitCommit,
   Lock,
   Save,
+  ZoomIn,
+  ZoomOut,
 } from "lucide-react";
 import type { JournalEntry } from "@/entities/entry/model/types";
 import { DisconnectBanner } from "@/shared/ui/disconnect-banner/DisconnectBanner";
@@ -30,6 +32,19 @@ export interface RetroEditorProps {
   onSave: () => void;
 }
 
+const FONT_SIZES = [14, 16, 18, 22, 28] as const;
+const FONT_SIZE_KEY = "archive-retro-editor-fontsize";
+const DEFAULT_FONT_SIZE = 16;
+
+function loadFontSize(): number {
+  if (typeof window === "undefined") return DEFAULT_FONT_SIZE;
+  const raw = window.localStorage.getItem(FONT_SIZE_KEY);
+  const n = raw ? Number(raw) : DEFAULT_FONT_SIZE;
+  return FONT_SIZES.includes(n as (typeof FONT_SIZES)[number])
+    ? n
+    : DEFAULT_FONT_SIZE;
+}
+
 export function RetroEditor({
   entry,
   completedTodos,
@@ -42,6 +57,27 @@ export function RetroEditor({
   const { t } = useTranslation();
   const d = fromDateKey(entry.dateKey);
   const retroLabel = t(RETRO_LABEL_KEY[entry.retroType]);
+
+  const [fontSize, setFontSize] = useState<number>(loadFontSize);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(FONT_SIZE_KEY, String(fontSize));
+    }
+  }, [fontSize]);
+
+  const sizeIndex = FONT_SIZES.indexOf(
+    fontSize as (typeof FONT_SIZES)[number],
+  );
+  const canZoomOut = sizeIndex > 0;
+  const canZoomIn = sizeIndex < FONT_SIZES.length - 1 && sizeIndex >= 0;
+
+  const zoomOut = () => {
+    if (canZoomOut) setFontSize(FONT_SIZES[sizeIndex - 1]);
+  };
+  const zoomIn = () => {
+    if (canZoomIn) setFontSize(FONT_SIZES[sizeIndex + 1]);
+  };
 
   return (
     <article>
@@ -83,6 +119,31 @@ export function RetroEditor({
             <Save size={11} />
             {t("retro.editor.autoSaved")}
           </span>
+
+          {/* 폰트 사이즈 컨트롤 */}
+          <div className="retro-zoom-controls" title="회고록 글자 크기">
+            <button
+              type="button"
+              className="retro-zoom-btn"
+              onClick={zoomOut}
+              disabled={!canZoomOut}
+              aria-label="글자 작게"
+              title="글자 작게"
+            >
+              <ZoomOut size={13} />
+            </button>
+            <span className="retro-zoom-label">{fontSize}px</span>
+            <button
+              type="button"
+              className="retro-zoom-btn"
+              onClick={zoomIn}
+              disabled={!canZoomIn}
+              aria-label="글자 크게"
+              title="글자 크게"
+            >
+              <ZoomIn size={13} />
+            </button>
+          </div>
 
           {isGithubConnected ? (
             entry.synced ? (
@@ -289,6 +350,7 @@ export function RetroEditor({
               value={entry.content}
               placeholder={t("retro.editor.learnedPlaceholder")}
               onChange={(md) => onUpdate({ content: md })}
+              fontSize={fontSize}
             />
           </Suspense>
         </EditorErrorBoundary>

@@ -91,9 +91,8 @@ export const ToggleNode = Node.create({
       setToggle:
         () =>
         ({ chain, state }) => {
-          const insertPos = state.selection.from;
-          // toggle 시작 + 1 (toggle 안쪽) + 1 (summary 안쪽) = insertPos + 2
-          // → 빈 summary의 첫 위치 (커서가 자동으로 거기 위치)
+          const beforePos = state.selection.from;
+          let summaryPos = -1;
           return chain()
             .insertContent({
               type: this.name,
@@ -103,7 +102,29 @@ export const ToggleNode = Node.create({
                 { type: "toggleBody", content: [{ type: "paragraph" }] },
               ],
             })
-            .setTextSelection(insertPos + 2)
+            .command(({ tr }) => {
+              // 삽입된 토글 안의 summary 위치 찾기
+              const searchStart = Math.max(0, beforePos - 5);
+              const searchEnd = Math.min(
+                tr.doc.content.size,
+                beforePos + 50,
+              );
+              tr.doc.nodesBetween(searchStart, searchEnd, (node, pos) => {
+                if (summaryPos >= 0) return false;
+                if (node.type.name === "toggleSummary") {
+                  summaryPos = pos + 1; // summary 노드 내부 진입 위치
+                  return false;
+                }
+                return undefined;
+              });
+              return true;
+            })
+            .command(({ commands }) => {
+              if (summaryPos >= 0) {
+                return commands.setTextSelection(summaryPos);
+              }
+              return true;
+            })
             .run();
         },
       toggleToggleOpen:
@@ -136,8 +157,9 @@ export const ToggleNode = Node.create({
     return [
       new InputRule({
         find: /^>>\s$/,
-        handler: ({ chain, range, state }) => {
-          const insertPos = range.from;
+        handler: ({ chain, range }) => {
+          const beforePos = range.from;
+          let summaryPos = -1;
           chain()
             .deleteRange(range)
             .insertContent({
@@ -148,9 +170,29 @@ export const ToggleNode = Node.create({
                 { type: "toggleBody", content: [{ type: "paragraph" }] },
               ],
             })
-            .setTextSelection(insertPos + 2)
+            .command(({ tr }) => {
+              const searchStart = Math.max(0, beforePos - 5);
+              const searchEnd = Math.min(
+                tr.doc.content.size,
+                beforePos + 50,
+              );
+              tr.doc.nodesBetween(searchStart, searchEnd, (node, pos) => {
+                if (summaryPos >= 0) return false;
+                if (node.type.name === "toggleSummary") {
+                  summaryPos = pos + 1;
+                  return false;
+                }
+                return undefined;
+              });
+              return true;
+            })
+            .command(({ commands }) => {
+              if (summaryPos >= 0) {
+                return commands.setTextSelection(summaryPos);
+              }
+              return true;
+            })
             .run();
-          void state;
         },
       }),
     ];
