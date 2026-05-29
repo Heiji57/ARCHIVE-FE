@@ -97,8 +97,8 @@ export const SlashMenu = forwardRef<SlashMenuRef, SlashMenuProps>(
         if (Math.abs(clampedTarget - container.scrollTop) < 1) return;
 
         if (isJump) {
-          // wraparound 또는 마우스 점프 → 순간이동
-          container.scrollTop = clampedTarget;
+          // wraparound 또는 마우스 점프 → 명시적 instant (CSS 영향 무시)
+          container.scrollTo({ top: clampedTarget, behavior: "auto" });
         } else {
           // 한 칸 이동 → 부드러운 가운데 정렬
           container.scrollTo({ top: clampedTarget, behavior: "smooth" });

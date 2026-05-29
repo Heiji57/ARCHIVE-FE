@@ -370,7 +370,8 @@
   overflow-y: auto;
   padding: 6px;
   color: rgba(255, 255, 255, 0.81);
-  scroll-behavior: smooth;
+  /* scroll-behavior: smooth 제거 — JS에서 scrollTo({behavior})로 명시적 제어
+     (wraparound는 instant, 한 칸 이동은 smooth) */
 }
 .slash-menu-empty {
   padding: 14px;
