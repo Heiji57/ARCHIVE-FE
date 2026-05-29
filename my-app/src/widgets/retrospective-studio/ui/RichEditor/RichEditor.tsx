@@ -24,8 +24,6 @@ export interface RichEditorProps {
   value: string;
   placeholder?: string;
   onChange: (markdown: string) => void;
-  /** 본문 폰트 크기(px). 기본 16. 확대/축소에 사용. */
-  fontSize?: number;
 }
 
 interface PopupState {
@@ -48,7 +46,6 @@ export default function RichEditor({
   value,
   placeholder,
   onChange,
-  fontSize,
 }: RichEditorProps) {
   const [popup, setPopup] = useState<PopupState>(EMPTY_POPUP);
   const menuRef = useRef<SlashMenuRef | null>(null);
@@ -180,10 +177,7 @@ export default function RichEditor({
   if (!editor) return null;
 
   return (
-    <div
-      className="rich-editor"
-      style={fontSize ? { fontSize: `${fontSize}px` } : undefined}
-    >
+    <div className="rich-editor">
       <EditorContent editor={editor} className="rich-editor-content" />
       <BlockHandle editor={editor} />
       <TableControls editor={editor} />

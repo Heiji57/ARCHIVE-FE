@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   BookOpen,
   Check,
@@ -6,9 +7,10 @@ import {
   Clock,
   GitCommit,
   Lock,
+  Maximize2,
+  Minimize2,
   Save,
-  ZoomIn,
-  ZoomOut,
+  X,
 } from "lucide-react";
 import type { JournalEntry } from "@/entities/entry/model/types";
 import { DisconnectBanner } from "@/shared/ui/disconnect-banner/DisconnectBanner";
@@ -32,19 +34,6 @@ export interface RetroEditorProps {
   onSave: () => void;
 }
 
-const FONT_SIZES = [14, 16, 18, 22, 28] as const;
-const FONT_SIZE_KEY = "archive-retro-editor-fontsize";
-const DEFAULT_FONT_SIZE = 16;
-
-function loadFontSize(): number {
-  if (typeof window === "undefined") return DEFAULT_FONT_SIZE;
-  const raw = window.localStorage.getItem(FONT_SIZE_KEY);
-  const n = raw ? Number(raw) : DEFAULT_FONT_SIZE;
-  return FONT_SIZES.includes(n as (typeof FONT_SIZES)[number])
-    ? n
-    : DEFAULT_FONT_SIZE;
-}
-
 export function RetroEditor({
   entry,
   completedTodos,
@@ -58,26 +47,36 @@ export function RetroEditor({
   const d = fromDateKey(entry.dateKey);
   const retroLabel = t(RETRO_LABEL_KEY[entry.retroType]);
 
-  const [fontSize, setFontSize] = useState<number>(loadFontSize);
+  // ─── 확장 모드 (제목 + 본문만 가운데 모달로) ──────────────────────────
+  const [expanded, setExpanded] = useState(false);
 
+  // Esc → 닫기, Ctrl/Cmd+Shift+F → 토글
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem(FONT_SIZE_KEY, String(fontSize));
-    }
-  }, [fontSize]);
+    const onKey = (e: KeyboardEvent) => {
+      // Ctrl/Cmd + Shift + F → 토글 (브라우저 Ctrl+F 검색과 안 겹침)
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === "f") {
+        e.preventDefault();
+        setExpanded((v) => !v);
+        return;
+      }
+      if (expanded && e.key === "Escape") {
+        e.preventDefault();
+        setExpanded(false);
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [expanded]);
 
-  const sizeIndex = FONT_SIZES.indexOf(
-    fontSize as (typeof FONT_SIZES)[number],
-  );
-  const canZoomOut = sizeIndex > 0;
-  const canZoomIn = sizeIndex < FONT_SIZES.length - 1 && sizeIndex >= 0;
-
-  const zoomOut = () => {
-    if (canZoomOut) setFontSize(FONT_SIZES[sizeIndex - 1]);
-  };
-  const zoomIn = () => {
-    if (canZoomIn) setFontSize(FONT_SIZES[sizeIndex + 1]);
-  };
+  // 확장 모드일 때 body scroll 잠금
+  useEffect(() => {
+    if (!expanded) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [expanded]);
 
   return (
     <article>
@@ -120,30 +119,16 @@ export function RetroEditor({
             {t("retro.editor.autoSaved")}
           </span>
 
-          {/* 폰트 사이즈 컨트롤 */}
-          <div className="retro-zoom-controls" title="회고록 글자 크기">
-            <button
-              type="button"
-              className="retro-zoom-btn"
-              onClick={zoomOut}
-              disabled={!canZoomOut}
-              aria-label="글자 작게"
-              title="글자 작게"
-            >
-              <ZoomOut size={13} />
-            </button>
-            <span className="retro-zoom-label">{fontSize}px</span>
-            <button
-              type="button"
-              className="retro-zoom-btn"
-              onClick={zoomIn}
-              disabled={!canZoomIn}
-              aria-label="글자 크게"
-              title="글자 크게"
-            >
-              <ZoomIn size={13} />
-            </button>
-          </div>
+          {/* 확장 버튼 */}
+          <button
+            type="button"
+            className="retro-expand-btn"
+            onClick={() => setExpanded(true)}
+            aria-label="회고록 확장"
+            title="회고록 확장 (Ctrl+Shift+F)"
+          >
+            <Maximize2 size={14} />
+          </button>
 
           {isGithubConnected ? (
             entry.synced ? (
@@ -179,182 +164,261 @@ export function RetroEditor({
         <DisconnectBanner message={t("retro.github.notConnected")} />
       ) : null}
 
-      <input
-        value={entry.title}
-        onChange={(e) => onUpdate({ title: e.target.value })}
-        placeholder={t("retro.editor.titlePlaceholder")}
-        style={{
-          width: "100%",
-          fontFamily: "var(--font-display)",
-          fontSize: "clamp(2rem, 3.6vw, 3.5rem)",
-          fontWeight: 600,
-          letterSpacing: "-0.04em",
-          lineHeight: 1.08,
-          marginBottom: 14,
-          padding: "10px 0",
-          color: "var(--color-ink)",
-        }}
-      />
-      <p
-        style={{
-          margin: "0 0 32px",
-          fontSize: 19,
-          color: "var(--color-body-muted)",
-          lineHeight: 1.4,
-        }}
-      >
-        {t("retro.editor.sub")}
-      </p>
-
-      <section className="section-card" style={{ marginBottom: 16 }}>
-        <div className="section-card-head">
-          <div className="avatar avatar-sm avatar-done">
-            <CheckCircle size={14} strokeWidth={2.6} />
-          </div>
-          <p className="section-card-title">{t("retro.editor.completed")}</p>
-        </div>
-
-        {completedTodos.length > 0 ? (
-          <ul style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {completedTodos.map((tdo) => (
-              <li
-                key={tdo.id}
-                style={{
-                  padding: "10px 12px",
-                  borderRadius: "var(--r-sm)",
-                  background: "var(--color-tile-3)",
-                  fontSize: 14,
-                  display: "flex",
-                  gap: 10,
-                  alignItems: "center",
-                }}
-              >
-                <CheckCircle
-                  size={14}
-                  style={{ color: "var(--color-status-done)" }}
-                />
-                <span style={{ flex: 1 }}>{tdo.title}</span>
-              </li>
-            ))}
-          </ul>
-        ) : (
+      {/* 일반 모드 — 제목 + 부가 정보 섹션들 + 본문 모두 표시 */}
+      {!expanded && (
+        <>
+          <input
+            value={entry.title}
+            onChange={(e) => onUpdate({ title: e.target.value })}
+            placeholder={t("retro.editor.titlePlaceholder")}
+            className="retro-title-input"
+          />
           <p
             style={{
-              margin: 0,
-              fontSize: 13,
+              margin: "0 0 32px",
+              fontSize: 19,
               color: "var(--color-body-muted)",
+              lineHeight: 1.4,
             }}
           >
-            {t("retro.editor.noCompleted")}
+            {t("retro.editor.sub")}
           </p>
-        )}
-      </section>
 
-      {isGithubConnected ? (
-        <section className="section-card-tile-2" style={{ marginBottom: 16 }}>
-          <div className="section-card-head">
-            <div className="avatar avatar-sm avatar-primary">
-              <GitCommit size={14} />
+          <section className="section-card" style={{ marginBottom: 16 }}>
+            <div className="section-card-head">
+              <div className="avatar avatar-sm avatar-done">
+                <CheckCircle size={14} strokeWidth={2.6} />
+              </div>
+              <p className="section-card-title">
+                {t("retro.editor.completed")}
+              </p>
             </div>
-            <p className="section-card-title">{t("retro.editor.commits")}</p>
-            <span
-              style={{
-                marginLeft: "auto",
-                fontSize: 12,
-                color: "var(--color-body-muted)",
-              }}
-            >
-              @{githubConnectedAs}/{githubTargetRepo}
-            </span>
-          </div>
 
-          <ul
-            className="t-mono"
-            style={{ display: "flex", flexDirection: "column", gap: 6 }}
-          >
-            {MOCK_COMMITS.map((c) => (
-              <li
-                key={c.sha}
+            {completedTodos.length > 0 ? (
+              <ul style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {completedTodos.map((tdo) => (
+                  <li
+                    key={tdo.id}
+                    style={{
+                      padding: "10px 12px",
+                      borderRadius: "var(--r-sm)",
+                      background: "var(--color-tile-3)",
+                      fontSize: 14,
+                      display: "flex",
+                      gap: 10,
+                      alignItems: "center",
+                    }}
+                  >
+                    <CheckCircle
+                      size={14}
+                      style={{ color: "var(--color-status-done)" }}
+                    />
+                    <span style={{ flex: 1 }}>{tdo.title}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p
                 style={{
-                  padding: "10px 14px",
-                  borderRadius: "var(--r-sm)",
-                  background: "var(--color-tile-3)",
-                  fontSize: 13,
-                  lineHeight: 1.5,
-                  display: "flex",
-                  gap: 14,
-                  alignItems: "center",
-                  flexWrap: "wrap",
-                }}
-              >
-                <span
-                  style={{
-                    color: "var(--color-primary-on-dark)",
-                    fontWeight: 600,
-                  }}
-                >
-                  {c.repo}
-                </span>
-                <span style={{ color: "var(--color-body-muted)" }}>:</span>
-                <span style={{ flex: 1, minWidth: 200 }}>{c.message}</span>
-                <span style={{ color: "var(--color-ink-muted-48)" }}>
-                  ({c.sha})
-                </span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
-
-      <section className="section-card">
-        <div className="section-card-head">
-          <div className="avatar avatar-sm avatar-tile">
-            <BookOpen size={14} />
-          </div>
-          <p className="section-card-title">{t("retro.editor.learned")}</p>
-        </div>
-        <EditorErrorBoundary
-          fallback={(error) => (
-            <div
-              style={{
-                padding: 14,
-                fontSize: 13,
-                color: "var(--color-warn, #ff9f0a)",
-                background: "var(--color-tile-3)",
-                borderRadius: "var(--r-sm)",
-                fontFamily: "var(--font-mono, monospace)",
-                whiteSpace: "pre-wrap",
-              }}
-            >
-              <strong>에디터를 불러오지 못했습니다.</strong>
-              {"\n"}
-              {error.message}
-            </div>
-          )}
-        >
-          <Suspense
-            fallback={
-              <div
-                style={{
-                  minHeight: 260,
-                  padding: 12,
+                  margin: 0,
                   fontSize: 13,
                   color: "var(--color-body-muted)",
                 }}
               >
-                에디터 로딩 중...
+                {t("retro.editor.noCompleted")}
+              </p>
+            )}
+          </section>
+
+          {isGithubConnected ? (
+            <section
+              className="section-card-tile-2"
+              style={{ marginBottom: 16 }}
+            >
+              <div className="section-card-head">
+                <div className="avatar avatar-sm avatar-primary">
+                  <GitCommit size={14} />
+                </div>
+                <p className="section-card-title">
+                  {t("retro.editor.commits")}
+                </p>
+                <span
+                  style={{
+                    marginLeft: "auto",
+                    fontSize: 12,
+                    color: "var(--color-body-muted)",
+                  }}
+                >
+                  @{githubConnectedAs}/{githubTargetRepo}
+                </span>
               </div>
-            }
+
+              <ul
+                className="t-mono"
+                style={{ display: "flex", flexDirection: "column", gap: 6 }}
+              >
+                {MOCK_COMMITS.map((c) => (
+                  <li
+                    key={c.sha}
+                    style={{
+                      padding: "10px 14px",
+                      borderRadius: "var(--r-sm)",
+                      background: "var(--color-tile-3)",
+                      fontSize: 13,
+                      lineHeight: 1.5,
+                      display: "flex",
+                      gap: 14,
+                      alignItems: "center",
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <span
+                      style={{
+                        color: "var(--color-primary-on-dark)",
+                        fontWeight: 600,
+                      }}
+                    >
+                      {c.repo}
+                    </span>
+                    <span style={{ color: "var(--color-body-muted)" }}>:</span>
+                    <span style={{ flex: 1, minWidth: 200 }}>{c.message}</span>
+                    <span style={{ color: "var(--color-ink-muted-48)" }}>
+                      ({c.sha})
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+
+          <section className="section-card">
+            <div className="section-card-head">
+              <div className="avatar avatar-sm avatar-tile">
+                <BookOpen size={14} />
+              </div>
+              <p className="section-card-title">{t("retro.editor.learned")}</p>
+            </div>
+            <EditorErrorBoundary
+              fallback={(error) => (
+                <div
+                  style={{
+                    padding: 14,
+                    fontSize: 13,
+                    color: "var(--color-warn, #ff9f0a)",
+                    background: "var(--color-tile-3)",
+                    borderRadius: "var(--r-sm)",
+                    fontFamily: "var(--font-mono, monospace)",
+                    whiteSpace: "pre-wrap",
+                  }}
+                >
+                  <strong>에디터를 불러오지 못했습니다.</strong>
+                  {"\n"}
+                  {error.message}
+                </div>
+              )}
+            >
+              <Suspense
+                fallback={
+                  <div
+                    style={{
+                      minHeight: 260,
+                      padding: 12,
+                      fontSize: 13,
+                      color: "var(--color-body-muted)",
+                    }}
+                  >
+                    에디터 로딩 중...
+                  </div>
+                }
+              >
+                <RichEditor
+                  value={entry.content}
+                  placeholder={t("retro.editor.learnedPlaceholder")}
+                  onChange={(md) => onUpdate({ content: md })}
+                />
+              </Suspense>
+            </EditorErrorBoundary>
+          </section>
+        </>
+      )}
+
+      {/* 확장 모드 — Portal로 body에 띄움. 제목 + 본문만 */}
+      {expanded &&
+        createPortal(
+          <div
+            className="retro-expand-overlay"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setExpanded(false);
+            }}
           >
-            <RichEditor
-              value={entry.content}
-              placeholder={t("retro.editor.learnedPlaceholder")}
-              onChange={(md) => onUpdate({ content: md })}
-              fontSize={fontSize}
-            />
-          </Suspense>
-        </EditorErrorBoundary>
-      </section>
+            <div className="retro-expand-card">
+              <div className="retro-expand-toolbar">
+                <span className="retro-expand-hint">
+                  Esc 또는 Ctrl+Shift+F 로 닫기
+                </span>
+                <button
+                  type="button"
+                  className="retro-expand-close"
+                  onClick={() => setExpanded(false)}
+                  aria-label="확장 닫기"
+                  title="닫기 (Esc)"
+                >
+                  <Minimize2 size={14} />
+                  <X size={16} />
+                </button>
+              </div>
+              <div className="retro-expand-body">
+                <input
+                  value={entry.title}
+                  onChange={(e) => onUpdate({ title: e.target.value })}
+                  placeholder={t("retro.editor.titlePlaceholder")}
+                  className="retro-title-input"
+                />
+                <EditorErrorBoundary
+                  fallback={(error) => (
+                    <div
+                      style={{
+                        padding: 14,
+                        fontSize: 13,
+                        color: "var(--color-warn, #ff9f0a)",
+                        background: "var(--color-tile-3)",
+                        borderRadius: "var(--r-sm)",
+                        fontFamily: "var(--font-mono, monospace)",
+                        whiteSpace: "pre-wrap",
+                      }}
+                    >
+                      <strong>에디터를 불러오지 못했습니다.</strong>
+                      {"\n"}
+                      {error.message}
+                    </div>
+                  )}
+                >
+                  <Suspense
+                    fallback={
+                      <div
+                        style={{
+                          minHeight: 260,
+                          padding: 12,
+                          fontSize: 13,
+                          color: "var(--color-body-muted)",
+                        }}
+                      >
+                        에디터 로딩 중...
+                      </div>
+                    }
+                  >
+                    <RichEditor
+                      value={entry.content}
+                      placeholder={t("retro.editor.learnedPlaceholder")}
+                      onChange={(md) => onUpdate({ content: md })}
+                    />
+                  </Suspense>
+                </EditorErrorBoundary>
+              </div>
+            </div>
+          </div>,
+          document.body,
+        )}
     </article>
   );
 }
