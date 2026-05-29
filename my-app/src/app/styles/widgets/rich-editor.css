@@ -407,9 +407,16 @@
     background 160ms cubic-bezier(0.2, 0.8, 0.2, 1),
     color 160ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
-.slash-menu-item[data-active="true"],
+/* hover (마우스 위치) — 회색 */
 .slash-menu-item:hover {
   background: rgba(255, 255, 255, 0.055);
+}
+/* 키보드 선택(active) — 파란 강조, 호버보다 우선 */
+.slash-menu-item[data-active="true"] {
+  background: rgba(35, 131, 226, 0.22);
+}
+.slash-menu-item[data-active="true"]:hover {
+  background: rgba(35, 131, 226, 0.28);
 }
 .slash-menu-icon {
   display: inline-flex;
@@ -422,6 +429,10 @@
   border: 1px solid rgba(255, 255, 255, 0.094);
   color: rgba(255, 255, 255, 0.81);
   flex-shrink: 0;
+}
+.slash-menu-item[data-active="true"] .slash-menu-icon {
+  background: rgba(35, 131, 226, 0.2);
+  border-color: rgba(35, 131, 226, 0.3);
 }
 .slash-menu-body {
   display: flex;

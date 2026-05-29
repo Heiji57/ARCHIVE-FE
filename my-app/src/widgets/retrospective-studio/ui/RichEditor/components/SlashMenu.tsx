@@ -175,15 +175,8 @@ export const SlashMenu = forwardRef<SlashMenuRef, SlashMenuProps>(
                   type="button"
                   className="slash-menu-item"
                   data-active={isActive ? "true" : undefined}
-                  onMouseEnter={() => {
-                    // 마우스 호버 시 선택 인덱스 갱신
-                    let idx = -1;
-                    items.forEach((it, i) => {
-                      if (it.id === item.id) idx = i;
-                    });
-                    if (idx >= 0) setSelectedIndex(idx);
-                  }}
                   onMouseDown={(e) => {
+                    // 마우스 클릭은 selectedIndex와 무관 — 호버 항목을 직접 실행
                     e.preventDefault();
                     command(item);
                   }}
