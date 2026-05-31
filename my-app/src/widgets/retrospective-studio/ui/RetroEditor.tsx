@@ -17,12 +17,11 @@ import { DisconnectBanner } from "@/shared/ui/disconnect-banner/DisconnectBanner
 import { Pill } from "@/shared/ui/pill/Pill";
 import { formatFullDate, fromDateKey, todayKey } from "@/shared/lib/date";
 import { useTranslation } from "@/shared/lib/i18n";
+import { EditorErrorBoundary } from "@/shared/ui/rich-editor";
 import { MOCK_COMMITS, RETRO_LABEL_KEY } from "../model/constants";
 
-import { EditorErrorBoundary } from "./RichEditor/EditorErrorBoundary";
-
 // TipTap 에디터는 번들 크기가 크므로 회고록 페이지 진입 시에만 로드
-const RichEditor = lazy(() => import("./RichEditor/RichEditor"));
+const RichEditor = lazy(() => import("@/shared/ui/rich-editor/ui/RichEditor"));
 
 export interface RetroEditorProps {
   entry: JournalEntry;

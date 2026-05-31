@@ -1,10 +1,11 @@
-import type { JournalEntry } from "@/entities/entry/model/types";
+import type { JournalEntry, RetrospectiveType } from "@/entities/entry/model/types";
 import type { GitHubConfig } from "@/entities/github/model/types";
 import type { NotificationItem } from "@/entities/notification/model/types";
 import type {
   PendingSummary,
   SummaryKind,
 } from "@/entities/summary/model/types";
+import type { RetroTemplate } from "@/entities/template";
 import type { Todo } from "@/entities/todo/model/types";
 import type { User } from "@/entities/user/model/types";
 import type { AppSettings, Locale } from "@/app/model/settings";
@@ -63,6 +64,23 @@ export type AppAction =
   | { type: "summary/complete" }
   | { type: "summary/cancel" }
   | { type: "summary/setPending"; payload: { pending: PendingSummary | null } }
+  | { type: "template/add"; payload: { template: RetroTemplate } }
+  | {
+      type: "template/update";
+      payload: {
+        id: string;
+        patch: Partial<Pick<RetroTemplate, "name" | "content">>;
+      };
+    }
+  | { type: "template/delete"; payload: { id: string } }
+  | {
+      type: "template/resetDefault";
+      payload: { retroType: RetrospectiveType };
+    }
+  | {
+      type: "template/setActive";
+      payload: { retroType: RetrospectiveType; id: string };
+    }
   | {
       type: "auth/login";
       payload: { user: User; rememberMe: boolean };

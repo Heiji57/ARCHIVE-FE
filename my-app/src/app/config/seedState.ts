@@ -1,5 +1,6 @@
 import { DEFAULT_SETTINGS } from "@/app/model/settings";
 import type { PersistedAppState } from "@/app/model/types";
+import { DEFAULT_ACTIVE_TEMPLATE_IDS, DEFAULT_TEMPLATES } from "@/entities/template";
 import { addDays, toDateKey } from "@/shared/lib/date";
 
 const baseDate = new Date(2023, 9, 25, 12);
@@ -144,4 +145,6 @@ export const seedState: PersistedAppState = {
   pendingSummary: null,
   currentUser: null,
   rememberMe: false,
+  templates: DEFAULT_TEMPLATES,
+  activeTemplateIds: DEFAULT_ACTIVE_TEMPLATE_IDS,
 };

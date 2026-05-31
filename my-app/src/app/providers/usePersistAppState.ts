@@ -13,6 +13,8 @@ export function usePersistAppState(state: AppState) {
       pendingSummary: state.pendingSummary,
       currentUser: state.currentUser,
       rememberMe: state.rememberMe,
+      templates: state.templates,
+      activeTemplateIds: state.activeTemplateIds,
     });
   }, [
     state.entries,
@@ -23,5 +25,7 @@ export function usePersistAppState(state: AppState) {
     state.pendingSummary,
     state.currentUser,
     state.rememberMe,
+    state.templates,
+    state.activeTemplateIds,
   ]);
 }

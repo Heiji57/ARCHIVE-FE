@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { Editor } from "@tiptap/react";
-import { CALLOUT_META, type CalloutType } from "../commands";
+import { CALLOUT_META } from "../model/constants";
+import type { CalloutType } from "../model/types";
 
 /**
  * 콜아웃 노드 안에 커서가 있을 때, 좌측에 작은 emoji 버튼 표시 → 클릭 시 타입 변경 메뉴.

@@ -15,6 +15,32 @@
   outline: none;
 }
 
+/* ---------- 드래그 범위(블록) 선택 ---------- */
+/* 드래그가 닿은 최상위 블록 전체를 풀폭 하이라이트 */
+.rich-block-selected {
+  background: rgba(10, 132, 255, 0.22);
+  border-radius: 4px;
+  box-shadow: 0 0 0 2px rgba(10, 132, 255, 0.22);
+}
+/* 블록 선택 중에는 네이티브 텍스트 ::selection 하이라이트를 숨겨
+   블록 하이라이트만 보이게 한다 */
+.rich-block-selecting ::selection {
+  background: transparent;
+}
+.rich-block-selecting ::-moz-selection {
+  background: transparent;
+}
+
+/* 드래그 중 표시되는 선택 사각형(마퀴) — .rich-editor 안에 절대배치 */
+.rich-drag-marquee {
+  position: absolute;
+  z-index: 5;
+  pointer-events: none;
+  background: rgba(10, 132, 255, 0.12);
+  border: 1px solid rgba(10, 132, 255, 0.55);
+  border-radius: 2px;
+}
+
 .rich-editor .ProseMirror {
   outline: none;
   min-height: 260px;
@@ -715,7 +741,8 @@
 }
 .rich-block-menu-sub {
   position: absolute;
-  left: calc(100% + 4px);
+  right: calc(100% + 4px);
+  left: auto;
   top: 0;
   min-width: 160px;
 }

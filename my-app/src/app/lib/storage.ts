@@ -1,6 +1,7 @@
 import { ensureSettings } from "@/app/model/reducer";
 import { DEFAULT_SETTINGS } from "@/app/model/settings";
 import type { PersistedAppState } from "@/app/model/types";
+import { DEFAULT_ACTIVE_TEMPLATE_IDS, DEFAULT_TEMPLATES } from "@/entities/template";
 
 const STORAGE_KEY = "archive-app-state-v5";
 
@@ -30,6 +31,13 @@ export function loadAppState(fallback: PersistedAppState): PersistedAppState {
       pendingSummary: parsed.pendingSummary ?? null,
       currentUser: parsed.currentUser ?? null,
       rememberMe: parsed.rememberMe ?? false,
+      templates: Array.isArray(parsed.templates)
+        ? parsed.templates
+        : DEFAULT_TEMPLATES,
+      activeTemplateIds: {
+        ...DEFAULT_ACTIVE_TEMPLATE_IDS,
+        ...(parsed.activeTemplateIds ?? {}),
+      },
     };
   } catch {
     return fallback;

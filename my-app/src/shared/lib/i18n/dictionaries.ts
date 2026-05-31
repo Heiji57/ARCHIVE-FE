@@ -182,6 +182,24 @@ export type TranslationKey =
   | "settings.autoSummary.description"
   | "settings.notifications.retention.label"
   | "settings.notifications.retention.unit"
+  // Settings — Templates
+  | "settings.section.templates"
+  | "settings.templates.title"
+  | "settings.templates.description"
+  | "settings.templates.default"
+  | "settings.templates.add"
+  | "settings.templates.selectHint"
+  | "settings.templates.namePlaceholder"
+  | "settings.templates.contentPlaceholder"
+  | "settings.templates.reset"
+  | "settings.templates.use"
+  | "settings.templates.inUse"
+  | "settings.templates.activeHint"
+  | "settings.section.integrations"
+  | "settings.section.preferences"
+  | "settings.group.integrations.hint"
+  | "settings.group.preferences.hint"
+  | "settings.group.templates.hint"
   // Generic
   | "common.cancel"
   | "common.confirm"
@@ -257,26 +275,26 @@ export type TranslationKey =
 type Dict = Record<TranslationKey, string>;
 
 const ko: Dict = {
-  "nav.calendar": "Calendar",
-  "nav.todos": "To-Dos",
-  "nav.retrospectives": "Retrospectives",
-  "nav.settings": "Settings",
+  "nav.calendar": "캘린더",
+  "nav.todos": "할 일",
+  "nav.retrospectives": "회고",
+  "nav.settings": "설정",
   "nav.brand": "A.R.C.H.I.V.E",
 
-  "subheader.calendar.eyebrow": "Planning Canvas",
+  "subheader.calendar.eyebrow": "플래닝 캔버스",
   "subheader.calendar.title": "오늘의 캘린더",
   "subheader.calendar.subtitle":
     "일정과 작업을 한 화면에서 살펴봅니다. 카드를 드래그해 다른 날짜로 옮길 수 있습니다.",
-  "subheader.todos.eyebrow": "Quick Capture",
-  "subheader.todos.title": "Editorial Kanban",
+  "subheader.todos.eyebrow": "빠른 기록",
+  "subheader.todos.title": "에디토리얼 칸반",
   "subheader.todos.subtitle":
     "자연어로 적는 순간 칸반에 정렬됩니다. 시작 전 / 진행 중 / 완료 세 열로 흐름을 정리하세요.",
-  "subheader.retrospectives.eyebrow": "Writing Ledger",
-  "subheader.retrospectives.title": "Retrospectives",
+  "subheader.retrospectives.eyebrow": "기록 원장",
+  "subheader.retrospectives.title": "회고",
   "subheader.retrospectives.subtitle":
     "완료한 작업과 오늘의 커밋을 한 흐름으로 묶고, GitHub 저장소에 자동 동기화합니다.",
-  "subheader.settings.eyebrow": "Integrations and Templates",
-  "subheader.settings.title": "Settings",
+  "subheader.settings.eyebrow": "연동 및 템플릿",
+  "subheader.settings.title": "설정",
   "subheader.settings.subtitle":
     "GitHub 연결 범위와, 자동 회고 요약을 자유롭게 조정합니다.",
 
@@ -445,6 +463,27 @@ const ko: Dict = {
     "활성화하면 해당 기간이 끝나는 자정에 AI가 자동으로 회고를 요약합니다.",
   "settings.notifications.retention.label": "알림 보관 기간",
   "settings.notifications.retention.unit": "일",
+  "settings.section.templates": "회고록 템플릿",
+  "settings.templates.title": "Retro Templates",
+  "settings.templates.description":
+    "새 회고록을 생성할 때 자동으로 적용될 초기 구조를 편집합니다. / 로 블록을 삽입하세요.",
+  "settings.templates.default": "기본",
+  "settings.templates.add": "새 템플릿 추가",
+  "settings.templates.selectHint": "왼쪽 목록에서 템플릿을 선택하세요.",
+  "settings.templates.namePlaceholder": "템플릿 이름",
+  "settings.templates.contentPlaceholder":
+    "회고록에 미리 채워질 내용을 작성하세요. / 로 블록을 삽입할 수 있습니다.",
+  "settings.templates.reset": "기본값으로 초기화",
+  "settings.templates.use": "사용하기",
+  "settings.templates.inUse": "사용 중",
+  "settings.templates.activeHint":
+    "‘사용 중’ 템플릿이 새 회고를 만들 때 자동으로 적용됩니다.",
+  "settings.section.integrations": "연동",
+  "settings.section.preferences": "환경설정",
+  "settings.group.integrations.hint": "외부 서비스 연결을 관리합니다.",
+  "settings.group.preferences.hint": "언어, 자동 요약, 알림 동작을 조정합니다.",
+  "settings.group.templates.hint":
+    "회고 유형별 기본 구조를 정의하고, 사용할 템플릿을 선택합니다.",
 
   "common.cancel": "취소",
   "common.confirm": "확인",
@@ -710,6 +749,28 @@ const en: Dict = {
     "When on, the AI will summarize retrospectives automatically at midnight when the period ends.",
   "settings.notifications.retention.label": "Notification retention",
   "settings.notifications.retention.unit": "days",
+  "settings.section.templates": "Retro Templates",
+  "settings.templates.title": "Retro Templates",
+  "settings.templates.description":
+    "Edit the default structure applied when a new retrospective is created. Use / to insert blocks.",
+  "settings.templates.default": "Default",
+  "settings.templates.add": "New template",
+  "settings.templates.selectHint": "Select a template from the list on the left.",
+  "settings.templates.namePlaceholder": "Template name",
+  "settings.templates.contentPlaceholder":
+    "Write the content that will pre-fill a new retrospective. Use / to insert blocks.",
+  "settings.templates.reset": "Reset to default",
+  "settings.templates.use": "Use",
+  "settings.templates.inUse": "In use",
+  "settings.templates.activeHint":
+    "The 'in use' template is applied automatically when a new retrospective is created.",
+  "settings.section.integrations": "Integrations",
+  "settings.section.preferences": "Preferences",
+  "settings.group.integrations.hint": "Manage connections to external services.",
+  "settings.group.preferences.hint":
+    "Adjust language, auto-summary, and notification behavior.",
+  "settings.group.templates.hint":
+    "Define the default structure per retrospective type and pick which to use.",
 
   "common.cancel": "Cancel",
   "common.confirm": "Confirm",
@@ -969,6 +1030,25 @@ const zh: Dict = {
     "启用后,AI 会在对应周期结束的午夜自动生成摘要。",
   "settings.notifications.retention.label": "通知保留时长",
   "settings.notifications.retention.unit": "天",
+  "settings.section.templates": "回顾模板",
+  "settings.templates.title": "Retro Templates",
+  "settings.templates.description":
+    "编辑创建新回顾时自动应用的初始结构。使用 / 插入块。",
+  "settings.templates.default": "默认",
+  "settings.templates.add": "新建模板",
+  "settings.templates.selectHint": "请从左侧列表中选择模板。",
+  "settings.templates.namePlaceholder": "模板名称",
+  "settings.templates.contentPlaceholder":
+    "填写将预先填入新回顾中的内容。使用 / 插入块。",
+  "settings.templates.reset": "恢复默认值",
+  "settings.templates.use": "使用",
+  "settings.templates.inUse": "使用中",
+  "settings.templates.activeHint": "创建新回顾时会自动应用「使用中」的模板。",
+  "settings.section.integrations": "集成",
+  "settings.section.preferences": "偏好设置",
+  "settings.group.integrations.hint": "管理与外部服务的连接。",
+  "settings.group.preferences.hint": "调整语言、自动摘要和通知行为。",
+  "settings.group.templates.hint": "定义每种回顾类型的默认结构，并选择要使用的模板。",
 
   "common.cancel": "取消",
   "common.confirm": "确认",
@@ -1231,6 +1311,27 @@ const ja: Dict = {
     "ON にすると、期間終了の真夜中に AI が自動的に振り返りをサマリーします。",
   "settings.notifications.retention.label": "通知保持期間",
   "settings.notifications.retention.unit": "日",
+  "settings.section.templates": "振り返りテンプレート",
+  "settings.templates.title": "Retro Templates",
+  "settings.templates.description":
+    "新しい振り返りを作成する際に自動で適用される初期構造を編集します。/ でブロックを挿入できます。",
+  "settings.templates.default": "デフォルト",
+  "settings.templates.add": "新しいテンプレート",
+  "settings.templates.selectHint": "左のリストからテンプレートを選択してください。",
+  "settings.templates.namePlaceholder": "テンプレート名",
+  "settings.templates.contentPlaceholder":
+    "新しい振り返りに事前入力されるコンテンツを記入してください。/ でブロックを挿入できます。",
+  "settings.templates.reset": "デフォルトに戻す",
+  "settings.templates.use": "使用する",
+  "settings.templates.inUse": "使用中",
+  "settings.templates.activeHint":
+    "「使用中」のテンプレートが、新しい振り返りの作成時に自動で適用されます。",
+  "settings.section.integrations": "連携",
+  "settings.section.preferences": "環境設定",
+  "settings.group.integrations.hint": "外部サービスとの連携を管理します。",
+  "settings.group.preferences.hint": "言語・自動サマリー・通知の動作を調整します。",
+  "settings.group.templates.hint":
+    "振り返りタイプごとの初期構造を定義し、使用するテンプレートを選択します。",
 
   "common.cancel": "キャンセル",
   "common.confirm": "確認",

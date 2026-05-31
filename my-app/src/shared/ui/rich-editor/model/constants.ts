@@ -1,32 +1,9 @@
-import type { Editor, Range } from "@tiptap/core";
+import type { CalloutType, SlashCommandItem } from "./types";
 
 /**
- * 슬래시 커맨드 정의.
- * - keywords: 다국어 검색용 별칭 (한국어/영어/일부 일본어/중국어)
- * - icon: lucide 아이콘 이름 (UI에서 동적 import)
- * - execute: 에디터 명령
+ * 리치 에디터 정적 데이터 — 콜아웃 메타 + 슬래시 커맨드 목록.
+ * (FSD §10: 상수/설정 객체는 model/constants 에 위치)
  */
-export interface SlashCommandItem {
-  id: string;
-  /** 한국어 표시명 */
-  titleKo: string;
-  /** 영어 표시명 */
-  titleEn: string;
-  /** 한 줄 설명 (한국어) */
-  descKo: string;
-  descEn: string;
-  /** 검색용 키워드 (다국어, 소문자 권장) */
-  keywords: string[];
-  /** 카테고리 — 메뉴 그룹핑용 */
-  category: "heading" | "list" | "block" | "media";
-  /** lucide 아이콘 이름 */
-  icon: string;
-  /** 명령 실행 */
-  execute: (editor: Editor, range: Range) => void;
-}
-
-/** 콜아웃 타입 (GitHub Alert 호환) */
-export type CalloutType = "NOTE" | "TIP" | "IMPORTANT" | "WARNING" | "CAUTION";
 
 export const CALLOUT_META: Record<
   CalloutType,
@@ -302,24 +279,3 @@ export const SLASH_COMMANDS: SlashCommandItem[] = [
       editor.chain().focus().deleteRange(range).setHorizontalRule().run(),
   },
 ];
-
-/**
- * 다국어 검색 — 부분 일치, 대소문자 무시, 공백 무시.
- * 검색어가 비면 전체 반환.
- */
-export function filterCommands(query: string): SlashCommandItem[] {
-  const q = query.trim().toLowerCase().replace(/\s+/g, "");
-  if (!q) return SLASH_COMMANDS;
-  return SLASH_COMMANDS.filter((cmd) => {
-    const haystack = [
-      cmd.id,
-      cmd.titleKo,
-      cmd.titleEn,
-      ...cmd.keywords,
-    ]
-      .join(" ")
-      .toLowerCase()
-      .replace(/\s+/g, "");
-    return haystack.includes(q);
-  });
-}

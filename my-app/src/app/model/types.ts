@@ -1,4 +1,4 @@
-import type { JournalEntry } from "@/entities/entry/model/types";
+import type { JournalEntry, RetrospectiveType } from "@/entities/entry/model/types";
 import type { GitHubConfig } from "@/entities/github/model/types";
 import type {
   NoticeCategory,
@@ -9,6 +9,7 @@ import type {
   PendingSummary,
   SummaryKind,
 } from "@/entities/summary/model/types";
+import type { RetroTemplate } from "@/entities/template";
 import type { TaskStatus, Todo } from "@/entities/todo/model/types";
 import type { OAuthProvider, User } from "@/entities/user/model/types";
 import type { AppSettings, Locale } from "@/app/model/settings";
@@ -24,6 +25,9 @@ export interface PersistedAppState {
   pendingSummary: PendingSummary | null;
   currentUser: User | null;
   rememberMe: boolean;
+  templates: RetroTemplate[];
+  /** retroType → 새 회고 생성 시 사용할 활성 템플릿 id */
+  activeTemplateIds: Record<RetrospectiveType, string>;
 }
 
 export type AppState = PersistedAppState;
@@ -72,6 +76,19 @@ export interface ArchiveAppContextValue {
   minimizeSummary: () => void;
   completeSummary: () => void;
   cancelSummary: () => void;
+  // ─── Templates ──────────────────────────────────────────────────────────
+  addTemplate: (
+    retroType: RetrospectiveType,
+    name: string,
+    content: string,
+  ) => RetroTemplate;
+  updateTemplate: (
+    id: string,
+    patch: Partial<Pick<RetroTemplate, "name" | "content">>,
+  ) => void;
+  deleteTemplate: (id: string) => void;
+  resetTemplate: (retroType: RetrospectiveType) => void;
+  setActiveTemplate: (retroType: RetrospectiveType, id: string) => void;
   // ─── Auth ────────────────────────────────────────────────────────────────
   login: (
     email: string,

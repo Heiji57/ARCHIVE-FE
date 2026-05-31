@@ -3,6 +3,7 @@ import { DEFAULT_SETTINGS } from "@/app/model/settings";
 import type { AppState } from "@/app/model/types";
 import type { JournalEntry } from "@/entities/entry/model/types";
 import type { NotificationItem } from "@/entities/notification/model/types";
+import { DEFAULT_TEMPLATE_CONTENT, defaultTemplateId } from "@/entities/template";
 import type { Todo } from "@/entities/todo/model/types";
 import { createId } from "@/shared/lib/id";
 
@@ -195,6 +196,59 @@ export function appReducer(state: AppState, action: AppAction): AppState {
 
     case "summary/complete":
       return { ...state, pendingSummary: null };
+
+    case "template/add":
+      return {
+        ...state,
+        templates: [...state.templates, action.payload.template],
+      };
+
+    case "template/update":
+      return {
+        ...state,
+        templates: state.templates.map((t) =>
+          t.id === action.payload.id
+            ? { ...t, ...action.payload.patch, updatedAt: new Date().toISOString() }
+            : t,
+        ),
+      };
+
+    case "template/delete": {
+      const deleted = state.templates.find((t) => t.id === action.payload.id);
+      const nextActive = { ...state.activeTemplateIds };
+      // 삭제한 템플릿이 활성 상태였다면 해당 타입의 기본 템플릿으로 되돌린다
+      if (deleted && nextActive[deleted.retroType] === deleted.id) {
+        nextActive[deleted.retroType] = defaultTemplateId(deleted.retroType);
+      }
+      return {
+        ...state,
+        templates: state.templates.filter((t) => t.id !== action.payload.id),
+        activeTemplateIds: nextActive,
+      };
+    }
+
+    case "template/setActive":
+      return {
+        ...state,
+        activeTemplateIds: {
+          ...state.activeTemplateIds,
+          [action.payload.retroType]: action.payload.id,
+        },
+      };
+
+    case "template/resetDefault":
+      return {
+        ...state,
+        templates: state.templates.map((t) =>
+          t.retroType === action.payload.retroType && t.isDefault
+            ? {
+                ...t,
+                content: DEFAULT_TEMPLATE_CONTENT[action.payload.retroType],
+                updatedAt: new Date().toISOString(),
+              }
+            : t,
+        ),
+      };
 
     case "auth/login":
       return {

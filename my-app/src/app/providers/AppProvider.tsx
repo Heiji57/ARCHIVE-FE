@@ -26,6 +26,7 @@ import type {
   NoticeType,
   NotificationItem,
 } from "@/entities/notification/model/types";
+import { resolveActiveTemplate, type RetroTemplate } from "@/entities/template";
 import type { OAuthProvider, User } from "@/entities/user/model/types";
 import {
   SUMMARY_DURATION_MS,
@@ -44,6 +45,7 @@ import {
   todayKey,
 } from "@/shared/lib/date";
 import { createId } from "@/shared/lib/id";
+import { translate } from "@/shared/lib/i18n";
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(
@@ -174,16 +176,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
       dispatch({ type: "entry/upsert", payload: { entry } });
       dispatch({ type: "summary/complete" });
 
-      const kindLabel =
-        kind === "weekly" ? "주간" : kind === "monthly" ? "월간" : "연간";
+      const locale = state.settings.locale;
+      const kindLabel = translate(locale, `summary.kind.${kind}`);
       pushNotification(
         "success",
-        "AI 요약 완료",
-        `${kindLabel} 요약이 회고록에 저장되었습니다.`,
+        translate(locale, "summary.completed.title"),
+        translate(locale, "summary.completed.message", { kind: kindLabel }),
         { category: "summary" },
       );
     },
-    [state.todos, state.entries, pushNotification],
+    [state.todos, state.entries, state.settings.locale, pushNotification],
   );
 
   const startSummaryInternal = useCallback(
@@ -254,11 +256,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
         (e) => e.dateKey === dateKey && e.retroType === "daily",
       );
       if (existing) return { entry: existing, existed: true };
+      // 활성 일간 템플릿 내용을 초기 본문으로 채운다
+      const template = resolveActiveTemplate(
+        state.templates,
+        state.activeTemplateIds,
+        "daily",
+      );
       const entry: JournalEntry = {
         id: createId("entry"),
         dateKey,
         title: `${dateKey} 일일 회고`,
-        content: "",
+        content: template?.content ?? "",
         retroType: "daily",
         synced: false,
         updatedAt: new Date().toISOString(),
@@ -298,6 +306,28 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (summaryTimerRef.current) window.clearTimeout(summaryTimerRef.current);
       dispatch({ type: "summary/cancel" });
     },
+    // ─── Templates ──────────────────────────────────────────────────────────
+    addTemplate: (retroType, name, content) => {
+      const template: RetroTemplate = {
+        id: createId("template"),
+        name,
+        retroType,
+        content,
+        isDefault: false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      dispatch({ type: "template/add", payload: { template } });
+      return template;
+    },
+    updateTemplate: (id, patch) =>
+      dispatch({ type: "template/update", payload: { id, patch } }),
+    deleteTemplate: (id) =>
+      dispatch({ type: "template/delete", payload: { id } }),
+    resetTemplate: (retroType) =>
+      dispatch({ type: "template/resetDefault", payload: { retroType } }),
+    setActiveTemplate: (retroType, id) =>
+      dispatch({ type: "template/setActive", payload: { retroType, id } }),
     // ─── Auth ────────────────────────────────────────────────────────────
     login: async (email, password, rememberMe) => {
       const result = await mockLogin(email, password);
