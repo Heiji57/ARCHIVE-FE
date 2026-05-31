@@ -12,3 +12,23 @@ export {
   apiRestoreSession,
   apiOAuthLogin,
 } from "./auth";
+export {
+  apiListTodos,
+  apiCreateTodo,
+  apiUpdateTodo,
+  apiDeleteTodo,
+} from "./todos";
+export {
+  apiListEntries,
+  apiCreateEntry,
+  apiUpsertEntry,
+  apiDeleteEntry,
+} from "./entries";
+export { apiGetSettings, apiUpdateSettings } from "./settings";
+export {
+  apiListNotifications,
+  apiMarkNotificationRead,
+  apiMarkAllNotificationsRead,
+  apiDeleteNotification,
+  apiClearNotifications,
+} from "./notifications";

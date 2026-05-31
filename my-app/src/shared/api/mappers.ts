@@ -2,10 +2,22 @@
  * API(snake_case) ↔ FE 도메인(camelCase) 변환 경계.
  * 이 파일에서만 변환하고 FE 내부는 기존 camelCase 타입을 그대로 쓴다.
  */
+import type { JournalEntry } from "@/entities/entry/model/types";
+import type {
+  NoticeCategory,
+  NoticeType,
+  NotificationItem,
+} from "@/entities/notification/model/types";
+import type { Todo } from "@/entities/todo/model/types";
 import type { OAuthProvider, User } from "@/entities/user/model/types";
+import type { AppSettings, Locale } from "@/app/model/settings";
 import type { components } from "./schema";
 
 type UserResponse = components["schemas"]["UserResponse"];
+type TodoResponse = components["schemas"]["TodoResponse"];
+type EntryResponse = components["schemas"]["EntryResponse"];
+type SettingsResponse = components["schemas"]["SettingsResponse"];
+type NotificationResponse = components["schemas"]["NotificationResponse"];
 
 /**
  * API UserResponse({id,email})를 FE User 로 변환.
@@ -25,5 +37,81 @@ export function toUser(
     avatarUrl: null,
     // API 에 createdAt 이 없어 표시용 placeholder. 백엔드 확장 시 교체.
     createdAt: new Date().toISOString(),
+  };
+}
+
+// ─── Todo ─────────────────────────────────────────────────────────────────
+export function toTodo(api: TodoResponse): Todo {
+  return {
+    id: api.id,
+    title: api.title,
+    status: api.status,
+    completed: api.completed,
+    dateKey: api.date_key,
+    description: api.description,
+    createdAt: api.created_at,
+    completedAt: api.completed_at ?? null,
+  };
+}
+
+// ─── JournalEntry ───────────────────────────────────────────────────────────
+export function toEntry(api: EntryResponse): JournalEntry {
+  return {
+    id: api.id,
+    dateKey: api.date_key,
+    title: api.title,
+    content: api.content,
+    retroType: api.retro_type,
+    updatedAt: api.updated_at ?? api.created_at,
+    // API EntryResponse 에 synced 필드 없음 → false 기본값 (CLAUDE.md §8 간극)
+    synced: false,
+  };
+}
+
+// ─── Settings ────────────────────────────────────────────────────────────────
+export function toSettings(api: SettingsResponse): AppSettings {
+  return {
+    locale: api.locale as Locale,
+    autoSummary: {
+      weekly: api.autoSummaryWeekly,
+      monthly: api.autoSummaryMonthly,
+      yearly: api.autoSummaryYearly,
+    },
+    notificationRetentionDays: api.notificationRetentionDays,
+    lastScheduleCheckAt: api.lastScheduleCheckAt ?? null,
+  };
+}
+
+export function fromSettings(
+  s: AppSettings,
+): components["schemas"]["UpdateSettingsRequest"] {
+  return {
+    locale: s.locale,
+    autoSummaryWeekly: s.autoSummary.weekly,
+    autoSummaryMonthly: s.autoSummary.monthly,
+    autoSummaryYearly: s.autoSummary.yearly,
+    notificationRetentionDays: s.notificationRetentionDays,
+    lastScheduleCheckAt: s.lastScheduleCheckAt,
+  };
+}
+
+// ─── Notification ────────────────────────────────────────────────────────────
+// API type 'error' 는 FE 에 없으므로 'warning' 으로, category 는 그대로 매핑.
+const NOTICE_TYPE_MAP: Record<NotificationResponse["type"], NoticeType> = {
+  info: "info",
+  success: "success",
+  warning: "warning",
+  error: "warning",
+};
+
+export function toNotification(api: NotificationResponse): NotificationItem {
+  return {
+    id: api.id,
+    type: NOTICE_TYPE_MAP[api.type],
+    category: api.category as NoticeCategory,
+    title: api.title,
+    message: api.message,
+    timestamp: api.created_at,
+    read: api.is_read,
   };
 }

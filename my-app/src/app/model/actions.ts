@@ -30,6 +30,13 @@ export type AppAction =
       };
     }
   | { type: "todo/move"; payload: { id: string; dateKey: string } }
+  | { type: "todo/upsert"; payload: { todo: Todo } }
+  | { type: "todo/remove"; payload: { id: string } }
+  // ── 서버 하이드레이션 (API 모드) ──
+  | { type: "hydrate/todos"; payload: { todos: Todo[] } }
+  | { type: "hydrate/entries"; payload: { entries: JournalEntry[] } }
+  | { type: "hydrate/notifications"; payload: { notifications: NotificationItem[] } }
+  | { type: "hydrate/settings"; payload: { settings: AppSettings } }
   | {
       type: "entry/update";
       payload: {

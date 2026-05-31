@@ -43,6 +43,34 @@ export function appReducer(state: AppState, action: AppAction): AppState {
         ),
       };
 
+    case "todo/upsert": {
+      const idx = state.todos.findIndex((t) => t.id === action.payload.todo.id);
+      if (idx >= 0) {
+        const next = state.todos.slice();
+        next[idx] = action.payload.todo;
+        return { ...state, todos: next };
+      }
+      return { ...state, todos: [...state.todos, action.payload.todo] };
+    }
+
+    case "todo/remove":
+      return {
+        ...state,
+        todos: state.todos.filter((t) => t.id !== action.payload.id),
+      };
+
+    case "hydrate/todos":
+      return { ...state, todos: action.payload.todos };
+
+    case "hydrate/entries":
+      return { ...state, entries: action.payload.entries };
+
+    case "hydrate/notifications":
+      return { ...state, notifications: action.payload.notifications };
+
+    case "hydrate/settings":
+      return { ...state, settings: action.payload.settings };
+
     case "entry/update":
       return {
         ...state,

@@ -48,13 +48,26 @@ import { createId } from "@/shared/lib/id";
 import { translate } from "@/shared/lib/i18n";
 import {
   USE_API,
+  apiClearNotifications,
   apiCompleteSignup,
+  apiCreateEntry,
+  apiCreateTodo,
+  apiDeleteNotification,
+  apiGetSettings,
+  apiListEntries,
+  apiListNotifications,
+  apiListTodos,
   apiLogin,
   apiLogout,
+  apiMarkAllNotificationsRead,
+  apiMarkNotificationRead,
   apiOAuthLogin,
   apiRequestEmailCode,
   apiRestoreSession,
   apiUpdateProfile,
+  apiUpdateSettings,
+  apiUpdateTodo,
+  apiUpsertEntry,
   apiVerifyEmailCode,
 } from "@/shared/api";
 
@@ -253,10 +266,70 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  // ─── API 모드: 로그인 후 서버 데이터 하이드레이션 ────────────────────────────
+  const hydratedUserRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!USE_API) return;
+    const uid = state.currentUser?.id ?? null;
+    if (!uid || hydratedUserRef.current === uid) return;
+    hydratedUserRef.current = uid;
+
+    void apiListTodos({ from: "1970-01-01", to: "2999-12-31" })
+      .then((todos) => dispatch({ type: "hydrate/todos", payload: { todos } }))
+      .catch(() => {});
+    void apiListEntries({})
+      .then((entries) =>
+        dispatch({ type: "hydrate/entries", payload: { entries } }),
+      )
+      .catch(() => {});
+    void apiGetSettings()
+      .then((settings) =>
+        dispatch({ type: "hydrate/settings", payload: { settings } }),
+      )
+      .catch(() => {});
+    void apiListNotifications()
+      .then((notifications) =>
+        dispatch({ type: "hydrate/notifications", payload: { notifications } }),
+      )
+      .catch(() => {});
+  }, [state.currentUser?.id]);
+
+  // ─── API 모드 헬퍼 ──────────────────────────────────────────────────────────
+  // 실패 시 일시적 토스트로 알린다 (네트워크 오류 메시지 재사용).
+  const reportApiError = () => {
+    pushNotification(
+      "warning",
+      translate(state.settings.locale, "auth.error.network"),
+      "",
+      { transient: true },
+    );
+  };
+  // 설정은 전체 교체(PUT)이므로 현재 settings 에 patch 를 합쳐 전송.
+  const syncSettings = (patch: Partial<AppSettings>) => {
+    const next: AppSettings = {
+      ...state.settings,
+      ...patch,
+      autoSummary: { ...state.settings.autoSummary, ...(patch.autoSummary ?? {}) },
+    };
+    return apiUpdateSettings(next).catch(() => reportApiError());
+  };
+
   // ─── Context value ────────────────────────────────────────────────────────
   const value: ArchiveAppContextValue = {
     state,
     addTodo: (title, dateKey = todayKey(), options) => {
+      if (USE_API) {
+        // 서버가 id 를 발급하므로 생성은 await 후 dispatch
+        void apiCreateTodo({
+          title,
+          dateKey,
+          status: options?.status,
+          description: options?.description,
+        })
+          .then((todo) => dispatch({ type: "todo/upsert", payload: { todo } }))
+          .catch(() => reportApiError());
+        return;
+      }
       dispatch({
         type: "todo/add",
         payload: {
@@ -268,13 +341,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
       });
     },
     updateTodo: (id, patch) => {
-      dispatch({ type: "todo/update", payload: { id, patch } });
+      dispatch({ type: "todo/update", payload: { id, patch } }); // 낙관적
+      if (USE_API) void apiUpdateTodo(id, patch).catch(() => reportApiError());
     },
     moveTodo: (id, dateKey) => {
-      dispatch({ type: "todo/move", payload: { id, dateKey } });
+      dispatch({ type: "todo/move", payload: { id, dateKey } }); // 낙관적
+      if (USE_API)
+        void apiUpdateTodo(id, { dateKey }).catch(() => reportApiError());
     },
     updateEntry: (id, patch) => {
-      dispatch({ type: "entry/update", payload: { id, patch } });
+      dispatch({ type: "entry/update", payload: { id, patch } }); // 낙관적
+      if (USE_API) {
+        const base = state.entries.find((e) => e.id === id);
+        if (base) {
+          void apiUpsertEntry(id, {
+            dateKey: base.dateKey,
+            title: patch.title ?? base.title,
+            content: patch.content ?? base.content,
+            retroType: patch.retroType ?? base.retroType,
+          }).catch(() => reportApiError());
+        }
+      }
     },
     createDailyEntry: (dateKey) => {
       const existing = state.entries.find(
@@ -297,27 +384,59 @@ export function AppProvider({ children }: { children: ReactNode }) {
         updatedAt: new Date().toISOString(),
       };
       dispatch({ type: "entry/upsert", payload: { entry } });
+      // 서버에도 생성 (id 는 다음 하이드레이션에서 서버 값으로 정렬됨)
+      if (USE_API) {
+        void apiCreateEntry({
+          dateKey,
+          title: entry.title,
+          content: entry.content,
+          retroType: "daily",
+        }).catch(() => reportApiError());
+      }
       return { entry, existed: false };
     },
     saveGitHubConfig: (config) => {
+      // GitHub 연동 엔드포인트는 api.yaml 에 없음 → 항상 로컬 (CLAUDE.md §8)
       dispatch({ type: "github/save", payload: { config } });
     },
     pushNotification,
-    markNotificationRead: (id) =>
-      dispatch({ type: "notification/markRead", payload: { id } }),
-    markAllNotificationsRead: () =>
-      dispatch({ type: "notification/markAllRead" }),
-    clearNotification: (id) =>
-      dispatch({ type: "notification/clear", payload: { id } }),
-    clearReadNotifications: () => dispatch({ type: "notification/clearRead" }),
-    clearAllNotifications: () => dispatch({ type: "notification/clearAll" }),
+    markNotificationRead: (id) => {
+      dispatch({ type: "notification/markRead", payload: { id } });
+      if (USE_API) void apiMarkNotificationRead(id).catch(() => reportApiError());
+    },
+    markAllNotificationsRead: () => {
+      dispatch({ type: "notification/markAllRead" });
+      if (USE_API)
+        void apiMarkAllNotificationsRead().catch(() => reportApiError());
+    },
+    clearNotification: (id) => {
+      dispatch({ type: "notification/clear", payload: { id } });
+      if (USE_API) void apiDeleteNotification(id).catch(() => reportApiError());
+    },
+    clearReadNotifications: () => {
+      dispatch({ type: "notification/clearRead" });
+      if (USE_API) void apiClearNotifications(true).catch(() => reportApiError());
+    },
+    clearAllNotifications: () => {
+      dispatch({ type: "notification/clearAll" });
+      if (USE_API) void apiClearNotifications(false).catch(() => reportApiError());
+    },
     dismissNotification,
-    setLocale: (locale: Locale) =>
-      dispatch({ type: "settings/locale", payload: { locale } }),
-    setAutoSummary: (patch: Partial<AppSettings["autoSummary"]>) =>
-      dispatch({ type: "settings/autoSummary", payload: { patch } }),
-    setNotificationRetention: (days) =>
-      dispatch({ type: "settings/retention", payload: { days } }),
+    setLocale: (locale: Locale) => {
+      dispatch({ type: "settings/locale", payload: { locale } });
+      if (USE_API) void syncSettings({ locale });
+    },
+    setAutoSummary: (patch: Partial<AppSettings["autoSummary"]>) => {
+      dispatch({ type: "settings/autoSummary", payload: { patch } });
+      if (USE_API)
+        void syncSettings({
+          autoSummary: { ...state.settings.autoSummary, ...patch },
+        });
+    },
+    setNotificationRetention: (days) => {
+      dispatch({ type: "settings/retention", payload: { days } });
+      if (USE_API) void syncSettings({ notificationRetentionDays: days });
+    },
     startSummary: (kind, targetDateKey) =>
       startSummaryInternal(kind, targetDateKey),
     minimizeSummary: () => dispatch({ type: "summary/minimize" }),
