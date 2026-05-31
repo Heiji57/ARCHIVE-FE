@@ -46,6 +46,17 @@ import {
 } from "@/shared/lib/date";
 import { createId } from "@/shared/lib/id";
 import { translate } from "@/shared/lib/i18n";
+import {
+  USE_API,
+  apiCompleteSignup,
+  apiLogin,
+  apiLogout,
+  apiOAuthLogin,
+  apiRequestEmailCode,
+  apiRestoreSession,
+  apiUpdateProfile,
+  apiVerifyEmailCode,
+} from "@/shared/api";
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(
@@ -228,6 +239,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  // API 모드: 앱 시작 시 refresh 쿠키로 세션 복원 (access token 은 메모리라 새로고침 시 소실됨).
+  const sessionRestoredRef = useRef(false);
+  useEffect(() => {
+    if (!USE_API || sessionRestoredRef.current) return;
+    sessionRestoredRef.current = true;
+    void apiRestoreSession().then((user) => {
+      if (user) {
+        dispatch({ type: "auth/login", payload: { user, rememberMe: true } });
+      } else {
+        dispatch({ type: "auth/logout" });
+      }
+    });
+  }, []);
+
   // ─── Context value ────────────────────────────────────────────────────────
   const value: ArchiveAppContextValue = {
     state,
@@ -329,8 +354,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setActiveTemplate: (retroType, id) =>
       dispatch({ type: "template/setActive", payload: { retroType, id } }),
     // ─── Auth ────────────────────────────────────────────────────────────
+    // USE_API 플래그로 실제 API ↔ mock 을 전환한다.
     login: async (email, password, rememberMe) => {
-      const result = await mockLogin(email, password);
+      const result = USE_API
+        ? await apiLogin(email, password)
+        : await mockLogin(email, password);
       if (result.ok) {
         dispatch({
           type: "auth/login",
@@ -340,12 +368,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
       return result;
     },
     logout: () => {
+      if (USE_API) void apiLogout();
       dispatch({ type: "auth/logout" });
     },
-    requestEmailCode: (email, mode) => mockRequestEmailCode(email, { mode }),
-    verifyEmailCode: (email, code) => mockVerifyEmailCode(email, code),
+    requestEmailCode: (email, mode) =>
+      // 회원가입 코드 발송만 API 지원. reset(forgot-password) 흐름은 API 미정의 → mock 폴백.
+      USE_API && mode !== "reset"
+        ? apiRequestEmailCode(email)
+        : mockRequestEmailCode(email, { mode }),
+    verifyEmailCode: (email, code) =>
+      USE_API ? apiVerifyEmailCode(email, code) : mockVerifyEmailCode(email, code),
     completeSignup: async (input: SignupInput) => {
-      const result = await mockCompleteSignup(input);
+      const result = USE_API
+        ? await apiCompleteSignup(input)
+        : await mockCompleteSignup(input);
       if (result.ok) {
         dispatch({
           type: "auth/login",
@@ -355,7 +391,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       return result;
     },
     oauthLogin: async (provider: OAuthProvider) => {
-      const result = await mockOAuthLogin(provider);
+      const result = USE_API
+        ? await apiOAuthLogin(provider)
+        : await mockOAuthLogin(provider);
       if (result.ok) {
         dispatch({
           type: "auth/login",
@@ -364,10 +402,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
       return result;
     },
+    // 비밀번호 재설정은 api.yaml 에 없음 → 항상 mock (CLAUDE.md §8).
     resetPassword: (email, code, newPassword) =>
       mockResetPassword(email, code, newPassword),
-    updateProfile: (patch: Partial<Pick<User, "displayName" | "avatarUrl">>) =>
-      dispatch({ type: "auth/updateProfile", payload: { patch } }),
+    updateProfile: (patch: Partial<Pick<User, "displayName" | "avatarUrl">>) => {
+      if (USE_API) void apiUpdateProfile(patch);
+      dispatch({ type: "auth/updateProfile", payload: { patch } });
+    },
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

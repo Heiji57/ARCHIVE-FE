@@ -22,7 +22,14 @@ export function GithubCard() {
   const isConnected = Boolean(config?.enabled);
 
   const handleConnect = () => {
-    saveGitHubConfig({ ...DEMO_GITHUB, enabled: true });
+    // connectedAt / lastSyncedAt 을 클릭 시점으로 기록한다
+    const now = new Date().toISOString();
+    saveGitHubConfig({
+      ...DEMO_GITHUB,
+      enabled: true,
+      connectedAt: now,
+      lastSyncedAt: now,
+    });
     pushNotification(
       "success",
       t("settings.github.connected"),

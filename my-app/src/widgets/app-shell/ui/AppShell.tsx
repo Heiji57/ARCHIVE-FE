@@ -13,6 +13,7 @@ import { useTranslation } from "@/shared/lib/i18n";
 import type { TranslationKey } from "@/shared/lib/i18n";
 import { GlobalSearch } from "@/widgets/global-search";
 import { NotificationPanel } from "@/widgets/notifications";
+import { useSyncAge } from "../model/useSyncAge";
 
 interface AppShellProps {
   route: AppRoute;
@@ -68,17 +69,9 @@ export function AppShell({ route, children, onNavigate }: AppShellProps) {
   const isGithubConnected = Boolean(
     state.githubConfig && state.githubConfig.enabled,
   );
-  const minsAgo =
-    state.githubConfig?.lastSyncedAt
-      ? Math.max(
-          1,
-          Math.round(
-            (Date.now() -
-              new Date(state.githubConfig.lastSyncedAt).getTime()) /
-              60000,
-          ),
-        )
-      : 0;
+  const syncAge = useSyncAge(
+    isGithubConnected ? (state.githubConfig?.connectedAt ?? null) : null,
+  );
 
   const unreadCount = state.notifications.filter((n) => !n.read).length;
 
@@ -132,19 +125,11 @@ export function AppShell({ route, children, onNavigate }: AppShellProps) {
           <div className="gn-right">
             <div
               className="sync-chip"
-              title={
-                isGithubConnected
-                  ? t("sync.minutesAgo", { n: minsAgo })
-                  : t("sync.disconnected")
-              }
+              title={syncAge ? syncAge.title : t("sync.disconnected")}
             >
-              <span
-                className={`sync-dot ${isGithubConnected ? "" : "offline"}`}
-              />
+              <span className={`sync-dot ${syncAge ? "" : "offline"}`} />
               <span>
-                {isGithubConnected
-                  ? t("sync.synced", { n: minsAgo })
-                  : t("sync.offline")}
+                {syncAge ? syncAge.chip : t("sync.offline")}
               </span>
             </div>
 

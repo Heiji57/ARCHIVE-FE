@@ -17,12 +17,27 @@ function cloudflareSpaFallback(): Plugin {
   };
 }
 
+// 백엔드 주소 (dev 전용). VITE_API_PROXY_TARGET 로 override 가능.
+const API_PROXY_TARGET =
+  process.env.VITE_API_PROXY_TARGET ?? "http://localhost:8000";
+
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), cloudflareSpaFallback()],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+    },
+  },
+  server: {
+    // HttpOnly refresh 쿠키를 same-origin 으로 다루기 위해 /api 를 백엔드로 프록시.
+    // 프론트는 항상 "/api/v1/..." 상대경로로 호출 → CORS 회피 + 쿠키 자동 전송.
+    proxy: {
+      "/api": {
+        target: API_PROXY_TARGET,
+        changeOrigin: true,
+        secure: false,
+      },
     },
   },
 });

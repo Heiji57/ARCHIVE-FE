@@ -23,11 +23,15 @@ export type TranslationKey =
   // Sync status
   | "sync.connected"
   | "sync.disconnected"
-  | "sync.minutesAgo"
   | "sync.offline"
   | "sync.synced"
   | "sync.status"
   | "sync.connectInSettings"
+  | "sync.ago.m"
+  | "sync.ago.h"
+  | "sync.ago.d"
+  | "sync.ago.M"
+  | "sync.ago.Y"
   // Todo board
   | "todo.quickCapture.placeholder"
   | "todo.quickCapture.hint"
@@ -300,11 +304,15 @@ const ko: Dict = {
 
   "sync.connected": "GitHub 연결됨",
   "sync.disconnected": "연결 없음",
-  "sync.minutesAgo": "{n}분 전 동기화",
-  "sync.offline": "Offline",
-  "sync.synced": "Synced · {n}m",
-  "sync.status": "Sync Status",
-  "sync.connectInSettings": "Settings에서 연결하세요",
+  "sync.offline": "오프라인",
+  "sync.synced": "연결됨 · {n}",
+  "sync.status": "연결 상태",
+  "sync.connectInSettings": "설정에서 연결하세요",
+  "sync.ago.m": "{n}분 전 연결",
+  "sync.ago.h": "{n}시간 전 연결",
+  "sync.ago.d": "{n}일 전 연결",
+  "sync.ago.M": "{n}개월 전 연결",
+  "sync.ago.Y": "{n}년 전 연결",
 
   "todo.quickCapture.placeholder":
     "할 일을 작성해보세요 — 예: 오늘 내로 보고서 작성하기",
@@ -583,11 +591,15 @@ const en: Dict = {
 
   "sync.connected": "GitHub connected",
   "sync.disconnected": "Not connected",
-  "sync.minutesAgo": "Synced {n}m ago",
   "sync.offline": "Offline",
-  "sync.synced": "Synced · {n}m",
-  "sync.status": "Sync Status",
+  "sync.synced": "Connected · {n}",
+  "sync.status": "Connection Status",
   "sync.connectInSettings": "Connect from Settings",
+  "sync.ago.m": "Connected {n}m ago",
+  "sync.ago.h": "Connected {n}h ago",
+  "sync.ago.d": "Connected {n}d ago",
+  "sync.ago.M": "Connected {n}mo ago",
+  "sync.ago.Y": "Connected {n}y ago",
 
   "todo.quickCapture.placeholder":
     "Write a task — e.g. Draft the weekly report by today",
@@ -869,11 +881,15 @@ const zh: Dict = {
 
   "sync.connected": "GitHub 已连接",
   "sync.disconnected": "未连接",
-  "sync.minutesAgo": "{n} 分钟前同步",
   "sync.offline": "离线",
-  "sync.synced": "已同步 · {n}m",
-  "sync.status": "同步状态",
+  "sync.synced": "已连接 · {n}",
+  "sync.status": "连接状态",
   "sync.connectInSettings": "请在设置中连接",
+  "sync.ago.m": "{n}分钟前连接",
+  "sync.ago.h": "{n}小时前连接",
+  "sync.ago.d": "{n}天前连接",
+  "sync.ago.M": "{n}个月前连接",
+  "sync.ago.Y": "{n}年前连接",
 
   "todo.quickCapture.placeholder": "写下任务 — 例如:今天内完成报告",
   "todo.quickCapture.hint":
@@ -1148,11 +1164,15 @@ const ja: Dict = {
 
   "sync.connected": "GitHub 接続済み",
   "sync.disconnected": "未接続",
-  "sync.minutesAgo": "{n} 分前に同期",
   "sync.offline": "オフライン",
-  "sync.synced": "Synced · {n}m",
-  "sync.status": "同期ステータス",
+  "sync.synced": "接続済 · {n}",
+  "sync.status": "接続ステータス",
   "sync.connectInSettings": "設定から接続してください",
+  "sync.ago.m": "{n}分前に接続",
+  "sync.ago.h": "{n}時間前に接続",
+  "sync.ago.d": "{n}日前に接続",
+  "sync.ago.M": "{n}ヶ月前に接続",
+  "sync.ago.Y": "{n}年前に接続",
 
   "todo.quickCapture.placeholder": "タスクを書く — 例:今日中にレポートを作成",
   "todo.quickCapture.hint":

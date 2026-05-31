@@ -1,22 +1,19 @@
-import { ChevronLeft, ChevronRight, Plus, Search, Sparkles } from "lucide-react";
-import type { JournalEntry } from "@/entities/entry/model/types";
-import type { SummaryKind } from "@/entities/summary/model/types";
-import { EmptyState } from "@/shared/ui/empty-state/EmptyState";
-import { todayKey } from "@/shared/lib/date";
-import { useTranslation } from "@/shared/lib/i18n";
-import {
-  MONTHS,
-  RETRO_FILTERS,
-} from "../model/constants";
-import type { UseRetroFilterResult } from "../model/useRetroFilter";
-import { RetroListItem } from "./RetroListItem";
+import { ChevronLeft, ChevronRight, Plus, Search, Sparkles } from "lucide-react"
+import type { JournalEntry } from "@/entities/entry/model/types"
+import type { SummaryKind } from "@/entities/summary/model/types"
+import { EmptyState } from "@/shared/ui/empty-state/EmptyState"
+import { todayKey } from "@/shared/lib/date"
+import { useTranslation } from "@/shared/lib/i18n"
+import { MONTHS, RETRO_FILTERS } from "../model/constants"
+import type { UseRetroFilterResult } from "../model/useRetroFilter"
+import { RetroListItem } from "./RetroListItem"
 
 export interface RetroSidebarProps {
-  filterState: UseRetroFilterResult;
-  active: JournalEntry | null;
-  onSelect: (id: string) => void;
-  onSummarize: (kind: SummaryKind) => void;
-  onNewDaily: () => void;
+  filterState: UseRetroFilterResult
+  active: JournalEntry | null
+  onSelect: (id: string) => void
+  onSummarize: (kind: SummaryKind) => void
+  onNewDaily: () => void
 }
 
 export function RetroSidebar({
@@ -26,8 +23,8 @@ export function RetroSidebar({
   onSummarize,
   onNewDaily,
 }: RetroSidebarProps) {
-  const todayDateKey = todayKey();
-  const { t } = useTranslation();
+  const todayDateKey = todayKey()
+  const { t } = useTranslation()
   const {
     retroFilter,
     setRetroFilter,
@@ -45,7 +42,7 @@ export function RetroSidebar({
     pageEntries,
     years,
     weeks,
-  } = filterState;
+  } = filterState
 
   return (
     <aside
@@ -55,14 +52,12 @@ export function RetroSidebar({
         borderRadius: "var(--r-xl)",
         padding: "22px 18px 18px",
         height: "fit-content",
-        position: "sticky",
+        position: "static",
         top: 200,
-      }}
-    >
+      }}>
       <p
         className="t-eyebrow"
-        style={{ margin: "0 0 6px", color: "var(--color-body-muted)" }}
-      >
+        style={{ margin: "0 0 6px", color: "var(--color-body-muted)" }}>
         {t("retro.history")}
       </p>
       <h3
@@ -72,8 +67,7 @@ export function RetroSidebar({
           fontSize: 22,
           fontWeight: 600,
           letterSpacing: "-0.02em",
-        }}
-      >
+        }}>
         {t("retro.archive")}
       </h3>
       <p
@@ -82,8 +76,7 @@ export function RetroSidebar({
           fontSize: 12,
           color: "var(--color-body-muted)",
           lineHeight: 1.5,
-        }}
-      >
+        }}>
         {t("retro.archiveDescription")}
       </p>
 
@@ -92,8 +85,7 @@ export function RetroSidebar({
         type="button"
         className="btn btn-primary"
         onClick={onNewDaily}
-        style={{ width: "100%", marginBottom: 14, justifyContent: "center" }}
-      >
+        style={{ width: "100%", marginBottom: 14, justifyContent: "center" }}>
         <Plus size={14} />
         {t("retro.newDaily")}
       </button>
@@ -108,8 +100,7 @@ export function RetroSidebar({
           borderRadius: "var(--r-pill)",
           padding: 3,
           marginBottom: 14,
-        }}
-      >
+        }}>
         {RETRO_FILTERS.map((f) => (
           <button
             key={f.id}
@@ -126,8 +117,7 @@ export function RetroSidebar({
                 retroFilter === f.id
                   ? "var(--color-ink)"
                   : "var(--color-body-muted)",
-            }}
-          >
+            }}>
             {t(f.labelKey)}
           </button>
         ))}
@@ -140,14 +130,12 @@ export function RetroSidebar({
           gridTemplateColumns: "1fr 1fr 1fr",
           gap: 6,
           marginBottom: 12,
-        }}
-      >
+        }}>
         <select
           className="select"
           value={yearFilter}
           onChange={(e) => setYearFilter(e.target.value)}
-          title={t("retro.filter.year")}
-        >
+          title={t("retro.filter.year")}>
           <option value="all">{t("retro.filter.allYears")}</option>
           {years.map((y) => (
             <option key={y} value={y}>
@@ -159,8 +147,7 @@ export function RetroSidebar({
           className="select"
           value={monthFilter}
           onChange={(e) => setMonthFilter(e.target.value)}
-          title={t("retro.filter.month")}
-        >
+          title={t("retro.filter.month")}>
           <option value="all">{t("retro.filter.allMonths")}</option>
           {MONTHS.map((m) => (
             <option key={m} value={m}>
@@ -172,8 +159,7 @@ export function RetroSidebar({
           className="select"
           value={weekFilter}
           onChange={(e) => setWeekFilter(e.target.value)}
-          title={t("retro.filter.week")}
-        >
+          title={t("retro.filter.week")}>
           <option value="all">{t("retro.filter.allWeeks")}</option>
           {weeks.map((w) => (
             <option key={w} value={w}>
@@ -194,8 +180,7 @@ export function RetroSidebar({
           borderRadius: "var(--r-pill)",
           border: "1px solid var(--color-divider-soft)",
           marginBottom: 14,
-        }}
-      >
+        }}>
         <Search size={14} style={{ color: "var(--color-body-muted)" }} />
         <input
           value={search}
@@ -213,8 +198,7 @@ export function RetroSidebar({
           gap: 6,
           maxHeight: 420,
           overflow: "auto",
-        }}
-      >
+        }}>
         {pageEntries.length === 0 ? (
           <EmptyState message={t("retro.empty")} />
         ) : (
@@ -237,8 +221,7 @@ export function RetroSidebar({
             type="button"
             className="pager-btn"
             disabled={page === 0}
-            onClick={() => setPage((p) => Math.max(0, p - 1))}
-          >
+            onClick={() => setPage((p) => Math.max(0, p - 1))}>
             <ChevronLeft size={12} /> {t("retro.pager.prev")}
           </button>
           <span>
@@ -251,8 +234,7 @@ export function RetroSidebar({
             type="button"
             className="pager-btn"
             disabled={page >= totalPages - 1}
-            onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
-          >
+            onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}>
             {t("retro.pager.next")} <ChevronRight size={12} />
           </button>
         </div>
@@ -265,33 +247,29 @@ export function RetroSidebar({
           display: "flex",
           flexDirection: "column",
           gap: 6,
-        }}
-      >
+        }}>
         <button
           type="button"
           className="btn btn-utility"
           onClick={() => onSummarize("weekly")}
-          style={{ fontSize: 12, padding: "8px 12px" }}
-        >
+          style={{ fontSize: 12, padding: "8px 12px" }}>
           <Sparkles size={12} /> {t("retro.summarize.weekly")}
         </button>
         <button
           type="button"
           className="btn btn-utility"
           onClick={() => onSummarize("monthly")}
-          style={{ fontSize: 12, padding: "8px 12px" }}
-        >
+          style={{ fontSize: 12, padding: "8px 12px" }}>
           <Sparkles size={12} /> {t("retro.summarize.monthly")}
         </button>
         <button
           type="button"
           className="btn btn-utility"
           onClick={() => onSummarize("yearly")}
-          style={{ fontSize: 12, padding: "8px 12px" }}
-        >
+          style={{ fontSize: 12, padding: "8px 12px" }}>
           <Sparkles size={12} /> {t("retro.summarize.yearly")}
         </button>
       </div>
     </aside>
-  );
+  )
 }

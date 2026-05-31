@@ -1,6 +1,6 @@
 /* ---------- Sub-header (sticky, frosted) ---------- */
 .sub-header {
-  position: sticky;
+  position: static;
   top: 44px;
   z-index: 40;
   background: rgba(28, 28, 30, 0.78);
