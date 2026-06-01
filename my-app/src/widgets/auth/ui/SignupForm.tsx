@@ -17,8 +17,11 @@ export function SignupForm({ onAuthNavigate }: SignupFormProps) {
   const { requestEmailCode, verifyEmailCode, completeSignup } = useArchiveApp();
   const { cooldownLeft, startCooldown, resetCooldown } = useEmailVerification();
 
+  // 랜딩 페이지 이메일 폼에서 ?email= 파라미터로 전달된 값 pre-fill
   const [step, setStep] = useState<Step>("email");
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(
+    () => new URLSearchParams(window.location.search).get("email") ?? "",
+  );
   const [code, setCode] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");

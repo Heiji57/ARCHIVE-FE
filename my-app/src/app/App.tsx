@@ -14,6 +14,7 @@ import {
 } from "@/app/router/navigation";
 import { CalendarPage } from "@/pages/calendar/ui/CalendarPage";
 import { ForgotPasswordPage } from "@/pages/forgot-password/ui/ForgotPasswordPage";
+import { LandingPage } from "@/pages/landing";
 import { LoginPage } from "@/pages/login/ui/LoginPage";
 import { RetrospectivesPage } from "@/pages/retrospectives/ui/RetrospectivesPage";
 import { SettingsPage } from "@/pages/settings/ui/SettingsPage";
@@ -122,6 +123,9 @@ function AuthGate({
   const { state } = useArchiveApp();
   const isAuthenticated = state.currentUser !== null;
 
+  // ?demo=true → 인증 없이 앱 직접 실행
+  const isDemoMode = new URLSearchParams(window.location.search).get("demo") === "true";
+
   // Auth 경로로 접근했는데 이미 로그인 → 메인으로 리다이렉트
   useEffect(() => {
     if (isAuthenticated && resolved.kind === "auth") {
@@ -129,14 +133,36 @@ function AuthGate({
     }
   }, [isAuthenticated, resolved, navigateApp]);
 
-  // 미인증 + 앱 경로 접근 → 로그인 페이지로 강제 리다이렉트
+  // 미인증 + 앱 경로 접근 + 루트("/") → 랜딩 페이지 (리다이렉트 없음)
+  // 미인증 + 앱 경로 접근 + 루트 외 → 로그인 페이지로 리다이렉트
   useEffect(() => {
-    if (!isAuthenticated && resolved.kind === "app") {
+    if (
+      !isAuthenticated &&
+      !isDemoMode &&
+      resolved.kind === "app" &&
+      window.location.pathname !== "/"
+    ) {
       navigateAuth("login");
     }
-  }, [isAuthenticated, resolved, navigateAuth]);
+  }, [isAuthenticated, isDemoMode, resolved, navigateAuth]);
+
+  // 데모 모드: 인증 없이 앱 실행
+  if (isDemoMode) {
+    const appRoute = resolved.kind === "app" ? resolved.route : "calendar";
+    return <AppContent route={appRoute} onNavigate={navigateApp} isDemo />;
+  }
 
   if (!isAuthenticated) {
+    // 루트 "/" → 랜딩 페이지
+    if (resolved.kind === "app" && window.location.pathname === "/") {
+      return (
+        <LandingPage
+          onNavigateAuth={navigateAuth}
+          onNavigateApp={navigateApp}
+        />
+      );
+    }
+
     const authRoute = resolved.kind === "auth" ? resolved.route : "login";
     switch (authRoute) {
       case "login":
@@ -155,9 +181,11 @@ function AuthGate({
 function AppContent({
   route,
   onNavigate,
+  isDemo = false,
 }: {
   route: AppRoute;
   onNavigate: (route: AppRoute) => void;
+  isDemo?: boolean;
 }) {
   const { state } = useArchiveApp();
   const pages = useMemo(
@@ -178,6 +206,36 @@ function AppContent({
       <ToastViewport notifications={state.notifications} />
       <SummaryOverlay />
       <SummaryFloatingChip />
+      {isDemo && <DemoBanner />}
     </>
+  );
+}
+
+function DemoBanner() {
+  const [hidden, setHidden] = useState(false);
+  if (hidden) return null;
+  return (
+    <div className="lp-demo-banner">
+      <span className="lp-demo-banner-label">
+        <span className="lp-demo-banner-dot" />
+        데모 모드 — 변경사항은 저장되지 않습니다
+      </span>
+      <a
+        href="/signup"
+        className="btn btn-primary"
+        style={{ fontSize: 12, padding: "6px 14px" }}
+      >
+        무료로 시작 →
+      </a>
+      <button
+        type="button"
+        className="btn-icon"
+        onClick={() => setHidden(true)}
+        aria-label="닫기"
+        style={{ fontSize: 14 }}
+      >
+        ✕
+      </button>
+    </div>
   );
 }
