@@ -98,6 +98,63 @@ export function refreshAccessToken(): Promise<boolean> {
   return refreshInFlight;
 }
 
+// ─── SSE (fetch + ReadableStream) ─────────────────────────────────────────────
+// EventSource 는 Authorization 헤더를 못 싣기 때문에 fetch 로 직접 스트림을 읽는다.
+// 반환 함수를 호출하면 구독을 중단한다. 스트림이 끝나면 onClose 가 호출된다(재연결은 호출자 몫).
+export function streamSSE(
+  path: string,
+  onData: (data: unknown) => void,
+  onClose?: () => void,
+): () => void {
+  const controller = new AbortController();
+
+  const open = async (retried: boolean): Promise<void> => {
+    const headers: Record<string, string> = {};
+    const token = getAccessToken();
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+
+    const res = await fetch(`${API_BASE_URL}${path}`, {
+      headers,
+      credentials: "include",
+      signal: controller.signal,
+    });
+
+    if (res.status === 401 && !retried) {
+      const ok = await refreshAccessToken();
+      if (ok) return open(true);
+    }
+    if (!res.ok || !res.body) throw new ApiError("SSE_ERROR", res.status);
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const chunks = buffer.split("\n\n");
+      buffer = chunks.pop() ?? "";
+      for (const chunk of chunks) {
+        const line = chunk.split("\n").find((l) => l.startsWith("data:"));
+        if (!line) continue;
+        try {
+          onData(JSON.parse(line.slice(5).trim()));
+        } catch {
+          /* malformed event 무시 */
+        }
+      }
+    }
+  };
+
+  void open(false)
+    .catch(() => {})
+    .finally(() => {
+      if (!controller.signal.aborted) onClose?.();
+    });
+
+  return () => controller.abort();
+}
+
 export async function request<T>(
   path: string,
   opts: RequestOptions = {},

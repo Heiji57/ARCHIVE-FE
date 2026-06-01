@@ -75,6 +75,7 @@ import {
   apiUpdateTodo,
   apiUpsertEntry,
   apiVerifyEmailCode,
+  streamNotifications,
   streamSummary,
   summaryContentToMarkdown,
 } from "@/shared/api";
@@ -357,6 +358,33 @@ export function AppProvider({ children }: { children: ReactNode }) {
         dispatch({ type: "hydrate/notifications", payload: { notifications } }),
       )
       .catch(() => {});
+  }, [state.currentUser?.id]);
+
+  // ─── API 모드: 실시간 알림 SSE 구독 (자동 재연결) ───────────────────────────
+  useEffect(() => {
+    if (!USE_API || !state.currentUser?.id) return;
+    let stopped = false;
+    let abort: (() => void) | null = null;
+    let retryTimer = 0;
+
+    const connect = () => {
+      if (stopped) return;
+      abort = streamNotifications(
+        (notification) =>
+          dispatch({ type: "notification/push", payload: { notification } }),
+        () => {
+          // 5분 타임아웃/오류로 종료 → 재연결
+          if (!stopped) retryTimer = window.setTimeout(connect, 3000);
+        },
+      );
+    };
+    connect();
+
+    return () => {
+      stopped = true;
+      if (retryTimer) window.clearTimeout(retryTimer);
+      abort?.();
+    };
   }, [state.currentUser?.id]);
 
   // ─── API 모드 헬퍼 ──────────────────────────────────────────────────────────

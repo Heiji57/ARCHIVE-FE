@@ -108,6 +108,12 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       return { ...state, githubConfig: action.payload.config };
 
     case "notification/push":
+      // 동일 id 는 무시 (하이드레이션 ↔ SSE 실시간 수신 중복 방지)
+      if (
+        state.notifications.some((n) => n.id === action.payload.notification.id)
+      ) {
+        return state;
+      }
       return {
         ...state,
         notifications: [action.payload.notification, ...state.notifications],

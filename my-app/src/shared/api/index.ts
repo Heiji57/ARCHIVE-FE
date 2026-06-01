@@ -38,4 +38,5 @@ export {
   apiMarkAllNotificationsRead,
   apiDeleteNotification,
   apiClearNotifications,
+  streamNotifications,
 } from "./notifications";
