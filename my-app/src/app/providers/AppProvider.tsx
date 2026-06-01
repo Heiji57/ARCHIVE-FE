@@ -8,7 +8,11 @@ import {
   mockVerifyEmailCode,
 } from "@/app/lib/mockAuth";
 import { detectOverdueSchedules } from "@/app/lib/scheduleSummary";
-import { buildSummaryEntry, KIND_TO_TYPE } from "@/app/lib/summaryFactory";
+import {
+  buildSummaryEntry,
+  KIND_TO_TYPE,
+  TITLE_BY_KIND,
+} from "@/app/lib/summaryFactory";
 import { getInitialAppState } from "@/app/model/initialState";
 import { appReducer } from "@/app/model/reducer";
 import type { AppSettings, Locale } from "@/app/model/settings";
@@ -53,7 +57,9 @@ import {
   apiCreateEntry,
   apiCreateTodo,
   apiDeleteNotification,
+  apiGenerateSummary,
   apiGetSettings,
+  apiGetSummary,
   apiListEntries,
   apiListNotifications,
   apiListTodos,
@@ -69,6 +75,8 @@ import {
   apiUpdateTodo,
   apiUpsertEntry,
   apiVerifyEmailCode,
+  streamSummary,
+  summaryContentToMarkdown,
 } from "@/shared/api";
 
 export function AppProvider({ children }: { children: ReactNode }) {
@@ -227,12 +235,69 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [completeSummaryFor],
   );
 
+  // ─── API 모드: SSE 기반 비동기 요약 ─────────────────────────────────────────
+  const apiSummaryAbortRef = useRef<(() => void) | null>(null);
+
+  const finalizeApiSummary = (
+    summaryId: string,
+    kind: SummaryKind,
+    targetDateKey: string,
+  ) => {
+    void apiGetSummary(summaryId)
+      .then((summary) => {
+        const entry: JournalEntry = {
+          id: createId("entry"),
+          dateKey: summary.periodEnd || targetDateKey,
+          title: TITLE_BY_KIND[kind],
+          content: summaryContentToMarkdown(summary.content),
+          retroType: KIND_TO_TYPE[kind],
+          synced: false,
+          updatedAt: new Date().toISOString(),
+        };
+        dispatch({ type: "entry/upsert", payload: { entry } });
+        dispatch({ type: "summary/complete" });
+        const locale = state.settings.locale;
+        pushNotification(
+          "success",
+          translate(locale, "summary.completed.title"),
+          translate(locale, "summary.completed.message", {
+            kind: translate(locale, `summary.kind.${kind}`),
+          }),
+          { category: "summary" },
+        );
+      })
+      .catch(() => dispatch({ type: "summary/cancel" }));
+  };
+
+  const startSummaryViaApi = (kind: SummaryKind, targetDateKey: string) => {
+    dispatch({ type: "summary/start", payload: { kind, targetDateKey } });
+    apiSummaryAbortRef.current?.();
+    apiSummaryAbortRef.current = null;
+
+    const fail = () => dispatch({ type: "summary/cancel" });
+    void apiGenerateSummary(kind)
+      .then((summary) => {
+        if (summary.status === "completed") {
+          finalizeApiSummary(summary.id, kind, targetDateKey);
+          return;
+        }
+        apiSummaryAbortRef.current = streamSummary(summary.id, {
+          onCompleted: () => finalizeApiSummary(summary.id, kind, targetDateKey),
+          onFailed: fail,
+          onTimeout: fail,
+          onError: fail,
+        });
+      })
+      .catch(fail);
+  };
+
   // If a pending summary was persisted from a previous session and its
   // willCompleteAt is already past, finish it on mount.
   const resumedRef = useRef(false);
   useEffect(() => {
     if (resumedRef.current) return;
     resumedRef.current = true;
+    if (USE_API) return; // API 모드는 pendingSummary 를 영속화하지 않음
     const p = state.pendingSummary;
     if (!p) return;
     const remaining = new Date(p.willCompleteAt).getTime() - Date.now();
@@ -437,17 +502,28 @@ export function AppProvider({ children }: { children: ReactNode }) {
       dispatch({ type: "settings/retention", payload: { days } });
       if (USE_API) void syncSettings({ notificationRetentionDays: days });
     },
-    startSummary: (kind, targetDateKey) =>
-      startSummaryInternal(kind, targetDateKey),
+    startSummary: (kind, targetDateKey) => {
+      if (USE_API) startSummaryViaApi(kind, targetDateKey);
+      else startSummaryInternal(kind, targetDateKey);
+    },
     minimizeSummary: () => dispatch({ type: "summary/minimize" }),
     completeSummary: () => {
       const p = state.pendingSummary;
       if (!p) return;
+      // API 모드는 서버 완료를 강제할 수 없음 → 스트림 종료 + 취소만
+      if (USE_API) {
+        apiSummaryAbortRef.current?.();
+        apiSummaryAbortRef.current = null;
+        dispatch({ type: "summary/cancel" });
+        return;
+      }
       if (summaryTimerRef.current) window.clearTimeout(summaryTimerRef.current);
       completeSummaryFor(p.kind, p.targetDateKey);
     },
     cancelSummary: () => {
       if (summaryTimerRef.current) window.clearTimeout(summaryTimerRef.current);
+      apiSummaryAbortRef.current?.();
+      apiSummaryAbortRef.current = null;
       dispatch({ type: "summary/cancel" });
     },
     // ─── Templates ──────────────────────────────────────────────────────────

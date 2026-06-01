@@ -26,6 +26,13 @@ export {
 } from "./entries";
 export { apiGetSettings, apiUpdateSettings } from "./settings";
 export {
+  apiGenerateSummary,
+  apiGetSummary,
+  streamSummary,
+  summaryContentToMarkdown,
+  type MappedSummary,
+} from "./summaries";
+export {
   apiListNotifications,
   apiMarkNotificationRead,
   apiMarkAllNotificationsRead,
