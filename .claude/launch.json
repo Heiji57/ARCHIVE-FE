@@ -2,10 +2,10 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "landing-preview",
-      "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "7891", "--directory", "C:/Users/user/Downloads"],
-      "port": 7891
+      "name": "archive-dev",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["-C", "my-app", "dev"],
+      "port": 5173
     }
   ]
 }

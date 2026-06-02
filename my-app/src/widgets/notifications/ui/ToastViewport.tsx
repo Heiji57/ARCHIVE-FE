@@ -88,6 +88,11 @@ export function ToastViewport({
             {notification.message ? (
               <p className="toast-msg">{notification.message}</p>
             ) : null}
+            {notification.actionLabel && notification.actionHref ? (
+              <a className="toast-action" href={notification.actionHref}>
+                {notification.actionLabel} →
+              </a>
+            ) : null}
           </div>
           <button
             type="button"

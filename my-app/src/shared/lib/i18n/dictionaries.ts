@@ -52,6 +52,9 @@ export type TranslationKey =
   | "todo.filter.pickDate"
   | "todo.filter.clear"
   | "todo.notif.added.title"
+  | "demo.locked.title"
+  | "demo.locked.message"
+  | "demo.locked.action"
   | "todo.quick.today"
   | "todo.quick.tomorrow"
   | "todo.quick.weekend"
@@ -335,6 +338,9 @@ const ko: Dict = {
   "todo.filter.pickDate": "날짜 선택",
   "todo.filter.clear": "필터 해제",
   "todo.notif.added.title": "할 일 추가됨",
+  "demo.locked.title": "로그인이 필요한 작업입니다",
+  "demo.locked.message": "GitHub 연동·동기화는 로그인 후 이용할 수 있어요.",
+  "demo.locked.action": "로그인",
   "todo.quick.today": "오늘",
   "todo.quick.tomorrow": "내일",
   "todo.quick.weekend": "이번 주말",
@@ -622,6 +628,9 @@ const en: Dict = {
   "todo.filter.pickDate": "Pick date",
   "todo.filter.clear": "Clear filter",
   "todo.notif.added.title": "Task added",
+  "demo.locked.title": "Sign-in required",
+  "demo.locked.message": "GitHub connect & sync are available after you sign in.",
+  "demo.locked.action": "Sign in",
   "todo.quick.today": "Today",
   "todo.quick.tomorrow": "Tomorrow",
   "todo.quick.weekend": "This weekend",
@@ -911,6 +920,9 @@ const zh: Dict = {
   "todo.filter.pickDate": "选择日期",
   "todo.filter.clear": "清除筛选",
   "todo.notif.added.title": "已添加任务",
+  "demo.locked.title": "需要登录",
+  "demo.locked.message": "GitHub 连接与同步需登录后使用。",
+  "demo.locked.action": "登录",
   "todo.quick.today": "今天",
   "todo.quick.tomorrow": "明天",
   "todo.quick.weekend": "本周末",
@@ -1194,6 +1206,9 @@ const ja: Dict = {
   "todo.filter.pickDate": "日付選択",
   "todo.filter.clear": "フィルタ解除",
   "todo.notif.added.title": "タスクを追加",
+  "demo.locked.title": "ログインが必要です",
+  "demo.locked.message": "GitHub連携・同期はログイン後に利用できます。",
+  "demo.locked.action": "ログイン",
   "todo.quick.today": "今日",
   "todo.quick.tomorrow": "明日",
   "todo.quick.weekend": "今週末",

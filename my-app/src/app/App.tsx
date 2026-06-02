@@ -54,8 +54,12 @@ export default function App() {
 
   const navigateApp = (nextRoute: AppRoute) => {
     const nextPath = getPathFromRoute(nextRoute);
-    if (window.location.pathname !== nextPath) {
-      window.history.pushState({}, "", nextPath);
+    // 데모(게스트) 모드에서는 ?demo=true 를 유지해야 nav 이동 시 로그인으로 튕기지 않는다.
+    const isDemo =
+      new URLSearchParams(window.location.search).get("demo") === "true";
+    const target = isDemo ? `${nextPath}?demo=true` : nextPath;
+    if (window.location.pathname + window.location.search !== target) {
+      window.history.pushState({}, "", target);
     }
     startTransition(() => {
       setResolved({ kind: "app", route: nextRoute });

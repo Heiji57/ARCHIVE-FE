@@ -334,6 +334,7 @@ export function RetroEditor({
                 }
               >
                 <RichEditor
+                  key={entry.id}
                   value={entry.content}
                   placeholder={t("retro.editor.learnedPlaceholder")}
                   onChange={(md) => onUpdate({ content: md })}

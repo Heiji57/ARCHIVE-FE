@@ -74,6 +74,16 @@
   line-height: 1.4;
 }
 
+.toast-action {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-primary-on-dark);
+  transition: color 0.12s;
+}
+.toast-action:hover { color: var(--color-primary-focus); }
+
 .toast-close {
   width: 24px;
   height: 24px;

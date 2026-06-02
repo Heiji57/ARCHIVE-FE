@@ -1,7 +1,8 @@
 import type { Todo } from "@/entities/todo/model/types";
 import { Pill } from "@/shared/ui/pill/Pill";
+import { useDropTarget } from "@/shared/lib/dnd";
 import { useTranslation } from "@/shared/lib/i18n";
-import type { KanbanColumnConfig } from "../model/constants";
+import { KANBAN_DRAG_KIND, type KanbanColumnConfig } from "../model/constants";
 import { KanbanCard, type KanbanCardProps } from "./KanbanCard";
 
 export interface KanbanColumnProps {
@@ -13,6 +14,15 @@ export interface KanbanColumnProps {
 export function KanbanColumn({ col, items, onUpdate }: KanbanColumnProps) {
   const { t } = useTranslation();
   const isDone = col.id === "done";
+
+  // 카드를 이 컬럼에 드롭하면 해당 컬럼의 상태로 변경
+  const { ref, isOver, isActive } = useDropTarget<typeof KANBAN_DRAG_KIND>(
+    KANBAN_DRAG_KIND,
+    (payload) => {
+      const { id } = payload.data as { id: string };
+      onUpdate(id, { status: col.id });
+    },
+  );
 
   return (
     <section
@@ -31,7 +41,12 @@ export function KanbanColumn({ col, items, onUpdate }: KanbanColumnProps) {
         <Pill tone={col.tone}>{items.length}</Pill>
       </div>
 
-      <div className="kanban-col-body">
+      <div
+        className="kanban-col-body"
+        ref={ref}
+        data-drop-active={isActive}
+        data-drop-over={isOver}
+      >
         {items.length === 0 ? (
           <div className="dashed kanban-col-empty">
             {t("todo.col.empty")}

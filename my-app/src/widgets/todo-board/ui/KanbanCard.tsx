@@ -3,7 +3,9 @@ import { ArrowRight, CalendarDays } from "lucide-react";
 import type { TaskStatus, Todo } from "@/entities/todo/model/types";
 import { StatusIcon } from "@/entities/todo/ui/StatusIcon";
 import { Pill } from "@/shared/ui/pill/Pill";
+import { useDraggable } from "@/shared/lib/dnd";
 import { useTranslation } from "@/shared/lib/i18n";
+import { KANBAN_DRAG_KIND } from "../model/constants";
 import { DatePickerPopover } from "./DatePickerPopover";
 
 export interface KanbanCardProps {
@@ -18,6 +20,7 @@ export interface KanbanCardProps {
 function KanbanCardImpl({ todo, isDone, onUpdate }: KanbanCardProps) {
   const { t } = useTranslation();
   const [dateOpen, setDateOpen] = useState(false);
+  const drag = useDraggable({ kind: KANBAN_DRAG_KIND, data: { id: todo.id } });
 
   const advance = () => {
     const next: TaskStatus =
@@ -30,7 +33,12 @@ function KanbanCardImpl({ todo, isDone, onUpdate }: KanbanCardProps) {
   };
 
   return (
-    <div className="kanban-card" data-done={isDone ? "true" : undefined}>
+    <div
+      className="kanban-card"
+      data-done={isDone ? "true" : undefined}
+      data-draggable="true"
+      {...drag}
+    >
       <button
         type="button"
         onClick={advance}

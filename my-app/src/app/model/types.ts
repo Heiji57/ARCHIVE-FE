@@ -35,10 +35,15 @@ export type AppState = PersistedAppState;
 export interface PushNotificationOptions {
   category?: NoticeCategory;
   transient?: boolean;
+  /** 선택적 액션 버튼 — 토스트/패널에서 href 로 이동 (예: 데모 "로그인"). */
+  actionLabel?: string;
+  actionHref?: string;
 }
 
 export interface ArchiveAppContextValue {
   state: AppState;
+  /** 게스트 데모 모드 여부 (?demo=true). 데모에서는 할 일 외 변경이 차단된다. */
+  isDemo: boolean;
   addTodo: (
     title: string,
     dateKey?: string,

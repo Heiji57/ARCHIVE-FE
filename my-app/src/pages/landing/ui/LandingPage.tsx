@@ -1,9 +1,11 @@
+import { useRef } from "react";
 import type { AppRoute } from "@/app/model/types";
 import type { AuthRoute } from "@/app/router/authRoute";
 import { LandingNav } from "./LandingNav";
 import { LandingHero } from "./LandingHero";
 import { LandingFeatures } from "./LandingFeatures";
 import { LandingCTA, LandingFooter } from "./LandingFooter";
+import { useScrollReveal } from "./useScrollReveal";
 
 /** demo 모드용 hash → AppRoute 매핑 */
 function hashToRoute(hash: string): AppRoute {
@@ -21,6 +23,9 @@ interface LandingPageProps {
 }
 
 export function LandingPage({ onNavigateAuth, onNavigateApp }: LandingPageProps) {
+  const rootRef = useRef<HTMLDivElement>(null);
+  useScrollReveal(rootRef);
+
   /** 이메일을 받아서 /signup?email=xxx 로 이동 */
   const goSignup = (_route: AuthRoute, params?: { email?: string }) => {
     const q = params?.email
@@ -30,33 +35,35 @@ export function LandingPage({ onNavigateAuth, onNavigateApp }: LandingPageProps)
     onNavigateAuth("signup");
   };
 
-  /** 데모 진입 — 현재 hash 로 탭 결정 */
-  const goDemo = () => {
-    const route = hashToRoute(window.location.hash);
+  /** 데모 진입 — 특정 앱 탭으로 */
+  const goDemoRoute = (route: AppRoute) => {
     window.history.pushState({}, "", `/?demo=true`);
     onNavigateApp(route);
   };
 
+  /** 데모 진입 — 현재 hash 로 탭 결정 */
+  const goDemo = () => goDemoRoute(hashToRoute(window.location.hash));
+
   return (
-    <div className="lp-root">
-      <LandingNav
-        onNavigateAuth={onNavigateAuth}
-        onNavigateApp={onNavigateApp}
-      />
+    <div className="lp-root" ref={rootRef}>
+      <LandingNav onNavigateAuth={onNavigateAuth} />
       <LandingHero
         onNavigateAuth={goSignup}
         onDemo={goDemo}
       />
       <LandingFeatures
-        onDemoTodos={() => { window.history.pushState({}, "", "/?demo=true"); onNavigateApp("todos"); }}
-        onDemoRetro={() => { window.history.pushState({}, "", "/?demo=true"); onNavigateApp("retrospectives"); }}
-        onDemoSettings={() => { window.history.pushState({}, "", "/?demo=true"); onNavigateApp("settings"); }}
+        onDemoTodos={() => goDemoRoute("todos")}
+        onDemoRetro={() => goDemoRoute("retrospectives")}
+        onDemoSettings={() => goDemoRoute("settings")}
       />
       <LandingCTA
         onNavigateAuth={goSignup}
         onDemo={goDemo}
       />
-      <LandingFooter />
+      <LandingFooter
+        onNavigateAuth={onNavigateAuth}
+        onDemo={goDemoRoute}
+      />
     </div>
   );
 }

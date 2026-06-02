@@ -1,18 +1,67 @@
 /* ============================================================
-   Landing Page — A.R.C.H.I.V.E 마케팅 페이지
-   (독립 CSS; 앱 디자인 토큰은 상속받음)
+   A.R.C.H.I.V.E — Landing (logged-out)
+   design_handoff_archive 정식 디자인을 이식. 앱 토큰 상속.
    ============================================================ */
 
-/* ── Root ─────────────────────────────────────────────────── */
 .lp-root {
-  background: #000;
+  background: var(--color-canvas);
   color: var(--color-ink);
-  font-family: var(--font-sans, -apple-system, BlinkMacSystemFont, sans-serif);
-  min-height: 100vh;
+  /* 한국어 어절 중간 줄바꿈 방지 (함께 → 함 / 께 같은 현상 제거) */
+  word-break: keep-all;
+  /* 풀스크린 스냅 컨테이너: 한 번 스크롤 = 한 화면 (메가커피 스타일) */
+  height: 100vh;
   overflow-x: hidden;
+  overflow-y: auto;
+  scroll-snap-type: y mandatory;
+  /* scroll-behavior: smooth 제거 —
+     mandatory snap 과 함께 두면 스냅 애니메이션이 반대 방향으로 튕겼다
+     돌아오는 아티팩트가 발생한다. nav 링크 smoothScroll 은 JS 레벨
+     scrollIntoView({ behavior:'smooth' }) 으로 유지. */
 }
 
-/* ── Nav ──────────────────────────────────────────────────── */
+/* 각 화면 = 한 뷰포트. 콘텐츠는 가로/세로 중앙 정렬, 한 번에 한 화면씩 멈춤.
+   (히어로는 텍스트 화면 + 캘린더 화면으로 분리해 각각 스냅) */
+.lp-hero-inner,
+.lp-hero-art,
+#features,
+.lp-quote,
+#pricing,
+.lp-feature-screen {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center; /* max-width 자식이 왼쪽으로 쏠리지 않도록 가운데 정렬 */
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+.lp-footer {
+  scroll-snap-align: start;
+}
+/* 피처 카드 래퍼(#workflow)는 화면이 아니라 카드 화면들을 담는 컨테이너 */
+#workflow {
+  padding: 0;
+  max-width: none;
+}
+/* 맨 끝 CTA(#pricing)는 카드가 화면 전체를 가득 채우도록 패딩/폭 제한 해제 */
+#pricing {
+  padding: 0;
+  max-width: none;
+}
+
+/* 디스코드식 피처 카드: 화면을 가득 채우지 않고 콘텐츠 크기 카드로 (블록·여백 축소) */
+.lp-feature-screen {
+  padding: 72px 32px;
+}
+.lp-feature {
+  width: 100%;
+  max-width: 1040px;
+  margin: 0;
+  padding: 40px 44px;
+  gap: 32px;
+}
+
+/* ---------- top nav ---------- */
 .lp-nav {
   position: sticky;
   top: 0;
@@ -23,489 +72,955 @@
   border-bottom: 1px solid var(--color-divider-soft);
 }
 .lp-nav-inner {
-  max-width: 1200px;
+  max-width: 1320px;
   margin: 0 auto;
+  height: 64px;
   padding: 0 32px;
-  height: 56px;
   display: flex;
   align-items: center;
   gap: 32px;
 }
-.lp-nav-brand {
-  display: flex;
+.lp-brand {
+  display: inline-flex;
   align-items: center;
-  gap: 10px;
-  font-size: 15px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  color: var(--color-ink);
-  cursor: pointer;
+  gap: 11px;
+  flex-shrink: 0;
   background: none;
-  border: none;
+  border: 0;
   padding: 0;
-  white-space: nowrap;
+  cursor: pointer;
 }
-.lp-brand-mark { width: 24px; height: 20px; flex-shrink: 0; }
+.lp-brand-mark {
+  width: 30px;
+  height: 27px;
+  flex-shrink: 0;
+}
+.lp-brand-name {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 0.34em;
+  color: var(--color-ink);
+}
 .lp-nav-links {
   display: flex;
-  gap: 6px;
+  gap: 4px;
   flex: 1;
 }
 .lp-nav-link {
-  font-size: 13.5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 13px;
+  border-radius: var(--r-md);
+  font-size: 14px;
+  letter-spacing: -0.2px;
   color: var(--color-body-muted);
   background: none;
-  border: none;
-  padding: 6px 10px;
-  border-radius: var(--r-sm);
+  border: 0;
   cursor: pointer;
-  transition: color 0.12s;
+  transition:
+    color 120ms,
+    background 120ms;
 }
-.lp-nav-link:hover { color: var(--color-ink); }
-.lp-nav-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
-.lp-nav-login {
-  font-size: 13.5px;
-  color: var(--color-body-muted);
+.lp-nav-link:hover {
+  color: var(--color-ink);
+  background: rgba(255, 255, 255, 0.04);
+}
+.lp-nav-link svg {
+  opacity: 0.7;
+}
+.lp-nav-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.lp-signin {
+  padding: 8px 14px;
+  font-size: 14px;
+  color: var(--color-ink);
+  border-radius: var(--r-pill);
   background: none;
-  border: none;
-  padding: 6px 12px;
-  border-radius: var(--r-sm);
+  border: 0;
   cursor: pointer;
-  transition: color 0.12s;
+  transition: color 120ms;
 }
-.lp-nav-login:hover { color: var(--color-ink); }
-.lp-nav-cta { font-size: 13px; padding: 8px 16px; }
+.lp-signin:hover {
+  color: var(--color-primary-on-dark);
+}
+.lp-nav-cta {
+  padding: 9px 18px;
+  font-size: 14px;
+}
 
-/* ── Hero ─────────────────────────────────────────────────── */
+/* ---------- hero ---------- */
 .lp-hero {
   position: relative;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 100px 32px 80px;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 64px;
-  align-items: center;
+  text-align: center;
+  padding: 0;
+  /* overflow: clip 은 글로우는 잘라내되 스크롤 컨테이너가 되지 않아,
+     내부 스냅 타깃(히어로 텍스트/캘린더)이 .lp-root 기준으로 스냅된다.
+     (hidden 으로 두면 히어로가 별도 스냅 컨텍스트가 되어 최상단까지 안 올라감) */
+  overflow: clip;
 }
 .lp-hero-glow {
   position: absolute;
-  inset: 0;
-  background: radial-gradient(ellipse 60% 50% at 50% 80%, rgba(10,132,255,0.22) 0%, transparent 70%);
+  left: 50%;
+  /* hero-art 가 100vh → 콘텐츠 크기로 줄었으므로 글로우를 위로 올려
+     hero-art 전체를 감싸도록 재조정 */
+  bottom: -60px;
+  transform: translateX(-50%);
+  width: 1400px;
+  height: 900px;
+  background: radial-gradient(
+    50% 50% at 50% 50%,
+    rgba(10, 132, 255, 0.42) 0%,
+    rgba(90, 108, 240, 0.22) 38%,
+    rgba(162, 130, 232, 0.1) 60%,
+    transparent 75%
+  );
   pointer-events: none;
+  filter: blur(8px);
 }
-.lp-hero-content { position: relative; }
-.lp-badge {
+.lp-hero-stars {
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(
+      1.5px 1.5px at 20% 30%,
+      rgba(255, 255, 255, 0.5),
+      transparent
+    ),
+    radial-gradient(1px 1px at 70% 20%, rgba(255, 255, 255, 0.4), transparent),
+    radial-gradient(
+      1.5px 1.5px at 85% 55%,
+      rgba(255, 255, 255, 0.35),
+      transparent
+    ),
+    radial-gradient(1px 1px at 35% 65%, rgba(255, 255, 255, 0.3), transparent),
+    radial-gradient(
+      1.5px 1.5px at 55% 80%,
+      rgba(255, 255, 255, 0.4),
+      transparent
+    ),
+    radial-gradient(1px 1px at 12% 75%, rgba(255, 255, 255, 0.3), transparent),
+    radial-gradient(1px 1px at 90% 85%, rgba(255, 255, 255, 0.35), transparent);
+  pointer-events: none;
+  opacity: 0.7;
+}
+.lp-hero-inner {
+  position: relative;
+  z-index: 1;
+  max-width: 920px;
+  margin: 0 auto;
+}
+.lp-hero-eyebrow {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--color-primary-on-dark);
-  background: rgba(10,132,255,0.12);
-  border: 1px solid rgba(10,132,255,0.3);
+  padding: 6px 14px 6px 8px;
+  margin-bottom: 28px;
   border-radius: var(--r-pill);
-  padding: 5px 12px;
-  margin-bottom: 24px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--color-divider-soft);
+  font-size: 12px;
+  letter-spacing: -0.04px;
+  color: var(--color-body-muted);
+  white-space: nowrap;
 }
-.lp-badge-dot {
-  width: 6px; height: 6px;
-  border-radius: 50%;
-  background: var(--color-primary);
-  box-shadow: 0 0 6px var(--color-primary);
-}
-.lp-hero-title {
-  font-size: clamp(36px, 4.5vw, 56px);
+.lp-hero-eyebrow .tag {
+  font-size: 10px;
   font-weight: 700;
-  line-height: 1.12;
-  letter-spacing: -0.03em;
+  letter-spacing: 0.08em;
+  padding: 3px 7px;
+  border-radius: var(--r-pill);
+  background: var(--color-primary);
+  color: #fff;
+}
+.lp-hero h1 {
+  font-family: var(--font-display);
+  font-size: clamp(44px, 6.6vw, 88px);
+  font-weight: 600;
+  line-height: 1.02;
+  letter-spacing: -0.045em;
+  margin: 0 0 28px;
   color: var(--color-ink);
-  margin-bottom: 20px;
+  text-wrap: balance;
+}
+.lp-hero h1 .accent {
+  background: linear-gradient(120deg, #2997ff 0%, #5a6cf0 50%, #a282e8 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 .lp-hero-sub {
-  font-size: 16px;
-  line-height: 1.65;
+  font-size: clamp(17px, 2vw, 21px);
+  line-height: 1.5;
   color: var(--color-body-muted);
-  max-width: 480px;
-  margin-bottom: 36px;
+  max-width: 620px;
+  margin: 0 auto 40px;
+  text-wrap: pretty;
 }
 
-/* ── Email form ───────────────────────────────────────────── */
-.lp-email-form {
+/* email capture */
+.lp-capture {
   display: flex;
-  gap: 8px;
-  margin-bottom: 14px;
-  max-width: 440px;
+  gap: 12px;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
 }
-.lp-email-input {
+.lp-email-group {
+  display: flex;
+  align-items: center;
+  background: var(--color-ink);
+  border-radius: var(--r-pill);
+  padding: 5px 5px 5px 20px;
+  width: min(440px, 100%);
+  box-shadow: 0 8px 40px rgba(10, 132, 255, 0.18);
+}
+.lp-email-group input {
   flex: 1;
-  height: 44px;
-  padding: 0 16px;
-  border-radius: var(--r-md);
+  min-width: 0;
+  font-size: 15px;
+  color: #1a1a1a;
+  background: transparent;
+  border: 0;
+  outline: 0;
+}
+.lp-email-group input::placeholder {
+  color: #6b6b70;
+}
+.lp-email-group .btn {
+  white-space: nowrap;
+}
+.lp-try {
+  padding: 13px 24px;
+  border-radius: var(--r-pill);
   background: var(--color-tile-2);
   border: 1px solid var(--color-divider-soft);
   color: var(--color-ink);
-  font-size: 14px;
-  outline: none;
-  transition: border-color 0.15s;
-}
-.lp-email-input:focus { border-color: var(--color-primary); }
-.lp-email-btn { height: 44px; padding: 0 20px; white-space: nowrap; }
-
-/* ── Demo button ──────────────────────────────────────────── */
-.lp-demo-btn {
-  font-size: 14px;
-  color: var(--color-body-muted);
-  background: none;
-  border: none;
-  padding: 0;
+  font-size: 15px;
   cursor: pointer;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  transition: color 0.12s;
-  margin-bottom: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition:
+    background 120ms,
+    transform 80ms;
+}
+.lp-try:hover {
+  background: var(--color-tile-4);
+}
+.lp-try:active {
+  transform: scale(0.96);
+}
+.lp-capture-note {
+  font-size: 13px;
+  color: var(--color-ink-muted-48);
+  margin: 0;
+}
+
+/* floating hero artwork */
+.lp-hero-art {
+  position: relative;
+  z-index: 1;
+  margin: 0 auto;
+  max-width: 1100px;
+  width: 100%;
+  /* 오브가 첫 화면(hero-inner)으로 삐져나오지 않도록 클리핑 */
+  overflow: clip;
+  /* 그룹의 min-height:100vh 오버라이드 — 콘텐츠(캘린더 창) 크기에 맞춤.
+     100vh 고정이면 창 위에 그라데이션 없는 검은 공백이 생기고,
+     그 공백을 스크롤하면 mandatory snap 이 되돌아오는 현상 발생. */
+  min-height: auto;
+  justify-content: center;
+  padding: 56px 0 72px;
+}
+
+/* ---- product window mock (authentic app preview) ---- */
+.lp-window {
+  position: relative;
+  z-index: 1;
+  max-width: 760px;
+  margin: 160px 20px 30px;
+  background: #0e0e10;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow:
+    0 40px 120px rgba(10, 132, 255, 0.28),
+    0 8px 40px rgba(0, 0, 0, 0.6);
+}
+.lp-window-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 16px;
+  background: rgba(0, 0, 0, 0.6);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+.lp-window-url {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 14px;
+  border-radius: var(--r-pill);
+  background: rgba(255, 255, 255, 0.05);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--color-body-muted);
+}
+.lp-window-url svg {
+  width: 14px;
+  height: 13px;
+}
+.lp-window-sync {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--color-body-muted);
+}
+.lp-window-syncdot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-status-done);
+  box-shadow: 0 0 8px rgba(48, 209, 88, 0.6);
+}
+.lp-window-body {
   display: block;
 }
-.lp-demo-btn:hover { color: var(--color-ink); }
-
-.lp-social-proof {
-  font-size: 12px;
-  color: var(--color-ink-muted-48);
+.lp-win-main {
+  padding: 18px 20px 20px;
 }
-
-/* ── Hero mockup — calendar ───────────────────────────────── */
-.lp-hero-mockup {
+.lp-win-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.lp-win-ey {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-primary-on-dark);
+  margin: 0 0 4px;
+}
+.lp-win-title {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+.lp-win-seg {
+  display: inline-flex;
+  padding: 3px;
   background: var(--color-tile-1);
   border: 1px solid var(--color-divider-soft);
-  border-radius: var(--r-xl);
-  padding: 20px;
-  overflow: hidden;
+  border-radius: var(--r-pill);
 }
-.lp-mockup-bar {
-  display: flex;
-  justify-content: space-between;
+.lp-win-seg span {
+  padding: 5px 12px;
+  border-radius: var(--r-pill);
   font-size: 11px;
-  color: var(--color-ink-muted-48);
-  margin-bottom: 16px;
+  color: var(--color-body-muted);
 }
-.lp-mockup-sync { color: var(--color-status-done); }
-.lp-mockup-eyebrow {
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  color: var(--color-primary-on-dark);
-  margin-bottom: 10px;
-}
-.lp-mockup-cal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-}
-.lp-mockup-month { font-size: 14px; font-weight: 600; }
-.lp-mockup-views { display: flex; gap: 4px; font-size: 11px; }
-.lp-mockup-view-active {
+.lp-win-seg span.on {
   background: var(--color-tile-4);
-  padding: 3px 8px;
-  border-radius: var(--r-sm);
+  color: var(--color-ink);
 }
-.lp-mockup-view { color: var(--color-body-muted); padding: 3px 8px; }
-.lp-mockup-cal-grid {
+
+/* month calendar */
+.lp-month-dow {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 2px;
+  margin-bottom: 7px;
 }
-.lp-cal-day-label {
-  font-size: 10px;
-  text-align: center;
-  color: var(--color-ink-muted-48);
-  padding: 4px 0;
+.lp-month-dow span {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: var(--color-body-muted);
+  padding-left: 2px;
 }
-.lp-cal-cell {
-  min-height: 52px;
-  padding: 4px 5px;
-  border-radius: var(--r-xs);
+.lp-month-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 5px;
+}
+.lp-cell {
+  background: var(--color-tile-1);
+  border: 1px solid var(--color-divider-soft);
+  border-radius: 7px;
+  padding: 5px 5px 6px;
+  min-height: 56px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.lp-cell.out {
+  opacity: 0.4;
+}
+.lp-cell.today {
+  background: rgba(10, 132, 255, 0.09);
+  border-color: rgba(10, 132, 255, 0.35);
+}
+.lp-cell .d {
   font-size: 11px;
+  font-weight: 600;
+  color: var(--color-ink);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 1px;
 }
-.lp-cal-today { background: rgba(10,132,255,0.12); border: 1px solid rgba(10,132,255,0.3); }
-.lp-cal-num { display: block; color: var(--color-body-muted); margin-bottom: 2px; }
-.lp-cal-today .lp-cal-num { color: var(--color-primary); font-weight: 700; }
-.lp-cal-task {
-  display: block;
-  background: var(--color-tile-3);
-  border-radius: 3px;
-  padding: 2px 4px;
-  margin-bottom: 2px;
+.lp-cell.out .d {
+  color: var(--color-body-muted);
+}
+.lp-cell.today .d {
+  color: var(--color-primary-on-dark);
+}
+.lp-cell .d em {
+  font-style: normal;
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--color-primary-on-dark);
+}
+.lp-cell .chip {
+  font-size: 9.5px;
+  line-height: 1.25;
+  padding: 3px 6px;
+  border-radius: 5px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 10px;
+}
+.lp-cell .chip.done {
+  background: var(--color-tile-3);
+  color: var(--color-body-muted);
+  text-decoration: line-through;
+}
+.lp-cell .chip.prog {
+  background: rgba(10, 132, 255, 0.18);
+  color: var(--color-primary-on-dark);
+}
+.lp-cell .chip.todo {
+  background: var(--color-tile-2);
   color: var(--color-ink);
 }
-.lp-cal-more { font-size: 10px; color: var(--color-body-muted); }
-
-/* ── Sections ─────────────────────────────────────────────── */
-.lp-section {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 96px 32px;
+.lp-cell .more {
+  font-size: 9px;
+  color: var(--color-body-muted);
+  padding-left: 2px;
 }
-.lp-section-alt { background: var(--color-tile-1); max-width: 100%; }
-.lp-section-alt > * { max-width: 1200px; margin-left: auto; margin-right: auto; }
-.lp-section-alt.lp-section { max-width: 100%; padding-left: 0; padding-right: 0; }
-.lp-section-alt .lp-split { max-width: 1200px; margin: 0 auto; padding: 0 32px; }
+@keyframes lp-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-14px);
+  }
+}
+.lp-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(0.5px);
+  animation: lp-float 7s ease-in-out infinite;
+}
+.lp-orb-1 {
+  width: 56px;
+  height: 56px;
+  top: 150px;
+  left: 4%;
+  background: radial-gradient(circle at 35% 30%, #7aa8ff, #2462d6);
+  animation-delay: -2s;
+}
+.lp-orb-2 {
+  width: 36px;
+  height: 36px;
+  top: 230px;
+  right: 5%;
+  background: radial-gradient(circle at 35% 30%, #c5a3f5, #7a52d6);
+  animation-delay: -3s;
+}
+
+/* ---------- section scaffold ---------- */
+.lp-section {
+  position: relative;
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 100px 32px;
+}
+.lp-section-head {
+  max-width: 720px;
+  margin: 0 auto 56px;
+  text-align: center;
+}
 .lp-section-eyebrow {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--color-primary-on-dark);
-  margin-bottom: 12px;
+  margin: 0 0 14px;
 }
-.lp-section-title {
-  font-size: clamp(28px, 3.5vw, 40px);
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  line-height: 1.2;
-  margin-bottom: 16px;
+.lp-section-head h2 {
+  font-family: var(--font-display);
+  font-size: clamp(32px, 4vw, 48px);
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  line-height: 1.08;
+  margin: 0 0 16px;
+  color: var(--color-ink);
+  text-wrap: balance;
 }
-.lp-section-sub {
-  font-size: 16px;
-  line-height: 1.65;
+.lp-section-head p {
+  font-size: 18px;
   color: var(--color-body-muted);
-  max-width: 560px;
-  margin-bottom: 40px;
+  line-height: 1.5;
+  margin: 0;
+  text-wrap: pretty;
 }
 
-/* ── Feature grid ─────────────────────────────────────────── */
-.lp-feature-grid {
+/* three pillars */
+.lp-pillars {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 20px;
 }
-.lp-feature-card {
+.lp-pillar {
   background: var(--color-tile-1);
   border: 1px solid var(--color-divider-soft);
   border-radius: var(--r-xl);
-  padding: 28px 26px;
+  padding: 28px;
+  transition:
+    border-color 160ms,
+    transform 160ms;
 }
-.lp-feature-eyebrow {
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.1em;
+.lp-pillar:hover {
+  border-color: rgba(10, 132, 255, 0.4);
+  background: var(--color-tile-2);
+}
+.lp-pillar-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--r-md);
+  background: rgba(10, 132, 255, 0.14);
   color: var(--color-primary-on-dark);
-  margin-bottom: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 18px;
 }
-.lp-feature-title {
-  font-size: 20px;
-  font-weight: 700;
+.lp-pillar h3 {
+  font-family: var(--font-display);
+  font-size: 21px;
+  font-weight: 600;
   letter-spacing: -0.02em;
-  margin-bottom: 10px;
+  margin: 0 0 6px;
 }
-.lp-feature-body {
-  font-size: 14px;
-  line-height: 1.6;
-  color: var(--color-body-muted);
-}
-
-/* ── Split layout ─────────────────────────────────────────── */
-.lp-split {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 64px;
-  align-items: center;
-  padding: 96px 32px;
-}
-.lp-split-reverse { direction: rtl; }
-.lp-split-reverse > * { direction: ltr; }
-.lp-link-btn {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--color-primary-on-dark);
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  transition: opacity 0.12s;
-}
-.lp-link-btn:hover { opacity: 0.75; }
-
-/* ── Mockup panels ────────────────────────────────────────── */
-.lp-mockup-panel {
-  background: var(--color-tile-1);
-  border: 1px solid var(--color-divider-soft);
-  border-radius: var(--r-xl);
-  padding: 22px 20px;
-}
-.lp-mockup-label {
-  font-size: 11px;
-  color: var(--color-ink-muted-48);
-  margin-bottom: 14px;
-}
-
-/* Kanban */
-.lp-kb-cols { display: flex; gap: 12px; }
-.lp-kb-col { flex: 1; }
-.lp-kb-col-label {
+.lp-pillar .ey {
   font-size: 11px;
   font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-ink-muted-48);
+  margin: 0 0 14px;
+}
+.lp-pillar p {
+  font-size: 14px;
   color: var(--color-body-muted);
-  margin-bottom: 8px;
-}
-.lp-kb-card {
-  background: var(--color-tile-3);
-  border-radius: var(--r-sm);
-  padding: 9px 11px;
-  font-size: 12px;
-  margin-bottom: 6px;
-}
-
-/* Commits */
-.lp-commit-row {
-  display: flex;
-  gap: 10px;
-  padding: 8px 10px;
-  background: var(--color-tile-3);
-  border-radius: var(--r-sm);
-  margin-bottom: 6px;
-  font-size: 12px;
-  font-family: var(--font-mono, monospace);
-  align-items: center;
-}
-.lp-commit-repo { color: var(--color-primary-on-dark); font-weight: 600; white-space: nowrap; }
-.lp-commit-msg { flex: 1; color: var(--color-ink); }
-.lp-commit-sha { color: var(--color-ink-muted-48); }
-.lp-commit-sync { font-size: 11px; color: var(--color-status-done); margin-top: 10px; }
-
-/* Summary */
-.lp-summary-heading {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--color-ink);
-  font-family: var(--font-mono, monospace);
-  margin-bottom: 10px;
-}
-.lp-summary-body {
-  font-size: 13px;
   line-height: 1.55;
-  color: var(--color-body-muted);
-  margin-bottom: 12px;
-}
-.lp-summary-stats {
-  font-size: 12px;
-  color: var(--color-ink-muted-48);
-  margin-bottom: 10px;
-}
-.lp-summary-next {
-  font-size: 13px;
-  color: var(--color-primary-on-dark);
-  font-family: var(--font-mono, monospace);
+  margin: 0;
 }
 
-/* ── Quote ────────────────────────────────────────────────── */
-.lp-quote-section {
-  padding: 80px 32px;
-  text-align: center;
-  border-top: 1px solid var(--color-divider-soft);
-  border-bottom: 1px solid var(--color-divider-soft);
+/* big gradient feature card (discord style) */
+.lp-feature {
+  position: relative;
+  border-radius: 32px;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 40px;
+  align-items: center;
+  padding: 56px 56px 56px 60px;
+  margin-bottom: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
-.lp-quote {
-  max-width: 680px;
-  margin: 0 auto;
-  font-size: clamp(16px, 2vw, 20px);
-  line-height: 1.6;
-  color: var(--color-body-muted);
-  font-style: italic;
+.lp-feature.reverse {
+  grid-template-columns: 0.9fr 1.1fr;
 }
-.lp-quote cite {
-  display: block;
-  margin-top: 16px;
+.lp-feature.reverse .lp-feature-text {
+  order: 2;
+}
+.lp-feature-grad-1 {
+  background: radial-gradient(
+    120% 120% at 0% 100%,
+    #d6379a 0%,
+    #7a3ad6 38%,
+    #2a3578 70%,
+    #11163a 100%
+  );
+}
+.lp-feature-grad-2 {
+  background: radial-gradient(
+    120% 120% at 100% 0%,
+    #2997ff 0%,
+    #4a4ad6 42%,
+    #2a2060 72%,
+    #120a30 100%
+  );
+}
+.lp-feature-grad-3 {
+  background: radial-gradient(
+    120% 120% at 0% 0%,
+    #5a6cf0 0%,
+    #7a3ad6 42%,
+    #2a2060 72%,
+    #120a30 100%
+  );
+}
+.lp-feature-text {
+  position: relative;
+  z-index: 2;
+}
+.lp-feature-text .ey {
   font-size: 12px;
-  font-style: normal;
-  color: var(--color-ink-muted-48);
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0 0 14px;
 }
-
-/* ── Bottom CTA ───────────────────────────────────────────── */
-.lp-cta-section {
-  padding: 100px 32px;
-  text-align: center;
-}
-.lp-cta-title {
-  font-size: clamp(28px, 3.5vw, 42px);
+.lp-feature-text h3 {
+  font-family: var(--font-display);
+  font-size: clamp(28px, 3.2vw, 42px);
   font-weight: 700;
   letter-spacing: -0.03em;
-  margin-bottom: 12px;
+  line-height: 1.08;
+  margin: 0 0 18px;
+  color: #fff;
+  text-wrap: balance;
 }
-.lp-cta-sub {
+.lp-feature-text p {
   font-size: 16px;
-  color: var(--color-body-muted);
-  margin-bottom: 32px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.86);
+  margin: 0 0 24px;
+  max-width: 440px;
+  text-wrap: pretty;
 }
-.lp-cta-section .lp-email-form {
-  justify-content: center;
-  margin-bottom: 14px;
+.lp-feature-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 22px;
+  border-radius: var(--r-pill);
+  background: #fff;
+  color: #1a1a1a;
+  font-size: 15px;
+  font-weight: 500;
+  border: 0;
+  cursor: pointer;
+  transition: transform 80ms;
 }
-.lp-cta-section .lp-demo-btn { margin: 0 auto; }
+.lp-feature-cta:active {
+  transform: scale(0.96);
+}
 
-/* ── Footer ───────────────────────────────────────────────── */
+/* mock UI inside feature */
+.lp-mock {
+  position: relative;
+  z-index: 2;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 16px;
+  padding: 16px;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+}
+.lp-mock-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+.lp-mock-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+.lp-mock-title {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+  margin-left: 6px;
+  font-family: var(--font-mono);
+}
+
+/* commit rows */
+.lp-commit {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  margin-bottom: 6px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+.lp-commit .repo {
+  color: #7ab7ff;
+  font-weight: 600;
+}
+.lp-commit .msg {
+  color: rgba(255, 255, 255, 0.85);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lp-commit .sha {
+  color: rgba(255, 255, 255, 0.4);
+}
+.lp-commit-synced {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  background: rgba(48, 209, 88, 0.16);
+}
+.lp-commit-synced span {
+  font-size: 12px;
+  color: #5ee089;
+}
+
+/* kanban mini */
+.lp-mock-kanban {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.lp-mock-col {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  padding: 10px;
+}
+.lp-mock-col-h {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+  margin: 0 0 8px;
+}
+.lp-mock-card {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  padding: 7px 9px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 6px;
+}
+.lp-mock-card.blue {
+  background: rgba(10, 132, 255, 0.5);
+}
+.lp-mock-card.done {
+  opacity: 0.6;
+  text-decoration: line-through;
+}
+
+/* ai summary mock */
+.lp-mock-summary {
+  font-size: 13px;
+  line-height: 1.7;
+  color: rgba(255, 255, 255, 0.9);
+}
+.lp-mock-summary .h {
+  margin: 0 0 8px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 16px;
+}
+.lp-mock-summary .muted {
+  color: rgba(255, 255, 255, 0.6);
+  margin: 0 0 12px;
+}
+.lp-mock-summary .lead {
+  margin: 0 0 6px;
+  font-weight: 600;
+}
+.lp-mock-summary .next {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(10, 132, 255, 0.22);
+}
+
+/* ---------- quote ---------- */
+.lp-quote {
+  max-width: 920px;
+  margin: 0 auto;
+  text-align: center;
+  padding: 100px 32px;
+}
+.lp-quote blockquote {
+  font-family: var(--font-display);
+  font-size: clamp(26px, 3.4vw, 40px);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+  margin: 0 0 24px;
+  color: var(--color-ink);
+  text-wrap: balance;
+}
+.lp-quote blockquote .hl {
+  color: var(--color-primary-on-dark);
+}
+.lp-quote cite {
+  font-style: normal;
+  font-size: 14px;
+  color: var(--color-body-muted);
+}
+
+/* ---------- final CTA ---------- */
+.lp-final {
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+  /* 맨 끝 CTA 카드는 화면 전체를 가득 채운다 (풀블리드) */
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  padding: 88px 32px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background:
+    radial-gradient(
+      80% 140% at 50% 0%,
+      rgba(10, 132, 255, 0.4) 0%,
+      rgba(90, 108, 240, 0.2) 40%,
+      transparent 70%
+    ),
+    linear-gradient(180deg, #0c1430 0%, #05070f 100%);
+}
+.lp-final-inner {
+  position: relative;
+  z-index: 1;
+}
+.lp-final h2 {
+  font-family: var(--font-display);
+  font-size: clamp(34px, 4.6vw, 60px);
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+  margin: 0 0 18px;
+  color: var(--color-ink);
+  text-wrap: balance;
+}
+.lp-final p {
+  font-size: 18px;
+  color: var(--color-body-muted);
+  margin: 0 0 36px;
+}
+
+/* ---------- footer ---------- */
 .lp-footer {
+  background: var(--color-canvas-parchment);
   border-top: 1px solid var(--color-divider-soft);
-  padding: 56px 32px 32px;
+  padding: 64px 32px 48px;
+  margin-top: 100px;
 }
 .lp-footer-inner {
-  max-width: 1200px;
+  max-width: 1320px;
   margin: 0 auto;
-  display: grid;
-  grid-template-columns: 280px 1fr;
-  gap: 64px;
-  margin-bottom: 48px;
 }
-.lp-footer-logo {
-  font-size: 16px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  margin-bottom: 10px;
+.lp-footer-grid {
+  display: grid;
+  grid-template-columns: 1.6fr repeat(3, 1fr);
+  gap: 36px;
+  margin-bottom: 56px;
 }
 .lp-footer-tagline {
   font-size: 13px;
-  line-height: 1.6;
   color: var(--color-body-muted);
-  margin-bottom: 10px;
+  line-height: 1.6;
+  max-width: 300px;
+  margin: 16px 0;
 }
-.lp-footer-meta { font-size: 12px; color: var(--color-ink-muted-48); }
-.lp-footer-links {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 24px;
-}
-.lp-footer-col-title {
-  font-size: 12px;
+.lp-footer h4 {
+  font-size: 13px;
   font-weight: 600;
+  letter-spacing: -0.1px;
+  margin: 0 0 14px;
   color: var(--color-ink);
-  margin-bottom: 12px;
 }
+.lp-footer ul {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.lp-footer a,
 .lp-footer-link {
-  display: block;
   font-size: 13px;
   color: var(--color-body-muted);
-  margin-bottom: 8px;
-  cursor: default;
-  transition: color 0.12s;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
 }
-.lp-footer-link:hover { color: var(--color-ink); }
+.lp-footer a:hover,
+.lp-footer-link:hover {
+  color: var(--color-ink);
+}
+.lp-footer .pill svg {
+  margin-right: 6px;
+}
+/* GitHub 프로필 링크 pill — `.lp-footer a` 가 배경/패딩을 지우므로 pill 스타일 복원 */
+.lp-footer a.lp-footer-gh {
+  background: var(--color-chip-translucent);
+  color: var(--color-ink);
+  padding: 6px 12px;
+  font-size: 12px;
+  border-radius: var(--r-pill);
+  transition: background 120ms;
+}
+.lp-footer a.lp-footer-gh:hover {
+  background: var(--color-tile-4);
+  color: var(--color-ink);
+}
 .lp-footer-bottom {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding-top: 24px;
   border-top: 1px solid var(--color-divider-soft);
+  padding-top: 24px;
   display: flex;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
   font-size: 12px;
   color: var(--color-ink-muted-48);
-  gap: 16px;
-  flex-wrap: wrap;
+  max-width: 1320px;
+  margin: 0 auto;
 }
 
-/* ── Demo banner ──────────────────────────────────────────── */
+/* ---------- demo banner (앱 데모 모드 — 핸드오프 외 자체 기능) ---------- */
 .lp-demo-banner {
   position: fixed;
   bottom: 24px;
@@ -520,7 +1035,7 @@
   align-items: center;
   gap: 16px;
   font-size: 13px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+  box-shadow: var(--shadow-toast);
   white-space: nowrap;
 }
 .lp-demo-banner-label {
@@ -530,20 +1045,83 @@
   color: var(--color-body-muted);
 }
 .lp-demo-banner-dot {
-  width: 7px; height: 7px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   background: var(--color-primary);
   box-shadow: 0 0 6px var(--color-primary);
 }
 
-/* ── Responsive ───────────────────────────────────────────── */
-@media (max-width: 900px) {
-  .lp-hero { grid-template-columns: 1fr; }
-  .lp-hero-mockup { display: none; }
-  .lp-feature-grid { grid-template-columns: 1fr; }
-  .lp-split, .lp-split-reverse { grid-template-columns: 1fr; direction: ltr; }
-  .lp-kanban-mockup, .lp-commits-mockup, .lp-summary-mockup { display: none; }
-  .lp-footer-inner { grid-template-columns: 1fr; gap: 32px; }
-  .lp-footer-links { grid-template-columns: repeat(2, 1fr); }
-  .lp-nav-links { display: none; }
+/* ---------- scroll reveal (요소별 stagger 등장) ---------- */
+.lp-reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition:
+    opacity 0.65s cubic-bezier(0.22, 0.61, 0.36, 1) var(--rd, 0ms),
+    transform 0.65s cubic-bezier(0.22, 0.61, 0.36, 1) var(--rd, 0ms),
+    border-color 0.18s ease,
+    background 0.18s ease;
+  will-change: opacity, transform;
+}
+.lp-reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lp-reveal {
+    opacity: 1;
+    transform: none;
+    transition:
+      border-color 0.18s ease,
+      background 0.18s ease;
+  }
+  .lp-root {
+    scroll-behavior: auto;
+    scroll-snap-type: none;
+  }
+}
+
+/* ---------- responsive ---------- */
+@media (max-width: 920px) {
+  .lp-nav-links {
+    display: none;
+  }
+  .lp-pillars {
+    grid-template-columns: 1fr;
+  }
+  .lp-feature,
+  .lp-feature.reverse {
+    grid-template-columns: 1fr;
+    gap: 32px;
+    padding: 36px;
+  }
+  .lp-feature.reverse .lp-feature-text {
+    order: 0;
+  }
+  .lp-footer-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  /* 1열로 쌓이면 콘텐츠가 한 화면보다 길어질 수 있으므로 풀스크린 스냅 완화 */
+  .lp-root {
+    scroll-snap-type: none;
+  }
+  .lp-hero-inner,
+  .lp-hero-art,
+  #features,
+  .lp-quote,
+  #pricing,
+  .lp-feature-screen {
+    min-height: 0;
+  }
+}
+@media (max-width: 560px) {
+  .lp-nav-inner {
+    padding: 0 18px;
+  }
+  .lp-hero {
+    padding-top: 64px;
+  }
+  .lp-footer-grid {
+    grid-template-columns: 1fr;
+  }
 }

@@ -87,6 +87,7 @@ export function TemplateEditorPanel({
           }
         >
           <RichEditor
+            key={template.id}
             value={template.content}
             placeholder={t("settings.templates.contentPlaceholder")}
             onChange={(md) => onUpdate({ content: md })}

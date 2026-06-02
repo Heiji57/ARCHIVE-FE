@@ -111,6 +111,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         message,
         timestamp: new Date().toISOString(),
         read: false,
+        actionLabel: options?.actionLabel,
+        actionHref: options?.actionHref,
       };
       dispatch({ type: "notification/push", payload: { notification } });
       // Transient toast auto-dismiss handled by ToastViewport, not by store.
@@ -407,9 +409,29 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return apiUpdateSettings(next).catch(() => reportApiError());
   };
 
+  // ─── 데모(게스트) 모드 가드 ──────────────────────────────────────────────────
+  // 데모에서는 모든 화면을 자유롭게 체험할 수 있고(변경은 로컬·비영속),
+  // 외부 의존성(GitHub 연동/동기화)만 차단하고 "로그인" 액션 토스트로 유도한다.
+  const isDemo =
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).get("demo") === "true";
+
+  const requireLoginInDemo = (): boolean => {
+    if (!isDemo) return false;
+    const locale = state.settings.locale;
+    pushNotification(
+      "info",
+      translate(locale, "demo.locked.title"),
+      translate(locale, "demo.locked.message"),
+      { actionLabel: translate(locale, "demo.locked.action"), actionHref: "/login" },
+    );
+    return true;
+  };
+
   // ─── Context value ────────────────────────────────────────────────────────
   const value: ArchiveAppContextValue = {
     state,
+    isDemo,
     addTodo: (title, dateKey = todayKey(), options) => {
       if (USE_API) {
         // 서버가 id 를 발급하므로 생성은 await 후 dispatch
@@ -489,6 +511,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       return { entry, existed: false };
     },
     saveGitHubConfig: (config) => {
+      // GitHub 는 외부 의존성 → 데모에서는 차단하고 로그인 유도
+      if (requireLoginInDemo()) return;
       // GitHub 연동 엔드포인트는 api.yaml 에 없음 → 항상 로컬 (CLAUDE.md §8)
       dispatch({ type: "github/save", payload: { config } });
     },

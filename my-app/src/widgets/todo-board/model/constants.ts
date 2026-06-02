@@ -5,6 +5,12 @@ import type { TranslationKey } from "@/shared/lib/i18n";
 /** Day-of-week single-letter labels for the popover calendar header. */
 export const EN_DAYS = ["S", "M", "T", "W", "T", "F", "S"];
 
+/**
+ * Drag kind for kanban cards. Dropping a card on a column changes its status.
+ * (Distinct from calendar's TODO_DRAG_KIND, which moves a todo's dateKey.)
+ */
+export const KANBAN_DRAG_KIND = "kanban-status";
+
 /** Kanban column configuration. */
 export interface KanbanColumnConfig {
   id: TaskStatus;

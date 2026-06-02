@@ -10,9 +10,19 @@ import { RetroEditor } from "./RetroEditor";
 import { RetroSidebar } from "./RetroSidebar";
 
 export function RetrospectiveStudio() {
-  const { state, updateEntry, createDailyEntry, pushNotification, startSummary } =
+  const { state, updateEntry, createDailyEntry, pushNotification, startSummary, isDemo } =
     useArchiveApp();
   const { t } = useTranslation();
+
+  /** 데모 모드: GitHub 동기화 등 외부 의존성 차단 + "로그인" 액션 토스트. 차단 시 true. */
+  const requireLoginInDemo = (): boolean => {
+    if (!isDemo) return false;
+    pushNotification("info", t("demo.locked.title"), t("demo.locked.message"), {
+      actionLabel: t("demo.locked.action"),
+      actionHref: "/login",
+    });
+    return true;
+  };
 
   const filterState = useRetroFilter(state.entries);
   const { filteredEntries } = filterState;
@@ -47,6 +57,7 @@ export function RetrospectiveStudio() {
 
   const handleSave = () => {
     if (!active) return;
+    if (requireLoginInDemo()) return; // GitHub 동기화는 외부 의존성
     if (!isGithubConnected) return;
     updateEntry(active.id, { synced: true });
     pushNotification(

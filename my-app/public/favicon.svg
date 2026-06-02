@@ -1,12 +1,15 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 32" role="img" aria-label="A.R.C.H.I.V.E">
-  <!-- 라이트/다크 모드 모두에서 보이도록 다크 배경 추가 -->
-  <rect width="36" height="32" rx="7" fill="#141418"/>
-  <path d="M 22 4 L 33 9 L 33 19 L 22 14 Z" fill="#f5f5f7" opacity="0.5"/>
-  <path d="M 33 9 L 35 10 L 35 20 L 33 19 Z" fill="#f5f5f7" opacity="0.3"/>
-  <path d="M 16 9 L 27 14 L 27 23 L 16 18 Z" fill="#f5f5f7" opacity="0.72"/>
-  <path d="M 27 14 L 29 15 L 29 24 L 27 23 Z" fill="#f5f5f7" opacity="0.42"/>
-  <path d="M 10 14 L 21 19 L 21 28 L 10 23 Z" fill="#0a84ff"/>
-  <path d="M 21 19 L 23 20 L 23 29 L 21 28 Z" fill="#0a84ff" opacity="0.62"/>
-  <path d="M 4 21 L 15 26 L 15 31 L 4 26 Z" fill="#f5f5f7" opacity="0.32"/>
-  <path d="M 15 26 L 23 23 L 23 28 L 15 31 Z" fill="#f5f5f7" opacity="0.2"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" role="img" aria-label="A.R.C.H.I.V.E">
+  <defs>
+    <linearGradient id="fbg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#3b62e8"/>
+      <stop offset="100%" stop-color="#a282e8"/>
+    </linearGradient>
+  </defs>
+  <rect width="32" height="32" rx="7" fill="url(#fbg)"/>
+  <path d="M 22 5 L 28 9 L 28 16 L 22 12 Z" fill="rgba(255,255,255,0.85)"/>
+  <path d="M 17 8 L 25 13 L 25 19 L 17 15 Z" fill="rgba(255,255,255,0.62)"/>
+  <path d="M 12 13 L 22 19 L 22 25 L 12 19 Z" fill="#0a84ff"/>
+  <path d="M 22 19 L 28 16 L 28 22 L 22 25 Z" fill="rgba(255,255,255,0.45)"/>
+  <path d="M 6 16 L 16 22 L 16 27 L 6 21 Z" fill="rgba(255,255,255,0.32)"/>
+  <path d="M 16 22 L 26 17 L 26 22 L 16 27 Z" fill="rgba(255,255,255,0.22)"/>
 </svg>
