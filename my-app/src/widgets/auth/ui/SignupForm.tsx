@@ -1,9 +1,12 @@
 import { useState, type FormEvent } from "react";
 import { useArchiveApp } from "@/app/providers/useArchiveApp";
 import type { AuthRoute } from "@/app/router/authRoute";
+import { USE_API } from "@/shared/api";
+import { isMultiTzCountry } from "@/shared/lib/geo";
 import { useTranslation } from "@/shared/lib/i18n";
 import { Checkbox, TextField } from "@/shared/ui";
 import { useEmailVerification } from "../model/useEmailVerification";
+import { CountryRegionFields } from "./CountryRegionFields";
 import { OAuthButtons } from "./OAuthButtons";
 
 type Step = "email" | "verify" | "profile";
@@ -26,6 +29,8 @@ export function SignupForm({ onAuthNavigate }: SignupFormProps) {
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [displayName, setDisplayName] = useState("");
+  const [country, setCountry] = useState("");
+  const [region, setRegion] = useState<string | null>(null);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -90,12 +95,21 @@ export function SignupForm({ onAuthNavigate }: SignupFormProps) {
   };
 
   // ─── Step 3: 프로필 ───────────────────────────────────────────────────────
+  const regionMissing = isMultiTzCountry(country) && !region;
   const submitProfile = async (e: FormEvent) => {
     e.preventDefault();
     if (submitting) return;
     if (password.length < 8) return;
     if (password !== passwordConfirm) {
       setError(t("auth.signup.passwordMismatch"));
+      return;
+    }
+    if (!country) {
+      setError(t("auth.signup.error.countryRequired"));
+      return;
+    }
+    if (regionMissing) {
+      setError(t("auth.signup.error.regionRequired"));
       return;
     }
     if (!termsAccepted) return;
@@ -106,6 +120,8 @@ export function SignupForm({ onAuthNavigate }: SignupFormProps) {
         email,
         password,
         displayName: displayName.trim(),
+        country,
+        region,
         rememberMe,
       });
       if (!result.ok) {
@@ -142,7 +158,7 @@ export function SignupForm({ onAuthNavigate }: SignupFormProps) {
           </button>
 
           <div className="auth-divider">{t("auth.divider.or")}</div>
-          <OAuthButtons />
+          <OAuthButtons onAuthNavigate={onAuthNavigate} />
         </form>
       ) : null}
 
@@ -150,12 +166,19 @@ export function SignupForm({ onAuthNavigate }: SignupFormProps) {
         <form className="auth-form" onSubmit={(e) => void submitCode(e)}>
           <TextField
             type="text"
-            inputMode="numeric"
-            pattern="[0-9]{6}"
+            inputMode="text"
+            autoCapitalize="characters"
+            autoComplete="one-time-code"
+            pattern="[A-Za-z0-9]{6}"
             maxLength={6}
             label={t("auth.signup.code")}
             value={code}
-            onChange={(e) => setCode(e.target.value.replace(/[^0-9]/g, ""))}
+            // 백엔드 인증코드는 영숫자 6자(예: PW1YOT) — 대문자로 정규화
+            onChange={(e) =>
+              setCode(
+                e.target.value.replace(/[^A-Za-z0-9]/g, "").toUpperCase().slice(0, 6),
+              )
+            }
             hint={email}
             error={error ?? undefined}
             autoFocus
@@ -174,7 +197,10 @@ export function SignupForm({ onAuthNavigate }: SignupFormProps) {
               ? t("auth.signup.codeResendIn", { n: cooldownLeft })
               : t("auth.signup.codeResend")}
           </button>
-          <p className="auth-console-hint">{t("auth.consoleHint")}</p>
+          {/* mock 모드에서만: 코드를 콘솔에서 확인하라는 안내. API 모드는 메일 발송 */}
+          {!USE_API ? (
+            <p className="auth-console-hint">{t("auth.consoleHint")}</p>
+          ) : null}
         </form>
       ) : null}
 
@@ -210,6 +236,12 @@ export function SignupForm({ onAuthNavigate }: SignupFormProps) {
             }
             required
           />
+          <CountryRegionFields
+            country={country}
+            region={region}
+            onCountryChange={setCountry}
+            onRegionChange={setRegion}
+          />
           <Checkbox
             checked={termsAccepted}
             onChange={(e) => setTermsAccepted(e.target.checked)}
@@ -228,7 +260,9 @@ export function SignupForm({ onAuthNavigate }: SignupFormProps) {
               !termsAccepted ||
               password.length < 8 ||
               password !== passwordConfirm ||
-              displayName.trim().length === 0
+              displayName.trim().length === 0 ||
+              !country ||
+              regionMissing
             }
           >
             {submitting ? t("auth.signup.submitting") : t("auth.signup.submit")}

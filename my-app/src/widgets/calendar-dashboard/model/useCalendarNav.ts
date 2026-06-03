@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { DEMO_ANCHOR_DATE } from "@/app/config/demo";
 import { addDays } from "@/shared/lib/date";
 
 export type CalendarView = "week" | "month";
@@ -7,10 +6,13 @@ export type CalendarView = "week" | "month";
 /**
  * Encapsulates the calendar's view-mode + cursor state and the
  * direction navigation (prev/today/next).
+ *
+ * @param anchorDate 초기 cursor 와 "오늘로 이동" 기준 날짜.
+ *   실제 사용자는 오늘, 데모 모드는 시드 앵커 날짜를 전달한다.
  */
-export function useCalendarNav() {
+export function useCalendarNav(anchorDate: Date) {
   const [view, setView] = useState<CalendarView>("week");
-  const [cursor, setCursor] = useState(DEMO_ANCHOR_DATE);
+  const [cursor, setCursor] = useState(anchorDate);
 
   const navigate = (dir: -1 | 1) => {
     if (view === "week") {
@@ -22,7 +24,7 @@ export function useCalendarNav() {
     }
   };
 
-  const goToday = () => setCursor(DEMO_ANCHOR_DATE);
+  const goToday = () => setCursor(anchorDate);
 
   return { view, setView, cursor, setCursor, navigate, goToday };
 }

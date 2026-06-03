@@ -6,6 +6,7 @@ export {
   apiRequestEmailCode,
   apiVerifyEmailCode,
   apiCompleteSignup,
+  apiCompleteOnboarding,
   apiLogin,
   apiLogout,
   apiUpdateProfile,
@@ -40,3 +41,11 @@ export {
   apiClearNotifications,
   streamNotifications,
 } from "./notifications";
+export {
+  apiListAvailableRepos,
+  apiListLinkedRepos,
+  apiLinkRepo,
+  apiUnlinkAllRepos,
+  apiUnlinkRepo,
+  apiSyncAllRepos,
+} from "./github";

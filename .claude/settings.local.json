@@ -4,7 +4,15 @@
       "PowerShell(Head 60)",
       "Bash(pnpm add *)",
       "Bash(pnpm lint *)",
-      "Bash(pnpm build *)"
+      "Bash(pnpm build *)",
+      "Bash(sed -n '/RegisterRequest:/,/LoginRequest:/p' api.yaml)",
+      "Bash(sed -n '/    UserResponse:/,/[A-Za-z]Response:/p' api.yaml)",
+      "Bash(pnpm gen:api)",
+      "Bash(sed -n '119,160p' api.yaml)",
+      "Bash(sed -n '342,400p' api.yaml)",
+      "Bash(sed -n '/    UserResponse:/,/    TokenResponse:/p' api.yaml)",
+      "Bash(sed -n '/    RegisterRequest:/,/    LoginRequest:/p' api.yaml)",
+      "Bash(sed -n '/    OnboardingCompleteRequest:/,/^    [A-Za-z]/p' api.yaml)"
     ]
   }
 }

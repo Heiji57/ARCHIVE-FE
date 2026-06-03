@@ -1,10 +1,16 @@
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { useArchiveApp } from "@/app/providers/useArchiveApp";
+import type { AuthRoute } from "@/app/router/authRoute";
 import type { OAuthProvider } from "@/entities/user/model/types";
 import { useTranslation } from "@/shared/lib/i18n";
 
-export function OAuthButtons() {
+interface OAuthButtonsProps {
+  /** 신규 OAuth 사용자 → 온보딩 페이지로 이동시키기 위한 네비게이터. */
+  onAuthNavigate?: (route: AuthRoute) => void;
+}
+
+export function OAuthButtons({ onAuthNavigate }: OAuthButtonsProps = {}) {
   const { oauthLogin } = useArchiveApp();
   const { t } = useTranslation();
   const [processing, setProcessing] = useState<OAuthProvider | null>(null);
@@ -13,7 +19,12 @@ export function OAuthButtons() {
     if (processing) return;
     setProcessing(provider);
     try {
-      await oauthLogin(provider);
+      const result = await oauthLogin(provider);
+      // 성공 → AppProvider 가 로그인 dispatch(AuthGate 가 메인으로 이동)
+      // 신규 → 온보딩 페이지로 이동
+      if (result.kind === "onboarding-required") {
+        onAuthNavigate?.("onboarding");
+      }
     } finally {
       setProcessing(null);
     }

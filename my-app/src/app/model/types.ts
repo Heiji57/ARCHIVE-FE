@@ -1,5 +1,8 @@
 import type { JournalEntry, RetrospectiveType } from "@/entities/entry/model/types";
-import type { GitHubConfig } from "@/entities/github/model/types";
+import type {
+  AvailableRepository,
+  GitHubState,
+} from "@/entities/github/model/types";
 import type {
   NoticeCategory,
   NoticeType,
@@ -19,7 +22,6 @@ export type AppRoute = "calendar" | "todos" | "retrospectives" | "settings";
 export interface PersistedAppState {
   todos: Todo[];
   entries: JournalEntry[];
-  githubConfig: GitHubConfig | null;
   notifications: NotificationItem[];
   settings: AppSettings;
   pendingSummary: PendingSummary | null;
@@ -30,7 +32,10 @@ export interface PersistedAppState {
   activeTemplateIds: Record<RetrospectiveType, string>;
 }
 
-export type AppState = PersistedAppState;
+export interface AppState extends PersistedAppState {
+  /** GitHub 연동은 서버 소스(또는 세션) 기반이라 영속화하지 않는다. */
+  github: GitHubState;
+}
 
 export interface PushNotificationOptions {
   category?: NoticeCategory;
@@ -61,7 +66,19 @@ export interface ArchiveAppContextValue {
     >,
   ) => void;
   createDailyEntry: (dateKey: string) => { entry: JournalEntry; existed: boolean };
-  saveGitHubConfig: (config: GitHubConfig | null) => void;
+  // ─── GitHub (서버 저장소 연결 모델) ────────────────────────────────────────
+  /** 연결 상태·연결된 저장소 목록을 (재)조회해 상태에 반영. */
+  refreshGitHub: () => void;
+  /** GitHub 에서 연결 후보(public) 저장소 목록 조회. */
+  loadGitHubAvailableRepos: () => Promise<AvailableRepository[]>;
+  /** githubRepoId 로 저장소 1개 연결. */
+  linkGitHubRepo: (githubRepoId: number) => Promise<void>;
+  /** 단일 저장소 연결 해제. */
+  unlinkGitHubRepo: (repositoryId: string) => void;
+  /** 모든 저장소 연결 해제. */
+  unlinkAllGitHubRepos: () => void;
+  /** 현재 GitHub 저장소를 일괄 연결(sync). */
+  syncAllGitHubRepos: () => Promise<void>;
   pushNotification: (
     type: NoticeType,
     title: string,
@@ -107,7 +124,12 @@ export interface ArchiveAppContextValue {
   ) => Promise<RequestCodeResult>;
   verifyEmailCode: (email: string, code: string) => Promise<VerifyCodeResult>;
   completeSignup: (input: SignupInput) => Promise<SignupResult>;
-  oauthLogin: (provider: OAuthProvider) => Promise<LoginResult>;
+  oauthLogin: (provider: OAuthProvider) => Promise<OAuthResult>;
+  /** OAuth 신규 사용자가 국가 입력을 마쳐 가입 완료 (onboarding_token 쿠키 사용). */
+  completeOnboarding: (input: {
+    country: string;
+    region: string | null;
+  }) => Promise<SignupResult>;
   resetPassword: (
     email: string,
     code: string,
@@ -123,13 +145,24 @@ export interface ArchiveAppContextValue {
 export interface SignupInput {
   email: string;
   password: string;
+  /** 표시 이름 — API 미저장(클라 전용). */
   displayName: string;
+  /** ISO 3166-1 alpha-2 (필수). */
+  country: string;
+  /** ISO 3166-2 — 다중 tz 국가만 필수, 그 외 null. */
+  region: string | null;
   rememberMe: boolean;
 }
 
 export type LoginResult =
   | { ok: true; user: User }
   | { ok: false; error: "invalid-credentials" | "user-not-found" };
+
+/** OAuth 로그인 결과: 기존 사용자 성공 / 신규 사용자 온보딩 필요 / 실패 */
+export type OAuthResult =
+  | { kind: "success"; user: User }
+  | { kind: "onboarding-required" }
+  | { kind: "error"; error: string };
 
 export type RequestCodeResult =
   | { ok: true }

@@ -1,5 +1,8 @@
 import type { JournalEntry, RetrospectiveType } from "@/entities/entry/model/types";
-import type { GitHubConfig } from "@/entities/github/model/types";
+import type {
+  GitHubStatus,
+  LinkedRepository,
+} from "@/entities/github/model/types";
 import type { NotificationItem } from "@/entities/notification/model/types";
 import type {
   PendingSummary,
@@ -47,7 +50,11 @@ export type AppAction =
       };
     }
   | { type: "entry/upsert"; payload: { entry: JournalEntry } }
-  | { type: "github/save"; payload: { config: GitHubConfig | null } }
+  | { type: "github/setStatus"; payload: { status: GitHubStatus } }
+  | {
+      type: "github/setLinked";
+      payload: { status: GitHubStatus; repositories: LinkedRepository[] };
+    }
   | { type: "notification/push"; payload: { notification: NotificationItem } }
   | { type: "notification/dismiss"; payload: { id: string } }
   | { type: "notification/markRead"; payload: { id: string } }

@@ -16,6 +16,7 @@ import { CalendarPage } from "@/pages/calendar/ui/CalendarPage";
 import { ForgotPasswordPage } from "@/pages/forgot-password/ui/ForgotPasswordPage";
 import { LandingPage } from "@/pages/landing";
 import { LoginPage } from "@/pages/login/ui/LoginPage";
+import { OnboardingPage } from "@/pages/onboarding/ui/OnboardingPage";
 import { RetrospectivesPage } from "@/pages/retrospectives/ui/RetrospectivesPage";
 import { SettingsPage } from "@/pages/settings/ui/SettingsPage";
 import { SignupPage } from "@/pages/signup/ui/SignupPage";
@@ -175,6 +176,8 @@ function AuthGate({
         return <SignupPage onAuthNavigate={navigateAuth} />;
       case "forgot-password":
         return <ForgotPasswordPage onAuthNavigate={navigateAuth} />;
+      case "onboarding":
+        return <OnboardingPage onAuthNavigate={navigateAuth} />;
     }
   }
 

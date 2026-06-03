@@ -161,6 +161,92 @@
   margin-bottom: 16px;
 }
 
+/* ── GitHub 저장소 연결(서버 모델) ─────────────────────────────────────── */
+.github-repo-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.github-repo-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: var(--r-md);
+  background: var(--color-tile-1);
+  border: 1px solid var(--color-divider-soft);
+}
+.github-repo-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+.github-repo-name {
+  font-family: var(--font-mono, monospace);
+  font-size: 13px;
+  color: var(--color-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.github-repo-branch {
+  font-size: 11px;
+  color: var(--color-body-muted);
+}
+.github-repo-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  color: var(--color-warn, #ff9f0a);
+  padding: 2px 7px;
+  border-radius: var(--r-pill);
+  background: rgba(255, 159, 10, 0.14);
+}
+.github-repo-unlink,
+.github-repo-link {
+  flex-shrink: 0;
+  font-size: 12px;
+  padding: 6px 12px;
+}
+.github-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.github-available {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--color-divider-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.github-available-title {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-body-muted);
+  margin: 0 0 4px;
+}
+.github-empty {
+  font-size: 13px;
+  color: var(--color-body-muted);
+  padding: 8px 2px;
+  margin: 0;
+}
+.github-connect-hint {
+  font-size: 13px;
+  color: var(--color-body-muted);
+  line-height: 1.5;
+  margin: 0 0 14px;
+}
+
 /* ── Template Card ────────────────────────────────────────────────────── */
 
 /* span full grid width */

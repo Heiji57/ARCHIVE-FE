@@ -141,6 +141,45 @@
   line-height: 1.5;
 }
 
+/* ── 국가/지역 select (회원가입·온보딩) ─────────────────────────────── */
+.auth-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.auth-select {
+  width: 100%;
+  appearance: none;
+  -webkit-appearance: none;
+  background: var(--color-tile-1);
+  border: 1px solid var(--color-divider-soft);
+  border-radius: var(--r-md);
+  padding: 11px 12px;
+  font-size: 14px;
+  color: var(--color-ink);
+  cursor: pointer;
+  background-image: linear-gradient(45deg, transparent 50%, var(--color-body-muted) 50%),
+    linear-gradient(135deg, var(--color-body-muted) 50%, transparent 50%);
+  background-position:
+    calc(100% - 18px) 50%,
+    calc(100% - 13px) 50%;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+.auth-select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+.auth-select option {
+  color: #1a1a1a;
+}
+.auth-onboarding-lead {
+  font-size: 13px;
+  color: var(--color-body-muted);
+  line-height: 1.5;
+  margin: 0;
+}
+
 .auth-step-progress {
   display: flex;
   align-items: center;

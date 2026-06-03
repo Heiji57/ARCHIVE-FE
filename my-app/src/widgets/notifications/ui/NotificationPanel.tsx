@@ -42,10 +42,13 @@ export function NotificationPanel({ open, onClose }: Props) {
 
   const sorted = useMemo(
     () =>
-      [...state.notifications].sort(
-        (a, b) =>
-          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
-      ),
+      // transient(네트워크 오류 등)은 토스트로만 노출하고 패널에는 표시하지 않는다.
+      state.notifications
+        .filter((n) => !n.transient)
+        .sort(
+          (a, b) =>
+            new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+        ),
     [state.notifications],
   );
   const unread = sorted.filter((n) => !n.read).length;

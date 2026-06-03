@@ -11,7 +11,6 @@ export function usePersistAppState(state: AppState) {
     saveAppState({
       todos: state.todos,
       entries: state.entries,
-      githubConfig: state.githubConfig,
       notifications: state.notifications,
       settings: state.settings,
       pendingSummary: state.pendingSummary,
@@ -22,7 +21,6 @@ export function usePersistAppState(state: AppState) {
     });
   }, [
     state.entries,
-    state.githubConfig,
     state.todos,
     state.notifications,
     state.settings,

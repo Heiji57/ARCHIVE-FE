@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useReducer, useRef, type ReactNode } from "react";
 import {
+  mockCompleteOnboarding,
   mockCompleteSignup,
   mockLogin,
   mockOAuthLogin,
@@ -52,7 +53,9 @@ import { createId } from "@/shared/lib/id";
 import { translate } from "@/shared/lib/i18n";
 import {
   USE_API,
+  ApiError,
   apiClearNotifications,
+  apiCompleteOnboarding,
   apiCompleteSignup,
   apiCreateEntry,
   apiCreateTodo,
@@ -60,7 +63,10 @@ import {
   apiGenerateSummary,
   apiGetSettings,
   apiGetSummary,
+  apiLinkRepo,
+  apiListAvailableRepos,
   apiListEntries,
+  apiListLinkedRepos,
   apiListNotifications,
   apiListTodos,
   apiLogin,
@@ -70,6 +76,9 @@ import {
   apiOAuthLogin,
   apiRequestEmailCode,
   apiRestoreSession,
+  apiSyncAllRepos,
+  apiUnlinkAllRepos,
+  apiUnlinkRepo,
   apiUpdateProfile,
   apiUpdateSettings,
   apiUpdateTodo,
@@ -79,6 +88,11 @@ import {
   streamSummary,
   summaryContentToMarkdown,
 } from "@/shared/api";
+import {
+  MOCK_AVAILABLE_REPOS,
+  mockLinkRepository,
+} from "@/app/lib/mockGithub";
+import type { AvailableRepository } from "@/entities/github/model/types";
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(
@@ -113,6 +127,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         read: false,
         actionLabel: options?.actionLabel,
         actionHref: options?.actionHref,
+        transient: options?.transient,
       };
       dispatch({ type: "notification/push", payload: { notification } });
       // Transient toast auto-dismiss handled by ToastViewport, not by store.
@@ -345,7 +360,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     void apiListTodos({ from: "1970-01-01", to: "2999-12-31" })
       .then((todos) => dispatch({ type: "hydrate/todos", payload: { todos } }))
       .catch(() => {});
-    void apiListEntries({})
+    // 백엔드 /entries 는 from/to 없으면 빈 배열을 반환하므로 전체 범위를 명시한다.
+    void apiListEntries({ from: "1970-01-01", to: "2999-12-31" })
       .then((entries) =>
         dispatch({ type: "hydrate/entries", payload: { entries } }),
       )
@@ -360,6 +376,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
         dispatch({ type: "hydrate/notifications", payload: { notifications } }),
       )
       .catch(() => {});
+  }, [state.currentUser?.id]);
+
+  // ─── GitHub 연결 프로브 (API·mock 양쪽) ──────────────────────────────────────
+  const githubProbedRef = useRef<string | null>(null);
+  useEffect(() => {
+    const uid = state.currentUser?.id ?? null;
+    if (!uid || githubProbedRef.current === uid) return;
+    githubProbedRef.current = uid;
+    runGitHubRefresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.currentUser?.id]);
 
   // ─── API 모드: 실시간 알림 SSE 구독 (자동 재연결) ───────────────────────────
@@ -407,6 +433,54 @@ export function AppProvider({ children }: { children: ReactNode }) {
       autoSummary: { ...state.settings.autoSummary, ...(patch.autoSummary ?? {}) },
     };
     return apiUpdateSettings(next).catch(() => reportApiError());
+  };
+
+  // ─── GitHub 저장소 연동 (서버 모델) ──────────────────────────────────────────
+  // 연결 여부는 저장소 조회의 GITHUB_CONNECTION_NOT_FOUND 로 판별한다.
+  const runGitHubRefresh = () => {
+    if (!USE_API) {
+      // mock: 서버가 없으므로 "연결됨"으로 간주(기존 연결 목록 유지).
+      dispatch({ type: "github/setStatus", payload: { status: "connected" } });
+      return;
+    }
+    // 백엔드 /github/repositories(linked)는 GitHub 미연결이어도 200 [] 을 주므로
+    // 연결 여부 판정에 쓸 수 없다. 실제 연결 신호는 /github/repositories/available
+    // (미연결 시 GITHUB_CONNECTION_NOT_FOUND). 다만 available 은 무거우므로,
+    // 연결된 저장소가 1개 이상이면 available 호출 없이 connected 로 단정한다.
+    const markNotConnected = (e: unknown) => {
+      const tokenIssue =
+        e instanceof ApiError &&
+        (e.code === "GITHUB_CONNECTION_NOT_FOUND" ||
+          e.code === "GITHUB_TOKEN_INVALID");
+      dispatch({
+        type: "github/setLinked",
+        payload: {
+          status: tokenIssue ? "not-connected" : "not-connected",
+          repositories: [],
+        },
+      });
+    };
+
+    void apiListLinkedRepos()
+      .then((repositories) => {
+        if (repositories.length > 0) {
+          dispatch({
+            type: "github/setLinked",
+            payload: { status: "connected", repositories },
+          });
+          return;
+        }
+        // 연결된 저장소가 없음 → available 로 GitHub 계정 연결 여부 확인
+        void apiListAvailableRepos()
+          .then(() =>
+            dispatch({
+              type: "github/setLinked",
+              payload: { status: "connected", repositories: [] },
+            }),
+          )
+          .catch(markNotConnected);
+      })
+      .catch(markNotConnected);
   };
 
   // ─── 데모(게스트) 모드 가드 ──────────────────────────────────────────────────
@@ -510,11 +584,89 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
       return { entry, existed: false };
     },
-    saveGitHubConfig: (config) => {
-      // GitHub 는 외부 의존성 → 데모에서는 차단하고 로그인 유도
+    refreshGitHub: () => runGitHubRefresh(),
+    loadGitHubAvailableRepos: async (): Promise<AvailableRepository[]> => {
+      if (!USE_API) {
+        // 이미 연결된 건 후보에서 제외
+        const linked = new Set(
+          state.github.linkedRepositories.map((r) => r.githubRepoId),
+        );
+        return MOCK_AVAILABLE_REPOS.filter((r) => !linked.has(r.githubRepoId));
+      }
+      return apiListAvailableRepos();
+    },
+    linkGitHubRepo: async (githubRepoId: number) => {
       if (requireLoginInDemo()) return;
-      // GitHub 연동 엔드포인트는 api.yaml 에 없음 → 항상 로컬 (CLAUDE.md §8)
-      dispatch({ type: "github/save", payload: { config } });
+      if (!USE_API) {
+        const repo = MOCK_AVAILABLE_REPOS.find(
+          (r) => r.githubRepoId === githubRepoId,
+        );
+        if (!repo) return;
+        dispatch({
+          type: "github/setLinked",
+          payload: {
+            status: "connected",
+            repositories: [
+              ...state.github.linkedRepositories,
+              mockLinkRepository(repo),
+            ],
+          },
+        });
+        return;
+      }
+      try {
+        const linked = await apiLinkRepo(githubRepoId);
+        dispatch({
+          type: "github/setLinked",
+          payload: {
+            status: "connected",
+            repositories: [...state.github.linkedRepositories, linked],
+          },
+        });
+      } catch {
+        reportApiError();
+      }
+    },
+    unlinkGitHubRepo: (repositoryId: string) => {
+      if (requireLoginInDemo()) return;
+      const next = state.github.linkedRepositories.filter(
+        (r) => r.id !== repositoryId,
+      );
+      dispatch({
+        type: "github/setLinked",
+        payload: { status: "connected", repositories: next },
+      });
+      if (USE_API) void apiUnlinkRepo(repositoryId).catch(() => reportApiError());
+    },
+    unlinkAllGitHubRepos: () => {
+      if (requireLoginInDemo()) return;
+      dispatch({
+        type: "github/setLinked",
+        payload: { status: "connected", repositories: [] },
+      });
+      if (USE_API) void apiUnlinkAllRepos().catch(() => reportApiError());
+    },
+    syncAllGitHubRepos: async () => {
+      if (requireLoginInDemo()) return;
+      if (!USE_API) {
+        dispatch({
+          type: "github/setLinked",
+          payload: {
+            status: "connected",
+            repositories: MOCK_AVAILABLE_REPOS.map(mockLinkRepository),
+          },
+        });
+        return;
+      }
+      try {
+        const repositories = await apiSyncAllRepos();
+        dispatch({
+          type: "github/setLinked",
+          payload: { status: "connected", repositories },
+        });
+      } catch {
+        reportApiError();
+      }
     },
     pushNotification,
     markNotificationRead: (id) => {
@@ -641,6 +793,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const result = USE_API
         ? await apiOAuthLogin(provider)
         : await mockOAuthLogin(provider);
+      if (result.kind === "success") {
+        dispatch({
+          type: "auth/login",
+          payload: { user: result.user, rememberMe: true },
+        });
+      }
+      // onboarding-required / error 는 호출 측(OAuthButtons)이 라우팅 처리
+      return result;
+    },
+    completeOnboarding: async (input) => {
+      const result = USE_API
+        ? await apiCompleteOnboarding(input)
+        : await mockCompleteOnboarding(input);
       if (result.ok) {
         dispatch({
           type: "auth/login",

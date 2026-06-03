@@ -2,6 +2,7 @@ import type { AppAction } from "@/app/model/actions";
 import { DEFAULT_SETTINGS } from "@/app/model/settings";
 import type { AppState } from "@/app/model/types";
 import type { JournalEntry } from "@/entities/entry/model/types";
+import { INITIAL_GITHUB_STATE } from "@/entities/github/model/types";
 import type { NotificationItem } from "@/entities/notification/model/types";
 import { DEFAULT_TEMPLATE_CONTENT, defaultTemplateId } from "@/entities/template";
 import type { Todo } from "@/entities/todo/model/types";
@@ -104,8 +105,20 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       };
     }
 
-    case "github/save":
-      return { ...state, githubConfig: action.payload.config };
+    case "github/setStatus":
+      return {
+        ...state,
+        github: { ...state.github, status: action.payload.status },
+      };
+
+    case "github/setLinked":
+      return {
+        ...state,
+        github: {
+          status: action.payload.status,
+          linkedRepositories: action.payload.repositories,
+        },
+      };
 
     case "notification/push":
       // 동일 id 는 무시 (하이드레이션 ↔ SSE 실시간 수신 중복 방지)
@@ -289,6 +302,8 @@ export function appReducer(state: AppState, action: AppAction): AppState {
         ...state,
         currentUser: action.payload.user,
         rememberMe: action.payload.rememberMe,
+        // GitHub 연결 상태는 계정/세션에 종속 → 로그인 시 초기화하고 서버에서 재조회.
+        github: INITIAL_GITHUB_STATE,
       };
 
     case "auth/logout":
@@ -296,6 +311,7 @@ export function appReducer(state: AppState, action: AppAction): AppState {
         ...state,
         currentUser: null,
         rememberMe: false,
+        github: INITIAL_GITHUB_STATE,
       };
 
     case "auth/updateProfile":

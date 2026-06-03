@@ -182,6 +182,17 @@ export type TranslationKey =
   | "settings.github.tracked"
   | "settings.github.lastSync"
   | "settings.github.autoRetrospective"
+  | "settings.github.checking"
+  | "settings.github.noLinked"
+  | "settings.github.addRepo"
+  | "settings.github.syncAll"
+  | "settings.github.unlinkAll"
+  | "settings.github.available"
+  | "settings.github.noAvailable"
+  | "settings.github.link"
+  | "settings.github.unlink"
+  | "settings.github.connectAccount"
+  | "settings.github.connectAccountPending"
   | "settings.language.label"
   | "settings.autoSummary.weekly"
   | "settings.autoSummary.monthly"
@@ -254,6 +265,18 @@ export type TranslationKey =
   | "auth.signup.displayNamePlaceholder"
   | "auth.signup.terms"
   | "auth.signup.submit"
+  | "auth.signup.country"
+  | "auth.signup.countryPlaceholder"
+  | "auth.signup.region"
+  | "auth.signup.regionPlaceholder"
+  | "auth.signup.error.countryRequired"
+  | "auth.signup.error.regionRequired"
+  | "auth.onboarding.title"
+  | "auth.onboarding.subtitle"
+  | "auth.onboarding.lead"
+  | "auth.onboarding.submit"
+  | "auth.onboarding.backToLogin"
+  | "auth.onboarding.error.expired"
   | "auth.signup.submitting"
   | "auth.signup.haveAccount"
   | "auth.signup.loginLink"
@@ -469,6 +492,18 @@ const ko: Dict = {
   "settings.github.tracked": "추적 저장소",
   "settings.github.lastSync": "마지막 동기화",
   "settings.github.autoRetrospective": "자동 회고 동기화",
+  "settings.github.checking": "연결 상태 확인 중…",
+  "settings.github.noLinked": "연결된 저장소가 없습니다",
+  "settings.github.addRepo": "저장소 추가",
+  "settings.github.syncAll": "전체 동기화",
+  "settings.github.unlinkAll": "전체 연결 해제",
+  "settings.github.available": "연결 가능한 저장소",
+  "settings.github.noAvailable": "연결 가능한 저장소가 없습니다",
+  "settings.github.link": "연결",
+  "settings.github.unlink": "해제",
+  "settings.github.connectAccount": "GitHub 계정 연결",
+  "settings.github.connectAccountPending":
+    "GitHub 계정 연결 기능은 곧 제공됩니다. GitHub로 로그인하면 저장소를 연결할 수 있습니다.",
   "settings.language.label": "언어 선택",
   "settings.autoSummary.weekly": "주간 자동 요약",
   "settings.autoSummary.monthly": "월간 자동 요약",
@@ -545,6 +580,18 @@ const ko: Dict = {
   "auth.signup.displayNamePlaceholder": "다른 사용자에게 보일 이름",
   "auth.signup.terms": "이용약관 및 개인정보 처리방침에 동의합니다.",
   "auth.signup.submit": "가입 완료",
+  "auth.signup.country": "국가",
+  "auth.signup.countryPlaceholder": "국가를 선택하세요",
+  "auth.signup.region": "지역 (주/도)",
+  "auth.signup.regionPlaceholder": "지역을 선택하세요",
+  "auth.signup.error.countryRequired": "국가를 선택해주세요.",
+  "auth.signup.error.regionRequired": "이 국가는 지역(주/도) 선택이 필요합니다.",
+  "auth.onboarding.title": "거의 다 됐어요",
+  "auth.onboarding.subtitle": "타임존 설정을 위해 국가 정보를 입력하세요",
+  "auth.onboarding.lead": "기간 집계가 정확하도록 거주 국가(필요 시 지역)를 선택해주세요.",
+  "auth.onboarding.submit": "가입 완료",
+  "auth.onboarding.backToLogin": "로그인으로 돌아가기",
+  "auth.onboarding.error.expired": "세션이 만료되었습니다. GitHub/Google로 다시 시도해주세요.",
   "auth.signup.submitting": "가입 처리 중…",
   "auth.signup.haveAccount": "이미 계정이 있으신가요?",
   "auth.signup.loginLink": "로그인",
@@ -762,6 +809,18 @@ const en: Dict = {
   "settings.github.tracked": "Tracked repositories",
   "settings.github.lastSync": "Last synced",
   "settings.github.autoRetrospective": "Auto retrospective sync",
+  "settings.github.checking": "Checking connection…",
+  "settings.github.noLinked": "No linked repositories",
+  "settings.github.addRepo": "Add repository",
+  "settings.github.syncAll": "Sync all",
+  "settings.github.unlinkAll": "Unlink all",
+  "settings.github.available": "Available repositories",
+  "settings.github.noAvailable": "No repositories available",
+  "settings.github.link": "Link",
+  "settings.github.unlink": "Unlink",
+  "settings.github.connectAccount": "Connect GitHub account",
+  "settings.github.connectAccountPending":
+    "GitHub account linking is coming soon. Sign in with GitHub to link repositories.",
   "settings.language.label": "Language",
   "settings.autoSummary.weekly": "Weekly auto-summary",
   "settings.autoSummary.monthly": "Monthly auto-summary",
@@ -839,6 +898,18 @@ const en: Dict = {
   "auth.signup.displayNamePlaceholder": "How others will see you",
   "auth.signup.terms": "I agree to the Terms of Service and Privacy Policy.",
   "auth.signup.submit": "Create account",
+  "auth.signup.country": "Country",
+  "auth.signup.countryPlaceholder": "Select a country",
+  "auth.signup.region": "Region (state/province)",
+  "auth.signup.regionPlaceholder": "Select a region",
+  "auth.signup.error.countryRequired": "Please select your country.",
+  "auth.signup.error.regionRequired": "This country requires a region (state/province).",
+  "auth.onboarding.title": "Almost there",
+  "auth.onboarding.subtitle": "Enter your country to set your timezone",
+  "auth.onboarding.lead": "Pick your country (and region if asked) so periods are calculated accurately.",
+  "auth.onboarding.submit": "Complete sign-up",
+  "auth.onboarding.backToLogin": "Back to login",
+  "auth.onboarding.error.expired": "Your session expired. Please try GitHub/Google again.",
   "auth.signup.submitting": "Creating account…",
   "auth.signup.haveAccount": "Already have an account?",
   "auth.signup.loginLink": "Sign in",
@@ -1050,6 +1121,18 @@ const zh: Dict = {
   "settings.github.tracked": "跟踪的仓库",
   "settings.github.lastSync": "最后同步",
   "settings.github.autoRetrospective": "自动回顾同步",
+  "settings.github.checking": "正在检查连接状态…",
+  "settings.github.noLinked": "没有已连接的仓库",
+  "settings.github.addRepo": "添加仓库",
+  "settings.github.syncAll": "全部同步",
+  "settings.github.unlinkAll": "全部断开",
+  "settings.github.available": "可连接的仓库",
+  "settings.github.noAvailable": "没有可连接的仓库",
+  "settings.github.link": "连接",
+  "settings.github.unlink": "断开",
+  "settings.github.connectAccount": "连接 GitHub 账户",
+  "settings.github.connectAccountPending":
+    "GitHub 账户连接功能即将推出。使用 GitHub 登录即可连接仓库。",
   "settings.language.label": "语言",
   "settings.autoSummary.weekly": "周自动摘要",
   "settings.autoSummary.monthly": "月自动摘要",
@@ -1124,6 +1207,18 @@ const zh: Dict = {
   "auth.signup.displayNamePlaceholder": "其他用户看到的名称",
   "auth.signup.terms": "我同意服务条款和隐私政策。",
   "auth.signup.submit": "完成注册",
+  "auth.signup.country": "国家",
+  "auth.signup.countryPlaceholder": "选择国家",
+  "auth.signup.region": "地区（州/省）",
+  "auth.signup.regionPlaceholder": "选择地区",
+  "auth.signup.error.countryRequired": "请选择国家。",
+  "auth.signup.error.regionRequired": "该国家需要选择地区（州/省）。",
+  "auth.onboarding.title": "就快完成了",
+  "auth.onboarding.subtitle": "请填写国家信息以设置时区",
+  "auth.onboarding.lead": "为了准确计算周期，请选择您所在的国家（如需要请选择地区）。",
+  "auth.onboarding.submit": "完成注册",
+  "auth.onboarding.backToLogin": "返回登录",
+  "auth.onboarding.error.expired": "会话已过期。请重新使用 GitHub/Google 登录。",
   "auth.signup.submitting": "注册中…",
   "auth.signup.haveAccount": "已有账户？",
   "auth.signup.loginLink": "登录",
@@ -1338,6 +1433,18 @@ const ja: Dict = {
   "settings.github.tracked": "追跡中のリポジトリ",
   "settings.github.lastSync": "最終同期",
   "settings.github.autoRetrospective": "自動振り返り同期",
+  "settings.github.checking": "接続状態を確認中…",
+  "settings.github.noLinked": "連携されたリポジトリがありません",
+  "settings.github.addRepo": "リポジトリを追加",
+  "settings.github.syncAll": "一括同期",
+  "settings.github.unlinkAll": "すべて解除",
+  "settings.github.available": "連携可能なリポジトリ",
+  "settings.github.noAvailable": "連携可能なリポジトリがありません",
+  "settings.github.link": "連携",
+  "settings.github.unlink": "解除",
+  "settings.github.connectAccount": "GitHubアカウントを連携",
+  "settings.github.connectAccountPending":
+    "GitHubアカウント連携機能は近日提供予定です。GitHubでログインするとリポジトリを連携できます。",
   "settings.language.label": "言語",
   "settings.autoSummary.weekly": "週次自動サマリー",
   "settings.autoSummary.monthly": "月次自動サマリー",
@@ -1414,6 +1521,18 @@ const ja: Dict = {
   "auth.signup.displayNamePlaceholder": "他のユーザーに表示される名前",
   "auth.signup.terms": "利用規約とプライバシーポリシーに同意します。",
   "auth.signup.submit": "登録完了",
+  "auth.signup.country": "国",
+  "auth.signup.countryPlaceholder": "国を選択",
+  "auth.signup.region": "地域（州・県）",
+  "auth.signup.regionPlaceholder": "地域を選択",
+  "auth.signup.error.countryRequired": "国を選択してください。",
+  "auth.signup.error.regionRequired": "この国は地域（州・県）の選択が必要です。",
+  "auth.onboarding.title": "もう少しで完了です",
+  "auth.onboarding.subtitle": "タイムゾーン設定のため国情報を入力してください",
+  "auth.onboarding.lead": "正確な期間集計のため、お住まいの国（必要なら地域）を選択してください。",
+  "auth.onboarding.submit": "登録を完了",
+  "auth.onboarding.backToLogin": "ログインに戻る",
+  "auth.onboarding.error.expired": "セッションの有効期限が切れました。もう一度GitHub/Googleでお試しください。",
   "auth.signup.submitting": "登録処理中…",
   "auth.signup.haveAccount": "既にアカウントをお持ちの方は",
   "auth.signup.loginLink": "サインイン",

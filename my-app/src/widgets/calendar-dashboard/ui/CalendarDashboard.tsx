@@ -1,8 +1,10 @@
 import { useMemo, useState } from "react";
+import { DEMO_ANCHOR_DATE, DEMO_ANCHOR_DATE_KEY } from "@/app/config/demo";
 import type { AppRoute } from "@/app/model/types";
 import { useArchiveApp } from "@/app/providers/useArchiveApp";
 import { findTodoById } from "@/entities/todo/lib/selectors";
 import type { Todo } from "@/entities/todo/model/types";
+import { fromDateKey, todayKey } from "@/shared/lib/date";
 import { useCalendarNav } from "../model/useCalendarNav";
 import { CalendarLegend } from "./CalendarLegend";
 import { CalendarToolbar } from "./CalendarToolbar";
@@ -15,8 +17,14 @@ export interface CalendarDashboardProps {
 }
 
 export function CalendarDashboard({ onNavigate }: CalendarDashboardProps) {
-  const { state, updateTodo, moveTodo } = useArchiveApp();
-  const { view, setView, cursor, navigate, goToday } = useCalendarNav();
+  const { state, updateTodo, moveTodo, isDemo } = useArchiveApp();
+  // 실제 사용자는 오늘 기준, 데모 모드는 시드 데이터가 정렬된 앵커 날짜 기준.
+  const todayCellKey = isDemo ? DEMO_ANCHOR_DATE_KEY : todayKey();
+  const anchorDate = useMemo(
+    () => (isDemo ? DEMO_ANCHOR_DATE : fromDateKey(todayCellKey)),
+    [isDemo, todayCellKey],
+  );
+  const { view, setView, cursor, navigate, goToday } = useCalendarNav(anchorDate);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const selectedTodo = selectedId
@@ -52,6 +60,7 @@ export function CalendarDashboard({ onNavigate }: CalendarDashboardProps) {
           <WeekGrid
             cursor={cursor}
             byDate={byDate}
+            todayKey={todayCellKey}
             selectedId={selectedId}
             onSelect={setSelectedId}
             onDropTodo={handleDropTodo}
@@ -60,6 +69,7 @@ export function CalendarDashboard({ onNavigate }: CalendarDashboardProps) {
           <MonthGrid
             cursor={cursor}
             byDate={byDate}
+            todayKey={todayCellKey}
             onSelect={setSelectedId}
             onDropTodo={handleDropTodo}
           />

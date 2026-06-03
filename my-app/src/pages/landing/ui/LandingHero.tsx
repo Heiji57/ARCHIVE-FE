@@ -23,7 +23,7 @@ export function LandingHero({ onNavigateAuth, onDemo }: LandingHeroProps) {
 
       <div className="lp-hero-inner">
         <span className="lp-hero-eyebrow lp-reveal" style={revealDelay(0)}>
-          <span className="tag">v3.0</span> AI 자동 회고가 도착했습니다
+          <span className="tag">v1.0</span> AI 자동 회고가 도착했습니다
         </span>
 
         <h1 className="lp-reveal" style={revealDelay(90)}>
@@ -57,7 +57,8 @@ export function LandingHero({ onNavigateAuth, onDemo }: LandingHeroProps) {
         </div>
 
         <p className="lp-capture-note lp-reveal" style={revealDelay(350)}>
-          신용카드 불필요 · 1인 개발자에게 무료 · 30초면 첫 기록
+          당신의 시간을 낭비하지 않게 해주는 도구 A.R.C.H.I.V.E, 지금 바로
+          경험해보세요.
         </p>
       </div>
 

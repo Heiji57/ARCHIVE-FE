@@ -1,15 +1,21 @@
-export type AuthRoute = "login" | "signup" | "forgot-password";
+export type AuthRoute =
+  | "login"
+  | "signup"
+  | "forgot-password"
+  | "onboarding";
 
 const AUTH_ROUTE_PATHS: Record<AuthRoute, string> = {
   login: "/login",
   signup: "/signup",
   "forgot-password": "/forgot-password",
+  onboarding: "/onboarding",
 };
 
 const AUTH_PATH_TO_ROUTE: Array<[string, AuthRoute]> = [
   ["/login", "login"],
   ["/signup", "signup"],
   ["/forgot-password", "forgot-password"],
+  ["/onboarding", "onboarding"],
 ];
 
 export function isAuthPath(pathname: string): boolean {

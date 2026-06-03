@@ -7,6 +7,7 @@
  */
 import type {
   LoginResult,
+  OAuthResult,
   RequestCodeResult,
   SignupInput,
   SignupResult,
@@ -79,11 +80,36 @@ export async function apiCompleteSignup(
       body: {
         email: input.email,
         password: input.password,
-        password_confirm: input.password,
+        passwordConfirm: input.password,
+        country: input.country,
+        region: input.region,
       },
     });
-    setAccessToken(token.access_token);
+    setAccessToken(token.accessToken);
     // displayName 은 클라 전용 보존 (API 미저장)
+    const user = await fetchMe({ displayName: input.displayName });
+    return { ok: true, user };
+  } catch (e) {
+    if (e instanceof ApiError && e.code === "USER_EMAIL_DUPLICATED") {
+      return { ok: false, error: "already-registered" };
+    }
+    return { ok: false, error: "email-not-verified" };
+  }
+}
+
+/** OAuth 신규 사용자 온보딩 완료 (onboarding_token 쿠키 사용). */
+export async function apiCompleteOnboarding(input: {
+  country: string;
+  region: string | null;
+  displayName?: string;
+}): Promise<SignupResult> {
+  try {
+    const token = await request<TokenResponse>("/auth/oauth/onboarding", {
+      method: "POST",
+      auth: false, // onboarding_token 쿠키로 인증 (credentials:"include")
+      body: { country: input.country, region: input.region },
+    });
+    setAccessToken(token.accessToken);
     const user = await fetchMe({ displayName: input.displayName });
     return { ok: true, user };
   } catch (e) {
@@ -104,7 +130,7 @@ export async function apiLogin(
       auth: false,
       body: { email, password },
     });
-    setAccessToken(token.access_token);
+    setAccessToken(token.accessToken);
     const user = await fetchMe();
     return { ok: true, user };
   } catch {
@@ -152,12 +178,12 @@ export async function apiRestoreSession(): Promise<User | null> {
 // ─── OAuth (팝업 + postMessage) ──────────────────────────────────────────────
 
 interface OAuthMessage {
-  type: "oauth_success" | "oauth_error";
+  type: "oauth_success" | "oauth_onboarding_required" | "oauth_error";
   access_token?: string;
   error?: string;
 }
 
-export function apiOAuthLogin(provider: OAuthProvider): Promise<LoginResult> {
+export function apiOAuthLogin(provider: OAuthProvider): Promise<OAuthResult> {
   return new Promise((resolve) => {
     const popup = window.open(
       `${API_BASE_URL}/auth/oauth/${provider}/authorize`,
@@ -165,12 +191,12 @@ export function apiOAuthLogin(provider: OAuthProvider): Promise<LoginResult> {
       "width=520,height=640",
     );
     if (!popup) {
-      resolve({ ok: false, error: "invalid-credentials" });
+      resolve({ kind: "error", error: "popup-blocked" });
       return;
     }
 
     let settled = false;
-    const finish = (result: LoginResult) => {
+    const finish = (result: OAuthResult) => {
       if (settled) return;
       settled = true;
       window.removeEventListener("message", onMessage);
@@ -188,12 +214,15 @@ export function apiOAuthLogin(provider: OAuthProvider): Promise<LoginResult> {
         setAccessToken(data.access_token);
         try {
           const user = await fetchMe({ oauthProvider: provider });
-          finish({ ok: true, user });
+          finish({ kind: "success", user });
         } catch {
-          finish({ ok: false, error: "invalid-credentials" });
+          finish({ kind: "error", error: "fetch-me-failed" });
         }
+      } else if (data.type === "oauth_onboarding_required") {
+        // onboarding_token 쿠키가 설정됨 → 국가 입력 단계로
+        finish({ kind: "onboarding-required" });
       } else {
-        finish({ ok: false, error: "invalid-credentials" });
+        finish({ kind: "error", error: data.error ?? "oauth-failed" });
       }
     };
 
@@ -201,7 +230,7 @@ export function apiOAuthLogin(provider: OAuthProvider): Promise<LoginResult> {
 
     // 사용자가 팝업을 닫으면 실패 처리
     const closedTimer = window.setInterval(() => {
-      if (popup.closed) finish({ ok: false, error: "invalid-credentials" });
+      if (popup.closed) finish({ kind: "error", error: "popup-closed" });
     }, 500);
   });
 }

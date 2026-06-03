@@ -1,5 +1,4 @@
 import { Plus } from "lucide-react";
-import { DEMO_ANCHOR_DATE } from "@/app/config/demo";
 import type { Todo } from "@/entities/todo/model/types";
 import { Pill } from "@/shared/ui/pill/Pill";
 import { addDays, startOfWeek, toDateKey } from "@/shared/lib/date";
@@ -11,6 +10,8 @@ import { DraggableTaskCard } from "./DraggableTaskCard";
 export interface WeekGridProps {
   cursor: Date;
   byDate: Record<string, Todo[]>;
+  /** "오늘" 로 강조할 날짜 키 (실제 오늘 또는 데모 앵커). */
+  todayKey: string;
   selectedId: string | null;
   onSelect: (id: string) => void;
   onDropTodo: (todoId: string, dateKey: string) => void;
@@ -19,6 +20,7 @@ export interface WeekGridProps {
 export function WeekGrid({
   cursor,
   byDate,
+  todayKey,
   selectedId,
   onSelect,
   onDropTodo,
@@ -26,7 +28,7 @@ export function WeekGrid({
   const { t } = useTranslation();
   const start = startOfWeek(cursor);
   const days = Array.from({ length: 7 }, (_, i) => addDays(start, i));
-  const anchorKey = toDateKey(DEMO_ANCHOR_DATE);
+  const anchorKey = todayKey;
 
   return (
     <div

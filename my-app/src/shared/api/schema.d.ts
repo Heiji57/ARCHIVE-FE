@@ -131,7 +131,9 @@ export interface paths {
                      * @example {
                      *       "email": "user@example.com",
                      *       "password": "strongPass1!",
-                     *       "password_confirm": "strongPass1!"
+                     *       "passwordConfirm": "strongPass1!",
+                     *       "country": "KR",
+                     *       "region": null
                      *     }
                      */
                     "application/json": components["schemas"]["RegisterRequest"];
@@ -149,6 +151,7 @@ export interface paths {
                         "application/json": components["schemas"]["ApiResponseToken"];
                     };
                 };
+                400: components["responses"]["BadRequest_400"];
                 409: components["responses"]["Conflict_409"];
                 422: components["responses"]["ValidationError_422"];
             };
@@ -414,14 +417,21 @@ export interface paths {
          * OAuth 콜백 (provider → 백엔드)
          * @description OAuth provider가 redirect로 호출하는 콜백. **클라이언트가 직접 호출하지 않는다.**
          *
-         *     응답은 HTML이며 팝업 창에서 `window.opener.postMessage()`로 부모 창에 결과를 전달한다:
+         *     응답은 HTML이며 팝업 창에서 `window.opener.postMessage()`로 부모 창에 결과를 전달한다.
+         *
+         *     ### 분기
+         *     - **기존 사용자** → `oauth_success` + access token + `refresh_token` HttpOnly Cookie
+         *     - **신규 사용자** (OAuth 첫 사용) → `oauth_onboarding_required` + `onboarding_token` HttpOnly Cookie (TTL 30분).
+         *       FE는 `/onboarding` 페이지로 이동해 `POST /auth/oauth/onboarding`에서 국가 정보를 추가 입력해 가입을 완료한다.
+         *
          *     ```js
-         *     // 성공
+         *     // 기존 사용자
          *     { type: "oauth_success", access_token: "..." }
+         *     // 신규 사용자
+         *     { type: "oauth_onboarding_required" }
          *     // 실패
          *     { type: "oauth_error", error: "<ERROR_CODE>" }
          *     ```
-         *     성공 시 refresh token은 HttpOnly Cookie로 함께 설정된다.
          */
         get: {
             parameters: {
@@ -444,7 +454,10 @@ export interface paths {
                 /** @description HTML 응답 (postMessage 스크립트 포함) */
                 200: {
                     headers: {
-                        /** @description 성공 시에만 `refresh_token` cookie 발급 */
+                        /**
+                         * @description 기존 사용자 → `refresh_token` HttpOnly Cookie (7d)
+                         *     신규 사용자 → `onboarding_token` HttpOnly Cookie (30min)
+                         */
                         "Set-Cookie"?: string;
                         [name: string]: unknown;
                     };
@@ -456,6 +469,59 @@ export interface paths {
         };
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/oauth/onboarding": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * OAuth 신규 사용자 온보딩 완료
+         * @description OAuth 콜백 단계에서 `onboarding_token` HttpOnly Cookie를 받은 신규 사용자가 국가 정보를
+         *     추가 입력해 가입을 완료한다.
+         *
+         *     - 다중 tz 국가(US/CA/RU/AU/BR/MX/ID/AR/CL/KZ/MN)는 `region` 필수 (ISO 3166-2: 예 `US-CA`)
+         *     - 단일 tz 국가는 `region` 생략 가능
+         *     - 성공 시 `onboarding_token` Cookie 삭제 + `refresh_token` Cookie + access token body
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["OnboardingCompleteRequest"];
+                };
+            };
+            responses: {
+                /** @description 가입 완료 */
+                201: {
+                    headers: {
+                        /** @description `refresh_token` HttpOnly cookie (7d) + `onboarding_token` 삭제 */
+                        "Set-Cookie"?: string;
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiResponseToken"];
+                    };
+                };
+                401: components["responses"]["Unauthorized_401"];
+                409: components["responses"]["Conflict_409"];
+                422: components["responses"]["ValidationError_422"];
+            };
+        };
         delete?: never;
         options?: never;
         head?: never;
@@ -1300,6 +1366,347 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/settings/country": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * 국가/하위지역 변경 — timezone 자동 재계산
+         * @description 사용자 국가를 변경하면 backend가 country/region 조합으로 timezone을 재계산해 같이 저장한다.
+         *     AI 자동 요약 트리거 시간(현지 1am)도 새 timezone 기준으로 자동 갱신된다.
+         *
+         *     - 다중 tz 국가는 `region`(ISO 3166-2) 필수
+         *     - 단일 tz 국가는 `region` 생략 가능
+         *     - 임의로 timezone만 단독 변경하려면 `PATCH /settings/timezone` 사용
+         */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["UpdateCountryRequest"];
+                };
+            };
+            responses: {
+                /** @description 수정 성공 (timezone 포함된 user 응답) */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiResponseUser"];
+                    };
+                };
+                401: components["responses"]["Unauthorized_401"];
+                404: components["responses"]["NotFound_404"];
+                422: components["responses"]["ValidationError_422"];
+            };
+        };
+        trace?: never;
+    };
+    "/settings/timezone": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Timezone 단독 변경 (country는 유지)
+         * @description country를 바꾸지 않고 timezone만 별도로 override한다. 해외 출장/임시 거주 등의 케이스용.
+         *     IANA 식별자(`Asia/Seoul`, `America/Los_Angeles` 등) 형식이어야 한다.
+         */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    /**
+                     * @example {
+                     *       "timezone": "America/Los_Angeles"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["UpdateTimezoneRequest"];
+                };
+            };
+            responses: {
+                /** @description 수정 성공 */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiResponseUser"];
+                    };
+                };
+                401: components["responses"]["Unauthorized_401"];
+                404: components["responses"]["NotFound_404"];
+                422: components["responses"]["ValidationError_422"];
+            };
+        };
+        trace?: never;
+    };
+    "/github/repositories/available": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GitHub에서 사용자 저장소 목록 조회
+         * @description OAuth로 연결된 GitHub 계정의 모든 **public** 저장소 목록을 GitHub API에서 직접 가져온다.
+         *     DB 저장은 하지 않음 (연결 후보 표시 용도).
+         *     - `public_repo` scope 기준
+         *     - 페이지네이션 자동 처리 (최대 2000개)
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description 조회 성공 */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiResponseAvailableRepoList"];
+                    };
+                };
+                400: components["responses"]["BadRequest_400"];
+                401: components["responses"]["Unauthorized_401"];
+                429: components["responses"]["RateLimited_429"];
+                503: components["responses"]["ServiceUnavailable_503"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/github/repositories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 연결된 저장소 목록 조회
+         * @description DB에 저장된, 현재 사용자가 연결한 GitHub 저장소 목록.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description 조회 성공 */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiResponseRepositoryList"];
+                    };
+                };
+                401: components["responses"]["Unauthorized_401"];
+            };
+        };
+        put?: never;
+        /**
+         * 특정 저장소 1개 연결
+         * @description `githubRepoId`로 식별되는 저장소를 사용자 계정에 연결한다.
+         *     백엔드가 GitHub API에서 해당 저장소 메타데이터를 직접 조회해 저장 (위·변조 방지).
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    /**
+                     * @example {
+                     *       "githubRepoId": 1296269
+                     *     }
+                     */
+                    "application/json": components["schemas"]["LinkRepositoryRequest"];
+                };
+            };
+            responses: {
+                /** @description 연결 성공 */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiResponseRepository"];
+                    };
+                };
+                400: components["responses"]["BadRequest_400"];
+                401: components["responses"]["Unauthorized_401"];
+                404: components["responses"]["NotFound_404"];
+                409: components["responses"]["Conflict_409"];
+                422: components["responses"]["ValidationError_422"];
+                429: components["responses"]["RateLimited_429"];
+            };
+        };
+        /**
+         * 모든 저장소 연결 해제
+         * @description 현재 사용자의 모든 GitHub 저장소 연결을 일괄 삭제.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description 삭제 성공 */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiResponseEmpty"];
+                    };
+                };
+                401: components["responses"]["Unauthorized_401"];
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/github/repositories/sync-all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * GitHub 저장소 전체 일괄 연결 (1회 sync)
+         * @description 호출 시점의 GitHub 저장소 목록을 모두 가져와 일괄 연결한다 (idempotent upsert).
+         *     이후 새로 생긴 repo는 사용자가 다시 호출해야 추가됨 (자동 갱신 없음).
+         *     이미 연결된 저장소는 유지되며, 메타데이터가 바뀌었다면 갱신된다.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description sync 성공. 응답에는 현재 시점에 연결된 모든 저장소 목록이 담긴다. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiResponseRepositoryList"];
+                    };
+                };
+                400: components["responses"]["BadRequest_400"];
+                401: components["responses"]["Unauthorized_401"];
+                429: components["responses"]["RateLimited_429"];
+                503: components["responses"]["ServiceUnavailable_503"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/github/repositories/{repository_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @example ghrepo_01HXYZ... */
+                repository_id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** 단일 저장소 연결 해제 */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @example ghrepo_01HXYZ... */
+                    repository_id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description 해제 성공 */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiResponseEmpty"];
+                    };
+                };
+                401: components["responses"]["Unauthorized_401"];
+                404: components["responses"]["NotFound_404"];
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1349,14 +1756,24 @@ export interface components {
         VerifyCodeRequest: {
             /** Format: email */
             email: string;
-            /** @description 정확히 숫자 6자리 */
+            /** @description 영문 대문자 또는 숫자 6자리 (서버에서 strip + upper 정규화 후 검증) */
             code: string;
         };
         RegisterRequest: {
             /** Format: email */
             email: string;
             password: string;
-            password_confirm: string;
+            passwordConfirm: string;
+            /**
+             * @description ISO 3166-1 alpha-2 국가 코드 (예: `KR`, `US`, `JP`).
+             *     다중 tz 국가(US/CA/RU/AU/BR/MX/ID/AR/CL/KZ/MN)는 `region` 필수.
+             */
+            country: string;
+            /**
+             * @description ISO 3166-2 하위지역 코드 (예: `US-CA`, `CA-ON`).
+             *     단일 tz 국가는 생략 가능 (`null`).
+             */
+            region?: string | null;
         };
         LoginRequest: {
             /** Format: email */
@@ -1366,13 +1783,37 @@ export interface components {
         UpdateProfileRequest: {
             display_name?: string | null;
         };
+        OnboardingCompleteRequest: {
+            country: string;
+            region?: string | null;
+        };
+        UpdateCountryRequest: {
+            country: string;
+            region?: string | null;
+        };
+        UpdateTimezoneRequest: {
+            /**
+             * @description IANA timezone identifier
+             * @example Asia/Seoul
+             */
+            timezone: string;
+        };
         TokenResponse: {
-            access_token: string;
+            accessToken: string;
         };
         UserResponse: {
             id: string;
             /** Format: email */
             email: string;
+            /** @example KR */
+            country: string;
+            /** @example null */
+            region?: string | null;
+            /**
+             * @description IANA timezone identifier — AI 자동 요약은 이 tz 기준 "현지 새벽 1시"에 트리거됨
+             * @example Asia/Seoul
+             */
+            timezone: string;
         };
         ApiResponseToken: components["schemas"]["ApiResponseEmpty"] & {
             data?: components["schemas"]["TokenResponse"];
@@ -1509,6 +1950,52 @@ export interface components {
         ApiResponseSettings: components["schemas"]["ApiResponseEmpty"] & {
             data?: components["schemas"]["SettingsResponse"];
         };
+        LinkRepositoryRequest: {
+            /**
+             * Format: int64
+             * @description GitHub의 numeric repository ID
+             */
+            githubRepoId: number;
+        };
+        RepositoryResponse: {
+            /** @description 백엔드에서 발급한 연결 ID (`ghrepo_...`) */
+            id: string;
+            /** Format: int64 */
+            githubRepoId: number;
+            owner: string;
+            name: string;
+            /** @example octocat/Hello-World */
+            fullName: string;
+            isPrivate: boolean;
+            /** @example main */
+            defaultBranch: string;
+            /** Format: uri */
+            htmlUrl: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt?: string | null;
+        };
+        AvailableRepositoryResponse: {
+            /** Format: int64 */
+            githubRepoId: number;
+            owner: string;
+            name: string;
+            fullName: string;
+            isPrivate: boolean;
+            defaultBranch: string;
+            /** Format: uri */
+            htmlUrl: string;
+        };
+        ApiResponseRepository: components["schemas"]["ApiResponseEmpty"] & {
+            data?: components["schemas"]["RepositoryResponse"];
+        };
+        ApiResponseRepositoryList: components["schemas"]["ApiResponseEmpty"] & {
+            data?: components["schemas"]["RepositoryResponse"][];
+        };
+        ApiResponseAvailableRepoList: components["schemas"]["ApiResponseEmpty"] & {
+            data?: components["schemas"]["AvailableRepositoryResponse"][];
+        };
     };
     responses: {
         /** @description 잘못된 요청 (도메인 invalid state) */
@@ -1528,7 +2015,17 @@ export interface components {
                 "application/json": components["schemas"]["ErrorResponse"];
             };
         };
-        /** @description 인증 실패 (토큰 만료/무효/자격증명 불일치) */
+        /**
+         * @description 인증 실패. 가능한 코드:
+         *     - `AUTH_TOKEN_EXPIRED` — access token 만료 (**FE 자동 refresh 트리거**)
+         *     - `AUTH_TOKEN_INVALID` — 토큰 누락 / 형식 오류 / 서명 불일치 / type mismatch
+         *     - `AUTH_INVALID_CREDENTIALS` — 이메일/비밀번호 불일치
+         *     - `AUTH_REFRESH_TOKEN_INVALID` / `AUTH_REFRESH_TOKEN_REVOKED` — refresh 실패
+         *     - `AUTH_OAUTH_STATE_INVALID` — OAuth state 검증 실패
+         *     - `AUTH_ONBOARDING_TOKEN_INVALID` — onboarding cookie 누락
+         *     - `AUTH_ONBOARDING_TOKEN_EXPIRED` — onboarding TTL(30분) 만료
+         *     - `GITHUB_TOKEN_INVALID` — GitHub OAuth 토큰 만료/폐기 (FE는 GitHub OAuth 재인증 유도)
+         */
         Unauthorized_401: {
             headers: {
                 [name: string]: unknown;
@@ -1596,6 +2093,40 @@ export interface components {
                  *           "message": "value is not a valid email address"
                  *         }
                  *       ]
+                 *     }
+                 */
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
+        /** @description GitHub API rate limit 초과. 잠시 후 재시도. */
+        RateLimited_429: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "status": "error",
+                 *       "code": "GITHUB_RATE_LIMITED",
+                 *       "data": null,
+                 *       "details": []
+                 *     }
+                 */
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
+        /** @description 외부 서비스(GitHub API) 일시적 장애 */
+        ServiceUnavailable_503: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "status": "error",
+                 *       "code": "GITHUB_API_UNAVAILABLE",
+                 *       "data": null,
+                 *       "details": []
                  *     }
                  */
                 "application/json": components["schemas"]["ErrorResponse"];

@@ -17,6 +17,7 @@ import {
 } from "@/app/lib/authStorage";
 import type {
   LoginResult,
+  OAuthResult,
   RequestCodeResult,
   ResetPasswordResult,
   SignupInput,
@@ -25,6 +26,15 @@ import type {
 } from "@/app/model/types";
 import type { OAuthProvider, User } from "@/entities/user/model/types";
 import { createId } from "@/shared/lib/id";
+
+/** mock 타임존: 서버 계산 대신 브라우저 tz 사용 (USE_API=false 전용). */
+function mockTimezone(): string {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+  } catch {
+    return "UTC";
+  }
+}
 
 // ─── 이메일 인증 코드 관리 (메모리) ─────────────────────────────────────────
 
@@ -147,6 +157,9 @@ export async function mockCompleteSignup(
   const user: User = {
     id: createId("user"),
     email: normalizedEmail,
+    country: input.country,
+    region: input.region,
+    timezone: mockTimezone(),
     displayName: input.displayName,
     oauthProvider: null,
     avatarUrl: null,
@@ -187,9 +200,17 @@ const OAUTH_MOCK_PROFILES: Record<
   },
 };
 
+/** 온보딩 대기 중인 mock OAuth 프로필 (신규 사용자 국가 입력 전까지 보관). */
+let pendingOnboarding: {
+  provider: OAuthProvider;
+  id: string;
+  email: string;
+  displayName: string;
+} | null = null;
+
 export async function mockOAuthLogin(
   provider: OAuthProvider,
-): Promise<LoginResult> {
+): Promise<OAuthResult> {
   // OAuth 리다이렉트 + 토큰 교환을 1초 대기로 시뮬레이션
   await new Promise((r) => setTimeout(r, 1000));
 
@@ -197,18 +218,40 @@ export async function mockOAuthLogin(
 
   // 이미 가입돼있으면 그 유저로 로그인
   const existing = findUserByOAuth(provider, profile.id);
-  if (existing) return { ok: true, user: existing.user };
+  if (existing) return { kind: "success", user: existing.user };
 
-  // 신규: 자동 가입
+  // 신규: 온보딩 필요 (국가 입력) — 프로필을 잠시 보관
+  pendingOnboarding = { provider, ...profile };
+  return { kind: "onboarding-required" };
+}
+
+export async function mockCompleteOnboarding(input: {
+  country: string;
+  region: string | null;
+}): Promise<SignupResult> {
+  await new Promise((r) => setTimeout(r, 400));
+  if (!pendingOnboarding) {
+    return { ok: false, error: "email-not-verified" };
+  }
+  const p = pendingOnboarding;
+  const existing = findUserByOAuth(p.provider, p.id);
+  if (existing) {
+    pendingOnboarding = null;
+    return { ok: true, user: existing.user };
+  }
   const user: User = {
-    id: `user_${provider}_${profile.id}`,
-    email: profile.email,
-    displayName: profile.displayName,
-    oauthProvider: provider,
+    id: `user_${p.provider}_${p.id}`,
+    email: p.email,
+    country: input.country,
+    region: input.region,
+    timezone: mockTimezone(),
+    displayName: p.displayName,
+    oauthProvider: p.provider,
     avatarUrl: null,
     createdAt: new Date().toISOString(),
   };
   saveUser({ user, passwordHash: null });
+  pendingOnboarding = null;
   return { ok: true, user };
 }
 

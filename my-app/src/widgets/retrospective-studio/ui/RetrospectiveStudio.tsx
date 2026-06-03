@@ -48,12 +48,12 @@ export function RetrospectiveStudio() {
     [state.todos, active],
   );
 
-  const isGithubConnected = Boolean(
-    state.githubConfig && state.githubConfig.enabled,
-  );
-  const githubConnectedAs = state.githubConfig?.connectedAs ?? "developer";
-  const githubTargetRepo =
-    state.githubConfig?.targetRepository ?? "archive-journal";
+  // 서버 모델: 연결 상태 + 연결된 저장소 목록(첫 저장소를 표시용 대상으로 사용)
+  const isGithubConnected = state.github.status === "connected";
+  const firstRepo = state.github.linkedRepositories[0];
+  const githubConnectedAs =
+    firstRepo?.owner ?? state.currentUser?.displayName ?? "github";
+  const githubTargetRepo = firstRepo?.name ?? "archive-journal";
 
   const handleSave = () => {
     if (!active) return;

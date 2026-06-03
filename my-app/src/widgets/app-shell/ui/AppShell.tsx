@@ -13,7 +13,6 @@ import { useTranslation } from "@/shared/lib/i18n";
 import type { TranslationKey } from "@/shared/lib/i18n";
 import { GlobalSearch } from "@/widgets/global-search";
 import { NotificationPanel } from "@/widgets/notifications";
-import { useSyncAge } from "../model/useSyncAge";
 
 interface AppShellProps {
   route: AppRoute;
@@ -66,14 +65,13 @@ export function AppShell({ route, children, onNavigate }: AppShellProps) {
   const currentUser = state.currentUser;
   const initial = currentUser?.displayName?.[0]?.toUpperCase() ?? "?";
 
-  const isGithubConnected = Boolean(
-    state.githubConfig && state.githubConfig.enabled,
-  );
-  const syncAge = useSyncAge(
-    isGithubConnected ? (state.githubConfig?.connectedAt ?? null) : null,
-  );
+  // 서버 모델: GitHub 연결 상태로 동기화 칩 표시
+  const isGithubConnected = state.github.status === "connected";
+  const linkedCount = state.github.linkedRepositories.length;
 
-  const unreadCount = state.notifications.filter((n) => !n.read).length;
+  const unreadCount = state.notifications.filter(
+    (n) => !n.read && !n.transient,
+  ).length;
 
   return (
     <div className="app-shell-root">
@@ -125,11 +123,21 @@ export function AppShell({ route, children, onNavigate }: AppShellProps) {
           <div className="gn-right">
             <div
               className="sync-chip"
-              title={syncAge ? syncAge.title : t("sync.disconnected")}
+              title={
+                isGithubConnected
+                  ? t("settings.github.connected")
+                  : t("sync.disconnected")
+              }
             >
-              <span className={`sync-dot ${syncAge ? "" : "offline"}`} />
+              <span
+                className={`sync-dot ${isGithubConnected ? "" : "offline"}`}
+              />
               <span>
-                {syncAge ? syncAge.chip : t("sync.offline")}
+                {isGithubConnected
+                  ? linkedCount > 0
+                    ? t("sync.synced", { n: `${linkedCount}` })
+                    : t("sync.connected")
+                  : t("sync.offline")}
               </span>
             </div>
 

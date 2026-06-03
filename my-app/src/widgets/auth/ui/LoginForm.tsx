@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { useArchiveApp } from "@/app/providers/useArchiveApp";
 import type { AuthRoute } from "@/app/router/authRoute";
+import { USE_API } from "@/shared/api";
 import { useTranslation } from "@/shared/lib/i18n";
 import { Checkbox, TextField } from "@/shared/ui";
 import { OAuthButtons } from "./OAuthButtons";
@@ -79,7 +80,7 @@ export function LoginForm({ onAuthNavigate }: LoginFormProps) {
       </form>
 
       <div className="auth-divider">{t("auth.divider.or")}</div>
-      <OAuthButtons />
+      <OAuthButtons onAuthNavigate={onAuthNavigate} />
 
       <p className="auth-footer">
         {t("auth.login.noAccount")}
@@ -92,9 +93,10 @@ export function LoginForm({ onAuthNavigate }: LoginFormProps) {
         </button>
       </p>
 
-      <p className="auth-console-hint">
-        {t("auth.consoleHint")}
-      </p>
+      {/* mock 모드에서만: API 모드는 실제 인증이므로 콘솔 안내가 부적절 */}
+      {!USE_API ? (
+        <p className="auth-console-hint">{t("auth.consoleHint")}</p>
+      ) : null}
     </>
   );
 }

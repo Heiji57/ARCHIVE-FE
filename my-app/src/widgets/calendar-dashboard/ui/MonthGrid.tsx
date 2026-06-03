@@ -1,4 +1,3 @@
-import { DEMO_ANCHOR_DATE } from "@/app/config/demo";
 import type { Todo } from "@/entities/todo/model/types";
 import {
   getMonthGrid,
@@ -13,6 +12,8 @@ import { DraggableMonthChip } from "./DraggableMonthChip";
 export interface MonthGridProps {
   cursor: Date;
   byDate: Record<string, Todo[]>;
+  /** "오늘" 로 강조할 날짜 키 (실제 오늘 또는 데모 앵커). */
+  todayKey: string;
   onSelect: (id: string) => void;
   onDropTodo: (todoId: string, dateKey: string) => void;
 }
@@ -20,12 +21,13 @@ export interface MonthGridProps {
 export function MonthGrid({
   cursor,
   byDate,
+  todayKey,
   onSelect,
   onDropTodo,
 }: MonthGridProps) {
   const { t } = useTranslation();
   const cells = getMonthGrid(cursor);
-  const anchorKey = toDateKey(DEMO_ANCHOR_DATE);
+  const anchorKey = todayKey;
 
   return (
     <div>

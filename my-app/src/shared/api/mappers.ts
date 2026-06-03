@@ -32,10 +32,14 @@ export function toUser(
   return {
     id: api.id,
     email: api.email,
+    // 서버 제공 필드 (country/timezone 필수, region nullable)
+    country: api.country,
+    region: api.region ?? null,
+    timezone: api.timezone,
+    // 아래는 API 미제공 — 클라 전용 보존/폴백
     displayName: opts.displayName?.trim() || fallbackName,
     oauthProvider: opts.oauthProvider ?? null,
     avatarUrl: null,
-    // API 에 createdAt 이 없어 표시용 placeholder. 백엔드 확장 시 교체.
     createdAt: new Date().toISOString(),
   };
 }

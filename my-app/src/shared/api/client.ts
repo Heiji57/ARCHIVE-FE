@@ -79,12 +79,12 @@ let refreshInFlight: Promise<boolean> | null = null;
 /** refresh 쿠키로 새 access token 발급. 동시 호출은 1회로 합쳐진다. */
 export function refreshAccessToken(): Promise<boolean> {
   if (!refreshInFlight) {
-    refreshInFlight = rawRequest<{ access_token: string }>(
+    refreshInFlight = rawRequest<{ accessToken: string }>(
       "/auth/token/refresh",
       { method: "POST", auth: false, retryOn401: false },
     )
       .then((data) => {
-        setAccessToken(data?.access_token ?? null);
+        setAccessToken(data?.accessToken ?? null);
         return true;
       })
       .catch(() => {
