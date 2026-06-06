@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { CheckCircle2, Circle, FileText, Plus, Trash2 } from "lucide-react";
 import type { RetrospectiveType } from "@/entities/entry/model/types";
+import type { RetroTemplate } from "@/entities/template";
 import { useArchiveApp } from "@/app/providers/useArchiveApp";
-import { useTranslation, type TranslationKey } from "@/shared/lib/i18n";
+import { useTranslation, type TranslateFn, type TranslationKey } from "@/shared/lib/i18n";
 import { SettingsCardHeader } from "./SettingsCardHeader";
 import { TemplateEditorPanel } from "./TemplateEditorPanel";
 
@@ -15,12 +16,18 @@ const TYPE_LABEL_KEY: Record<RetrospectiveType, TranslationKey> = {
   yearly: "retro.filter.yearly",
 };
 
-const TYPE_LABEL: Record<RetrospectiveType, string> = {
-  daily: "일간",
-  weekly: "주간",
-  monthly: "월간",
-  yearly: "연간",
+const DEFAULT_NAME_KEY: Record<RetrospectiveType, TranslationKey> = {
+  daily: "settings.templates.defaultName.daily",
+  weekly: "settings.templates.defaultName.weekly",
+  monthly: "settings.templates.defaultName.monthly",
+  yearly: "settings.templates.defaultName.yearly",
 };
+
+/** 기본 템플릿은 i18n 키로, 사용자 템플릿은 저장된 이름으로 표시. */
+function templateDisplayName(tpl: RetroTemplate, t: TranslateFn): string {
+  if (tpl.isDefault) return t(DEFAULT_NAME_KEY[tpl.retroType]);
+  return tpl.name;
+}
 
 export function TemplatesCard() {
   const {
@@ -55,7 +62,9 @@ export function TemplatesCard() {
   };
 
   const handleAdd = () => {
-    const tpl = addTemplate(activeType, `새 ${TYPE_LABEL[activeType]} 템플릿`, "");
+    const typeLabel = t(TYPE_LABEL_KEY[activeType]);
+    const name = t("settings.templates.newName", { type: typeLabel });
+    const tpl = addTemplate(activeType, name, "");
     setSelectedId(tpl.id);
   };
 
@@ -132,7 +141,7 @@ export function TemplatesCard() {
                   className="template-list-name-btn"
                   onClick={() => setSelectedId(tpl.id)}
                 >
-                  <span className="template-list-name">{tpl.name}</span>
+                  <span className="template-list-name">{templateDisplayName(tpl, t)}</span>
                 </button>
 
                 {isInUse && (
@@ -166,6 +175,7 @@ export function TemplatesCard() {
             <TemplateEditorPanel
               key={selected.id}
               template={selected}
+              displayName={templateDisplayName(selected, t)}
               onUpdate={(patch) => updateTemplate(selected.id, patch)}
               onReset={() => resetTemplate(selected.retroType)}
             />

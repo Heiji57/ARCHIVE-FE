@@ -6,6 +6,8 @@ import { AutoSummaryCard } from "./AutoSummaryCard";
 import { GithubCard } from "./GithubCard";
 import { LanguageCard } from "./LanguageCard";
 import { NotificationsCard } from "./NotificationsCard";
+import { RegionTimezoneCard } from "./RegionTimezoneCard";
+import { SessionsCard } from "./SessionsCard";
 import { TemplatesCard } from "./TemplatesCard";
 
 function SettingsSection({
@@ -47,8 +49,18 @@ export function SettingsStudio() {
       >
         <div className="settings-grid">
           <LanguageCard />
+          <RegionTimezoneCard />
           <AutoSummaryCard />
           <NotificationsCard />
+        </div>
+      </SettingsSection>
+
+      <SettingsSection
+        label="settings.section.security"
+        hint="settings.group.security.hint"
+      >
+        <div className="settings-grid">
+          <SessionsCard />
         </div>
       </SettingsSection>
 

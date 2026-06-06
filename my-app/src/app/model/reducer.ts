@@ -115,9 +115,44 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       return {
         ...state,
         github: {
+          ...state.github,
           status: action.payload.status,
           linkedRepositories: action.payload.repositories,
+          ...(action.payload.login !== undefined
+            ? { login: action.payload.login }
+            : {}),
+          ...(action.payload.pushTargetRepositoryId !== undefined
+            ? { pushTargetRepositoryId: action.payload.pushTargetRepositoryId }
+            : {}),
         },
+      };
+
+    case "github/updateLinked":
+      return {
+        ...state,
+        github: {
+          ...state.github,
+          linkedRepositories: state.github.linkedRepositories.map((r) =>
+            r.id === action.payload.repositoryId
+              ? { ...r, commitReadEnabled: action.payload.commitReadEnabled }
+              : r,
+          ),
+        },
+      };
+
+    case "github/setPushTarget":
+      return {
+        ...state,
+        github: {
+          ...state.github,
+          pushTargetRepositoryId: action.payload.repositoryId,
+        },
+      };
+
+    case "github/setCommits":
+      return {
+        ...state,
+        github: { ...state.github, commits: action.payload.commits },
       };
 
     case "notification/push":
@@ -315,6 +350,13 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       };
 
     case "auth/updateProfile":
+      if (!state.currentUser) return state;
+      return {
+        ...state,
+        currentUser: { ...state.currentUser, ...action.payload.patch },
+      };
+
+    case "auth/updateUser":
       if (!state.currentUser) return state;
       return {
         ...state,

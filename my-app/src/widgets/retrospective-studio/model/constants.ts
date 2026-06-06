@@ -30,16 +30,4 @@ export const MONTHS = [
   "07", "08", "09", "10", "11", "12",
 ];
 
-/** Mock commit list shown when GitHub is connected. */
-export const MOCK_COMMITS = [
-  {
-    repo: "archive-backend",
-    message: "feat: add user auth api",
-    sha: "a1b2c3d",
-  },
-  {
-    repo: "archive-backend",
-    message: "fix: redis connection timeout",
-    sha: "f9e8d7c",
-  },
-] as const;
+// MOCK_COMMITS 는 app/lib/mockGithub.ts 로 이전. 서버 모델 연동 후 state.github.commits 를 사용.

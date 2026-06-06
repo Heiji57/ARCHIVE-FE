@@ -104,6 +104,127 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/auth/password/reset/request": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 비밀번호 재설정 요청 (이메일 발송)
+         * @description 이메일로 비밀번호 재설정 링크를 발송한다.
+         *
+         *     ### 보안 정책
+         *     - **이메일 enumeration 방지**: 등록 여부와 무관하게 항상 `200 OK`를 반환한다.
+         *       (응답으로 "이 이메일이 가입되어 있는가"를 알 수 없게 함)
+         *     - 내부 분기 (실패해도 클라이언트에 노출되지 않음):
+         *       - 이메일이 DB에 없음 → silent skip
+         *       - OAuth 전용 계정(비밀번호 없음) → silent skip
+         *       - 60초 이내 재요청 → silent skip
+         *     - 토큰 TTL: 30분, 1회용
+         *
+         *     ### 흐름
+         *     1. 사용자 POST `/auth/password/reset/request` { email }
+         *     2. 메일 수신, 본문 링크 클릭 → FE의 `/reset-password?token=...` 페이지
+         *     3. 사용자가 새 비밀번호 입력 → POST `/auth/password/reset/confirm`
+         *     4. 모든 활성 세션 폐기 (모든 기기 강제 로그아웃)
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    /**
+                     * @example {
+                     *       "email": "user@example.com"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["RequestPasswordResetRequest"];
+                };
+            };
+            responses: {
+                /** @description 항상 성공 응답 (실제 발송 여부와 무관) */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiResponseEmpty"];
+                    };
+                };
+                422: components["responses"]["ValidationError_422"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/password/reset/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 비밀번호 재설정 확정
+         * @description 이메일로 받은 토큰 + 새 비밀번호로 갱신한다.
+         *
+         *     성공 시 해당 사용자의 **모든 refresh token이 폐기**되어 다른 기기에서도 강제 로그아웃된다.
+         *     클라이언트는 새 비밀번호로 다시 로그인해야 한다.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    /**
+                     * @example {
+                     *       "token": "abc123...",
+                     *       "newPassword": "NewStrongPass1!",
+                     *       "newPasswordConfirm": "NewStrongPass1!"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ResetPasswordRequest"];
+                };
+            };
+            responses: {
+                /** @description 재설정 성공 */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiResponseEmpty"];
+                    };
+                };
+                400: components["responses"]["BadRequest_400"];
+                401: components["responses"]["Unauthorized_401"];
+                404: components["responses"]["NotFound_404"];
+                422: components["responses"]["ValidationError_422"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/register": {
         parameters: {
             query?: never;
@@ -127,15 +248,6 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    /**
-                     * @example {
-                     *       "email": "user@example.com",
-                     *       "password": "strongPass1!",
-                     *       "passwordConfirm": "strongPass1!",
-                     *       "country": "KR",
-                     *       "region": null
-                     *     }
-                     */
                     "application/json": components["schemas"]["RegisterRequest"];
                 };
             };
@@ -250,6 +362,119 @@ export interface paths {
             };
         };
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 활성 세션 목록 조회
+         * @description 현재 사용자의 모든 활성 세션(로그인된 기기) 목록을 반환한다.
+         *     `isCurrent` 가 true 인 항목이 이 요청을 보낸 세션이다.
+         *
+         *     통신은 server-side trust anchor 정책에 따라 Redis 세션 레코드에서 직접 조회된다.
+         *     각 세션의 device 메타데이터는 발급 시점 User-Agent 에서 파싱된 값이다.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description 활성 세션 목록 */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiResponseSessionList"];
+                    };
+                };
+                401: components["responses"]["Unauthorized_401"];
+            };
+        };
+        put?: never;
+        post?: never;
+        /**
+         * 현재 세션 외 모든 세션 폐기 (다른 기기 전부 로그아웃)
+         * @description 현재 요청을 보낸 세션은 유지하고 다른 모든 세션을 즉시 폐기한다.
+         *     다른 기기에서는 다음 refresh 시도 시 401.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description 폐기 완료 */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiResponseRevokeOthers"];
+                    };
+                };
+                401: components["responses"]["Unauthorized_401"];
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/sessions/{sessionId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * 단일 세션 폐기
+         * @description 특정 세션 하나만 폐기. 자신이 소유한 세션만 폐기 가능 (다른 사용자의 sessionId 는 404).
+         *     현재 세션을 폐기하면 다음 요청부터 401.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    sessionId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description 폐기 완료 */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiResponseEmpty"];
+                    };
+                };
+                401: components["responses"]["Unauthorized_401"];
+                404: components["responses"]["NotFound_404"];
+            };
+        };
         options?: never;
         head?: never;
         patch?: never;
@@ -372,9 +597,12 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * OAuth 인증 시작 (리다이렉트)
+         * OAuth 인증 시작 (로그인용 리다이렉트)
          * @description 해당 provider의 OAuth 인증 페이지로 **302 Redirect**한다.
          *     프론트에서 이 URL을 새 창/팝업으로 열어 사용한다.
+         *
+         *     **로그인용**: 로그인되지 않은 사용자가 호출. callback은 신규 사용자/기존 사용자 분기.
+         *     이미 로그인된 사용자가 계정 연결만 추가하려면 `POST /auth/oauth/{provider}/link/init`를 사용.
          */
         get: {
             parameters: {
@@ -406,6 +634,73 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/auth/oauth/{provider}/link/init": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * OAuth 계정 연결 시작 (Bearer 인증 필수) — POST init 패턴
+         * @description **이미 로그인된 사용자**가 해당 provider 계정을 자신의 계정에 추가 연결할 때
+         *     사용. 응답의 `authorizeUrl`을 프론트에서 popup으로 직접 연다.
+         *
+         *     ### 왜 POST init 인가
+         *     - popup으로 GET 요청 시 `Authorization` 헤더를 실을 수 없어 기존 GET
+         *       `link/authorize` 방식은 사용자 식별이 불가능했다.
+         *     - POST 한 번으로 인증된 컨텍스트에서 state를 사전 발급 → 그 state가 포함된
+         *       authorize URL을 popup으로 열면 보안과 식별 두 마리 토끼를 모두 잡는다.
+         *
+         *     ### 흐름
+         *     1. FE → `POST /auth/oauth/{provider}/link/init` (Bearer)
+         *     2. BE: state 생성 + `link_user_id=current_user.id` 바인딩 → authorize URL 반환
+         *     3. FE: `window.open(authorizeUrl)` → provider 동의 화면
+         *     4. provider → 기존 callback URL (`/auth/oauth/{provider}/callback`) 로 redirect
+         *     5. callback이 state 페이로드의 `link_user_id` 로 link 분기 자동 결정
+         *
+         *     ### 정책
+         *     - 한 사용자당 같은 provider 1개 연결만 허용
+         *     - 같은 provider 계정이 다른 사용자에 이미 연결되어 있으면 `AUTH_OAUTH_ACCOUNT_ALREADY_LINKED` (409)
+         *     - 같은 사용자가 같은 provider에 이미 다른 계정 연결되어 있으면 `AUTH_OAUTH_PROVIDER_ALREADY_LINKED` (409)
+         *     - 동일 provider account 재요청 시 멱등 처리 (access_token만 갱신)
+         *
+         *     ### 콜백 postMessage
+         *     ```js
+         *     { type: "oauth_linked", provider: "github" }
+         *     ```
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    provider: components["parameters"]["OAuthProviderPath"];
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description authorize URL 반환 */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiResponseOAuthLinkInit"];
+                    };
+                };
+                401: components["responses"]["Unauthorized_401"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/oauth/{provider}/callback": {
         parameters: {
             query?: never;
@@ -419,16 +714,19 @@ export interface paths {
          *
          *     응답은 HTML이며 팝업 창에서 `window.opener.postMessage()`로 부모 창에 결과를 전달한다.
          *
-         *     ### 분기
-         *     - **기존 사용자** → `oauth_success` + access token + `refresh_token` HttpOnly Cookie
+         *     ### 분기 — state에 저장된 정보로 자동 결정
+         *     - **기존 사용자 로그인** → `oauth_success` + access token + `refresh_token` HttpOnly Cookie
          *     - **신규 사용자** (OAuth 첫 사용) → `oauth_onboarding_required` + `onboarding_token` HttpOnly Cookie (TTL 30분).
          *       FE는 `/onboarding` 페이지로 이동해 `POST /auth/oauth/onboarding`에서 국가 정보를 추가 입력해 가입을 완료한다.
+         *     - **계정 연결(link)** (state에 `link_user_id` 포함) → `oauth_linked` (새 토큰 발급 없음). FE는 settings 페이지로 복귀.
          *
          *     ```js
-         *     // 기존 사용자
+         *     // 기존 사용자 로그인
          *     { type: "oauth_success", access_token: "..." }
          *     // 신규 사용자
          *     { type: "oauth_onboarding_required" }
+         *     // 계정 연결 완료
+         *     { type: "oauth_linked", provider: "github" }
          *     // 실패
          *     { type: "oauth_error", error: "<ERROR_CODE>" }
          *     ```
@@ -489,8 +787,9 @@ export interface paths {
          * @description OAuth 콜백 단계에서 `onboarding_token` HttpOnly Cookie를 받은 신규 사용자가 국가 정보를
          *     추가 입력해 가입을 완료한다.
          *
-         *     - 다중 tz 국가(US/CA/RU/AU/BR/MX/ID/AR/CL/KZ/MN)는 `region` 필수 (ISO 3166-2: 예 `US-CA`)
-         *     - 단일 tz 국가는 `region` 생략 가능
+         *     - **단일 tz 국가** (예: KR, JP, FR): `timezone` 생략 가능 — BE 가 자동 결정
+         *     - **다중 tz 국가** (예: US, RU, BR, AU, CA): `timezone` 필수 (IANA tz 문자열)
+         *     - 국가별 사용 가능한 timezone 목록은 `GET /settings/countries/{code}/timezones` 로 조회
          *     - 성공 시 `onboarding_token` Cookie 삭제 + `refresh_token` Cookie + access token body
          */
         post: {
@@ -883,7 +1182,7 @@ export interface paths {
          * AI 요약 생성 요청 (비동기)
          * @description Celery worker(`ai_tasks` 큐, priority=9)로 요약 작업을 enqueue하고 **즉시 202를 반환**한다.
          *
-         *     - 같은 기간에 PENDING/IN_PROGRESS 요약이 있으면 `409 RETRO_SUMMARY_IN_PROGRESS` 반환
+         *     - 같은 기간에 PENDING/IN_PROGRESS 요약이 있으면 `409 RETRO_SUMMARY_ALREADY_IN_PROGRESS` 반환
          *     - COMPLETED 요약이 있으면 그대로 반환 (재실행하지 않음)
          *     - FAILED 요약은 자동으로 PENDING 리셋 후 재실행
          *     - Gemini 호출은 rate_limit `60/min` 적용
@@ -1380,13 +1679,20 @@ export interface paths {
         options?: never;
         head?: never;
         /**
-         * 국가/하위지역 변경 — timezone 자동 재계산
-         * @description 사용자 국가를 변경하면 backend가 country/region 조합으로 timezone을 재계산해 같이 저장한다.
+         * 국가 변경 — timezone 자동 결정 (단일 tz) / IANA tz 명시 (다중 tz)
+         * @description 사용자 국가를 변경하면 backend 가 country / timezone 조합으로 IANA tz 를 결정해 같이 저장한다.
          *     AI 자동 요약 트리거 시간(현지 1am)도 새 timezone 기준으로 자동 갱신된다.
          *
-         *     - 다중 tz 국가는 `region`(ISO 3166-2) 필수
-         *     - 단일 tz 국가는 `region` 생략 가능
-         *     - 임의로 timezone만 단독 변경하려면 `PATCH /settings/timezone` 사용
+         *     ### 입력 규칙
+         *     - **단일 tz 국가** (예: KR, JP, FR — pytz country_timezones 옵션 1개): `timezone` 생략 가능
+         *     - **다중 tz 국가** (예: US, RU, BR, AU, CA): `timezone` 필수 (IANA tz 문자열)
+         *     - 국가별 옵션은 `GET /settings/countries/{code}/timezones` 로 조회
+         *     - country 만 바꿔도 자동으로 새 tz 가 저장됨 (region 이라는 별도 입력 없음)
+         *     - 단순 timezone 만 단독 변경하려면 `PATCH /settings/timezone` 사용
+         *
+         *     ### 데이터 소스
+         *     - 국가 목록: `pycountry` (ISO 3166-1 alpha-2, 249개)
+         *     - 국가 → tz 매핑: `pytz.country_timezones` (CLDR-derived)
          */
         patch: {
             parameters: {
@@ -1415,6 +1721,55 @@ export interface paths {
                 422: components["responses"]["ValidationError_422"];
             };
         };
+        trace?: never;
+    };
+    "/settings/countries/{code}/timezones": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 국가의 사용 가능한 IANA timezone 목록 조회
+         * @description FE 가 국가 선택 시 호출해 timezone 드롭다운을 채운다.
+         *
+         *     - `multi: false` → 단일 tz 국가 (timezones 길이 1). FE 가 timezone 입력 받지 않아도 됨
+         *     - `multi: true`  → 다중 tz 국가. 사용자가 timezone 을 직접 선택해야 함
+         *
+         *     데이터 소스: `pytz.country_timezones` (CLDR-derived). OS tzdata 업데이트 시 자동 반영.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description ISO 3166-1 alpha-2 국가 코드 (대소문자 무관) */
+                    code: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description 국가의 timezone 옵션 */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiResponseCountryTimezones"];
+                    };
+                };
+                401: components["responses"]["Unauthorized_401"];
+                422: components["responses"]["ValidationError_422"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/settings/timezone": {
@@ -1467,6 +1822,50 @@ export interface paths {
                 422: components["responses"]["ValidationError_422"];
             };
         };
+        trace?: never;
+    };
+    "/github/connection": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GitHub 연결 상태 + push target 통합 조회
+         * @description FE가 GitHub 화면 진입 시 한 번에 상태를 파악할 수 있도록 묶어 반환한다.
+         *
+         *     - `connected`: GitHub OAuth 연결 + 토큰 유효성 검증 결과
+         *     - `login`: GitHub username (connected=true일 때만)
+         *     - `pushTargetRepositoryId`: 회고 push 대상 저장소 id (없으면 null)
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description 조회 성공 */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiResponseConnectionStatus"];
+                    };
+                };
+                401: components["responses"]["Unauthorized_401"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/github/repositories/available": {
@@ -1704,6 +2103,170 @@ export interface paths {
         };
         options?: never;
         head?: never;
+        /**
+         * 저장소 역할 설정 (commit 읽기 on/off)
+         * @description 해당 저장소를 회고 화면의 "오늘의 커밋" 집계 대상으로 포함할지 토글한다.
+         *     `commitReadEnabled=false`이면 `GET /github/commits` 응답에서 제외된다.
+         *     Push 대상 지정은 별개 — `commitReadEnabled=false`인 저장소도 push 대상이 될 수 있다.
+         */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @example ghrepo_01HXYZ... */
+                    repository_id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    /**
+                     * @example {
+                     *       "commitReadEnabled": false
+                     *     }
+                     */
+                    "application/json": components["schemas"]["UpdateRepositoryRequest"];
+                };
+            };
+            responses: {
+                /** @description 수정 성공 */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiResponseRepository"];
+                    };
+                };
+                401: components["responses"]["Unauthorized_401"];
+                404: components["responses"]["NotFound_404"];
+                422: components["responses"]["ValidationError_422"];
+            };
+        };
+        trace?: never;
+    };
+    "/github/commits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 오늘(또는 특정 날짜)의 커밋 모음
+         * @description 사용자의 `commitReadEnabled=true` 저장소들에서 지정 날짜의 커밋을 모아 시간 내림차순으로 반환한다.
+         *
+         *     - **타임존**: 항상 `user.timezone` 기준. 별도 `tz` 쿼리 파라미터를 받지 않는다.
+         *     - **author 필터**: 사용자 본인의 GitHub 계정(login) 커밋만 (`/user` API로 자동 조회)
+         *     - **`date` 생략 시**: `user.timezone` 기준 오늘
+         *     - **범위**: `[date 00:00, date+1 00:00)` 사용자 tz → UTC 변환 후 GitHub API `since`/`until`
+         *     - **단일 저장소 실패**: rate limit·서버오류 외 오류는 해당 저장소만 skip, 나머지 결과 반환
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /**
+                     * @description 생략 시 user.timezone 기준 오늘
+                     * @example 2026-06-12
+                     */
+                    date?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description 조회 성공 */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiResponseCommitList"];
+                    };
+                };
+                400: components["responses"]["BadRequest_400"];
+                401: components["responses"]["Unauthorized_401"];
+                422: components["responses"]["ValidationError_422"];
+                429: components["responses"]["RateLimited_429"];
+                503: components["responses"]["ServiceUnavailable_503"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/github/retrospectives/push": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 회고 마크다운을 push target 저장소에 commit/push
+         * @description 사용자가 작성한 회고 마크다운 본문을 push target 저장소의 정해진 경로에 commit한다.
+         *
+         *     ### 파일 경로 규칙 (사용자 settings.locale 기반 i18n)
+         *     | periodType | 폴더 (ko/en) | 파일명 (ko/en) |
+         *     |---|---|---|
+         *     | DAILY  | `일간/` / `daily/` | `2026-06-12 회고록.md` / `2026-06-12 retrospective.md` |
+         *     | WEEKLY | `주간/` / `weekly/` | `2026-06 2주차 회고록.md` / `2026-06 week 2 retrospective.md` |
+         *     | MONTHLY | `월간/` / `monthly/` | `2026-06 회고록.md` / `2026-06 retrospective.md` |
+         *     | ANNUAL | `년간/` / `annual/` | `2026 회고록.md` / `2026 retrospective.md` |
+         *
+         *     ### periodKey 형식
+         *     - DAILY: `YYYY-MM-DD` (예: `2026-06-12`)
+         *     - WEEKLY: `YYYY-MM-Wn` (n=1~6, majority-day 방식)
+         *     - MONTHLY: `YYYY-MM`
+         *     - ANNUAL: `YYYY`
+         *
+         *     ### 동작
+         *     - 같은 경로 파일이 있으면 **덮어쓰기**(update). 없으면 **생성**(create).
+         *     - GitHub commit history가 자체 버전 관리 역할 — 덮어써도 이력 유지
+         *     - 푸시 브랜치는 저장소의 `defaultBranch` 사용
+         *     - 커밋 메시지는 사용자 locale로 자동 생성 (prefix `docs(retro):` 영문 고정)
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["PushRetrospectiveRequest"];
+                };
+            };
+            responses: {
+                /** @description push 성공 */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiResponsePushResult"];
+                    };
+                };
+                400: components["responses"]["BadRequest_400"];
+                401: components["responses"]["Unauthorized_401"];
+                422: components["responses"]["ValidationError_422"];
+                502: components["responses"]["BadGateway_502"];
+                503: components["responses"]["ServiceUnavailable_503"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
         patch?: never;
         trace?: never;
     };
@@ -1765,15 +2328,16 @@ export interface components {
             password: string;
             passwordConfirm: string;
             /**
-             * @description ISO 3166-1 alpha-2 국가 코드 (예: `KR`, `US`, `JP`).
-             *     다중 tz 국가(US/CA/RU/AU/BR/MX/ID/AR/CL/KZ/MN)는 `region` 필수.
+             * @description ISO 3166-1 alpha-2 국가 코드 (전 249개국 지원, pycountry 기반).
+             *     예: `KR`, `US`, `JP`. 대소문자/공백은 BE 가 정규화.
              */
             country: string;
             /**
-             * @description ISO 3166-2 하위지역 코드 (예: `US-CA`, `CA-ON`).
-             *     단일 tz 국가는 생략 가능 (`null`).
+             * @description IANA timezone identifier (예: `Asia/Seoul`, `America/Los_Angeles`).
+             *     단일 tz 국가(예: KR, JP, FR)는 생략 가능 — BE 가 자동 결정.
+             *     다중 tz 국가(예: US, RU, BR)는 필수. 옵션 조회: `GET /settings/countries/{code}/timezones`.
              */
-            region?: string | null;
+            timezone?: string | null;
         };
         LoginRequest: {
             /** Format: email */
@@ -1784,12 +2348,22 @@ export interface components {
             display_name?: string | null;
         };
         OnboardingCompleteRequest: {
+            /** @description ISO 3166-1 alpha-2 국가 코드 (전 249개국 지원) */
             country: string;
-            region?: string | null;
+            /**
+             * @description IANA timezone identifier.
+             *     단일 tz 국가는 생략 가능, 다중 tz 국가는 필수.
+             */
+            timezone?: string | null;
         };
         UpdateCountryRequest: {
+            /** @description ISO 3166-1 alpha-2 국가 코드 (전 249개국 지원) */
             country: string;
-            region?: string | null;
+            /**
+             * @description IANA timezone identifier.
+             *     단일 tz 국가는 생략 가능 (자동 결정), 다중 tz 국가는 필수.
+             */
+            timezone?: string | null;
         };
         UpdateTimezoneRequest: {
             /**
@@ -1797,6 +2371,26 @@ export interface components {
              * @example Asia/Seoul
              */
             timezone: string;
+        };
+        CountryTimezonesResponse: {
+            country: string;
+            /** @description 해당 국가의 IANA tz 옵션 (CLDR-derived, pytz) */
+            timezones: string[];
+            /** @description 다중 tz 국가 여부. true 면 사용자가 timezone 을 직접 선택해야 함. */
+            multi: boolean;
+        };
+        ApiResponseCountryTimezones: components["schemas"]["ApiResponseEmpty"] & {
+            data?: components["schemas"]["CountryTimezonesResponse"];
+        };
+        RequestPasswordResetRequest: {
+            /** Format: email */
+            email: string;
+        };
+        ResetPasswordRequest: {
+            /** @description 이메일로 받은 1회용 reset token (URL `?token=...` 그대로 사용) */
+            token: string;
+            newPassword: string;
+            newPasswordConfirm: string;
         };
         TokenResponse: {
             accessToken: string;
@@ -1820,6 +2414,46 @@ export interface components {
         };
         ApiResponseUser: components["schemas"]["ApiResponseEmpty"] & {
             data?: components["schemas"]["UserResponse"];
+        };
+        OAuthLinkInitResponse: {
+            /**
+             * Format: uri
+             * @description FE 가 `window.open` 으로 직접 열어야 하는 provider authorize URL.
+             *     URL 에는 link 흐름임을 표시하는 state 가 사전 발급되어 있다.
+             */
+            authorizeUrl: string;
+        };
+        ApiResponseOAuthLinkInit: components["schemas"]["ApiResponseEmpty"] & {
+            data?: components["schemas"]["OAuthLinkInitResponse"];
+        };
+        SessionResponse: {
+            sessionId: string;
+            /** @description User-Agent 파싱 결과 (예: 'Chrome on Windows') */
+            deviceLabel?: string | null;
+            /** @description User-Agent 원문 */
+            deviceInfo?: string | null;
+            /** @description IPv4 /24 또는 IPv6 /48 prefix. 통계용. */
+            ipPrefix?: string | null;
+            /** Format: date-time */
+            issuedAt: string;
+            /** Format: date-time */
+            lastUsedAt: string;
+            /** @description 이 세션에서 발생한 refresh 횟수 */
+            rotationCounter: number;
+            /** @description 이 요청을 보낸 세션 여부 */
+            isCurrent: boolean;
+        };
+        SessionListResponse: {
+            sessions: components["schemas"]["SessionResponse"][];
+        };
+        ApiResponseSessionList: components["schemas"]["ApiResponseEmpty"] & {
+            data?: components["schemas"]["SessionListResponse"];
+        };
+        RevokeOthersResponse: {
+            revokedCount: number;
+        };
+        ApiResponseRevokeOthers: components["schemas"]["ApiResponseEmpty"] & {
+            data?: components["schemas"]["RevokeOthersResponse"];
         };
         TodoCreateRequest: {
             title: string;
@@ -1924,6 +2558,19 @@ export interface components {
         ApiResponseNotificationList: components["schemas"]["ApiResponseEmpty"] & {
             data?: components["schemas"]["NotificationResponse"][];
         };
+        /**
+         * @description Settings 내 GitHub 관련 사용자 설정 네임스페이스.
+         *     top-level 평탄화 대신 중첩 형태로 운용 — 향후 GitHub 관련 사용자 설정이 늘어도 top-level 오염 없음.
+         */
+        GitHubSettingsBlock: {
+            /**
+             * @description 회고 push 대상 저장소 id. 사용자가 연결한 저장소 중 하나여야 함.
+             *     연결 안 된 id 지정 시 `GITHUB_REPOSITORY_NOT_LINKED` (400).
+             *     null로 명시하면 push target 해제.
+             * @example ghrepo_01HXYZ...
+             */
+            pushTargetRepositoryId?: string | null;
+        };
         UpdateSettingsRequest: {
             /** @default ko */
             locale: string;
@@ -1937,6 +2584,7 @@ export interface components {
             notificationRetentionDays: number;
             /** Format: date-time */
             lastScheduleCheckAt?: string | null;
+            github?: components["schemas"]["GitHubSettingsBlock"];
         };
         SettingsResponse: {
             locale: string;
@@ -1946,6 +2594,7 @@ export interface components {
             notificationRetentionDays: number;
             /** Format: date-time */
             lastScheduleCheckAt?: string | null;
+            github: components["schemas"]["GitHubSettingsBlock"];
         };
         ApiResponseSettings: components["schemas"]["ApiResponseEmpty"] & {
             data?: components["schemas"]["SettingsResponse"];
@@ -1971,10 +2620,18 @@ export interface components {
             defaultBranch: string;
             /** Format: uri */
             htmlUrl: string;
+            /**
+             * @description 회고 화면 "오늘의 커밋" 집계 대상 여부 (PATCH로 토글)
+             * @default true
+             */
+            commitReadEnabled: boolean;
             /** Format: date-time */
             createdAt: string;
             /** Format: date-time */
             updatedAt?: string | null;
+        };
+        UpdateRepositoryRequest: {
+            commitReadEnabled: boolean;
         };
         AvailableRepositoryResponse: {
             /** Format: int64 */
@@ -1996,9 +2653,82 @@ export interface components {
         ApiResponseAvailableRepoList: components["schemas"]["ApiResponseEmpty"] & {
             data?: components["schemas"]["AvailableRepositoryResponse"][];
         };
+        ConnectionStatusResponse: {
+            /** @description GitHub OAuth 연결 + 토큰 유효성 검증 결과 */
+            connected: boolean;
+            /**
+             * @description connected=true일 때만 값 존재
+             * @example octocat
+             */
+            login?: string | null;
+            /**
+             * @description 회고 push 대상 저장소 id. 미설정 시 null.
+             * @example ghrepo_01HXYZ...
+             */
+            pushTargetRepositoryId?: string | null;
+        };
+        ApiResponseConnectionStatus: components["schemas"]["ApiResponseEmpty"] & {
+            data?: components["schemas"]["ConnectionStatusResponse"];
+        };
+        CommitResponse: {
+            /** @description 백엔드 저장소 연결 ID */
+            repositoryId: string;
+            /** @example octocat/Hello-World */
+            fullName: string;
+            /** @example 8f23c41 */
+            sha: string;
+            /** @description 커밋 메시지 첫 줄만 (서버에서 200자 자름) */
+            message: string;
+            /** Format: uri */
+            htmlUrl: string;
+            /** @description 작성자 GitHub login */
+            author: string;
+            /** Format: date-time */
+            committedAt: string;
+        };
+        ApiResponseCommitList: components["schemas"]["ApiResponseEmpty"] & {
+            data?: components["schemas"]["CommitResponse"][];
+        };
+        PushRetrospectiveRequest: {
+            /** @enum {string} */
+            periodType: "DAILY" | "WEEKLY" | "MONTHLY" | "ANNUAL";
+            /**
+             * @description periodType별 형식 (서버 검증 정규식):
+             *     - DAILY:  `^\d{4}-\d{2}-\d{2}$` (예: `2026-06-12`)
+             *     - WEEKLY: `^\d{4}-\d{2}-W[1-6]$` (예: `2026-06-W2`, majority-day 방식)
+             *     - MONTHLY: `^\d{4}-\d{2}$` (예: `2026-06`)
+             *     - ANNUAL: `^\d{4}$` (예: `2026`)
+             */
+            periodKey: string;
+            /** @description 회고 본문 (마크다운). 그대로 파일 내용으로 저장됨. */
+            contentMarkdown: string;
+        };
+        PushResultResponse: {
+            /** @example 8f23c41abcd... */
+            commitSha: string;
+            /**
+             * Format: uri
+             * @description GitHub 상 파일 또는 커밋 링크
+             */
+            htmlUrl: string;
+            /** @example 일간/2026-06-12 회고록.md */
+            path: string;
+        };
+        ApiResponsePushResult: components["schemas"]["ApiResponseEmpty"] & {
+            data?: components["schemas"]["PushResultResponse"];
+        };
     };
     responses: {
-        /** @description 잘못된 요청 (도메인 invalid state) */
+        /**
+         * @description 잘못된 요청. 가능한 도메인 코드:
+         *     - `RETRO_SUMMARY_INVALID_STATE` — 요약이 잘못된 상태
+         *     - `AUTH_EMAIL_NOT_VERIFIED` — 이메일 미인증 상태에서 register 시도
+         *     - `AUTH_OAUTH_STATE_INVALID` — OAuth state 불일치
+         *     - `GITHUB_CONNECTION_NOT_FOUND` — GitHub 미연결
+         *     - `GITHUB_PUSH_TARGET_NOT_SET` — push 대상 미설정
+         *     - `GITHUB_REPOSITORY_NOT_LINKED` — push 대상이 연결되지 않은 저장소
+         *     - `AUTH_PASSWORD_RESET_NOT_ALLOWED` — OAuth 전용 계정은 비밀번호 재설정 불가
+         */
         BadRequest_400: {
             headers: {
                 [name: string]: unknown;
@@ -2021,9 +2751,12 @@ export interface components {
          *     - `AUTH_TOKEN_INVALID` — 토큰 누락 / 형식 오류 / 서명 불일치 / type mismatch
          *     - `AUTH_INVALID_CREDENTIALS` — 이메일/비밀번호 불일치
          *     - `AUTH_REFRESH_TOKEN_INVALID` / `AUTH_REFRESH_TOKEN_REVOKED` — refresh 실패
+         *     - `AUTH_REFRESH_TOKEN_REUSE_DETECTED` — 폐기된 refresh token 재사용 감지(탈취 의심). 해당 사용자의 모든 세션이 즉시 폐기됨. 사용자에게 보안 알림 권장 후 재로그인 유도.
          *     - `AUTH_OAUTH_STATE_INVALID` — OAuth state 검증 실패
          *     - `AUTH_ONBOARDING_TOKEN_INVALID` — onboarding cookie 누락
          *     - `AUTH_ONBOARDING_TOKEN_EXPIRED` — onboarding TTL(30분) 만료
+         *     - `AUTH_PASSWORD_RESET_TOKEN_INVALID` — 토큰 누락/형식 오류
+         *     - `AUTH_PASSWORD_RESET_TOKEN_EXPIRED` — 토큰 TTL(30분) 만료 또는 이미 사용됨
          *     - `GITHUB_TOKEN_INVALID` — GitHub OAuth 토큰 만료/폐기 (FE는 GitHub OAuth 재인증 유도)
          */
         Unauthorized_401: {
@@ -2042,7 +2775,11 @@ export interface components {
                 "application/json": components["schemas"]["ErrorResponse"];
             };
         };
-        /** @description 리소스를 찾을 수 없음 */
+        /**
+         * @description 리소스를 찾을 수 없음. 가능한 코드:
+         *     - 도메인별 NOT_FOUND (`TODO_NOT_FOUND`, `JOURNAL_ENTRY_NOT_FOUND`, `RETRO_SUMMARY_NOT_FOUND`, `NOTIFICATION_NOT_FOUND`, `USER_NOT_FOUND`, `GITHUB_REPOSITORY_NOT_FOUND`)
+         *     - `AUTH_SESSION_NOT_FOUND` — 폐기 대상 sessionId 가 본인 소유가 아니거나 이미 만료됨
+         */
         NotFound_404: {
             headers: {
                 [name: string]: unknown;
@@ -2059,7 +2796,16 @@ export interface components {
                 "application/json": components["schemas"]["ErrorResponse"];
             };
         };
-        /** @description 상태 충돌 (중복·이미 진행 중 등) */
+        /**
+         * @description 상태 충돌 (중복·이미 진행 중 등). 가능한 코드:
+         *     - `USER_EMAIL_DUPLICATED` — 이메일 중복 가입
+         *     - `TODO_ALREADY_COMPLETED` / `TODO_ALREADY_IN_PROGRESS`
+         *     - `JOURNAL_ENTRY_ALREADY_EXISTS`
+         *     - `RETRO_SUMMARY_ALREADY_IN_PROGRESS`
+         *     - `GITHUB_REPOSITORY_ALREADY_LINKED`
+         *     - `AUTH_OAUTH_ACCOUNT_ALREADY_LINKED` — link 시도한 OAuth 계정이 다른 사용자에 이미 연결됨
+         *     - `AUTH_OAUTH_PROVIDER_ALREADY_LINKED` — 현재 사용자가 같은 provider에 다른 계정으로 이미 연결됨
+         */
         Conflict_409: {
             headers: {
                 [name: string]: unknown;
@@ -2076,7 +2822,14 @@ export interface components {
                 "application/json": components["schemas"]["ErrorResponse"];
             };
         };
-        /** @description 요청 검증 실패 (Pydantic) */
+        /**
+         * @description 요청 검증 실패. 두 가지 경로:
+         *     - **Pydantic 스키마 에러** → `code: VALIDATION_ERROR`, `details` 에 field별 메시지
+         *     - **도메인 검증 에러** (핸들러가 직접 반환) → 도메인 코드 사용:
+         *       - `AUTH_COUNTRY_INVALID` — ISO 3166-1 미등록 국가, 또는 tz 데이터 없는 국가
+         *       - `AUTH_COUNTRY_TIMEZONE_REQUIRED` — 다중 tz 국가에서 timezone 누락
+         *       - `AUTH_TIMEZONE_INVALID` — IANA 형식 아니거나 해당 국가의 옵션 밖
+         */
         ValidationError_422: {
             headers: {
                 [name: string]: unknown;
@@ -2108,6 +2861,26 @@ export interface components {
                  * @example {
                  *       "status": "error",
                  *       "code": "GITHUB_RATE_LIMITED",
+                 *       "data": null,
+                 *       "details": []
+                 *     }
+                 */
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
+        /**
+         * @description 외부 서비스(GitHub) push 실패. sha 충돌 / 권한 / 네트워크 오류 등.
+         *     FE는 사용자에게 "다시 시도" 안내. 자동 retry는 금지(중복 commit 위험).
+         */
+        BadGateway_502: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "status": "error",
+                 *       "code": "GITHUB_PUSH_FAILED",
                  *       "data": null,
                  *       "details": []
                  *     }

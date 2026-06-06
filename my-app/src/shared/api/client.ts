@@ -27,6 +27,18 @@ export interface RequestOptions {
   query?: Record<string, string | number | boolean | undefined>;
 }
 
+// ─── 세션 무효화(탈취 감지) 글로벌 핸들러 ────────────────────────────────────
+// refresh token 재사용이 감지되면(AUTH_REFRESH_TOKEN_REUSE_DETECTED) 서버가 해당
+// 사용자의 모든 세션을 폐기한다. client 는 앱 상태/라우터를 모르므로, AppProvider 가
+// 핸들러를 등록해 강제 로그아웃 + 보안 경고 UX 를 수행한다. 자동 refresh 재시도는 금지.
+let onSessionInvalidated: ((code: string) => void) | null = null;
+
+export function setSessionInvalidatedHandler(
+  fn: ((code: string) => void) | null,
+): void {
+  onSessionInvalidated = fn;
+}
+
 function buildUrl(path: string, query?: RequestOptions["query"]): string {
   const url = `${API_BASE_URL}${path}`;
   if (!query) return url;
@@ -63,11 +75,39 @@ async function rawRequest<T>(path: string, opts: RequestOptions): Promise<T> {
     }
   }
 
+  // 비-OK 응답의 상세를 콘솔에 출력해 디버깅을 돕는다.
+  if (!res.ok) {
+    // eslint-disable-next-line no-console
+    console.error(
+      `[ARCHIVE API] ${res.status} ${res.statusText} — ${method} ${path}`,
+      json ?? text,
+    );
+  }
+
   if (!json) {
     if (res.ok) return undefined as T;
     throw new ApiError("HTTP_ERROR", res.status);
   }
+
+  // FastAPI 기본 422 형식 `{"detail":[...]}` 을 ARCHIVE ApiError 로 변환한다.
+  // 서버가 커스텀 예외 핸들러를 쓰지 않는 경우 이 분기가 잡는다.
+  const raw = json as unknown as Record<string, unknown>;
+  if (!("status" in raw) && Array.isArray(raw["detail"])) {
+    const details = (raw["detail"] as Array<Record<string, unknown>>).map(
+      (d) => ({
+        field: String((d["loc"] as unknown[])?.slice(-1)[0] ?? ""),
+        message: String(d["msg"] ?? d["message"] ?? ""),
+      }),
+    );
+    throw new ApiError("VALIDATION_ERROR", res.status, details);
+  }
+
   if (json.status === "error") {
+    if (json.code === "AUTH_REFRESH_TOKEN_REUSE_DETECTED") {
+      // 탈취 의심 → 로컬 토큰 즉시 폐기 + 앱에 강제 로그아웃 통지
+      setAccessToken(null);
+      onSessionInvalidated?.(json.code);
+    }
     throw new ApiError(json.code, res.status, json.details ?? []);
   }
   return json.data;

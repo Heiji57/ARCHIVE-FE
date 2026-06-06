@@ -1,11 +1,14 @@
 import { useState } from "react";
 import {
+  Eye,
+  EyeOff,
   FolderGit2,
   Link2,
   Link2Off,
   Lock,
   Plus,
   RefreshCw,
+  Target,
 } from "lucide-react";
 import { useArchiveApp } from "@/app/providers/useArchiveApp";
 import type { AvailableRepository } from "@/entities/github/model/types";
@@ -19,17 +22,51 @@ export function GithubCard() {
     state,
     loadGitHubAvailableRepos,
     linkGitHubRepo,
+    updateLinkedRepo,
     unlinkGitHubRepo,
     unlinkAllGitHubRepos,
     syncAllGitHubRepos,
+    setPushTarget,
+    linkGitHubAccount,
     pushNotification,
   } = useArchiveApp();
   const { t } = useTranslation();
-  const { status, linkedRepositories } = state.github;
+  const { status, login, linkedRepositories, pushTargetRepositoryId } =
+    state.github;
 
-  const [available, setAvailable] = useState<AvailableRepository[] | null>(null);
+  const [available, setAvailable] = useState<AvailableRepository[] | null>(
+    null,
+  );
   const [loadingAvailable, setLoadingAvailable] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [connecting, setConnecting] = useState(false);
+
+  const handleConnectAccount = async () => {
+    if (connecting) return;
+    setConnecting(true);
+    const result = await linkGitHubAccount();
+    setConnecting(false);
+    if (result.ok) {
+      pushNotification(
+        "success",
+        t("settings.github.connectAccount"),
+        t("settings.github.connected"),
+        { category: "sync", transient: true },
+      );
+    } else if (result.error && result.error !== "popup-closed") {
+      const alreadyLinked =
+        result.error === "account-already-linked" ||
+        result.error === "provider-already-linked";
+      pushNotification(
+        "warning",
+        t("settings.github.connectAccount"),
+        alreadyLinked
+          ? t("settings.github.alreadyLinked")
+          : t("settings.github.connectFailed"),
+        { category: "sync", transient: true },
+      );
+    }
+  };
 
   const openAvailable = async () => {
     if (available !== null) {
@@ -49,7 +86,6 @@ export function GithubCard() {
   const handleLink = async (githubRepoId: number) => {
     setBusy(true);
     await linkGitHubRepo(githubRepoId);
-    // 연결 후 후보 목록에서 제거
     setAvailable((prev) =>
       prev ? prev.filter((r) => r.githubRepoId !== githubRepoId) : prev,
     );
@@ -84,6 +120,20 @@ export function GithubCard() {
 
       {status === "connected" ? (
         <>
+          {/* 연결된 계정 표시 */}
+          {login ? (
+            <p
+              style={{
+                margin: "0 0 12px",
+                fontSize: 12,
+                color: "var(--color-body-muted)",
+              }}
+            >
+              {t("settings.github.connectedAsLogin", { login })}
+            </p>
+          ) : null}
+
+          {/* 연결된 저장소 목록 */}
           <div className="github-repo-list">
             {linkedRepositories.length === 0 ? (
               <p className="github-empty">{t("settings.github.noLinked")}</p>
@@ -97,21 +147,118 @@ export function GithubCard() {
                         <Lock size={10} /> private
                       </span>
                     ) : null}
-                    <span className="github-repo-branch">{repo.defaultBranch}</span>
+                    <span className="github-repo-branch">
+                      {repo.defaultBranch}
+                    </span>
                   </div>
-                  <button
-                    type="button"
-                    className="btn btn-utility github-repo-unlink"
-                    onClick={() => unlinkGitHubRepo(repo.id)}
-                    title={t("settings.github.unlink")}
-                  >
-                    <Link2Off size={13} />
-                  </button>
+                  <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                    {/* commitReadEnabled 토글 */}
+                    <button
+                      type="button"
+                      className="btn btn-utility github-repo-unlink"
+                      title={
+                        repo.commitReadEnabled
+                          ? t("settings.github.commitReadOn")
+                          : t("settings.github.commitReadOff")
+                      }
+                      onClick={() =>
+                        updateLinkedRepo(repo.id, !repo.commitReadEnabled)
+                      }
+                      style={{
+                        color: repo.commitReadEnabled
+                          ? "var(--color-primary)"
+                          : "var(--color-body-muted)",
+                        padding: "4px 8px",
+                        fontSize: 11,
+                        gap: 4,
+                      }}
+                    >
+                      {repo.commitReadEnabled ? (
+                        <Eye size={12} />
+                      ) : (
+                        <EyeOff size={12} />
+                      )}
+                      {repo.commitReadEnabled
+                        ? t("settings.github.commitReadOn")
+                        : t("settings.github.commitReadOff")}
+                    </button>
+
+                    {/* 단일 저장소 연결 해제 */}
+                    <button
+                      type="button"
+                      className="btn btn-utility github-repo-unlink"
+                      onClick={() => unlinkGitHubRepo(repo.id)}
+                      title={t("settings.github.unlink")}
+                    >
+                      <Link2Off size={13} />
+                    </button>
+                  </div>
                 </div>
               ))
             )}
           </div>
 
+          {/* Push 대상 저장소 선택 */}
+          {linkedRepositories.length > 0 ? (
+            <div
+              style={{
+                margin: "14px 0",
+                padding: "12px 14px",
+                background: "var(--color-tile-3)",
+                borderRadius: "var(--r-sm)",
+                border: "1px solid var(--color-divider-soft)",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  marginBottom: 8,
+                }}
+              >
+                <Target size={13} style={{ color: "var(--color-primary)" }} />
+                <span
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: "var(--color-ink)",
+                  }}
+                >
+                  {t("settings.github.pushTarget")}
+                </span>
+              </div>
+              <p
+                style={{
+                  margin: "0 0 8px",
+                  fontSize: 11,
+                  color: "var(--color-body-muted)",
+                  lineHeight: 1.5,
+                }}
+              >
+                {t("settings.github.pushTargetHint")}
+              </p>
+              <select
+                className="select"
+                value={pushTargetRepositoryId ?? ""}
+                onChange={(e) =>
+                  setPushTarget(e.target.value || null)
+                }
+                style={{ width: "100%", fontSize: 13 }}
+              >
+                <option value="">
+                  {t("settings.github.pushTargetNone")}
+                </option>
+                {linkedRepositories.map((repo) => (
+                  <option key={repo.id} value={repo.id}>
+                    {repo.fullName}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : null}
+
+          {/* 액션 버튼 */}
           <div className="github-actions">
             <button
               type="button"
@@ -141,6 +288,7 @@ export function GithubCard() {
             ) : null}
           </div>
 
+          {/* 연결 후보 목록 */}
           {available !== null ? (
             <div className="github-available">
               <p className="github-available-title">
@@ -149,7 +297,9 @@ export function GithubCard() {
               {loadingAvailable ? (
                 <p className="github-empty">{t("settings.github.checking")}</p>
               ) : available.length === 0 ? (
-                <p className="github-empty">{t("settings.github.noAvailable")}</p>
+                <p className="github-empty">
+                  {t("settings.github.noAvailable")}
+                </p>
               ) : (
                 available.map((repo) => (
                   <div key={repo.githubRepoId} className="github-repo-row">
@@ -184,21 +334,18 @@ export function GithubCard() {
             className="settings-disconnect-banner"
           />
           <p className="github-connect-hint">
-            {t("settings.github.connectAccountPending")}
+            {t("settings.github.connectAccountHint")}
           </p>
           <button
             type="button"
             className="btn btn-primary settings-action-btn"
-            onClick={() =>
-              pushNotification(
-                "info",
-                t("settings.github.connectAccount"),
-                t("settings.github.connectAccountPending"),
-                { category: "sync", transient: true },
-              )
-            }
+            onClick={() => void handleConnectAccount()}
+            disabled={connecting}
           >
-            <Link2 size={14} /> {t("settings.github.connectAccount")}
+            <Link2 size={14} />{" "}
+            {connecting
+              ? t("settings.github.connecting")
+              : t("settings.github.connectAccount")}
           </button>
         </>
       )}

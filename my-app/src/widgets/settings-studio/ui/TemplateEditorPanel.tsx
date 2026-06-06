@@ -9,12 +9,15 @@ const RichEditor = lazy(() => import("@/shared/ui/rich-editor/ui/RichEditor"));
 
 export interface TemplateEditorPanelProps {
   template: RetroTemplate;
+  /** 번역된 표시 이름 (기본 템플릿은 i18n, 사용자 템플릿은 원본). */
+  displayName: string;
   onUpdate: (patch: Partial<Pick<RetroTemplate, "name" | "content">>) => void;
   onReset: () => void;
 }
 
 export function TemplateEditorPanel({
   template,
+  displayName,
   onUpdate,
   onReset,
 }: TemplateEditorPanelProps) {
@@ -24,7 +27,7 @@ export function TemplateEditorPanel({
     <div className="template-editor-inner">
       <div className="template-editor-header">
         {template.isDefault ? (
-          <p className="template-editor-name-static">{template.name}</p>
+          <p className="template-editor-name-static">{displayName}</p>
         ) : (
           <input
             className="template-name-input"

@@ -119,6 +119,11 @@ export type TranslationKey =
   | "retro.editor.learned"
   | "retro.editor.learnedPlaceholder"
   | "retro.editor.save"
+  | "retro.editor.pushing"
+  | "retro.editor.pushSuccess"
+  | "retro.editor.pushFailed"
+  | "retro.editor.noCommits"
+  | "retro.editor.loadCommits"
   | "retro.editor.synced"
   | "retro.editor.pending"
   | "retro.summarize.weekly"
@@ -169,6 +174,24 @@ export type TranslationKey =
   | "search.close"
   // Settings
   | "settings.section.github"
+  | "settings.section.region"
+  | "settings.region.title"
+  | "settings.region.apply"
+  | "settings.region.applying"
+  | "settings.region.updated"
+  | "settings.region.modalTitle"
+  | "settings.region.modalMessage"
+  | "settings.region.modalMessageWithTz"
+  | "settings.region.modalUseNew"
+  | "settings.region.modalKeep"
+  | "settings.region.selectRegionHint"
+  | "settings.region.selectTimezone"
+  | "settings.region.selectTimezoneHint"
+  | "settings.region.loadingTz"
+  | "settings.region.autoTz"
+  | "settings.timezone.label"
+  | "settings.timezone.hint"
+  | "settings.timezone.updated"
   | "settings.section.language"
   | "settings.section.autoSummary"
   | "settings.section.notifications"
@@ -193,6 +216,32 @@ export type TranslationKey =
   | "settings.github.unlink"
   | "settings.github.connectAccount"
   | "settings.github.connectAccountPending"
+  | "settings.github.connectAccountHint"
+  | "settings.github.connecting"
+  | "settings.github.connectFailed"
+  | "settings.github.alreadyLinked"
+  | "settings.github.connectedAsLogin"
+  | "settings.section.security"
+  | "settings.group.security.hint"
+  | "settings.sessions.title"
+  | "settings.sessions.loading"
+  | "settings.sessions.empty"
+  | "settings.sessions.thisDevice"
+  | "settings.sessions.signOut"
+  | "settings.sessions.revokeOthers"
+  | "settings.sessions.unknownDevice"
+  | "settings.sessions.revoked"
+  | "settings.sessions.revokedOthersTitle"
+  | "settings.sessions.revokedOthersBody"
+  | "security.reuse.title"
+  | "security.reuse.message"
+  | "security.reuse.action"
+  | "settings.github.commitRead"
+  | "settings.github.commitReadOn"
+  | "settings.github.commitReadOff"
+  | "settings.github.pushTarget"
+  | "settings.github.pushTargetNone"
+  | "settings.github.pushTargetHint"
   | "settings.language.label"
   | "settings.autoSummary.weekly"
   | "settings.autoSummary.monthly"
@@ -213,6 +262,11 @@ export type TranslationKey =
   | "settings.templates.use"
   | "settings.templates.inUse"
   | "settings.templates.activeHint"
+  | "settings.templates.newName"
+  | "settings.templates.defaultName.daily"
+  | "settings.templates.defaultName.weekly"
+  | "settings.templates.defaultName.monthly"
+  | "settings.templates.defaultName.yearly"
   | "settings.section.integrations"
   | "settings.section.preferences"
   | "settings.group.integrations.hint"
@@ -230,6 +284,8 @@ export type TranslationKey =
   | "auth.divider.or"
   | "auth.error.network"
   | "auth.error.unknown"
+  | "auth.password.show"
+  | "auth.password.hide"
   | "auth.consoleHint"
   // Auth — login
   | "auth.login.title"
@@ -269,6 +325,8 @@ export type TranslationKey =
   | "auth.signup.countryPlaceholder"
   | "auth.signup.region"
   | "auth.signup.regionPlaceholder"
+  | "ui.select.search"
+  | "ui.select.empty"
   | "auth.signup.error.countryRequired"
   | "auth.signup.error.regionRequired"
   | "auth.onboarding.title"
@@ -293,8 +351,20 @@ export type TranslationKey =
   | "auth.forgot.codeSubmit"
   | "auth.forgot.newPasswordSubmit"
   | "auth.forgot.success"
+  | "auth.forgot.linkSent"
   | "auth.forgot.error.userNotFound"
   | "auth.forgot.backToLogin"
+  // Auth — reset password (토큰 링크)
+  | "auth.reset.title"
+  | "auth.reset.subtitle"
+  | "auth.reset.newPassword"
+  | "auth.reset.submit"
+  | "auth.reset.success"
+  | "auth.reset.goLogin"
+  | "auth.reset.requestAgain"
+  | "auth.reset.error.tokenInvalid"
+  | "auth.reset.error.tokenExpired"
+  | "auth.reset.error.notAllowed"
   // Auth — OAuth
   | "auth.oauth.github"
   | "auth.oauth.google"
@@ -427,7 +497,12 @@ const ko: Dict = {
   "retro.editor.learned": "배운 점과 아쉬운 점 · Learned",
   "retro.editor.learnedPlaceholder":
     "오늘 알게 된 것, 다음에 더 잘하고 싶은 것을 자유롭게 적어주세요.",
-  "retro.editor.save": "저장 · 동기화",
+  "retro.editor.save": "GitHub에 Push",
+  "retro.editor.pushing": "Push 중...",
+  "retro.editor.pushSuccess": "GitHub에 Push 완료",
+  "retro.editor.pushFailed": "Push 실패, 다시 시도해주세요",
+  "retro.editor.noCommits": "오늘의 커밋이 없습니다",
+  "retro.editor.loadCommits": "커밋 불러오기",
   "retro.editor.synced": "GitHub에 동기화됨",
   "retro.editor.pending": "동기화 대기 중",
   "retro.summarize.weekly": "주간 요약",
@@ -504,6 +579,56 @@ const ko: Dict = {
   "settings.github.connectAccount": "GitHub 계정 연결",
   "settings.github.connectAccountPending":
     "GitHub 계정 연결 기능은 곧 제공됩니다. GitHub로 로그인하면 저장소를 연결할 수 있습니다.",
+  "settings.github.connectAccountHint":
+    "GitHub 계정을 연결하면 저장소를 연결하고 커밋·회고 push를 사용할 수 있습니다.",
+  "settings.github.connecting": "연결 중…",
+  "settings.github.connectFailed": "GitHub 연결에 실패했습니다. 다시 시도해주세요.",
+  "settings.github.alreadyLinked": "이미 다른 계정에 연결된 GitHub 계정이거나, 이미 연결되어 있습니다.",
+  "settings.section.security": "보안",
+  "settings.group.security.hint": "로그인된 기기와 세션을 관리합니다.",
+  "settings.sessions.title": "활성 세션",
+  "settings.sessions.loading": "세션을 불러오는 중…",
+  "settings.sessions.empty": "활성 세션이 없습니다.",
+  "settings.sessions.thisDevice": "이 기기",
+  "settings.sessions.signOut": "로그아웃",
+  "settings.sessions.revokeOthers": "다른 모든 기기에서 로그아웃",
+  "settings.sessions.unknownDevice": "알 수 없는 기기",
+  "settings.sessions.revoked": "세션이 종료되었습니다",
+  "settings.sessions.revokedOthersTitle": "다른 기기 로그아웃 완료",
+  "settings.sessions.revokedOthersBody": "{count}개 기기에서 로그아웃했습니다.",
+  "security.reuse.title": "보안 알림",
+  "security.reuse.message":
+    "다른 위치에서의 로그인 시도가 감지되어 모든 세션이 자동으로 종료되었습니다. 본인의 시도가 아니라면 비밀번호를 변경해 주세요.",
+  "security.reuse.action": "다시 로그인",
+  "settings.github.connectedAsLogin": "@{login} 으로 연결됨",
+  "settings.github.commitRead": "커밋 읽기",
+  "settings.github.commitReadOn": "포함",
+  "settings.github.commitReadOff": "제외",
+  "settings.github.pushTarget": "Push 대상 저장소",
+  "settings.github.pushTargetNone": "선택 안함",
+  "settings.github.pushTargetHint":
+    "회고 마크다운을 push할 저장소입니다. 연결된 저장소 중 하나를 선택하세요.",
+  "settings.section.region": "지역 및 시간대",
+  "settings.region.title": "국가 / 시간대",
+  "settings.region.apply": "국가 변경 적용",
+  "settings.region.applying": "적용 중…",
+  "settings.region.updated": "국가가 변경되었습니다",
+  "settings.region.modalTitle": "AI 요약 시간도 변경할까요?",
+  "settings.region.modalMessage":
+    "국가를 변경하면 AI 자동 요약 실행 시간대(현지 새벽 1시)를 새 국가 기준으로 바꿀 수 있습니다. 기존 시간대를 유지할 수도 있어요.",
+  "settings.region.modalMessageWithTz":
+    "{country}로 변경하면 시간대가 {timezone}으로 설정됩니다. AI 자동 요약 실행 시간(현지 새벽 1시)도 새 시간대로 변경할까요?",
+  "settings.region.modalUseNew": "새 국가 기준으로 변경",
+  "settings.region.modalKeep": "기존 시간대 유지",
+  "settings.region.selectRegionHint": "지역을 선택하면 적용 버튼이 활성화됩니다.",
+  "settings.region.selectTimezone": "시간대 선택",
+  "settings.region.selectTimezoneHint": "이 국가는 여러 시간대가 있습니다. 시간대를 선택해 주세요.",
+  "settings.region.loadingTz": "시간대 불러오는 중…",
+  "settings.region.autoTz": "자동 시간대: {timezone}",
+  "settings.timezone.label": "시간대 (요약 실행 기준)",
+  "settings.timezone.hint":
+    "AI 자동 요약은 이 시간대의 새벽 1시에 실행됩니다.",
+  "settings.timezone.updated": "시간대가 변경되었습니다",
   "settings.language.label": "언어 선택",
   "settings.autoSummary.weekly": "주간 자동 요약",
   "settings.autoSummary.monthly": "월간 자동 요약",
@@ -526,7 +651,12 @@ const ko: Dict = {
   "settings.templates.use": "사용하기",
   "settings.templates.inUse": "사용 중",
   "settings.templates.activeHint":
-    "‘사용 중’ 템플릿이 새 회고를 만들 때 자동으로 적용됩니다.",
+    "’사용 중’ 템플릿이 새 회고를 만들 때 자동으로 적용됩니다.",
+  "settings.templates.newName": "새 {type} 템플릿",
+  "settings.templates.defaultName.daily": "기본 일간 템플릿",
+  "settings.templates.defaultName.weekly": "기본 주간 템플릿",
+  "settings.templates.defaultName.monthly": "기본 월간 템플릿",
+  "settings.templates.defaultName.yearly": "기본 연간 템플릿",
   "settings.section.integrations": "연동",
   "settings.section.preferences": "환경설정",
   "settings.group.integrations.hint": "외부 서비스 연결을 관리합니다.",
@@ -545,6 +675,8 @@ const ko: Dict = {
   "auth.divider.or": "또는",
   "auth.error.network": "네트워크 연결을 확인해주세요.",
   "auth.error.unknown": "알 수 없는 오류가 발생했어요.",
+  "auth.password.show": "비밀번호 표시",
+  "auth.password.hide": "비밀번호 숨기기",
   "auth.consoleHint": "이메일은 발송되지 않습니다. 브라우저 개발자 도구 콘솔에서 인증 코드를 확인하세요.",
 
   "auth.login.title": "다시 만나서 반가워요",
@@ -584,6 +716,8 @@ const ko: Dict = {
   "auth.signup.countryPlaceholder": "국가를 선택하세요",
   "auth.signup.region": "지역 (주/도)",
   "auth.signup.regionPlaceholder": "지역을 선택하세요",
+  "ui.select.search": "검색...",
+  "ui.select.empty": "결과 없음",
   "auth.signup.error.countryRequired": "국가를 선택해주세요.",
   "auth.signup.error.regionRequired": "이 국가는 지역(주/도) 선택이 필요합니다.",
   "auth.onboarding.title": "거의 다 됐어요",
@@ -609,7 +743,23 @@ const ko: Dict = {
   "auth.forgot.newPasswordSubmit": "비밀번호 변경",
   "auth.forgot.success": "비밀번호가 변경되었어요. 다시 로그인해주세요.",
   "auth.forgot.error.userNotFound": "등록되지 않은 이메일이에요.",
+  "auth.forgot.linkSent":
+    "입력하신 이메일이 가입되어 있다면 비밀번호 재설정 링크를 보냈습니다. 메일함을 확인해주세요.",
   "auth.forgot.backToLogin": "로그인으로 돌아가기",
+  "auth.reset.title": "새 비밀번호 설정",
+  "auth.reset.subtitle": "새로 사용할 비밀번호를 입력해주세요.",
+  "auth.reset.newPassword": "새 비밀번호",
+  "auth.reset.submit": "비밀번호 변경",
+  "auth.reset.success":
+    "비밀번호가 변경되었습니다. 새 비밀번호로 다시 로그인해주세요.",
+  "auth.reset.goLogin": "로그인하러 가기",
+  "auth.reset.requestAgain": "재설정 링크 다시 받기",
+  "auth.reset.error.tokenInvalid":
+    "유효하지 않은 링크입니다. 재설정을 다시 요청해주세요.",
+  "auth.reset.error.tokenExpired":
+    "링크가 만료되었습니다. 재설정을 다시 요청해주세요.",
+  "auth.reset.error.notAllowed":
+    "이 계정은 비밀번호 재설정을 사용할 수 없습니다.",
 
   "auth.oauth.github": "GitHub으로 계속하기",
   "auth.oauth.google": "Google로 계속하기",
@@ -743,7 +893,12 @@ const en: Dict = {
   "retro.editor.learned": "What I learned",
   "retro.editor.learnedPlaceholder":
     "Write freely about what you learned and what you'd improve.",
-  "retro.editor.save": "Save · Sync",
+  "retro.editor.save": "Push to GitHub",
+  "retro.editor.pushing": "Pushing...",
+  "retro.editor.pushSuccess": "Pushed to GitHub",
+  "retro.editor.pushFailed": "Push failed, please try again",
+  "retro.editor.noCommits": "No commits today",
+  "retro.editor.loadCommits": "Load commits",
   "retro.editor.synced": "Synced to GitHub",
   "retro.editor.pending": "Sync pending",
   "retro.summarize.weekly": "Weekly summary",
@@ -821,6 +976,56 @@ const en: Dict = {
   "settings.github.connectAccount": "Connect GitHub account",
   "settings.github.connectAccountPending":
     "GitHub account linking is coming soon. Sign in with GitHub to link repositories.",
+  "settings.github.connectAccountHint":
+    "Connect your GitHub account to link repositories and use commit & retrospective push.",
+  "settings.github.connecting": "Connecting…",
+  "settings.github.connectFailed": "Failed to connect GitHub. Please try again.",
+  "settings.github.alreadyLinked": "This GitHub account is already linked to another user, or already connected.",
+  "settings.section.security": "Security",
+  "settings.group.security.hint": "Manage your signed-in devices and sessions.",
+  "settings.sessions.title": "Active sessions",
+  "settings.sessions.loading": "Loading sessions…",
+  "settings.sessions.empty": "No active sessions.",
+  "settings.sessions.thisDevice": "This device",
+  "settings.sessions.signOut": "Sign out",
+  "settings.sessions.revokeOthers": "Sign out all other devices",
+  "settings.sessions.unknownDevice": "Unknown device",
+  "settings.sessions.revoked": "Session ended",
+  "settings.sessions.revokedOthersTitle": "Other devices signed out",
+  "settings.sessions.revokedOthersBody": "Signed out from {count} device(s).",
+  "security.reuse.title": "Security alert",
+  "security.reuse.message":
+    "A sign-in from another location was detected, so all sessions were ended automatically. If this wasn't you, please change your password.",
+  "security.reuse.action": "Sign in again",
+  "settings.github.connectedAsLogin": "Connected as @{login}",
+  "settings.github.commitRead": "Commit read",
+  "settings.github.commitReadOn": "Include",
+  "settings.github.commitReadOff": "Exclude",
+  "settings.github.pushTarget": "Push target repository",
+  "settings.github.pushTargetNone": "None",
+  "settings.github.pushTargetHint":
+    "Retrospective markdown will be pushed to this repository.",
+  "settings.section.region": "Region & Timezone",
+  "settings.region.title": "Country / Timezone",
+  "settings.region.apply": "Apply country change",
+  "settings.region.applying": "Applying…",
+  "settings.region.updated": "Country updated",
+  "settings.region.modalTitle": "Update summary time too?",
+  "settings.region.modalMessage":
+    "Changing your country can update the AI auto-summary timezone (1 AM local) to the new country. You can also keep your current timezone.",
+  "settings.region.modalMessageWithTz":
+    "Changing to {country} will set the timezone to {timezone}. Update the AI summary schedule (1 AM local) too?",
+  "settings.region.modalUseNew": "Use new country's timezone",
+  "settings.region.modalKeep": "Keep current timezone",
+  "settings.region.selectRegionHint": "Select a region to enable the apply button.",
+  "settings.region.selectTimezone": "Select timezone",
+  "settings.region.selectTimezoneHint": "This country has multiple timezones. Please select one.",
+  "settings.region.loadingTz": "Loading timezones…",
+  "settings.region.autoTz": "Auto timezone: {timezone}",
+  "settings.timezone.label": "Timezone (summary schedule)",
+  "settings.timezone.hint":
+    "AI auto-summary runs at 1 AM in this timezone.",
+  "settings.timezone.updated": "Timezone updated",
   "settings.language.label": "Language",
   "settings.autoSummary.weekly": "Weekly auto-summary",
   "settings.autoSummary.monthly": "Monthly auto-summary",
@@ -844,6 +1049,11 @@ const en: Dict = {
   "settings.templates.inUse": "In use",
   "settings.templates.activeHint":
     "The 'in use' template is applied automatically when a new retrospective is created.",
+  "settings.templates.newName": "New {type} template",
+  "settings.templates.defaultName.daily": "Default daily template",
+  "settings.templates.defaultName.weekly": "Default weekly template",
+  "settings.templates.defaultName.monthly": "Default monthly template",
+  "settings.templates.defaultName.yearly": "Default yearly template",
   "settings.section.integrations": "Integrations",
   "settings.section.preferences": "Preferences",
   "settings.group.integrations.hint": "Manage connections to external services.",
@@ -863,6 +1073,8 @@ const en: Dict = {
   "auth.divider.or": "or",
   "auth.error.network": "Please check your network connection.",
   "auth.error.unknown": "Something went wrong.",
+  "auth.password.show": "Show password",
+  "auth.password.hide": "Hide password",
   "auth.consoleHint": "No real email is sent. Check the verification code in your browser's developer console.",
 
   "auth.login.title": "Welcome back",
@@ -902,6 +1114,8 @@ const en: Dict = {
   "auth.signup.countryPlaceholder": "Select a country",
   "auth.signup.region": "Region (state/province)",
   "auth.signup.regionPlaceholder": "Select a region",
+  "ui.select.search": "Search...",
+  "ui.select.empty": "No results",
   "auth.signup.error.countryRequired": "Please select your country.",
   "auth.signup.error.regionRequired": "This country requires a region (state/province).",
   "auth.onboarding.title": "Almost there",
@@ -927,7 +1141,23 @@ const en: Dict = {
   "auth.forgot.newPasswordSubmit": "Change password",
   "auth.forgot.success": "Password changed. Please sign in again.",
   "auth.forgot.error.userNotFound": "This email isn't registered.",
+  "auth.forgot.linkSent":
+    "If that email is registered, we've sent a password reset link. Please check your inbox.",
   "auth.forgot.backToLogin": "Back to sign in",
+  "auth.reset.title": "Set a new password",
+  "auth.reset.subtitle": "Enter the password you'd like to use.",
+  "auth.reset.newPassword": "New password",
+  "auth.reset.submit": "Change password",
+  "auth.reset.success":
+    "Your password has been changed. Please sign in with your new password.",
+  "auth.reset.goLogin": "Go to sign in",
+  "auth.reset.requestAgain": "Request a new reset link",
+  "auth.reset.error.tokenInvalid":
+    "Invalid link. Please request a password reset again.",
+  "auth.reset.error.tokenExpired":
+    "This link has expired. Please request a password reset again.",
+  "auth.reset.error.notAllowed":
+    "Password reset is not available for this account.",
 
   "auth.oauth.github": "Continue with GitHub",
   "auth.oauth.google": "Continue with Google",
@@ -1057,7 +1287,12 @@ const zh: Dict = {
   "retro.editor.learned": "学到的与改进点",
   "retro.editor.learnedPlaceholder":
     "随意记录今天学到的事情和下次想做得更好的部分。",
-  "retro.editor.save": "保存 · 同步",
+  "retro.editor.save": "Push 到 GitHub",
+  "retro.editor.pushing": "Push 中...",
+  "retro.editor.pushSuccess": "已 Push 到 GitHub",
+  "retro.editor.pushFailed": "Push 失败，请重试",
+  "retro.editor.noCommits": "今天没有提交",
+  "retro.editor.loadCommits": "加载提交",
   "retro.editor.synced": "已同步到 GitHub",
   "retro.editor.pending": "等待同步",
   "retro.summarize.weekly": "周摘要",
@@ -1133,6 +1368,54 @@ const zh: Dict = {
   "settings.github.connectAccount": "连接 GitHub 账户",
   "settings.github.connectAccountPending":
     "GitHub 账户连接功能即将推出。使用 GitHub 登录即可连接仓库。",
+  "settings.github.connectAccountHint":
+    "连接 GitHub 账户后即可连接仓库并使用提交与回顾 push 功能。",
+  "settings.github.connecting": "连接中…",
+  "settings.github.connectFailed": "GitHub 连接失败，请重试。",
+  "settings.github.alreadyLinked": "该 GitHub 账户已关联到其他用户，或已连接。",
+  "settings.section.security": "安全",
+  "settings.group.security.hint": "管理已登录的设备和会话。",
+  "settings.sessions.title": "活动会话",
+  "settings.sessions.loading": "正在加载会话…",
+  "settings.sessions.empty": "没有活动会话。",
+  "settings.sessions.thisDevice": "本设备",
+  "settings.sessions.signOut": "退出登录",
+  "settings.sessions.revokeOthers": "退出所有其他设备",
+  "settings.sessions.unknownDevice": "未知设备",
+  "settings.sessions.revoked": "会话已结束",
+  "settings.sessions.revokedOthersTitle": "已退出其他设备",
+  "settings.sessions.revokedOthersBody": "已从 {count} 台设备退出登录。",
+  "security.reuse.title": "安全提醒",
+  "security.reuse.message":
+    "检测到来自其他位置的登录尝试，所有会话已自动结束。如非本人操作，请修改密码。",
+  "security.reuse.action": "重新登录",
+  "settings.github.connectedAsLogin": "已连接 @{login}",
+  "settings.github.commitRead": "读取提交",
+  "settings.github.commitReadOn": "包含",
+  "settings.github.commitReadOff": "排除",
+  "settings.github.pushTarget": "Push 目标仓库",
+  "settings.github.pushTargetNone": "不选择",
+  "settings.github.pushTargetHint": "将向此仓库 push 回顾 Markdown。",
+  "settings.section.region": "地区与时区",
+  "settings.region.title": "国家 / 时区",
+  "settings.region.apply": "应用国家变更",
+  "settings.region.applying": "应用中…",
+  "settings.region.updated": "国家已更新",
+  "settings.region.modalTitle": "同时更改摘要时间吗？",
+  "settings.region.modalMessage":
+    "更改国家后，可将 AI 自动摘要时区（当地凌晨 1 点）更新为新国家。也可以保留当前时区。",
+  "settings.region.modalMessageWithTz":
+    "切换至{country}将把时区设置为{timezone}。是否同时更新 AI 摘要时间（当地凌晨 1 点）？",
+  "settings.region.modalUseNew": "使用新国家时区",
+  "settings.region.modalKeep": "保留当前时区",
+  "settings.region.selectRegionHint": "请先选择地区以启用应用按钮。",
+  "settings.region.selectTimezone": "选择时区",
+  "settings.region.selectTimezoneHint": "该国家有多个时区，请选择一个。",
+  "settings.region.loadingTz": "正在加载时区…",
+  "settings.region.autoTz": "自动时区：{timezone}",
+  "settings.timezone.label": "时区（摘要执行基准）",
+  "settings.timezone.hint": "AI 自动摘要将在该时区的凌晨 1 点执行。",
+  "settings.timezone.updated": "时区已更新",
   "settings.language.label": "语言",
   "settings.autoSummary.weekly": "周自动摘要",
   "settings.autoSummary.monthly": "月自动摘要",
@@ -1155,6 +1438,11 @@ const zh: Dict = {
   "settings.templates.use": "使用",
   "settings.templates.inUse": "使用中",
   "settings.templates.activeHint": "创建新回顾时会自动应用「使用中」的模板。",
+  "settings.templates.newName": "新建{type}模板",
+  "settings.templates.defaultName.daily": "默认日间模板",
+  "settings.templates.defaultName.weekly": "默认周间模板",
+  "settings.templates.defaultName.monthly": "默认月间模板",
+  "settings.templates.defaultName.yearly": "默认年度模板",
   "settings.section.integrations": "集成",
   "settings.section.preferences": "偏好设置",
   "settings.group.integrations.hint": "管理与外部服务的连接。",
@@ -1172,6 +1460,8 @@ const zh: Dict = {
   "auth.divider.or": "或",
   "auth.error.network": "请检查您的网络连接。",
   "auth.error.unknown": "发生未知错误。",
+  "auth.password.show": "显示密码",
+  "auth.password.hide": "隐藏密码",
   "auth.consoleHint": "不会发送真实邮件。请在浏览器开发者工具的控制台中查看验证码。",
 
   "auth.login.title": "欢迎回来",
@@ -1211,6 +1501,8 @@ const zh: Dict = {
   "auth.signup.countryPlaceholder": "选择国家",
   "auth.signup.region": "地区（州/省）",
   "auth.signup.regionPlaceholder": "选择地区",
+  "ui.select.search": "搜索...",
+  "ui.select.empty": "无结果",
   "auth.signup.error.countryRequired": "请选择国家。",
   "auth.signup.error.regionRequired": "该国家需要选择地区（州/省）。",
   "auth.onboarding.title": "就快完成了",
@@ -1236,7 +1528,19 @@ const zh: Dict = {
   "auth.forgot.newPasswordSubmit": "更改密码",
   "auth.forgot.success": "密码已修改，请重新登录。",
   "auth.forgot.error.userNotFound": "该邮箱未注册。",
+  "auth.forgot.linkSent":
+    "如果该邮箱已注册，我们已发送密码重置链接，请查收邮件。",
   "auth.forgot.backToLogin": "返回登录",
+  "auth.reset.title": "设置新密码",
+  "auth.reset.subtitle": "请输入要使用的新密码。",
+  "auth.reset.newPassword": "新密码",
+  "auth.reset.submit": "更改密码",
+  "auth.reset.success": "密码已更改，请使用新密码重新登录。",
+  "auth.reset.goLogin": "前往登录",
+  "auth.reset.requestAgain": "重新获取重置链接",
+  "auth.reset.error.tokenInvalid": "链接无效，请重新申请密码重置。",
+  "auth.reset.error.tokenExpired": "链接已过期，请重新申请密码重置。",
+  "auth.reset.error.notAllowed": "此账户无法重置密码。",
 
   "auth.oauth.github": "使用 GitHub 继续",
   "auth.oauth.google": "使用 Google 继续",
@@ -1368,7 +1672,12 @@ const ja: Dict = {
   "retro.editor.learned": "学びと改善点",
   "retro.editor.learnedPlaceholder":
     "今日気付いたこと、次に改善したいことを自由に。",
-  "retro.editor.save": "保存・同期",
+  "retro.editor.save": "GitHub に Push",
+  "retro.editor.pushing": "Push 中...",
+  "retro.editor.pushSuccess": "GitHub に Push 完了",
+  "retro.editor.pushFailed": "Push 失敗、再試行してください",
+  "retro.editor.noCommits": "今日のコミットはありません",
+  "retro.editor.loadCommits": "コミットを読み込む",
   "retro.editor.synced": "GitHub に同期",
   "retro.editor.pending": "同期待ち",
   "retro.summarize.weekly": "週次サマリー",
@@ -1445,6 +1754,56 @@ const ja: Dict = {
   "settings.github.connectAccount": "GitHubアカウントを連携",
   "settings.github.connectAccountPending":
     "GitHubアカウント連携機能は近日提供予定です。GitHubでログインするとリポジトリを連携できます。",
+  "settings.github.connectAccountHint":
+    "GitHubアカウントを連携すると、リポジトリ連携やコミット・振り返りの push が使えます。",
+  "settings.github.connecting": "接続中…",
+  "settings.github.connectFailed": "GitHub 連携に失敗しました。再試行してください。",
+  "settings.github.alreadyLinked": "この GitHub アカウントは既に他のユーザーに連携済み、または既に接続されています。",
+  "settings.section.security": "セキュリティ",
+  "settings.group.security.hint": "ログイン中のデバイスとセッションを管理します。",
+  "settings.sessions.title": "アクティブなセッション",
+  "settings.sessions.loading": "セッションを読み込み中…",
+  "settings.sessions.empty": "アクティブなセッションはありません。",
+  "settings.sessions.thisDevice": "この端末",
+  "settings.sessions.signOut": "ログアウト",
+  "settings.sessions.revokeOthers": "他のすべての端末からログアウト",
+  "settings.sessions.unknownDevice": "不明な端末",
+  "settings.sessions.revoked": "セッションを終了しました",
+  "settings.sessions.revokedOthersTitle": "他の端末からログアウトしました",
+  "settings.sessions.revokedOthersBody": "{count} 台の端末からログアウトしました。",
+  "security.reuse.title": "セキュリティ通知",
+  "security.reuse.message":
+    "別の場所からのログイン試行が検知されたため、すべてのセッションが自動的に終了されました。心当たりがない場合はパスワードを変更してください。",
+  "security.reuse.action": "再ログイン",
+  "settings.github.connectedAsLogin": "@{login} で接続中",
+  "settings.github.commitRead": "コミット読み取り",
+  "settings.github.commitReadOn": "含む",
+  "settings.github.commitReadOff": "除外",
+  "settings.github.pushTarget": "Push 対象リポジトリ",
+  "settings.github.pushTargetNone": "選択なし",
+  "settings.github.pushTargetHint":
+    "振り返りの Markdown をこのリポジトリに push します。",
+  "settings.section.region": "地域とタイムゾーン",
+  "settings.region.title": "国 / タイムゾーン",
+  "settings.region.apply": "国の変更を適用",
+  "settings.region.applying": "適用中…",
+  "settings.region.updated": "国を変更しました",
+  "settings.region.modalTitle": "要約時間も変更しますか？",
+  "settings.region.modalMessage":
+    "国を変更すると、AI 自動要約のタイムゾーン（現地午前1時）を新しい国に合わせて更新できます。現在のタイムゾーンを維持することもできます。",
+  "settings.region.modalMessageWithTz":
+    "{country}に変更すると、タイムゾーンが{timezone}になります。AI 要約のスケジュール（現地午前1時）も更新しますか？",
+  "settings.region.modalUseNew": "新しい国のタイムゾーンにする",
+  "settings.region.modalKeep": "現在のタイムゾーンを維持",
+  "settings.region.selectRegionHint": "地域を選択すると適用ボタンが有効になります。",
+  "settings.region.selectTimezone": "タイムゾーンを選択",
+  "settings.region.selectTimezoneHint": "この国には複数のタイムゾーンがあります。選択してください。",
+  "settings.region.loadingTz": "タイムゾーン読み込み中…",
+  "settings.region.autoTz": "自動タイムゾーン：{timezone}",
+  "settings.timezone.label": "タイムゾーン（要約実行基準）",
+  "settings.timezone.hint":
+    "AI 自動要約はこのタイムゾーンの午前1時に実行されます。",
+  "settings.timezone.updated": "タイムゾーンを変更しました",
   "settings.language.label": "言語",
   "settings.autoSummary.weekly": "週次自動サマリー",
   "settings.autoSummary.monthly": "月次自動サマリー",
@@ -1468,6 +1827,11 @@ const ja: Dict = {
   "settings.templates.inUse": "使用中",
   "settings.templates.activeHint":
     "「使用中」のテンプレートが、新しい振り返りの作成時に自動で適用されます。",
+  "settings.templates.newName": "新規{type}テンプレート",
+  "settings.templates.defaultName.daily": "デフォルト日次テンプレート",
+  "settings.templates.defaultName.weekly": "デフォルト週次テンプレート",
+  "settings.templates.defaultName.monthly": "デフォルト月次テンプレート",
+  "settings.templates.defaultName.yearly": "デフォルト年次テンプレート",
   "settings.section.integrations": "連携",
   "settings.section.preferences": "環境設定",
   "settings.group.integrations.hint": "外部サービスとの連携を管理します。",
@@ -1486,6 +1850,8 @@ const ja: Dict = {
   "auth.divider.or": "または",
   "auth.error.network": "ネットワーク接続を確認してください。",
   "auth.error.unknown": "不明なエラーが発生しました。",
+  "auth.password.show": "パスワードを表示",
+  "auth.password.hide": "パスワードを非表示",
   "auth.consoleHint": "実際のメールは送信されません。ブラウザの開発者ツールのコンソールで認証コードを確認してください。",
 
   "auth.login.title": "おかえりなさい",
@@ -1525,6 +1891,8 @@ const ja: Dict = {
   "auth.signup.countryPlaceholder": "国を選択",
   "auth.signup.region": "地域（州・県）",
   "auth.signup.regionPlaceholder": "地域を選択",
+  "ui.select.search": "検索...",
+  "ui.select.empty": "結果なし",
   "auth.signup.error.countryRequired": "国を選択してください。",
   "auth.signup.error.regionRequired": "この国は地域（州・県）の選択が必要です。",
   "auth.onboarding.title": "もう少しで完了です",
@@ -1550,7 +1918,23 @@ const ja: Dict = {
   "auth.forgot.newPasswordSubmit": "パスワードを変更",
   "auth.forgot.success": "パスワードが変更されました。再度サインインしてください。",
   "auth.forgot.error.userNotFound": "登録されていないメールです。",
+  "auth.forgot.linkSent":
+    "そのメールが登録されている場合、パスワード再設定リンクを送信しました。メールをご確認ください。",
   "auth.forgot.backToLogin": "サインインに戻る",
+  "auth.reset.title": "新しいパスワードを設定",
+  "auth.reset.subtitle": "使用したいパスワードを入力してください。",
+  "auth.reset.newPassword": "新しいパスワード",
+  "auth.reset.submit": "パスワードを変更",
+  "auth.reset.success":
+    "パスワードを変更しました。新しいパスワードで再度ログインしてください。",
+  "auth.reset.goLogin": "ログインへ",
+  "auth.reset.requestAgain": "再設定リンクを再取得",
+  "auth.reset.error.tokenInvalid":
+    "無効なリンクです。パスワード再設定をやり直してください。",
+  "auth.reset.error.tokenExpired":
+    "リンクの有効期限が切れました。再設定をやり直してください。",
+  "auth.reset.error.notAllowed":
+    "このアカウントはパスワード再設定を利用できません。",
 
   "auth.oauth.github": "GitHub で続ける",
   "auth.oauth.google": "Google で続ける",

@@ -1,10 +1,10 @@
 /**
  * GitHub 저장소 연동 API (api.yaml github 태그).
- * 연결(인증)은 GitHub OAuth 로그인 토큰 재사용 — 별도 연결 엔드포인트 없음.
- * 응답 스키마가 이미 camelCase 라 매핑은 거의 패스스루.
+ * 연결(인증)은 GitHub OAuth 로그인 토큰 재사용 — OAuth 연결 엔드포인트는 별도 없음.
  */
 import type {
   AvailableRepository,
+  GitHubCommit,
   LinkedRepository,
 } from "@/entities/github/model/types";
 import { request } from "./client";
@@ -13,6 +13,11 @@ import type { components } from "./schema";
 type RepositoryResponse = components["schemas"]["RepositoryResponse"];
 type AvailableRepositoryResponse =
   components["schemas"]["AvailableRepositoryResponse"];
+type ConnectionStatusResponse =
+  components["schemas"]["ConnectionStatusResponse"];
+type CommitResponse = components["schemas"]["CommitResponse"];
+
+// ── Mappers ────────────────────────────────────────────────────────────────
 
 function toLinked(api: RepositoryResponse): LinkedRepository {
   return {
@@ -24,6 +29,7 @@ function toLinked(api: RepositoryResponse): LinkedRepository {
     isPrivate: api.isPrivate,
     defaultBranch: api.defaultBranch,
     htmlUrl: api.htmlUrl,
+    commitReadEnabled: api.commitReadEnabled,
     createdAt: api.createdAt,
     updatedAt: api.updatedAt ?? null,
   };
@@ -40,6 +46,36 @@ function toAvailable(api: AvailableRepositoryResponse): AvailableRepository {
     htmlUrl: api.htmlUrl,
   };
 }
+
+function toCommit(api: CommitResponse): GitHubCommit {
+  return {
+    repositoryId: api.repositoryId,
+    fullName: api.fullName,
+    sha: api.sha,
+    message: api.message,
+    htmlUrl: api.htmlUrl,
+    author: api.author,
+    committedAt: api.committedAt,
+  };
+}
+
+// ── Connection ──────────────────────────────────────────────────────────────
+
+/** GitHub 연결 상태 + push target 통합 조회 (GET /github/connection). */
+export async function apiGetConnection(): Promise<{
+  connected: boolean;
+  login: string | null;
+  pushTargetRepositoryId: string | null;
+}> {
+  const res = await request<ConnectionStatusResponse>("/github/connection");
+  return {
+    connected: res.connected,
+    login: res.login ?? null,
+    pushTargetRepositoryId: res.pushTargetRepositoryId ?? null,
+  };
+}
+
+// ── Repositories ────────────────────────────────────────────────────────────
 
 /** GitHub 에서 사용자 public 저장소 목록 조회 (연결 후보, DB 미저장). */
 export async function apiListAvailableRepos(): Promise<AvailableRepository[]> {
@@ -66,6 +102,18 @@ export async function apiLinkRepo(
   return toLinked(res);
 }
 
+/** 저장소 역할(commitReadEnabled) 수정. */
+export async function apiUpdateRepo(
+  repositoryId: string,
+  body: { commitReadEnabled: boolean },
+): Promise<LinkedRepository> {
+  const res = await request<RepositoryResponse>(
+    `/github/repositories/${repositoryId}`,
+    { method: "PATCH", body },
+  );
+  return toLinked(res);
+}
+
 /** 모든 저장소 연결 해제. */
 export async function apiUnlinkAllRepos(): Promise<void> {
   await request("/github/repositories", { method: "DELETE" });
@@ -83,4 +131,45 @@ export async function apiSyncAllRepos(): Promise<LinkedRepository[]> {
     { method: "POST" },
   );
   return list.map(toLinked);
+}
+
+// ── Commits ─────────────────────────────────────────────────────────────────
+
+/**
+ * 오늘(또는 지정 날짜)의 커밋 목록 조회.
+ * @param date YYYY-MM-DD (생략 시 user.timezone 기준 오늘 — 서버가 계산)
+ */
+export async function apiGetCommits(date?: string): Promise<GitHubCommit[]> {
+  const query = date ? `?date=${date}` : "";
+  const list = await request<CommitResponse[]>(`/github/commits${query}`);
+  return list.map(toCommit);
+}
+
+// ── Retrospective Push ───────────────────────────────────────────────────────
+
+export interface PushRetrospectivePayload {
+  periodType: "DAILY" | "WEEKLY" | "MONTHLY" | "ANNUAL";
+  periodKey: string;
+  contentMarkdown: string;
+}
+
+export interface PushRetrospectiveResult {
+  commitSha: string;
+  htmlUrl: string;
+  path: string;
+}
+
+/** 회고 마크다운을 push target 저장소에 commit/push. */
+export async function apiPushRetrospective(
+  payload: PushRetrospectivePayload,
+): Promise<PushRetrospectiveResult> {
+  const res = await request<components["schemas"]["PushResultResponse"]>(
+    "/github/retrospectives/push",
+    { method: "POST", body: payload },
+  );
+  return {
+    commitSha: res.commitSha,
+    htmlUrl: res.htmlUrl,
+    path: res.path,
+  };
 }

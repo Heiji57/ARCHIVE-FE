@@ -12,6 +12,7 @@ import type {
   PendingSummary,
   SummaryKind,
 } from "@/entities/summary/model/types";
+import type { Session } from "@/entities/session/model/types";
 import type { RetroTemplate } from "@/entities/template";
 import type { TaskStatus, Todo } from "@/entities/todo/model/types";
 import type { OAuthProvider, User } from "@/entities/user/model/types";
@@ -73,12 +74,24 @@ export interface ArchiveAppContextValue {
   loadGitHubAvailableRepos: () => Promise<AvailableRepository[]>;
   /** githubRepoId 로 저장소 1개 연결. */
   linkGitHubRepo: (githubRepoId: number) => Promise<void>;
+  /** 저장소 commitReadEnabled 토글. */
+  updateLinkedRepo: (repositoryId: string, commitReadEnabled: boolean) => void;
   /** 단일 저장소 연결 해제. */
   unlinkGitHubRepo: (repositoryId: string) => void;
   /** 모든 저장소 연결 해제. */
   unlinkAllGitHubRepos: () => void;
   /** 현재 GitHub 저장소를 일괄 연결(sync). */
   syncAllGitHubRepos: () => Promise<void>;
+  /** push target 저장소 변경 (null = 해제). */
+  setPushTarget: (repositoryId: string | null) => void;
+  /** 오늘의 커밋 목록 로드 (GET /github/commits). */
+  loadCommits: (date?: string) => Promise<void>;
+  /** 회고 마크다운을 GitHub push target 저장소에 push. */
+  pushRetrospective: (
+    retroType: "daily" | "weekly" | "monthly" | "yearly",
+    dateKey: string,
+    contentMarkdown: string,
+  ) => Promise<PushRetrospectiveResult>;
   pushNotification: (
     type: NoticeType,
     title: string,
@@ -130,14 +143,51 @@ export interface ArchiveAppContextValue {
     country: string;
     region: string | null;
   }) => Promise<SignupResult>;
-  resetPassword: (
-    email: string,
-    code: string,
+  /** 비밀번호 재설정 메일 발송 (토큰 링크 방식). 보안상 항상 성공으로 간주. */
+  requestPasswordReset: (email: string) => Promise<void>;
+  /** 이메일 토큰 + 새 비밀번호로 재설정 확정. */
+  confirmPasswordReset: (
+    token: string,
     newPassword: string,
+    newPasswordConfirm: string,
   ) => Promise<ResetPasswordResult>;
   updateProfile: (
     patch: Partial<Pick<User, "displayName" | "avatarUrl">>,
   ) => void;
+  // ─── 지역/시간대 (settings) ────────────────────────────────────────────────
+  /**
+   * 국가 변경.
+   * - timezone: 단일 tz 국가는 null/undefined 가능, 다중 tz 는 필수.
+   * - keepCurrentTimezone: true 면 API 호출 후 이전 tz 를 복원.
+   */
+  updateCountry: (
+    country: string,
+    timezone: string | null,
+    keepCurrentTimezone?: boolean,
+  ) => Promise<{ ok: boolean }>;
+  /**
+   * 국가의 IANA timezone 목록 조회 (국가 선택 시 드롭다운 데이터).
+   * multi=true 면 사용자가 직접 timezone 을 선택해야 한다.
+   */
+  loadCountryTimezones: (
+    code: string,
+  ) => Promise<{ multi: boolean; timezones: string[] }>;
+  /** timezone 단독 변경 (국가 유지). AI 요약 실행 시간대 변경용. */
+  updateTimezone: (timezone: string) => Promise<{ ok: boolean }>;
+  /** GitHub 계정 연결 (로그인 상태에서 OAuth link 팝업). */
+  linkGitHubAccount: () => Promise<{ ok: boolean; error?: string }>;
+  // ─── 세션 관리 ─────────────────────────────────────────────────────────────
+  /** 현재 사용자의 활성 세션(로그인 기기) 목록. */
+  listSessions: () => Promise<Session[]>;
+  /** 단일 세션 폐기. 현재 세션을 폐기하면 이후 요청이 401 → 로그아웃. */
+  revokeSession: (sessionId: string) => Promise<{ ok: boolean }>;
+  /** 현재 세션 외 모든 기기 로그아웃. */
+  revokeOtherSessions: () => Promise<{ ok: boolean; revokedCount?: number }>;
+  // ─── 보안(탈취 감지) ───────────────────────────────────────────────────────
+  /** refresh token 재사용 감지로 강제 로그아웃된 상태 (보안 경고 모달 표시용). */
+  securityLogout: boolean;
+  /** 보안 경고 모달 닫기. */
+  dismissSecurityLogout: () => void;
 }
 
 // ─── Auth result types ──────────────────────────────────────────────────────
@@ -178,4 +228,11 @@ export type SignupResult =
 
 export type ResetPasswordResult =
   | { ok: true }
-  | { ok: false; error: "invalid-code" | "user-not-found" };
+  | {
+      ok: false;
+      error: "token-invalid" | "token-expired" | "not-allowed" | "unknown";
+    };
+
+export type PushRetrospectiveResult =
+  | { ok: true; commitSha: string; htmlUrl: string; path: string }
+  | { ok: false; error: string };

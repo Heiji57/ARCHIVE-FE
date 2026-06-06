@@ -1,9 +1,5 @@
 /**
  * GitHub 연동 도메인 타입 — 서버(api.yaml github 태그) 모델을 따른다.
- *
- * 연결(인증)은 서버가 "GitHub OAuth 로그인 access_token 재사용" 방식이라
- * 별도 연결 객체가 없다. 연결 여부는 저장소 조회가 GITHUB_CONNECTION_NOT_FOUND
- * 를 던지는지로 판별한다(= status).
  */
 
 /** DB 에 연결(link)된 저장소 (RepositoryResponse) */
@@ -17,6 +13,8 @@ export interface LinkedRepository {
   isPrivate: boolean;
   defaultBranch: string;
   htmlUrl: string;
+  /** 오늘의 커밋 집계 포함 여부. false 이면 GET /github/commits 에서 제외됨. */
+  commitReadEnabled: boolean;
   createdAt: string;
   updatedAt: string | null;
 }
@@ -32,6 +30,17 @@ export interface AvailableRepository {
   htmlUrl: string;
 }
 
+/** 오늘의 커밋 (CommitResponse) */
+export interface GitHubCommit {
+  repositoryId: string;
+  fullName: string;
+  sha: string;
+  message: string;
+  htmlUrl: string;
+  author: string;
+  committedAt: string;
+}
+
 /**
  * GitHub 연결 상태.
  *  - "unknown": 아직 확인 전(프로브 미완료)
@@ -42,10 +51,19 @@ export type GitHubStatus = "unknown" | "connected" | "not-connected";
 
 export interface GitHubState {
   status: GitHubStatus;
+  /** GitHub username (GET /github/connection 응답의 login 필드) */
+  login: string | null;
   linkedRepositories: LinkedRepository[];
+  /** 회고 push 대상 저장소 id. null 이면 미설정. */
+  pushTargetRepositoryId: string | null;
+  /** 오늘의 커밋 목록 (GET /github/commits). */
+  commits: GitHubCommit[];
 }
 
 export const INITIAL_GITHUB_STATE: GitHubState = {
   status: "unknown",
+  login: null,
   linkedRepositories: [],
+  pushTargetRepositoryId: null,
+  commits: [],
 };

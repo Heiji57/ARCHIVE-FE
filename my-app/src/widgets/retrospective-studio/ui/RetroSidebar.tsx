@@ -1,8 +1,8 @@
 import { ChevronLeft, ChevronRight, Plus, Search, Sparkles } from "lucide-react"
 import type { JournalEntry } from "@/entities/entry/model/types"
 import type { SummaryKind } from "@/entities/summary/model/types"
+import { useTodayKey } from "@/app/providers/useToday"
 import { EmptyState } from "@/shared/ui/empty-state/EmptyState"
-import { todayKey } from "@/shared/lib/date"
 import { useTranslation } from "@/shared/lib/i18n"
 import { MONTHS, RETRO_FILTERS } from "../model/constants"
 import type { UseRetroFilterResult } from "../model/useRetroFilter"
@@ -23,7 +23,7 @@ export function RetroSidebar({
   onSummarize,
   onNewDaily,
 }: RetroSidebarProps) {
-  const todayDateKey = todayKey()
+  const todayDateKey = useTodayKey()
   const { t } = useTranslation()
   const {
     retroFilter,

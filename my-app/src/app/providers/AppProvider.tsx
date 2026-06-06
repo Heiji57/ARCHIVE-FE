@@ -1,11 +1,19 @@
-import { useCallback, useEffect, useReducer, useRef, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useReducer,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import {
   mockCompleteOnboarding,
   mockCompleteSignup,
+  mockConfirmPasswordReset,
   mockLogin,
   mockOAuthLogin,
   mockRequestEmailCode,
-  mockResetPassword,
+  mockRequestPasswordReset,
   mockVerifyEmailCode,
 } from "@/app/lib/mockAuth";
 import { detectOverdueSchedules } from "@/app/lib/scheduleSummary";
@@ -39,6 +47,7 @@ import {
 } from "@/entities/summary/model/types";
 import { getTodosInRange } from "@/entities/todo/lib/selectors";
 import { getEntriesInRange } from "@/entities/entry/lib/selectors";
+import { DEMO_ANCHOR_DATE_KEY } from "@/app/config/demo";
 import {
   endOfMonth,
   endOfWeek,
@@ -47,10 +56,11 @@ import {
   startOfMonth,
   startOfWeek,
   startOfYear,
-  todayKey,
+  todayKeyInTz,
 } from "@/shared/lib/date";
 import { createId } from "@/shared/lib/id";
 import { translate } from "@/shared/lib/i18n";
+import { ConfirmModal } from "@/shared/ui";
 import {
   USE_API,
   ApiError,
@@ -61,25 +71,40 @@ import {
   apiCreateTodo,
   apiDeleteNotification,
   apiGenerateSummary,
+  apiGetConnection,
+  apiGetCommits,
   apiGetSettings,
   apiGetSummary,
+  apiLinkOAuth,
   apiLinkRepo,
+  apiConfirmPasswordReset,
+  apiRequestPasswordReset,
+  apiGetCountryTimezones,
+  apiUpdateCountry,
+  apiUpdateTimezone,
   apiListAvailableRepos,
   apiListEntries,
   apiListLinkedRepos,
   apiListNotifications,
+  apiListSessions,
   apiListTodos,
   apiLogin,
   apiLogout,
+  apiRevokeSession,
+  apiRevokeOtherSessions,
+  setSessionInvalidatedHandler,
   apiMarkAllNotificationsRead,
   apiMarkNotificationRead,
   apiOAuthLogin,
+  apiPushRetrospective,
   apiRequestEmailCode,
   apiRestoreSession,
+  apiSetPushTarget,
   apiSyncAllRepos,
   apiUnlinkAllRepos,
   apiUnlinkRepo,
   apiUpdateProfile,
+  apiUpdateRepo,
   apiUpdateSettings,
   apiUpdateTodo,
   apiUpsertEntry,
@@ -90,9 +115,24 @@ import {
 } from "@/shared/api";
 import {
   MOCK_AVAILABLE_REPOS,
+  MOCK_COMMITS,
+  MOCK_LOGIN,
   mockLinkRepository,
 } from "@/app/lib/mockGithub";
+import { toPeriodKey } from "@/shared/lib/date";
+import {
+  countryDefaultTimezone,
+  MULTI_TZ_COUNTRIES,
+  supportedTimeZones,
+  type MultiTzCountry,
+} from "@/shared/lib/geo";
 import type { AvailableRepository } from "@/entities/github/model/types";
+import {
+  mockListSessions,
+  mockRevokeSession,
+  mockRevokeOtherSessions,
+} from "@/app/lib/mockAuth";
+import type { PushRetrospectiveResult } from "@/app/model/types";
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(
@@ -105,6 +145,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // Track timers so we can clean up.
   const summaryTimerRef = useRef<number | null>(null);
+
+  // 탈취 감지(refresh token 재사용) → 강제 로그아웃 + 보안 경고 모달 플래그
+  const [securityLogout, setSecurityLogout] = useState(false);
+
+  // client 레이어가 AUTH_REFRESH_TOKEN_REUSE_DETECTED 를 받으면 여기로 통지된다.
+  // 자동 refresh 재시도 없이 즉시 로그아웃 + 보안 모달을 띄운다.
+  useEffect(() => {
+    setSessionInvalidatedHandler(() => {
+      dispatch({ type: "auth/logout" });
+      setSecurityLogout(true);
+    });
+    return () => setSessionInvalidatedHandler(null);
+  }, []);
 
   const dismissNotification = useCallback((id: string) => {
     dispatch({ type: "notification/dismiss", payload: { id } });
@@ -436,51 +489,86 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   // ─── GitHub 저장소 연동 (서버 모델) ──────────────────────────────────────────
-  // 연결 여부는 저장소 조회의 GITHUB_CONNECTION_NOT_FOUND 로 판별한다.
+  /**
+   * GET /github/connection 을 짧게 재시도하며 connected 여부를 확인한다.
+   * 계정 연결 직후 백엔드 커밋 타이밍 레이스로 첫 조회가 false 일 수 있어,
+   * 최대 5회(약 2초)까지 polling 해 즉시 반영을 보장한다.
+   */
+  const probeGitHubConnected = async (): Promise<boolean> => {
+    if (!USE_API) return true;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      try {
+        const conn = await apiGetConnection();
+        if (conn.connected) return true;
+      } catch {
+        // 네트워크 일시 오류 — 재시도
+      }
+      await new Promise((resolve) => setTimeout(resolve, 400));
+    }
+    return false;
+  };
+
   const runGitHubRefresh = () => {
     if (!USE_API) {
-      // mock: 서버가 없으므로 "연결됨"으로 간주(기존 연결 목록 유지).
-      dispatch({ type: "github/setStatus", payload: { status: "connected" } });
-      return;
-    }
-    // 백엔드 /github/repositories(linked)는 GitHub 미연결이어도 200 [] 을 주므로
-    // 연결 여부 판정에 쓸 수 없다. 실제 연결 신호는 /github/repositories/available
-    // (미연결 시 GITHUB_CONNECTION_NOT_FOUND). 다만 available 은 무거우므로,
-    // 연결된 저장소가 1개 이상이면 available 호출 없이 connected 로 단정한다.
-    const markNotConnected = (e: unknown) => {
-      const tokenIssue =
-        e instanceof ApiError &&
-        (e.code === "GITHUB_CONNECTION_NOT_FOUND" ||
-          e.code === "GITHUB_TOKEN_INVALID");
+      // mock: "연결됨"으로 간주, 기존 연결 목록 유지, login=developer
       dispatch({
         type: "github/setLinked",
         payload: {
-          status: tokenIssue ? "not-connected" : "not-connected",
-          repositories: [],
+          status: "connected",
+          repositories: state.github.linkedRepositories,
+          login: MOCK_LOGIN,
+          pushTargetRepositoryId: state.github.pushTargetRepositoryId,
         },
       });
-    };
-
-    void apiListLinkedRepos()
-      .then((repositories) => {
-        if (repositories.length > 0) {
+      return;
+    }
+    // GET /github/connection → 연결 상태 + login + pushTarget
+    void apiGetConnection()
+      .then((connection) => {
+        if (!connection.connected) {
           dispatch({
             type: "github/setLinked",
-            payload: { status: "connected", repositories },
+            payload: {
+              status: "not-connected",
+              repositories: [],
+              login: null,
+              pushTargetRepositoryId: null,
+            },
           });
           return;
         }
-        // 연결된 저장소가 없음 → available 로 GitHub 계정 연결 여부 확인
-        void apiListAvailableRepos()
-          .then(() =>
+        // 연결됨 → linked 저장소 목록 로드
+        void apiListLinkedRepos()
+          .then((repositories) =>
             dispatch({
               type: "github/setLinked",
-              payload: { status: "connected", repositories: [] },
+              payload: {
+                status: "connected",
+                repositories,
+                login: connection.login,
+                pushTargetRepositoryId: connection.pushTargetRepositoryId,
+              },
             }),
           )
-          .catch(markNotConnected);
+          .catch(() =>
+            dispatch({
+              type: "github/setLinked",
+              payload: {
+                status: "connected",
+                repositories: [],
+                login: connection.login,
+                pushTargetRepositoryId: connection.pushTargetRepositoryId,
+              },
+            }),
+          );
       })
-      .catch(markNotConnected);
+      .catch(() => {
+        // connection 조회 실패 → 이전 상태 유지하되 unknown 으로
+        dispatch({
+          type: "github/setStatus",
+          payload: { status: "not-connected" },
+        });
+      });
   };
 
   // ─── 데모(게스트) 모드 가드 ──────────────────────────────────────────────────
@@ -506,12 +594,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const value: ArchiveAppContextValue = {
     state,
     isDemo,
-    addTodo: (title, dateKey = todayKey(), options) => {
+    addTodo: (title, dateKey, options) => {
+      // 기본 날짜("오늘")는 user.timezone 기준 (데모는 앵커 날짜)
+      const resolvedDateKey =
+        dateKey ??
+        (isDemo
+          ? DEMO_ANCHOR_DATE_KEY
+          : todayKeyInTz(state.currentUser?.timezone ?? undefined));
       if (USE_API) {
         // 서버가 id 를 발급하므로 생성은 await 후 dispatch
         void apiCreateTodo({
           title,
-          dateKey,
+          dateKey: resolvedDateKey,
           status: options?.status,
           description: options?.description,
         })
@@ -523,7 +617,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         type: "todo/add",
         payload: {
           title,
-          dateKey,
+          dateKey: resolvedDateKey,
           status: options?.status,
           description: options?.description,
         },
@@ -594,6 +688,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return MOCK_AVAILABLE_REPOS.filter((r) => !linked.has(r.githubRepoId));
       }
       return apiListAvailableRepos();
+    },
+    updateLinkedRepo: (repositoryId: string, commitReadEnabled: boolean) => {
+      if (requireLoginInDemo()) return;
+      // 낙관적 업데이트
+      dispatch({
+        type: "github/updateLinked",
+        payload: { repositoryId, commitReadEnabled },
+      });
+      if (USE_API) {
+        void apiUpdateRepo(repositoryId, { commitReadEnabled }).catch(() => {
+          // 롤백
+          dispatch({
+            type: "github/updateLinked",
+            payload: { repositoryId, commitReadEnabled: !commitReadEnabled },
+          });
+          reportApiError();
+        });
+      }
     },
     linkGitHubRepo: async (githubRepoId: number) => {
       if (requireLoginInDemo()) return;
@@ -666,6 +778,76 @@ export function AppProvider({ children }: { children: ReactNode }) {
         });
       } catch {
         reportApiError();
+      }
+    },
+    setPushTarget: (repositoryId: string | null) => {
+      if (requireLoginInDemo()) return;
+      dispatch({ type: "github/setPushTarget", payload: { repositoryId } });
+      if (USE_API) {
+        void apiSetPushTarget(state.settings, repositoryId).catch(() => {
+          // 롤백
+          dispatch({
+            type: "github/setPushTarget",
+            payload: { repositoryId: state.github.pushTargetRepositoryId },
+          });
+          reportApiError();
+        });
+      }
+    },
+    loadCommits: async (date?: string) => {
+      if (!USE_API) {
+        dispatch({
+          type: "github/setCommits",
+          payload: { commits: MOCK_COMMITS },
+        });
+        return;
+      }
+      try {
+        const commits = await apiGetCommits(date);
+        dispatch({ type: "github/setCommits", payload: { commits } });
+      } catch {
+        // commits 로드 실패는 조용히 처리 (연결 오류 toast 미발생)
+        dispatch({ type: "github/setCommits", payload: { commits: [] } });
+      }
+    },
+    pushRetrospective: async (
+      retroType: "daily" | "weekly" | "monthly" | "yearly",
+      dateKey: string,
+      contentMarkdown: string,
+    ): Promise<PushRetrospectiveResult> => {
+      if (requireLoginInDemo()) {
+        return { ok: false, error: "demo" };
+      }
+      const periodTypeMap = {
+        daily: "DAILY",
+        weekly: "WEEKLY",
+        monthly: "MONTHLY",
+        yearly: "ANNUAL",
+      } as const;
+      const periodType = periodTypeMap[retroType];
+      const periodKey = toPeriodKey(retroType, dateKey);
+
+      if (!USE_API) {
+        // mock: 성공 응답 반환
+        return {
+          ok: true,
+          commitSha: "mock_sha_" + Math.random().toString(36).slice(2, 8),
+          htmlUrl: "https://github.com/developer/archive-journal",
+          path: `daily/${dateKey} 회고록.md`,
+        };
+      }
+
+      try {
+        const result = await apiPushRetrospective({
+          periodType,
+          periodKey,
+          contentMarkdown,
+        });
+        return { ok: true, ...result };
+      } catch (e) {
+        const err =
+          e instanceof ApiError ? e.code : "GITHUB_PUSH_FAILED";
+        return { ok: false, error: err };
       }
     },
     pushNotification,
@@ -814,16 +996,194 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
       return result;
     },
-    // 비밀번호 재설정은 api.yaml 에 없음 → 항상 mock (CLAUDE.md §8).
-    resetPassword: (email, code, newPassword) =>
-      mockResetPassword(email, code, newPassword),
+    // 비밀번호 재설정 (이메일 토큰 링크 방식)
+    requestPasswordReset: (email) =>
+      USE_API ? apiRequestPasswordReset(email) : mockRequestPasswordReset(email),
+    confirmPasswordReset: (token, newPassword, newPasswordConfirm) =>
+      USE_API
+        ? apiConfirmPasswordReset(token, newPassword, newPasswordConfirm)
+        : mockConfirmPasswordReset(token, newPassword),
     updateProfile: (patch: Partial<Pick<User, "displayName" | "avatarUrl">>) => {
       if (USE_API) void apiUpdateProfile(patch);
       dispatch({ type: "auth/updateProfile", payload: { patch } });
     },
+    // ─── 지역/시간대 ────────────────────────────────────────────────────────
+    /**
+     * 국가의 IANA timezone 목록 조회. multi=true 면 사용자가 timezone 을 직접 선택.
+     * mock 모드: COUNTRY_PRIMARY_TZ 를 단일 요소로, MULTI_TZ_COUNTRIES 로 multi 판단.
+     */
+    loadCountryTimezones: async (code) => {
+      if (!USE_API) {
+        const tz = countryDefaultTimezone(code);
+        const multi = MULTI_TZ_COUNTRIES.includes(code as MultiTzCountry);
+        const tzList = tz ? [tz] : supportedTimeZones().slice(0, 20);
+        return { multi, timezones: tzList };
+      }
+      try {
+        return await apiGetCountryTimezones(code);
+      } catch {
+        // 실패 시 빈 목록 (단일 tz 로 간주)
+        return { multi: false, timezones: [] };
+      }
+    },
+    updateCountry: async (country, timezone, keepCurrentTimezone = false) => {
+      if (requireLoginInDemo()) return { ok: false };
+      const prevTz = state.currentUser?.timezone ?? null;
+      if (!USE_API) {
+        // mock: 국가 + timezone 갱신
+        dispatch({
+          type: "auth/updateUser",
+          payload: { patch: { country, region: null, timezone: timezone ?? prevTz ?? undefined } },
+        });
+        return { ok: true };
+      }
+      try {
+        const displayName = state.currentUser?.displayName;
+        const user = await apiUpdateCountry(country, timezone, { displayName });
+        dispatch({
+          type: "auth/updateUser",
+          payload: {
+            patch: {
+              country: user.country,
+              region: user.region,
+              timezone: user.timezone,
+            },
+          },
+        });
+        // 기존 요약 시간(timezone) 유지를 원하면 이전 tz 로 되돌린다
+        if (keepCurrentTimezone && prevTz && prevTz !== user.timezone) {
+          const restored = await apiUpdateTimezone(prevTz, { displayName });
+          dispatch({
+            type: "auth/updateUser",
+            payload: { patch: { timezone: restored.timezone } },
+          });
+        }
+        return { ok: true };
+      } catch (err) {
+        if (err instanceof ApiError) {
+          // 다중 tz 국가인데 timezone 을 선택하지 않은 경우
+          if (err.code === "AUTH_COUNTRY_TIMEZONE_REQUIRED") {
+            pushNotification(
+              "warning",
+              translate(state.settings.locale, "settings.region.apply"),
+              translate(state.settings.locale, "settings.region.selectTimezoneHint"),
+              { transient: true },
+            );
+            return { ok: false };
+          }
+        }
+        reportApiError();
+        return { ok: false };
+      }
+    },
+    updateTimezone: async (timezone) => {
+      if (requireLoginInDemo()) return { ok: false };
+      if (!USE_API) {
+        dispatch({
+          type: "auth/updateUser",
+          payload: { patch: { timezone } },
+        });
+        return { ok: true };
+      }
+      try {
+        const displayName = state.currentUser?.displayName;
+        const user = await apiUpdateTimezone(timezone, { displayName });
+        dispatch({
+          type: "auth/updateUser",
+          payload: { patch: { timezone: user.timezone } },
+        });
+        return { ok: true };
+      } catch {
+        reportApiError();
+        return { ok: false };
+      }
+    },
+    linkGitHubAccount: async () => {
+      if (requireLoginInDemo()) return { ok: false, error: "demo" };
+      if (!USE_API) {
+        // mock: 즉시 연결됨 처리
+        dispatch({ type: "github/setStatus", payload: { status: "connected" } });
+        runGitHubRefresh();
+        return { ok: true };
+      }
+      const result = await apiLinkOAuth("github");
+      // 콜백 postMessage 를 받았든(ok) 놓쳤든(popup-closed/origin 불일치) 서버
+      // 연결 상태를 직접 재확인해 즉시 UI 에 반영한다. 백엔드가 link 를 막 커밋한
+      // 직후라 첫 조회가 아직 connected=false 일 수 있어 짧게 몇 번 재시도한다
+      // (새로고침해야만 반영되던 레이스 제거).
+      const probedConnected = await probeGitHubConnected();
+      if (probedConnected) {
+        runGitHubRefresh();
+        return { ok: true };
+      }
+      return result;
+    },
+    // ─── 세션 관리 ───────────────────────────────────────────────────────────
+    listSessions: () => (USE_API ? apiListSessions() : mockListSessions()),
+    revokeSession: async (sessionId: string) => {
+      if (requireLoginInDemo()) return { ok: false };
+      try {
+        if (USE_API) await apiRevokeSession(sessionId);
+        else await mockRevokeSession(sessionId);
+        return { ok: true };
+      } catch {
+        reportApiError();
+        return { ok: false };
+      }
+    },
+    revokeOtherSessions: async () => {
+      if (requireLoginInDemo()) return { ok: false };
+      try {
+        const revokedCount = USE_API
+          ? await apiRevokeOtherSessions()
+          : await mockRevokeOtherSessions();
+        return { ok: true, revokedCount };
+      } catch {
+        reportApiError();
+        return { ok: false };
+      }
+    },
+    // ─── 보안(탈취 감지) ─────────────────────────────────────────────────────
+    securityLogout,
+    dismissSecurityLogout: () => setSecurityLogout(false),
   };
 
-  return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
+  return (
+    <AppContext.Provider value={value}>
+      {children}
+      <SecurityLogoutModal
+        open={securityLogout}
+        locale={state.settings.locale}
+        onConfirm={() => setSecurityLogout(false)}
+      />
+    </AppContext.Provider>
+  );
+}
+
+/** 탈취 의심(refresh 재사용)으로 강제 로그아웃 시 뜨는 보안 경고 모달. */
+function SecurityLogoutModal({
+  open,
+  locale,
+  onConfirm,
+}: {
+  open: boolean;
+  locale: Locale;
+  onConfirm: () => void;
+}) {
+  if (!open) return null;
+  return (
+    <ConfirmModal
+      open={open}
+      hideCancel
+      title={translate(locale, "security.reuse.title")}
+      message={translate(locale, "security.reuse.message")}
+      confirmLabel={translate(locale, "security.reuse.action")}
+      cancelLabel={translate(locale, "security.reuse.action")}
+      onConfirm={onConfirm}
+      onCancel={onConfirm}
+      onDismiss={onConfirm}
+    />
+  );
 }
 
 // re-export for convenience

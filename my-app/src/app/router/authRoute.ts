@@ -2,12 +2,14 @@ export type AuthRoute =
   | "login"
   | "signup"
   | "forgot-password"
+  | "reset-password"
   | "onboarding";
 
 const AUTH_ROUTE_PATHS: Record<AuthRoute, string> = {
   login: "/login",
   signup: "/signup",
   "forgot-password": "/forgot-password",
+  "reset-password": "/reset-password",
   onboarding: "/onboarding",
 };
 
@@ -15,6 +17,7 @@ const AUTH_PATH_TO_ROUTE: Array<[string, AuthRoute]> = [
   ["/login", "login"],
   ["/signup", "signup"],
   ["/forgot-password", "forgot-password"],
+  ["/reset-password", "reset-password"],
   ["/onboarding", "onboarding"],
 ];
 

@@ -4,7 +4,7 @@ import type { AuthRoute } from "@/app/router/authRoute";
 import { USE_API } from "@/shared/api";
 import { isMultiTzCountry } from "@/shared/lib/geo";
 import { useTranslation } from "@/shared/lib/i18n";
-import { Checkbox, TextField } from "@/shared/ui";
+import { Checkbox, PasswordField, TextField } from "@/shared/ui";
 import { useEmailVerification } from "../model/useEmailVerification";
 import { CountryRegionFields } from "./CountryRegionFields";
 import { OAuthButtons } from "./OAuthButtons";
@@ -168,7 +168,7 @@ export function SignupForm({ onAuthNavigate }: SignupFormProps) {
             type="text"
             inputMode="text"
             autoCapitalize="characters"
-            autoComplete="one-time-code"
+            autoComplete="off"
             pattern="[A-Za-z0-9]{6}"
             maxLength={6}
             label={t("auth.signup.code")}
@@ -214,8 +214,7 @@ export function SignupForm({ onAuthNavigate }: SignupFormProps) {
             onChange={(e) => setDisplayName(e.target.value)}
             required
           />
-          <TextField
-            type="password"
+          <PasswordField
             autoComplete="new-password"
             label={t("auth.signup.password")}
             value={password}
@@ -223,8 +222,7 @@ export function SignupForm({ onAuthNavigate }: SignupFormProps) {
             hint={t("auth.signup.passwordHint")}
             required
           />
-          <TextField
-            type="password"
+          <PasswordField
             autoComplete="new-password"
             label={t("auth.signup.passwordConfirm")}
             value={passwordConfirm}

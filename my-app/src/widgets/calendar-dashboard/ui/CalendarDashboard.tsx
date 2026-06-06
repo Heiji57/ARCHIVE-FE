@@ -1,10 +1,10 @@
 import { useMemo, useState } from "react";
-import { DEMO_ANCHOR_DATE, DEMO_ANCHOR_DATE_KEY } from "@/app/config/demo";
 import type { AppRoute } from "@/app/model/types";
 import { useArchiveApp } from "@/app/providers/useArchiveApp";
+import { useTodayKey } from "@/app/providers/useToday";
 import { findTodoById } from "@/entities/todo/lib/selectors";
 import type { Todo } from "@/entities/todo/model/types";
-import { fromDateKey, todayKey } from "@/shared/lib/date";
+import { fromDateKey } from "@/shared/lib/date";
 import { useCalendarNav } from "../model/useCalendarNav";
 import { CalendarLegend } from "./CalendarLegend";
 import { CalendarToolbar } from "./CalendarToolbar";
@@ -17,12 +17,12 @@ export interface CalendarDashboardProps {
 }
 
 export function CalendarDashboard({ onNavigate }: CalendarDashboardProps) {
-  const { state, updateTodo, moveTodo, isDemo } = useArchiveApp();
-  // 실제 사용자는 오늘 기준, 데모 모드는 시드 데이터가 정렬된 앵커 날짜 기준.
-  const todayCellKey = isDemo ? DEMO_ANCHOR_DATE_KEY : todayKey();
+  const { state, updateTodo, moveTodo } = useArchiveApp();
+  // "오늘" = user.timezone 기준 (데모는 앵커 날짜). useTodayKey 가 분기 처리.
+  const todayCellKey = useTodayKey();
   const anchorDate = useMemo(
-    () => (isDemo ? DEMO_ANCHOR_DATE : fromDateKey(todayCellKey)),
-    [isDemo, todayCellKey],
+    () => fromDateKey(todayCellKey),
+    [todayCellKey],
   );
   const { view, setView, cursor, navigate, goToday } = useCalendarNav(anchorDate);
   const [selectedId, setSelectedId] = useState<string | null>(null);

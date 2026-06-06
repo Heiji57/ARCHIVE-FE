@@ -174,8 +174,33 @@ export const REGIONS_BY_COUNTRY: Record<MultiTzCountry, RegionOption[]> = {
   ],
 };
 
-/** 국가 코드 → 표시 이름 (locale 기반). 실패 시 코드 그대로. */
-export function countryName(code: string, locale: string): string {
+/**
+ * 국가 코드 → 그 나라의 대표(공용) 언어 BCP-47 locale.
+ * 현지어 국가명 표기에 사용. 목록에 없는 국가는 영어만 표시한다.
+ */
+export const COUNTRY_PRIMARY_LOCALE: Record<string, string> = {
+  KR: "ko", JP: "ja", CN: "zh", TW: "zh-TW", HK: "zh-HK",
+  DE: "de", AT: "de", CH: "de", FR: "fr", ES: "es", MX: "es",
+  AR: "es", CL: "es", CO: "es", PE: "es", VE: "es", EC: "es",
+  BO: "es", PY: "es", UY: "es", CR: "es", PA: "es", GT: "es",
+  HN: "es", NI: "es", SV: "es", DO: "es", CU: "es",
+  IT: "it", PT: "pt", BR: "pt", RU: "ru", BY: "ru", KZ: "ru",
+  KG: "ru", UA: "uk", PL: "pl", NL: "nl", BE: "nl", SE: "sv",
+  NO: "no", DK: "da", FI: "fi", IS: "is", CZ: "cs", SK: "sk",
+  HU: "hu", RO: "ro", BG: "bg", GR: "el", TR: "tr", IL: "he",
+  SA: "ar", AE: "ar", EG: "ar", IQ: "ar", JO: "ar", KW: "ar",
+  QA: "ar", BH: "ar", OM: "ar", LB: "ar", MA: "ar", DZ: "ar",
+  TN: "ar", LY: "ar", SY: "ar", YE: "ar",
+  IR: "fa", AF: "fa", PK: "ur", IN: "hi", BD: "bn", LK: "si",
+  NP: "ne", MM: "my", TH: "th", LA: "lo", KH: "km", VN: "vi",
+  ID: "id", MY: "ms", PH: "fil", MN: "mn",
+  ET: "am", KE: "sw", TZ: "sw", NG: "en", ZA: "en", GH: "en",
+  HR: "hr", RS: "sr", SI: "sl", LT: "lt", LV: "lv", EE: "et",
+  GE: "ka", AM: "hy", AZ: "az", UZ: "uz", AL: "sq", MK: "mk",
+};
+
+/** 국가 코드 → 표시 이름 (locale 기반, 기본 en). 실패 시 코드 그대로. */
+export function countryName(code: string, locale = "en"): string {
   try {
     const dn = new Intl.DisplayNames([locale], { type: "region" });
     return dn.of(code) ?? code;
@@ -184,14 +209,196 @@ export function countryName(code: string, locale: string): string {
   }
 }
 
-/** 표시용 정렬된 국가 목록 [{code, name}] (locale 이름순). */
-export function sortedCountries(
-  locale: string,
-): Array<{ code: string; name: string }> {
+/**
+ * 한글(Hangul) 문자가 포함되어 있는지 확인.
+ * Chrome ICU 가 특정 locale 언어 서브태그는 정상 resolve 하면서도
+ * 해당 locale 에 국가명 데이터가 없으면 앱 UI 기본 언어(한국어)로 반환하는
+ * 경우가 있다. 이 검사로 한국어 폴백을 최종 차단한다.
+ */
+function containsHangul(str: string): boolean {
+  return /[가-힯ᄀ-ᇿ㄰-㆏ꥠ-꥿ힰ-퟿]/.test(
+    str,
+  );
+}
+
+/**
+ * 현지어 국가명 — 두 가지 가드를 통과할 때만 반환한다.
+ *
+ * 가드 1 (locale 폴백): Intl.DisplayNames 가 요청 locale 데이터가 없으면 앱
+ *   기본 locale(한국어)로 조용히 폴백한다. resolvedOptions().locale 언어
+ *   서브태그가 다르면 폴백으로 판단해 null 반환.
+ *
+ * 가드 2 (한글 문자 포함): Chrome ICU 는 locale 자체는 정상 resolve 하면서도
+ *   그 locale 에 특정 국가 번역이 없으면 UI 기본어(한국어)를 섞어 반환하는
+ *   경우가 있다. 반환값에 한글이 포함되면 잘못된 폴백으로 간주해 null 반환.
+ */
+function nativeCountryName(code: string, locale: string): string | null {
+  try {
+    const dn = new Intl.DisplayNames([locale], {
+      type: "region",
+      fallback: "none",
+    });
+    const resolved = dn.resolvedOptions().locale;
+    if (resolved.split("-")[0] !== locale.split("-")[0]) return null; // 가드 1
+    const name = dn.of(code);
+    if (!name || name === code) return null;
+    // 가드 2: 요청 locale 이 한국어(ko)가 *아닌데* 한글이 반환되면 잘못된 ICU 폴백.
+    // (locale="ko" 일 때 한글 결과는 정상 — "대한민국" 등이 여기서 차단되면 안 됨)
+    if (locale.split("-")[0] !== "ko" && containsHangul(name)) return null;
+    return name;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * 국가 표시 문자열 — 영어 기본 + 괄호로 현지어 이름.
+ * 예: "South Korea (대한민국)", "Japan (日本)".
+ * 현지어 매핑이 없거나(또는 런타임에 해당 언어 데이터가 없어 폴백되거나)
+ * 영어와 같으면 영어만 표시한다.
+ */
+export function countryDisplayName(code: string): string {
+  const en = countryName(code, "en");
+  const nativeLocale = COUNTRY_PRIMARY_LOCALE[code];
+  if (!nativeLocale) return en;
+  const native = nativeCountryName(code, nativeLocale);
+  if (!native || native === en) return en;
+  return `${en} (${native})`;
+}
+
+/**
+ * 단일 타임존 국가의 기본 IANA 타임존.
+ * 다중 타임존 국가(MULTI_TZ_COUNTRIES)는 포함하지 않는다 — 지역(region)에 따라 다르기 때문.
+ * 서버가 최종 권한이며, 이 맵은 모달에서 "Asia/Seoul로 변경됩니다" 형태의
+ * 사전 안내(display-only)에만 사용한다.
+ */
+export const COUNTRY_PRIMARY_TZ: Record<string, string> = {
+  // ── 동아시아 ─────────────────────────────────────────────────────────────
+  KR:"Asia/Seoul", JP:"Asia/Tokyo", CN:"Asia/Shanghai", HK:"Asia/Hong_Kong",
+  TW:"Asia/Taipei", MO:"Asia/Macau",
+  // ── 동남아시아 ───────────────────────────────────────────────────────────
+  SG:"Asia/Singapore", PH:"Asia/Manila", MY:"Asia/Kuala_Lumpur",
+  TH:"Asia/Bangkok", VN:"Asia/Ho_Chi_Minh", KH:"Asia/Phnom_Penh",
+  LA:"Asia/Vientiane", MM:"Asia/Yangon", BN:"Asia/Brunei", TL:"Asia/Dili",
+  // ── 남아시아 ────────────────────────────────────────────────────────────
+  IN:"Asia/Kolkata", BD:"Asia/Dhaka", LK:"Asia/Colombo",
+  NP:"Asia/Kathmandu", BT:"Asia/Thimphu", MV:"Indian/Maldives",
+  PK:"Asia/Karachi",
+  // ── 중앙아시아 ───────────────────────────────────────────────────────────
+  UZ:"Asia/Tashkent", TM:"Asia/Ashgabat", TJ:"Asia/Dushanbe",
+  KG:"Asia/Bishkek", AF:"Asia/Kabul",
+  // ── 서아시아·중동 ────────────────────────────────────────────────────────
+  AE:"Asia/Dubai", SA:"Asia/Riyadh", QA:"Asia/Qatar", BH:"Asia/Bahrain",
+  KW:"Asia/Kuwait", OM:"Asia/Muscat", YE:"Asia/Aden",
+  IQ:"Asia/Baghdad", IR:"Asia/Tehran", SY:"Asia/Damascus",
+  JO:"Asia/Amman", LB:"Asia/Beirut", IL:"Asia/Jerusalem",
+  TR:"Europe/Istanbul",
+  // ── 코카서스 ─────────────────────────────────────────────────────────────
+  GE:"Asia/Tbilisi", AM:"Asia/Yerevan", AZ:"Asia/Baku",
+  // ── 유럽 — 서부 ──────────────────────────────────────────────────────────
+  GB:"Europe/London", IE:"Europe/Dublin", PT:"Europe/Lisbon",
+  IS:"Atlantic/Reykjavik",
+  FR:"Europe/Paris", BE:"Europe/Brussels", NL:"Europe/Amsterdam",
+  LU:"Europe/Luxembourg", MC:"Europe/Monaco",
+  DE:"Europe/Berlin", AT:"Europe/Vienna", CH:"Europe/Zurich",
+  LI:"Europe/Vaduz",
+  // ── 유럽 — 남부 ──────────────────────────────────────────────────────────
+  IT:"Europe/Rome", SM:"Europe/San_Marino", VA:"Europe/Vatican",
+  ES:"Europe/Madrid", AD:"Europe/Andorra",
+  GR:"Europe/Athens", CY:"Asia/Nicosia", MT:"Europe/Malta",
+  // ── 유럽 — 북부 ──────────────────────────────────────────────────────────
+  DK:"Europe/Copenhagen", SE:"Europe/Stockholm", NO:"Europe/Oslo",
+  FI:"Europe/Helsinki",
+  EE:"Europe/Tallinn", LV:"Europe/Riga", LT:"Europe/Vilnius",
+  // ── 유럽 — 동부·중부 ──────────────────────────────────────────────────────
+  PL:"Europe/Warsaw", CZ:"Europe/Prague", SK:"Europe/Bratislava",
+  HU:"Europe/Budapest", SI:"Europe/Ljubljana", HR:"Europe/Zagreb",
+  BA:"Europe/Sarajevo", RS:"Europe/Belgrade", ME:"Europe/Podgorica",
+  AL:"Europe/Tirane", MK:"Europe/Skopje",
+  BG:"Europe/Sofia", RO:"Europe/Bucharest",
+  MD:"Europe/Chisinau", UA:"Europe/Kiev", BY:"Europe/Minsk",
+  // ── 아프리카 — 북부 ──────────────────────────────────────────────────────
+  MA:"Africa/Casablanca", DZ:"Africa/Algiers", TN:"Africa/Tunis",
+  LY:"Africa/Tripoli", EG:"Africa/Cairo",
+  // ── 아프리카 — 동부 ──────────────────────────────────────────────────────
+  SD:"Africa/Khartoum", ET:"Africa/Addis_Ababa", ER:"Africa/Asmara",
+  DJ:"Africa/Djibouti", SO:"Africa/Mogadishu",
+  KE:"Africa/Nairobi", UG:"Africa/Kampala", RW:"Africa/Kigali",
+  BI:"Africa/Bujumbura", TZ:"Africa/Dar_es_Salaam",
+  // ── 아프리카 — 남부·중부 ─────────────────────────────────────────────────
+  ZA:"Africa/Johannesburg", ZM:"Africa/Lusaka", ZW:"Africa/Harare",
+  MW:"Africa/Blantyre", MZ:"Africa/Maputo", BW:"Africa/Gaborone",
+  NA:"Africa/Windhoek", SZ:"Africa/Mbabane", LS:"Africa/Maseru",
+  MG:"Indian/Antananarivo", MU:"Indian/Mauritius", RE:"Indian/Reunion",
+  // ── 아프리카 — 서부 ──────────────────────────────────────────────────────
+  NG:"Africa/Lagos", GH:"Africa/Accra", SN:"Africa/Dakar",
+  CI:"Africa/Abidjan", CM:"Africa/Douala", GA:"Africa/Libreville",
+  // ── 아메리카 — 카리브·중미 ────────────────────────────────────────────────
+  JM:"America/Jamaica", CU:"America/Havana", HT:"America/Port-au-Prince",
+  DO:"America/Santo_Domingo", TT:"America/Port_of_Spain",
+  BB:"America/Barbados", JE:"Europe/Jersey",
+  CR:"America/Costa_Rica", PA:"America/Panama", GT:"America/Guatemala",
+  BZ:"America/Belize", HN:"America/Tegucigalpa", SV:"America/El_Salvador",
+  NI:"America/Managua",
+  // ── 아메리카 — 남미 단일 tz ──────────────────────────────────────────────
+  CO:"America/Bogota", PE:"America/Lima", EC:"America/Guayaquil",
+  VE:"America/Caracas", BO:"America/La_Paz", UY:"America/Montevideo",
+  PY:"America/Asuncion", SR:"America/Paramaribo", GY:"America/Guyana",
+  // ── 오세아니아 ───────────────────────────────────────────────────────────
+  NZ:"Pacific/Auckland", FJ:"Pacific/Fiji",
+  PG:"Pacific/Port_Moresby", SB:"Pacific/Guadalcanal",
+  VU:"Pacific/Efate", TO:"Pacific/Tongatapu", WS:"Pacific/Apia",
+};
+
+/**
+ * 국가 코드의 기본 IANA 타임존 반환.
+ * - 다중 타임존 국가(region 필요)는 null 반환 (지역에 따라 다름).
+ * - 매핑 없는 국가도 null 반환.
+ * - 표시 전용 — 서버가 최종 권한.
+ */
+export function countryDefaultTimezone(code: string): string | null {
+  return COUNTRY_PRIMARY_TZ[code] ?? null;
+}
+
+/** 자주 쓰는 IANA 타임존 fallback (Intl.supportedValuesOf 미지원 환경용). */
+const FALLBACK_TIMEZONES = [
+  "UTC",
+  "Asia/Seoul", "Asia/Tokyo", "Asia/Shanghai", "Asia/Hong_Kong", "Asia/Singapore",
+  "Asia/Kolkata", "Asia/Dubai", "Asia/Bangkok", "Asia/Jakarta", "Asia/Manila",
+  "Europe/London", "Europe/Paris", "Europe/Berlin", "Europe/Madrid", "Europe/Rome",
+  "Europe/Moscow", "Europe/Istanbul",
+  "America/New_York", "America/Chicago", "America/Denver", "America/Los_Angeles",
+  "America/Sao_Paulo", "America/Mexico_City", "America/Toronto",
+  "Australia/Sydney", "Australia/Perth", "Pacific/Auckland",
+  "Africa/Cairo", "Africa/Johannesburg",
+];
+
+/** 선택 가능한 IANA 타임존 목록 (가능하면 런타임 전체 목록, 아니면 fallback). */
+export function supportedTimeZones(): string[] {
+  try {
+    const fn = (
+      Intl as unknown as { supportedValuesOf?: (k: string) => string[] }
+    ).supportedValuesOf;
+    if (typeof fn === "function") {
+      const list = fn("timeZone");
+      if (Array.isArray(list) && list.length > 0) return list;
+    }
+  } catch {
+    /* fall through */
+  }
+  return FALLBACK_TIMEZONES;
+}
+
+/**
+ * 표시용 정렬된 국가 목록 [{code, name}].
+ * name 은 "English (현지어)" 형식이며, 영어 이름 기준으로 정렬한다.
+ */
+export function sortedCountries(): Array<{ code: string; name: string }> {
   const list = COUNTRY_CODES.map((code) => ({
     code,
-    name: countryName(code, locale),
+    name: countryDisplayName(code),
+    sortKey: countryName(code, "en"),
   }));
-  list.sort((a, b) => a.name.localeCompare(b.name, locale));
-  return list;
+  list.sort((a, b) => a.sortKey.localeCompare(b.sortKey, "en"));
+  return list.map(({ code, name }) => ({ code, name }));
 }

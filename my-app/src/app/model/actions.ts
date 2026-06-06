@@ -1,5 +1,6 @@
 import type { JournalEntry, RetrospectiveType } from "@/entities/entry/model/types";
 import type {
+  GitHubCommit,
   GitHubStatus,
   LinkedRepository,
 } from "@/entities/github/model/types";
@@ -53,8 +54,19 @@ export type AppAction =
   | { type: "github/setStatus"; payload: { status: GitHubStatus } }
   | {
       type: "github/setLinked";
-      payload: { status: GitHubStatus; repositories: LinkedRepository[] };
+      payload: {
+        status: GitHubStatus;
+        repositories: LinkedRepository[];
+        login?: string | null;
+        pushTargetRepositoryId?: string | null;
+      };
     }
+  | {
+      type: "github/updateLinked";
+      payload: { repositoryId: string; commitReadEnabled: boolean };
+    }
+  | { type: "github/setPushTarget"; payload: { repositoryId: string | null } }
+  | { type: "github/setCommits"; payload: { commits: GitHubCommit[] } }
   | { type: "notification/push"; payload: { notification: NotificationItem } }
   | { type: "notification/dismiss"; payload: { id: string } }
   | { type: "notification/markRead"; payload: { id: string } }
@@ -103,4 +115,10 @@ export type AppAction =
   | {
       type: "auth/updateProfile";
       payload: { patch: Partial<Pick<User, "displayName" | "avatarUrl">> };
+    }
+  | {
+      type: "auth/updateUser";
+      payload: {
+        patch: Partial<Pick<User, "country" | "region" | "timezone">>;
+      };
     };

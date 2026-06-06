@@ -28,6 +28,9 @@ export default defineConfig({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+    // TypeScript 소스 파일(.ts/.tsx)을 컴파일된 .js 파일보다 우선 탐색한다.
+    // src/ 에 이전 tsc 실행으로 생성된 .js 파일이 남아 있어도 올바른 소스가 로드된다.
+    extensions: [".mts", ".ts", ".tsx", ".mjs", ".js", ".jsx", ".json"],
   },
   server: {
     // HttpOnly refresh 쿠키를 same-origin 으로 다루기 위해 /api 를 백엔드로 프록시.

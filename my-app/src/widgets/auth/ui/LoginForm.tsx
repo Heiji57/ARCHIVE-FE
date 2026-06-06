@@ -3,7 +3,7 @@ import { useArchiveApp } from "@/app/providers/useArchiveApp";
 import type { AuthRoute } from "@/app/router/authRoute";
 import { USE_API } from "@/shared/api";
 import { useTranslation } from "@/shared/lib/i18n";
-import { Checkbox, TextField } from "@/shared/ui";
+import { Checkbox, PasswordField, TextField } from "@/shared/ui";
 import { OAuthButtons } from "./OAuthButtons";
 
 interface LoginFormProps {
@@ -51,8 +51,7 @@ export function LoginForm({ onAuthNavigate }: LoginFormProps) {
           onChange={(e) => setEmail(e.target.value)}
           required
         />
-        <TextField
-          type="password"
+        <PasswordField
           autoComplete="current-password"
           label={t("auth.login.password")}
           value={password}

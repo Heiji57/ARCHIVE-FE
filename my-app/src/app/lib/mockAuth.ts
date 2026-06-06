@@ -24,6 +24,7 @@ import type {
   SignupResult,
   VerifyCodeResult,
 } from "@/app/model/types";
+import type { Session } from "@/entities/session/model/types";
 import type { OAuthProvider, User } from "@/entities/user/model/types";
 import { createId } from "@/shared/lib/id";
 
@@ -255,23 +256,83 @@ export async function mockCompleteOnboarding(input: {
   return { ok: true, user };
 }
 
-export async function mockResetPassword(
-  email: string,
-  code: string,
+// ─── 비밀번호 재설정 (토큰 링크 방식 mock) ────────────────────────────────────
+
+/** mock: 재설정 요청한 이메일을 잠시 보관 (token→user 매핑 대용). */
+let lastResetEmail: string | null = null;
+
+/** mock: 항상 성공(enumeration 방지). 실제로 가입돼 있으면 토큰을 콘솔에 출력. */
+export async function mockRequestPasswordReset(email: string): Promise<void> {
+  await new Promise((r) => setTimeout(r, 300));
+  const normalizedEmail = email.toLowerCase();
+  lastResetEmail = normalizedEmail;
+  if (findUserByEmail(normalizedEmail)) {
+    const token = `mock-reset-${createId("tok")}`;
+    // eslint-disable-next-line no-console
+    console.log(
+      `%c[ARCHIVE Mock] 비밀번호 재설정 링크: %c/reset-password?token=${token}`,
+      "color: #888",
+      "color: #4ade80; font-weight: bold;",
+    );
+  }
+}
+
+/** mock: token 검증 없이 직전 요청 이메일의 비밀번호를 갱신. */
+export async function mockConfirmPasswordReset(
+  _token: string,
   newPassword: string,
 ): Promise<ResetPasswordResult> {
   await new Promise((r) => setTimeout(r, 300));
-
-  const normalizedEmail = email.toLowerCase();
-  const pending = pendingCodes.get(normalizedEmail);
-  if (!pending || pending.code !== code.trim() || !pending.verified) {
-    return { ok: false, error: "invalid-code" };
+  if (!lastResetEmail) return { ok: false, error: "token-invalid" };
+  if (!updatePassword(lastResetEmail, newPassword)) {
+    return { ok: false, error: "token-invalid" };
   }
-
-  if (!updatePassword(normalizedEmail, newPassword)) {
-    return { ok: false, error: "user-not-found" };
-  }
-
-  clearVerification(normalizedEmail);
+  lastResetEmail = null;
   return { ok: true };
+}
+
+// ─── 활성 세션 (mock) ─────────────────────────────────────────────────────────
+
+const nowIso = () => new Date().toISOString();
+const hoursAgo = (h: number) =>
+  new Date(Date.now() - h * 3600_000).toISOString();
+
+let mockSessions: Session[] = [
+  {
+    sessionId: "sess_current_mock",
+    deviceLabel: "Chrome on Windows",
+    deviceInfo: "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+    ipPrefix: "203.0.113",
+    issuedAt: hoursAgo(2),
+    lastUsedAt: nowIso(),
+    rotationCounter: 5,
+    isCurrent: true,
+  },
+  {
+    sessionId: "sess_phone_mock",
+    deviceLabel: "Safari on iOS",
+    deviceInfo: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)",
+    ipPrefix: "211.45.67",
+    issuedAt: hoursAgo(50),
+    lastUsedAt: hoursAgo(48),
+    rotationCounter: 12,
+    isCurrent: false,
+  },
+];
+
+export async function mockListSessions(): Promise<Session[]> {
+  await new Promise((r) => setTimeout(r, 200));
+  return mockSessions.map((s) => ({ ...s }));
+}
+
+export async function mockRevokeSession(sessionId: string): Promise<void> {
+  await new Promise((r) => setTimeout(r, 150));
+  mockSessions = mockSessions.filter((s) => s.sessionId !== sessionId);
+}
+
+export async function mockRevokeOtherSessions(): Promise<number> {
+  await new Promise((r) => setTimeout(r, 150));
+  const others = mockSessions.filter((s) => !s.isCurrent).length;
+  mockSessions = mockSessions.filter((s) => s.isCurrent);
+  return others;
 }

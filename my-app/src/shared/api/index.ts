@@ -1,6 +1,10 @@
 export { USE_API, API_BASE_URL } from "./config";
 export { ApiError, isApiError } from "./errors";
-export { request, refreshAccessToken } from "./client";
+export {
+  request,
+  refreshAccessToken,
+  setSessionInvalidatedHandler,
+} from "./client";
 export { getAccessToken, setAccessToken } from "./tokenStore";
 export {
   apiRequestEmailCode,
@@ -12,6 +16,9 @@ export {
   apiUpdateProfile,
   apiRestoreSession,
   apiOAuthLogin,
+  apiLinkOAuth,
+  apiRequestPasswordReset,
+  apiConfirmPasswordReset,
 } from "./auth";
 export {
   apiListTodos,
@@ -25,7 +32,14 @@ export {
   apiUpsertEntry,
   apiDeleteEntry,
 } from "./entries";
-export { apiGetSettings, apiUpdateSettings } from "./settings";
+export {
+  apiGetSettings,
+  apiUpdateSettings,
+  apiSetPushTarget,
+  apiGetCountryTimezones,
+  apiUpdateCountry,
+  apiUpdateTimezone,
+} from "./settings";
 export {
   apiGenerateSummary,
   apiGetSummary,
@@ -42,10 +56,21 @@ export {
   streamNotifications,
 } from "./notifications";
 export {
+  apiListSessions,
+  apiRevokeSession,
+  apiRevokeOtherSessions,
+} from "./sessions";
+export {
+  apiGetConnection,
   apiListAvailableRepos,
   apiListLinkedRepos,
   apiLinkRepo,
+  apiUpdateRepo,
   apiUnlinkAllRepos,
   apiUnlinkRepo,
   apiSyncAllRepos,
+  apiGetCommits,
+  apiPushRetrospective,
+  type PushRetrospectivePayload,
+  type PushRetrospectiveResult,
 } from "./github";
