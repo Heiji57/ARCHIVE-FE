@@ -68,6 +68,7 @@ export const seedState: PersistedAppState = {
       dateKey: toDateKey(baseDate),
       updatedAt: baseDate.toISOString(),
       title: "백엔드 초기 세팅 완료",
+      githubPush: null,
       synced: true,
       retroType: "daily",
       content:
@@ -78,6 +79,7 @@ export const seedState: PersistedAppState = {
       dateKey: toDateKey(previousDay),
       updatedAt: previousDay.toISOString(),
       title: "DB 스키마 설계",
+      githubPush: null,
       synced: true,
       retroType: "daily",
       content:
@@ -88,6 +90,7 @@ export const seedState: PersistedAppState = {
       dateKey: toDateKey(weeklyDate),
       updatedAt: weeklyDate.toISOString(),
       title: "10월 3주차 주간 회고",
+      githubPush: null,
       synced: true,
       retroType: "weekly",
       content:
@@ -98,6 +101,7 @@ export const seedState: PersistedAppState = {
       dateKey: toDateKey(monthlyDate),
       updatedAt: monthlyDate.toISOString(),
       title: "9월 월간 회고",
+      githubPush: null,
       synced: true,
       retroType: "monthly",
       content:
@@ -108,6 +112,7 @@ export const seedState: PersistedAppState = {
       dateKey: toDateKey(yearlyDate),
       updatedAt: yearlyDate.toISOString(),
       title: "2022년 연간 회고",
+      githubPush: null,
       synced: true,
       retroType: "yearly",
       content:
@@ -118,6 +123,7 @@ export const seedState: PersistedAppState = {
       dateKey: "2023-10-26",
       updatedAt: addDays(baseDate, 1).toISOString(),
       title: "작성 중인 회고록",
+      githubPush: null,
       synced: false,
       retroType: "daily",
       content:

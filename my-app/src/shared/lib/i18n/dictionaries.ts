@@ -116,6 +116,8 @@ export type TranslationKey =
   | "retro.editor.completed"
   | "retro.editor.noCompleted"
   | "retro.editor.commits"
+  | "retro.editor.commitsPast"
+  | "retro.editor.noCommitsPast"
   | "retro.editor.learned"
   | "retro.editor.learnedPlaceholder"
   | "retro.editor.save"
@@ -129,6 +131,11 @@ export type TranslationKey =
   | "retro.summarize.weekly"
   | "retro.summarize.monthly"
   | "retro.summarize.yearly"
+  | "retro.readiness.title"
+  | "retro.readiness.monthlyMessage"
+  | "retro.readiness.annualMessage"
+  | "retro.readiness.writeMore"
+  | "retro.readiness.generate"
   | "retro.pager.prev"
   | "retro.pager.next"
   | "retro.pager.page"
@@ -494,6 +501,8 @@ const ko: Dict = {
   "retro.editor.completed": "완료한 작업 · Completed",
   "retro.editor.noCompleted": "오늘 완료된 작업이 없습니다.",
   "retro.editor.commits": "오늘의 커밋 · Commits",
+  "retro.editor.commitsPast": "이 날의 커밋 · Commits",
+  "retro.editor.noCommitsPast": "이 날의 커밋이 없습니다",
   "retro.editor.learned": "배운 점과 아쉬운 점 · Learned",
   "retro.editor.learnedPlaceholder":
     "오늘 알게 된 것, 다음에 더 잘하고 싶은 것을 자유롭게 적어주세요.",
@@ -508,6 +517,13 @@ const ko: Dict = {
   "retro.summarize.weekly": "주간 요약",
   "retro.summarize.monthly": "월간 요약",
   "retro.summarize.yearly": "연간 요약",
+  "retro.readiness.title": "데이터가 부족합니다",
+  "retro.readiness.monthlyMessage":
+    "이번 달에 작성된 회고가 {covered}/{expected}일 입니다.\n데이터가 부족해 요약 품질이 낮을 수 있습니다.",
+  "retro.readiness.annualMessage":
+    "{year}년에 회고가 있는 달이 {covered}/12 입니다.\n데이터가 부족해 요약 품질이 낮을 수 있습니다.",
+  "retro.readiness.writeMore": "더 작성하기",
+  "retro.readiness.generate": "그대로 생성",
   "retro.pager.prev": "이전",
   "retro.pager.next": "다음",
   "retro.pager.page": "{current} / {total}",
@@ -890,6 +906,8 @@ const en: Dict = {
   "retro.editor.completed": "Completed work",
   "retro.editor.noCompleted": "No completed tasks today.",
   "retro.editor.commits": "Today's commits",
+  "retro.editor.commitsPast": "Commits on this day",
+  "retro.editor.noCommitsPast": "No commits on this day",
   "retro.editor.learned": "What I learned",
   "retro.editor.learnedPlaceholder":
     "Write freely about what you learned and what you'd improve.",
@@ -904,6 +922,13 @@ const en: Dict = {
   "retro.summarize.weekly": "Weekly summary",
   "retro.summarize.monthly": "Monthly summary",
   "retro.summarize.yearly": "Yearly summary",
+  "retro.readiness.title": "Not enough data",
+  "retro.readiness.monthlyMessage":
+    "Only {covered}/{expected} days have retros this month.\nThe summary quality may be low due to insufficient data.",
+  "retro.readiness.annualMessage":
+    "Only {covered}/12 months have retros in {year}.\nThe summary quality may be low due to insufficient data.",
+  "retro.readiness.writeMore": "Write more",
+  "retro.readiness.generate": "Generate anyway",
   "retro.pager.prev": "Prev",
   "retro.pager.next": "Next",
   "retro.pager.page": "{current} / {total}",
@@ -1284,6 +1309,8 @@ const zh: Dict = {
   "retro.editor.completed": "已完成的工作",
   "retro.editor.noCompleted": "今天没有已完成的任务。",
   "retro.editor.commits": "今天的提交",
+  "retro.editor.commitsPast": "当天的提交",
+  "retro.editor.noCommitsPast": "当天没有提交",
   "retro.editor.learned": "学到的与改进点",
   "retro.editor.learnedPlaceholder":
     "随意记录今天学到的事情和下次想做得更好的部分。",
@@ -1298,6 +1325,13 @@ const zh: Dict = {
   "retro.summarize.weekly": "周摘要",
   "retro.summarize.monthly": "月摘要",
   "retro.summarize.yearly": "年摘要",
+  "retro.readiness.title": "数据不足",
+  "retro.readiness.monthlyMessage":
+    "本月仅有 {covered}/{expected} 天写了回顾。\n数据不足可能导致摘要质量较低。",
+  "retro.readiness.annualMessage":
+    "{year}年仅有 {covered}/12 个月有回顾。\n数据不足可能导致摘要质量较低。",
+  "retro.readiness.writeMore": "继续写",
+  "retro.readiness.generate": "仍然生成",
   "retro.pager.prev": "上一页",
   "retro.pager.next": "下一页",
   "retro.pager.page": "{current} / {total}",
@@ -1669,6 +1703,8 @@ const ja: Dict = {
   "retro.editor.completed": "完了した作業",
   "retro.editor.noCompleted": "今日完了したタスクはありません。",
   "retro.editor.commits": "今日のコミット",
+  "retro.editor.commitsPast": "この日のコミット",
+  "retro.editor.noCommitsPast": "この日のコミットはありません",
   "retro.editor.learned": "学びと改善点",
   "retro.editor.learnedPlaceholder":
     "今日気付いたこと、次に改善したいことを自由に。",
@@ -1683,6 +1719,13 @@ const ja: Dict = {
   "retro.summarize.weekly": "週次サマリー",
   "retro.summarize.monthly": "月次サマリー",
   "retro.summarize.yearly": "年次サマリー",
+  "retro.readiness.title": "データが不足しています",
+  "retro.readiness.monthlyMessage":
+    "今月の振り返りは {covered}/{expected} 日です。\nデータ不足によりサマリーの品質が低下する可能性があります。",
+  "retro.readiness.annualMessage":
+    "{year}年に振り返りがある月は {covered}/12 です。\nデータ不足によりサマリーの品質が低下する可能性があります。",
+  "retro.readiness.writeMore": "もっと書く",
+  "retro.readiness.generate": "このまま生成",
   "retro.pager.prev": "前へ",
   "retro.pager.next": "次へ",
   "retro.pager.page": "{current} / {total}",

@@ -44,6 +44,7 @@ import type { OAuthProvider, User } from "@/entities/user/model/types";
 import {
   SUMMARY_DURATION_MS,
   type SummaryKind,
+  type SummaryReadiness,
 } from "@/entities/summary/model/types";
 import { getTodosInRange } from "@/entities/todo/lib/selectors";
 import { getEntriesInRange } from "@/entities/entry/lib/selectors";
@@ -75,6 +76,7 @@ import {
   apiGetCommits,
   apiGetSettings,
   apiGetSummary,
+  apiGetSummaryReadiness,
   apiLinkOAuth,
   apiLinkRepo,
   apiConfirmPasswordReset,
@@ -83,6 +85,7 @@ import {
   apiUpdateCountry,
   apiUpdateTimezone,
   apiListAvailableRepos,
+  apiGetEntry,
   apiListEntries,
   apiListLinkedRepos,
   apiListNotifications,
@@ -308,6 +311,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // ─── API 모드: SSE 기반 비동기 요약 ─────────────────────────────────────────
   const apiSummaryAbortRef = useRef<(() => void) | null>(null);
+  // readiness 점검 결과 캐시 (kind 별). entry 추가/수정 시 무효화한다.
+  const readinessCacheRef = useRef<Map<SummaryKind, SummaryReadiness>>(
+    new Map(),
+  );
 
   const finalizeApiSummary = (
     summaryId: string,
@@ -322,6 +329,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           title: TITLE_BY_KIND[kind],
           content: summaryContentToMarkdown(summary.content),
           retroType: KIND_TO_TYPE[kind],
+          githubPush: null,
           synced: false,
           updatedAt: new Date().toISOString(),
         };
@@ -634,6 +642,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     },
     updateEntry: (id, patch) => {
       dispatch({ type: "entry/update", payload: { id, patch } }); // 낙관적
+      // entry 본문/제목 변경 → readiness 캐시 무효화
+      if (patch.content !== undefined || patch.title !== undefined) {
+        readinessCacheRef.current.clear();
+      }
+      // USE_API=true 일 때는 서버의 githubPush 필드로 synced 를 결정한다.
+      // localStorage 서명(retroSyncStore) 은 더 이상 사용하지 않는다.
       if (USE_API) {
         const base = state.entries.find((e) => e.id === id);
         if (base) {
@@ -657,24 +671,36 @@ export function AppProvider({ children }: { children: ReactNode }) {
         state.activeTemplateIds,
         "daily",
       );
+      const localId = createId("entry");
       const entry: JournalEntry = {
-        id: createId("entry"),
+        id: localId,
         dateKey,
         title: `${dateKey} 일일 회고`,
         content: template?.content ?? "",
         retroType: "daily",
+        githubPush: null,
         synced: false,
         updatedAt: new Date().toISOString(),
       };
       dispatch({ type: "entry/upsert", payload: { entry } });
-      // 서버에도 생성 (id 는 다음 하이드레이션에서 서버 값으로 정렬됨)
+      // 새 entry 추가 → readiness 캐시 무효화
+      readinessCacheRef.current.clear();
       if (USE_API) {
+        // POST 응답의 서버 ID 로 낙관적 로컬 ID 를 즉시 교체한다.
+        // 이후 updateEntry 가 올바른 서버 ID 로 PUT 을 호출하게 된다.
         void apiCreateEntry({
           dateKey,
           title: entry.title,
           content: entry.content,
           retroType: "daily",
-        }).catch(() => reportApiError());
+        })
+          .then((serverEntry) =>
+            dispatch({
+              type: "entry/replaceId",
+              payload: { localId, serverEntry },
+            }),
+          )
+          .catch(() => reportApiError());
       }
       return { entry, existed: false };
     },
@@ -795,19 +821,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
     },
     loadCommits: async (date?: string) => {
+      // 결과를 전역 state 에 저장하지 않고 직접 반환한다.
+      // RetroEditor 가 로컬 useState 로 관리하므로, 다른 날짜 회고로 이동해도
+      // 각 에디터 인스턴스(key=entry.id 로 재마운트)가 독립적인 커밋 목록을 가진다.
       if (!USE_API) {
-        dispatch({
-          type: "github/setCommits",
-          payload: { commits: MOCK_COMMITS },
-        });
-        return;
+        return MOCK_COMMITS;
       }
       try {
-        const commits = await apiGetCommits(date);
-        dispatch({ type: "github/setCommits", payload: { commits } });
+        return await apiGetCommits(date);
       } catch {
-        // commits 로드 실패는 조용히 처리 (연결 오류 toast 미발생)
-        dispatch({ type: "github/setCommits", payload: { commits: [] } });
+        // 커밋 로드 실패 → 빈 배열 (toast 없음)
+        return [];
       }
     },
     pushRetrospective: async (
@@ -843,6 +867,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
           periodKey,
           contentMarkdown,
         });
+        // push 성공 → 해당 entry 를 서버에서 재조회해 githubPush 필드 반영
+        // (서버가 push 레코드를 생성하므로 synced=true 가 자동으로 결정됨)
+        const entry = state.entries.find(
+          (e) => e.dateKey === dateKey && e.retroType === retroType,
+        );
+        if (entry) {
+          void apiGetEntry(entry.id)
+            .then((updated) =>
+              dispatch({ type: "entry/upsert", payload: { entry: updated } }),
+            )
+            .catch(() => {
+              // 재조회 실패 시 낙관적으로 synced 마킹 (다음 하이드레이션에서 정합)
+              dispatch({
+                type: "entry/update",
+                payload: { id: entry.id, patch: { synced: true } },
+              });
+            });
+        }
         return { ok: true, ...result };
       } catch (e) {
         const err =
@@ -887,6 +929,29 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setNotificationRetention: (days) => {
       dispatch({ type: "settings/retention", payload: { days } });
       if (USE_API) void syncSettings({ notificationRetentionDays: days });
+    },
+    checkSummaryReadiness: async (kind) => {
+      // weekly 는 readiness 미지원 → null (바로 생성)
+      if (kind === "weekly") return null;
+      // mock 모드는 점검 생략
+      if (!USE_API) return null;
+      const cached = readinessCacheRef.current.get(kind);
+      if (cached) return cached;
+      try {
+        const readiness = await apiGetSummaryReadiness(kind);
+        readinessCacheRef.current.set(kind, readiness);
+        return readiness;
+      } catch (e) {
+        // 정상 흐름(monthly/annual)에서는 도달하지 않음. 422/네트워크 오류는
+        // 방어적으로 null 반환 → 점검 없이 생성 진행.
+        if (
+          e instanceof ApiError &&
+          e.code === "RETRO_SUMMARY_READINESS_UNSUPPORTED"
+        ) {
+          console.warn("[summary] readiness 미지원 호출:", kind);
+        }
+        return null;
+      }
     },
     startSummary: (kind, targetDateKey) => {
       if (USE_API) startSummaryViaApi(kind, targetDateKey);

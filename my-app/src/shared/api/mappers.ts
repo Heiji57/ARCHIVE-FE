@@ -2,7 +2,7 @@
  * API(snake_case) ↔ FE 도메인(camelCase) 변환 경계.
  * 이 파일에서만 변환하고 FE 내부는 기존 camelCase 타입을 그대로 쓴다.
  */
-import type { JournalEntry } from "@/entities/entry/model/types";
+import type { GithubPush, JournalEntry } from "@/entities/entry/model/types";
 import type {
   NoticeCategory,
   NoticeType,
@@ -60,6 +60,16 @@ export function toTodo(api: TodoResponse): Todo {
 
 // ─── JournalEntry ───────────────────────────────────────────────────────────
 export function toEntry(api: EntryResponse): JournalEntry {
+  // api.githubPush 는 camelCase 그대로 (api.yaml 정의). null = 미push.
+  const githubPush: GithubPush | null = api.githubPush
+    ? {
+        pushedAt: api.githubPush.pushedAt,
+        commitSha: api.githubPush.commitSha,
+        htmlUrl: api.githubPush.htmlUrl,
+        path: api.githubPush.path,
+        repositoryFullName: api.githubPush.repositoryFullName,
+      }
+    : null;
   return {
     id: api.id,
     dateKey: api.date_key,
@@ -67,8 +77,9 @@ export function toEntry(api: EntryResponse): JournalEntry {
     content: api.content,
     retroType: api.retro_type,
     updatedAt: api.updated_at ?? api.created_at,
-    // API EntryResponse 에 synced 필드 없음 → false 기본값 (CLAUDE.md §8 간극)
-    synced: false,
+    githubPush,
+    // synced 는 서버 push 레코드 기반 (localStorage 서명 불필요)
+    synced: githubPush !== null,
   };
 }
 

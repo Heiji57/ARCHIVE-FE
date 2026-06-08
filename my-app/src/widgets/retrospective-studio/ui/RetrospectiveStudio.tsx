@@ -1,7 +1,11 @@
 import { useMemo, useState } from "react";
 import { useArchiveApp } from "@/app/providers/useArchiveApp";
 import { useTodayKey } from "@/app/providers/useToday";
-import type { SummaryKind } from "@/entities/summary/model/types";
+import type {
+  SummaryKind,
+  SummaryReadiness,
+} from "@/entities/summary/model/types";
+import { ConfirmModal } from "@/shared/ui/confirm-modal/ConfirmModal";
 import { EmptyState } from "@/shared/ui/empty-state/EmptyState";
 import { useTranslation } from "@/shared/lib/i18n";
 import { useRetroFilter } from "../model/useRetroFilter";
@@ -9,10 +13,24 @@ import { RetroEditor } from "./RetroEditor";
 import { RetroSidebar } from "./RetroSidebar";
 
 export function RetrospectiveStudio() {
-  const { state, updateEntry, createDailyEntry, pushNotification, startSummary, isDemo } =
-    useArchiveApp();
+  const {
+    state,
+    updateEntry,
+    createDailyEntry,
+    pushNotification,
+    startSummary,
+    checkSummaryReadiness,
+    isDemo,
+  } = useArchiveApp();
   const { t } = useTranslation();
   const todayDateKey = useTodayKey();
+
+  // 데이터 부족 시 확인 다이얼로그 상태
+  const [readinessDialog, setReadinessDialog] = useState<{
+    kind: SummaryKind;
+    target: string;
+    readiness: SummaryReadiness;
+  } | null>(null);
 
   /** 데모 모드: GitHub 동기화 등 외부 의존성 차단 + "로그인" 액션 토스트. 차단 시 true. */
   const requireLoginInDemo = (): boolean => {
@@ -65,9 +83,21 @@ export function RetrospectiveStudio() {
     updateEntry(active.id, { synced: true });
   };
 
-  const handleSummarize = (kind: SummaryKind) => {
+  const handleSummarize = async (kind: SummaryKind) => {
     const target = active?.dateKey ?? todayDateKey;
+    // weekly 는 점검 생략. monthly/annual 은 데이터 밀도 점검 후 분기.
+    const readiness = await checkSummaryReadiness(kind);
+    if (readiness && readiness.recommendation === "insufficient") {
+      setReadinessDialog({ kind, target, readiness });
+      return;
+    }
     startSummary(kind, target);
+  };
+
+  const confirmReadinessGenerate = () => {
+    if (!readinessDialog) return;
+    startSummary(readinessDialog.kind, readinessDialog.target);
+    setReadinessDialog(null);
   };
 
   const handleNewDaily = () => {
@@ -88,7 +118,7 @@ export function RetrospectiveStudio() {
         filterState={filterState}
         active={active}
         onSelect={setSelectedId}
-        onSummarize={handleSummarize}
+        onSummarize={(kind) => void handleSummarize(kind)}
         onNewDaily={handleNewDaily}
       />
 
@@ -108,6 +138,33 @@ export function RetrospectiveStudio() {
           <EmptyState message={t("retro.empty")} minHeight={360} fontSize={14} />
         )}
       </main>
+
+      {readinessDialog ? (
+        <ConfirmModal
+          open
+          title={t("retro.readiness.title")}
+          message={
+            <span style={{ whiteSpace: "pre-line" }}>
+              {t(
+                readinessDialog.kind === "yearly"
+                  ? "retro.readiness.annualMessage"
+                  : "retro.readiness.monthlyMessage",
+                {
+                  covered: readinessDialog.readiness.coveredUnits,
+                  expected: readinessDialog.readiness.expectedUnits,
+                  year: new Date(
+                    readinessDialog.readiness.periodStart,
+                  ).getFullYear(),
+                },
+              )}
+            </span>
+          }
+          confirmLabel={t("retro.readiness.generate")}
+          cancelLabel={t("retro.readiness.writeMore")}
+          onConfirm={confirmReadinessGenerate}
+          onCancel={() => setReadinessDialog(null)}
+        />
+      ) : null}
     </div>
   );
 }

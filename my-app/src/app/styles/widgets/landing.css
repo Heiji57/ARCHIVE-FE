@@ -25,7 +25,7 @@
 .lp-hero-art,
 #features,
 .lp-quote,
-#pricing,
+#looking,
 .lp-feature-screen {
   min-height: 100vh;
   display: flex;
@@ -44,7 +44,7 @@
   max-width: none;
 }
 /* 맨 끝 CTA(#pricing)는 카드가 화면 전체를 가득 채우도록 패딩/폭 제한 해제 */
-#pricing {
+#looking {
   padding: 0;
   max-width: none;
 }
@@ -1109,7 +1109,7 @@
   .lp-hero-art,
   #features,
   .lp-quote,
-  #pricing,
+  #looking,
   .lp-feature-screen {
     min-height: 0;
   }

@@ -18,7 +18,7 @@ export function LandingCTA({ onNavigateAuth, onDemo }: LandingCTAProps) {
   }
 
   return (
-    <section className="lp-section" id="pricing" style={{ paddingTop: 0 }}>
+    <section className="lp-section" id="looking" style={{ paddingTop: 0 }}>
       <div className="lp-final">
         <div className="lp-hero-stars" aria-hidden="true" />
         <div className="lp-final-inner">

@@ -5,7 +5,10 @@
  *
  * ⚠️ EventSource 는 Authorization 헤더를 못 싣는다 → fetch + ReadableStream 으로 직접 파싱.
  */
-import type { SummaryKind } from "@/entities/summary/model/types";
+import type {
+  SummaryKind,
+  SummaryReadiness,
+} from "@/entities/summary/model/types";
 import { API_BASE_URL } from "./config";
 import { refreshAccessToken, request } from "./client";
 import { getAccessToken } from "./tokenStore";
@@ -70,6 +73,35 @@ export async function apiGenerateSummary(
 export async function apiGetSummary(id: string): Promise<MappedSummary> {
   const res = await request<SummaryResponse>(`/summaries/${id}`);
   return toSummary(res);
+}
+
+type SummaryReadinessResponse =
+  components["schemas"]["SummaryReadinessResponse"];
+
+/**
+ * monthly/annual 요약 생성 사전 점검 (GET /summaries/readiness).
+ * - periodStart 생략 시 서버가 직전 기간(지난 달/작년) 자동 계산 → generate 와 동일 기간.
+ * - weekly 는 미지원(422 RETRO_SUMMARY_READINESS_UNSUPPORTED).
+ * 응답 필드는 이미 camelCase 라 그대로 매핑한다.
+ */
+export async function apiGetSummaryReadiness(
+  kind: "monthly" | "yearly",
+  periodStart?: string,
+): Promise<SummaryReadiness> {
+  const type = kind === "yearly" ? "annual" : "monthly";
+  const res = await request<SummaryReadinessResponse>("/summaries/readiness", {
+    query: periodStart ? { type, periodStart } : { type },
+  });
+  return {
+    summaryType: res.summaryType,
+    periodStart: res.periodStart,
+    periodEnd: res.periodEnd,
+    expectedUnits: res.expectedUnits,
+    coveredUnits: res.coveredUnits,
+    entryCount: res.entryCount,
+    completenessRatio: res.completenessRatio,
+    recommendation: res.recommendation,
+  };
 }
 
 // ─── SSE 스트림 ───────────────────────────────────────────────────────────────

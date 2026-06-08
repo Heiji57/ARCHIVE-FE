@@ -15,6 +15,7 @@ import {
   X,
 } from "lucide-react";
 import type { JournalEntry } from "@/entities/entry/model/types";
+import type { GitHubCommit } from "@/entities/github/model/types";
 import { useArchiveApp } from "@/app/providers/useArchiveApp";
 import { DisconnectBanner } from "@/shared/ui/disconnect-banner/DisconnectBanner";
 import { Pill } from "@/shared/ui/pill/Pill";
@@ -47,33 +48,41 @@ export function RetroEditor({
   onSave,
 }: RetroEditorProps) {
   const { t } = useTranslation();
-  const { state, loadCommits, pushRetrospective, pushNotification } =
+  const { loadCommits, pushRetrospective, pushNotification } =
     useArchiveApp();
   const todayDateKey = useTodayKey();
   const d = fromDateKey(entry.dateKey);
   const retroLabel = t(RETRO_LABEL_KEY[entry.retroType]);
 
-  // "오늘의 커밋" 섹션은 오늘 + daily 회고에만 표시
-  const isTodayDaily =
-    entry.retroType === "daily" && entry.dateKey === todayDateKey;
+  // 커밋 섹션은 모든 일간 회고에 표시 (오늘 + 과거 날짜 모두)
+  const isDailyEntry = entry.retroType === "daily";
+  // 오늘 여부 — 제목·빈 상태 문구 구분에 사용
+  const isTodayDaily = isDailyEntry && entry.dateKey === todayDateKey;
 
-  // ─── 커밋 로드 ─────────────────────────────────────────────────────────────
-  const commits = state.github.commits;
+  // ─── 커밋 로드 (로컬 state — entry 별 독립 관리) ──────────────────────────
+  // loadCommits 가 결과를 직접 반환하므로, 전역 state 를 거치지 않고 이 컴포넌트
+  // 인스턴스(key=entry.id 로 재마운트)에 격리된 커밋 목록을 유지한다.
+  // → 다른 날짜 회고를 열어도 오늘 커밋이 덮어쓰이지 않는다.
+  const [commits, setCommits] = useState<GitHubCommit[]>([]);
   const [loadingCommits, setLoadingCommits] = useState(false);
 
-  // 오늘의 daily 회고를 열 때 자동으로 커밋 1회 로드
+  // 일간 회고를 열 때 자동으로 해당 날짜 커밋 1회 로드 (오늘 + 과거 모두)
   const commitsLoadedRef = useRef(false);
   useEffect(() => {
-    if (!isTodayDaily || !isGithubConnected) return;
+    if (!isDailyEntry || !isGithubConnected) return;
     if (commitsLoadedRef.current) return;
     commitsLoadedRef.current = true;
     setLoadingCommits(true);
-    void loadCommits(entry.dateKey).finally(() => setLoadingCommits(false));
-  }, [isTodayDaily, isGithubConnected, entry.dateKey, loadCommits]);
+    void loadCommits(entry.dateKey)
+      .then(setCommits)
+      .finally(() => setLoadingCommits(false));
+  }, [isDailyEntry, isGithubConnected, entry.dateKey, loadCommits]);
 
   const handleRefreshCommits = () => {
     setLoadingCommits(true);
-    void loadCommits(entry.dateKey).finally(() => setLoadingCommits(false));
+    void loadCommits(entry.dateKey)
+      .then(setCommits)
+      .finally(() => setLoadingCommits(false));
   };
 
   // ─── Push ──────────────────────────────────────────────────────────────────
@@ -296,8 +305,8 @@ export function RetroEditor({
             )}
           </section>
 
-          {/* 오늘의 커밋 (오늘 + daily 회고 + GitHub 연결 시만) */}
-          {isGithubConnected && isTodayDaily ? (
+          {/* 커밋 기록 (모든 일간 회고 + GitHub 연결 시 표시) */}
+          {isGithubConnected && isDailyEntry ? (
             <section
               className="section-card-tile-2"
               style={{ marginBottom: 16 }}
@@ -307,7 +316,9 @@ export function RetroEditor({
                   <GitCommit size={14} />
                 </div>
                 <p className="section-card-title">
-                  {t("retro.editor.commits")}
+                  {isTodayDaily
+                    ? t("retro.editor.commits")
+                    : t("retro.editor.commitsPast")}
                 </p>
                 <span
                   style={{
@@ -356,7 +367,9 @@ export function RetroEditor({
                     color: "var(--color-body-muted)",
                   }}
                 >
-                  {t("retro.editor.noCommits")}
+                  {isTodayDaily
+                    ? t("retro.editor.noCommits")
+                    : t("retro.editor.noCommitsPast")}
                 </p>
               ) : (
                 <ul

@@ -290,9 +290,18 @@ export function apiOAuthLogin(provider: OAuthProvider): Promise<OAuthResult> {
 
     window.addEventListener("message", onMessage);
 
-    // 사용자가 팝업을 닫으면 실패 처리
+    // 팝업이 닫혔는데 oauth_success 메시지를 못 받았을 수 있다(전달 누락/타이밍).
+    // 콜백이 refresh 쿠키를 이미 설정했다면 세션 복원으로 자동 로그인 처리한다
+    // → 사용자가 새로고침하지 않아도 바로 서비스 화면으로 진입.
+    let recovering = false;
     const closedTimer = window.setInterval(() => {
-      if (popup.closed) finish({ kind: "error", error: "popup-closed" });
+      if (recovering || !popup.closed) return;
+      recovering = true;
+      void (async () => {
+        const restored = await apiRestoreSession();
+        if (restored) finish({ kind: "success", user: restored });
+        else finish({ kind: "error", error: "popup-closed" });
+      })();
     }, 500);
   });
 }

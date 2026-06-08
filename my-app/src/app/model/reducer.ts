@@ -105,6 +105,28 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       };
     }
 
+    // POST 응답의 서버 ID 로 낙관적 로컬 ID 를 교체한다.
+    // 서버가 발급한 ID 와 실제 entry 내용(githubPush.synced 등)으로 덮어쓴다.
+    case "entry/replaceId": {
+      const { localId, serverEntry } = action.payload;
+      return {
+        ...state,
+        entries: state.entries.map((e) =>
+          e.id === localId ? serverEntry : e,
+        ),
+      };
+    }
+
+    case "todo/replaceId": {
+      const { localId, serverTodo } = action.payload;
+      return {
+        ...state,
+        todos: state.todos.map((t) =>
+          t.id === localId ? serverTodo : t,
+        ),
+      };
+    }
+
     case "github/setStatus":
       return {
         ...state,

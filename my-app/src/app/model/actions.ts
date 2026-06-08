@@ -51,6 +51,10 @@ export type AppAction =
       };
     }
   | { type: "entry/upsert"; payload: { entry: JournalEntry } }
+  /** POST 응답 서버 ID 로 낙관적 로컬 ID 를 교체한다. */
+  | { type: "entry/replaceId"; payload: { localId: string; serverEntry: JournalEntry } }
+  /** POST 응답 서버 ID 로 낙관적 로컬 ID 를 교체한다. */
+  | { type: "todo/replaceId"; payload: { localId: string; serverTodo: Todo } }
   | { type: "github/setStatus"; payload: { status: GitHubStatus } }
   | {
       type: "github/setLinked";

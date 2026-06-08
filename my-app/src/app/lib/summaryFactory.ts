@@ -71,6 +71,7 @@ export function buildSummaryEntry(
     dateKey: targetDateKey,
     updatedAt: now,
     title: TITLE_BY_KIND[kind],
+    githubPush: null,
     synced: false,
     retroType: KIND_TO_TYPE[kind],
     content,

@@ -1,6 +1,7 @@
 import type { JournalEntry, RetrospectiveType } from "@/entities/entry/model/types";
 import type {
   AvailableRepository,
+  GitHubCommit,
   GitHubState,
 } from "@/entities/github/model/types";
 import type {
@@ -11,6 +12,7 @@ import type {
 import type {
   PendingSummary,
   SummaryKind,
+  SummaryReadiness,
 } from "@/entities/summary/model/types";
 import type { Session } from "@/entities/session/model/types";
 import type { RetroTemplate } from "@/entities/template";
@@ -84,8 +86,8 @@ export interface ArchiveAppContextValue {
   syncAllGitHubRepos: () => Promise<void>;
   /** push target 저장소 변경 (null = 해제). */
   setPushTarget: (repositoryId: string | null) => void;
-  /** 오늘의 커밋 목록 로드 (GET /github/commits). */
-  loadCommits: (date?: string) => Promise<void>;
+  /** 지정 날짜(생략 시 오늘)의 커밋 목록 조회 — 결과를 직접 반환한다. */
+  loadCommits: (date?: string) => Promise<GitHubCommit[]>;
   /** 회고 마크다운을 GitHub push target 저장소에 push. */
   pushRetrospective: (
     retroType: "daily" | "weekly" | "monthly" | "yearly",
@@ -107,6 +109,12 @@ export interface ArchiveAppContextValue {
   setLocale: (locale: Locale) => void;
   setAutoSummary: (patch: Partial<AppSettings["autoSummary"]>) => void;
   setNotificationRetention: (days: number) => void;
+  /**
+   * monthly/annual 요약 생성 전 데이터 밀도 점검.
+   * - weekly·mock·오류 시 null (다이얼로그 없이 바로 생성하면 됨).
+   * - entry 추가/수정 전까지 결과를 캐시한다.
+   */
+  checkSummaryReadiness: (kind: SummaryKind) => Promise<SummaryReadiness | null>;
   startSummary: (kind: SummaryKind, targetDateKey: string) => void;
   minimizeSummary: () => void;
   completeSummary: () => void;

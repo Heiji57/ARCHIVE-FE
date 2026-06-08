@@ -58,6 +58,11 @@ export async function apiUpsertEntry(
   return toEntry(res);
 }
 
+export async function apiGetEntry(id: string): Promise<JournalEntry> {
+  const res = await request<EntryResponse>(`/entries/${id}`);
+  return toEntry(res);
+}
+
 export async function apiDeleteEntry(id: string): Promise<void> {
   await request(`/entries/${id}`, { method: "DELETE" });
 }
