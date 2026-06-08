@@ -68,7 +68,15 @@ export interface ArchiveAppContextValue {
       Pick<JournalEntry, "title" | "content" | "synced" | "retroType">
     >,
   ) => void;
-  createDailyEntry: (dateKey: string) => { entry: JournalEntry; existed: boolean };
+  /**
+   * 일간 회고 생성(또는 기존 반환).
+   * onIdReplaced: USE_API 모드에서 POST 응답의 서버 ID 로 교체될 때 호출.
+   *   호출자(RetrospectiveStudio)가 selectedId 를 서버 ID 로 갱신하는 데 사용.
+   */
+  createDailyEntry: (
+    dateKey: string,
+    onIdReplaced?: (serverEntry: JournalEntry) => void,
+  ) => { entry: JournalEntry; existed: boolean };
   // ─── GitHub (서버 저장소 연결 모델) ────────────────────────────────────────
   /** 연결 상태·연결된 저장소 목록을 (재)조회해 상태에 반영. */
   refreshGitHub: () => void;

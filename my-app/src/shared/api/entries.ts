@@ -14,7 +14,15 @@ export async function apiListEntries(params: {
   from?: string;
   to?: string;
 }): Promise<JournalEntry[]> {
-  const list = await request<EntryResponse[]>("/entries", { query: params });
+  const list = await request<EntryResponse[] | null | undefined>(
+    "/entries",
+    { query: params },
+  );
+  // 서버가 data 를 null/undefined 로 내려보낼 경우 TypeError 방지.
+  if (!Array.isArray(list)) {
+    console.warn("[entries] GET /entries 응답의 data 가 배열이 아님:", list);
+    return [];
+  }
   return list.map(toEntry);
 }
 

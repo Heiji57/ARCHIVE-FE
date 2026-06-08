@@ -420,13 +420,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     void apiListTodos({ from: "1970-01-01", to: "2999-12-31" })
       .then((todos) => dispatch({ type: "hydrate/todos", payload: { todos } }))
-      .catch(() => {});
+      // eslint-disable-next-line no-console
+      .catch((e) => console.error("[hydrate/todos] 로드 실패:", e));
     // 백엔드 /entries 는 from/to 없으면 빈 배열을 반환하므로 전체 범위를 명시한다.
     void apiListEntries({ from: "1970-01-01", to: "2999-12-31" })
       .then((entries) =>
         dispatch({ type: "hydrate/entries", payload: { entries } }),
       )
-      .catch(() => {});
+      // eslint-disable-next-line no-console
+      .catch((e) => console.error("[hydrate/entries] 로드 실패:", e));
     void apiGetSettings()
       .then((settings) =>
         dispatch({ type: "hydrate/settings", payload: { settings } }),
@@ -660,7 +662,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
       }
     },
-    createDailyEntry: (dateKey) => {
+    createDailyEntry: (dateKey, onIdReplaced) => {
       const existing = state.entries.find(
         (e) => e.dateKey === dateKey && e.retroType === "daily",
       );
@@ -694,12 +696,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
           content: entry.content,
           retroType: "daily",
         })
-          .then((serverEntry) =>
+          .then((serverEntry) => {
             dispatch({
               type: "entry/replaceId",
               payload: { localId, serverEntry },
-            }),
-          )
+            });
+            // 호출자(RetrospectiveStudio)가 selectedId 를 서버 ID 로 갱신할 수 있도록 통지
+            onIdReplaced?.(serverEntry);
+          })
           .catch(() => reportApiError());
       }
       return { entry, existed: false };

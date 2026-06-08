@@ -16,6 +16,7 @@ type AvailableRepositoryResponse =
 type ConnectionStatusResponse =
   components["schemas"]["ConnectionStatusResponse"];
 type CommitResponse = components["schemas"]["CommitResponse"];
+type CommitListResponse = components["schemas"]["CommitListResponse"];
 
 // ── Mappers ────────────────────────────────────────────────────────────────
 
@@ -138,11 +139,16 @@ export async function apiSyncAllRepos(): Promise<LinkedRepository[]> {
 /**
  * 오늘(또는 지정 날짜)의 커밋 목록 조회.
  * @param date YYYY-MM-DD (생략 시 user.timezone 기준 오늘 — 서버가 계산)
+ *
+ * 서버 응답: { commits: CommitResponse[], failedRepositories: [...] }
+ * (구버전 FE 가 CommitResponse[] 직접 배열을 기대했으나, api.yaml 갱신으로 래퍼 객체 형태)
  */
 export async function apiGetCommits(date?: string): Promise<GitHubCommit[]> {
-  const query = date ? `?date=${date}` : "";
-  const list = await request<CommitResponse[]>(`/github/commits${query}`);
-  return list.map(toCommit);
+  const res = await request<CommitListResponse>("/github/commits", {
+    query: date ? { date } : undefined,
+  });
+  // failedRepositories 는 현재 무시 (부분 실패 — 나머지 커밋은 표시)
+  return (res.commits ?? []).map(toCommit);
 }
 
 // ── Retrospective Push ───────────────────────────────────────────────────────

@@ -102,7 +102,12 @@ export function RetrospectiveStudio() {
 
   const handleNewDaily = () => {
     const dateKey = todayDateKey;
-    const { entry, existed } = createDailyEntry(dateKey);
+    const { entry, existed } = createDailyEntry(
+      dateKey,
+      // POST 응답의 서버 ID 로 교체되면 selectedId 를 즉시 갱신한다.
+      // (로컬 ID 가 stale 되어 에디터가 빈 화면을 보이지 않게 함)
+      (serverEntry) => setSelectedId(serverEntry.id),
+    );
     if (existed) {
       pushNotification("info", t("retro.newDaily.duplicate"), dateKey);
     } else {
