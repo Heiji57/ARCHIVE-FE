@@ -58,6 +58,12 @@ export interface GitHubState {
   pushTargetRepositoryId: string | null;
   /** 오늘의 커밋 목록 (GET /github/commits). */
   commits: GitHubCommit[];
+  /**
+   * GitHub verified emails 캐시 보유 여부.
+   * false = 구 scope(user:email 없음) → commit author 매칭이 login 으로만 동작.
+   * UI 에서 재연결 배너를 표시해야 한다.
+   */
+  hasVerifiedEmails: boolean;
 }
 
 export const INITIAL_GITHUB_STATE: GitHubState = {
@@ -66,4 +72,5 @@ export const INITIAL_GITHUB_STATE: GitHubState = {
   linkedRepositories: [],
   pushTargetRepositoryId: null,
   commits: [],
+  hasVerifiedEmails: false,
 };

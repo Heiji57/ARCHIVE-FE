@@ -146,6 +146,9 @@ export function appReducer(state: AppState, action: AppAction): AppState {
           ...(action.payload.pushTargetRepositoryId !== undefined
             ? { pushTargetRepositoryId: action.payload.pushTargetRepositoryId }
             : {}),
+          ...(action.payload.hasVerifiedEmails !== undefined
+            ? { hasVerifiedEmails: action.payload.hasVerifiedEmails }
+            : {}),
         },
       };
 

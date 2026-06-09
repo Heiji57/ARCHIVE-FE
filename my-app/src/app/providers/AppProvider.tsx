@@ -528,11 +528,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
           repositories: state.github.linkedRepositories,
           login: MOCK_LOGIN,
           pushTargetRepositoryId: state.github.pushTargetRepositoryId,
+          hasVerifiedEmails: true, // mock 모드에서는 항상 정상
         },
       });
       return;
     }
-    // GET /github/connection → 연결 상태 + login + pushTarget
+    // GET /github/connection → 연결 상태 + login + pushTarget + hasVerifiedEmails
     void apiGetConnection()
       .then((connection) => {
         if (!connection.connected) {
@@ -543,6 +544,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
               repositories: [],
               login: null,
               pushTargetRepositoryId: null,
+              hasVerifiedEmails: false,
             },
           });
           return;
@@ -557,6 +559,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
                 repositories,
                 login: connection.login,
                 pushTargetRepositoryId: connection.pushTargetRepositoryId,
+                hasVerifiedEmails: connection.hasVerifiedEmails,
               },
             }),
           )
@@ -568,6 +571,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
                 repositories: [],
                 login: connection.login,
                 pushTargetRepositoryId: connection.pushTargetRepositoryId,
+                hasVerifiedEmails: connection.hasVerifiedEmails,
               },
             }),
           );

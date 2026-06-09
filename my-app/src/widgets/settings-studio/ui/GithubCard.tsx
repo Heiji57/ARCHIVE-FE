@@ -31,7 +31,7 @@ export function GithubCard() {
     pushNotification,
   } = useArchiveApp();
   const { t } = useTranslation();
-  const { status, login, linkedRepositories, pushTargetRepositoryId } =
+  const { status, login, linkedRepositories, pushTargetRepositoryId, hasVerifiedEmails } =
     state.github;
 
   const [available, setAvailable] = useState<AvailableRepository[] | null>(
@@ -99,6 +99,13 @@ export function GithubCard() {
     setBusy(false);
   };
 
+  // 이미 연결된 저장소는 추가 목록에서 제외
+  const linkedGithubRepoIds = new Set(
+    linkedRepositories.map((r) => r.githubRepoId),
+  );
+  const filteredAvailable =
+    available?.filter((r) => !linkedGithubRepoIds.has(r.githubRepoId)) ?? null;
+
   const trailing =
     status === "connected" ? (
       <Pill tone="green">{t("settings.github.connected")}</Pill>
@@ -131,6 +138,57 @@ export function GithubCard() {
             >
               {t("settings.github.connectedAsLogin", { login })}
             </p>
+          ) : null}
+
+          {/* 재연결 안내 배너 (hasVerifiedEmails = false 인 구 scope 사용자) */}
+          {!hasVerifiedEmails ? (
+            <div
+              style={{
+                margin: "0 0 14px",
+                padding: "10px 14px",
+                background: "var(--color-warn-subtle, rgba(234,179,8,.1))",
+                border: "1px solid var(--color-warn, #ca8a04)",
+                borderRadius: "var(--r-sm)",
+                display: "flex",
+                alignItems: "flex-start",
+                gap: 10,
+              }}
+            >
+              <span style={{ fontSize: 14, lineHeight: 1 }}>🔄</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p
+                  style={{
+                    margin: "0 0 2px",
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: "var(--color-warn-text, #854d0e)",
+                  }}
+                >
+                  {t("settings.github.reconnectBanner")}
+                </p>
+                <p
+                  style={{
+                    margin: "0 0 8px",
+                    fontSize: 11,
+                    color: "var(--color-body-muted)",
+                    lineHeight: 1.5,
+                  }}
+                >
+                  {t("settings.github.reconnectBannerMsg")}
+                </p>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  style={{ fontSize: 11, padding: "4px 10px" }}
+                  onClick={() => void handleConnectAccount()}
+                  disabled={connecting}
+                >
+                  {connecting
+                    ? t("settings.github.connecting")
+                    : t("settings.github.reconnect")}
+                </button>
+              </div>
+            </div>
           ) : null}
 
           {/* 연결된 저장소 목록 */}
@@ -288,20 +346,20 @@ export function GithubCard() {
             ) : null}
           </div>
 
-          {/* 연결 후보 목록 */}
-          {available !== null ? (
+          {/* 연결 후보 목록 — 이미 연결된 저장소는 filteredAvailable 에서 제외됨 */}
+          {available !== null && filteredAvailable !== null ? (
             <div className="github-available">
               <p className="github-available-title">
                 {t("settings.github.available")}
               </p>
               {loadingAvailable ? (
                 <p className="github-empty">{t("settings.github.checking")}</p>
-              ) : available.length === 0 ? (
+              ) : filteredAvailable.length === 0 ? (
                 <p className="github-empty">
                   {t("settings.github.noAvailable")}
                 </p>
               ) : (
-                available.map((repo) => (
+                filteredAvailable.map((repo) => (
                   <div key={repo.githubRepoId} className="github-repo-row">
                     <div className="github-repo-meta">
                       <span className="github-repo-name">{repo.fullName}</span>

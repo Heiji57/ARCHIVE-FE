@@ -33,6 +33,8 @@ export interface RetroEditorProps {
   completedTodos: { id: string; title: string }[];
   githubConnectedAs: string;
   isGithubConnected: boolean;
+  /** verified emails 캐시 보유 여부. false 면 커밋 0건 시 재연결 안내를 표시한다. */
+  hasVerifiedEmails: boolean;
   pushTargetRepositoryId: string | null;
   onUpdate: (patch: Partial<Pick<JournalEntry, "title" | "content">>) => void;
   onSave: () => void;
@@ -43,6 +45,7 @@ export function RetroEditor({
   completedTodos,
   githubConnectedAs,
   isGithubConnected,
+  hasVerifiedEmails,
   pushTargetRepositoryId,
   onUpdate,
   onSave,
@@ -360,17 +363,36 @@ export function RetroEditor({
                   {t("retro.editor.loadCommits")}…
                 </p>
               ) : commits.length === 0 ? (
-                <p
-                  style={{
-                    margin: 0,
-                    fontSize: 13,
-                    color: "var(--color-body-muted)",
-                  }}
-                >
-                  {isTodayDaily
-                    ? t("retro.editor.noCommits")
-                    : t("retro.editor.noCommitsPast")}
-                </p>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <p
+                    style={{
+                      margin: 0,
+                      fontSize: 13,
+                      color: "var(--color-body-muted)",
+                    }}
+                  >
+                    {!hasVerifiedEmails
+                      ? t("retro.github.noCommitsReconnect")
+                      : isTodayDaily
+                        ? t("retro.editor.noCommits")
+                        : t("retro.editor.noCommitsPast")}
+                  </p>
+                  {/* hasVerifiedEmails=true 인데도 0건: GitHub Emails 안내 링크 */}
+                  {hasVerifiedEmails && (
+                    <a
+                      href="https://github.com/settings/emails"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        fontSize: 11,
+                        color: "var(--color-primary)",
+                        textDecoration: "underline",
+                      }}
+                    >
+                      {t("retro.github.emailsSettingsLink")} ↗
+                    </a>
+                  )}
+                </div>
               ) : (
                 <ul
                   className="t-mono"

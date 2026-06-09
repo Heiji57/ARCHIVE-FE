@@ -66,9 +66,10 @@ export function RetrospectiveStudio() {
     [state.todos, active],
   );
 
-  // 서버 모델: 연결 상태 + login + push target
+  // 서버 모델: 연결 상태 + login + push target + verified emails
   const isGithubConnected = state.github.status === "connected";
-  const { login, pushTargetRepositoryId, linkedRepositories } = state.github;
+  const { login, pushTargetRepositoryId, linkedRepositories, hasVerifiedEmails } =
+    state.github;
   const pushTargetRepo = linkedRepositories.find(
     (r) => r.id === pushTargetRepositoryId,
   );
@@ -135,6 +136,7 @@ export function RetrospectiveStudio() {
             completedTodos={completedTodos}
             githubConnectedAs={githubConnectedAs}
             isGithubConnected={isGithubConnected}
+            hasVerifiedEmails={hasVerifiedEmails}
             pushTargetRepositoryId={pushTargetRepositoryId}
             onUpdate={(patch) => updateEntry(active.id, patch)}
             onSave={handleSave}

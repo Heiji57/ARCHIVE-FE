@@ -62,17 +62,19 @@ function toCommit(api: CommitResponse): GitHubCommit {
 
 // ── Connection ──────────────────────────────────────────────────────────────
 
-/** GitHub 연결 상태 + push target 통합 조회 (GET /github/connection). */
+/** GitHub 연결 상태 + push target + verified emails 통합 조회 (GET /github/connection). */
 export async function apiGetConnection(): Promise<{
   connected: boolean;
   login: string | null;
   pushTargetRepositoryId: string | null;
+  hasVerifiedEmails: boolean;
 }> {
   const res = await request<ConnectionStatusResponse>("/github/connection");
   return {
     connected: res.connected,
     login: res.login ?? null,
     pushTargetRepositoryId: res.pushTargetRepositoryId ?? null,
+    hasVerifiedEmails: res.hasVerifiedEmails,
   };
 }
 

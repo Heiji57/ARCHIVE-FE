@@ -63,6 +63,7 @@ export type AppAction =
         repositories: LinkedRepository[];
         login?: string | null;
         pushTargetRepositoryId?: string | null;
+        hasVerifiedEmails?: boolean;
       };
     }
   | {

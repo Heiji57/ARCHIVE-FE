@@ -150,6 +150,9 @@ export type TranslationKey =
   | "retro.badge.synced"
   | "retro.github.notConnected"
   | "retro.github.connectFromSettings"
+  | "retro.github.noCommitsEmailHint"
+  | "retro.github.noCommitsReconnect"
+  | "retro.github.emailsSettingsLink"
   | "retro.newDaily"
   | "retro.newDaily.duplicate"
   | "retro.newDaily.created"
@@ -249,6 +252,9 @@ export type TranslationKey =
   | "settings.github.pushTarget"
   | "settings.github.pushTargetNone"
   | "settings.github.pushTargetHint"
+  | "settings.github.reconnectBanner"
+  | "settings.github.reconnectBannerMsg"
+  | "settings.github.reconnect"
   | "settings.language.label"
   | "settings.autoSummary.weekly"
   | "settings.autoSummary.monthly"
@@ -538,6 +544,11 @@ const ko: Dict = {
   "retro.badge.synced": "Synced",
   "retro.github.notConnected": "GitHub 미연결 — 커밋과 동기화 비활성화됨",
   "retro.github.connectFromSettings": "Settings에서 GitHub 계정을 연결하세요.",
+  "retro.github.noCommitsEmailHint":
+    "이 날 작성한 commit이 없습니다. 사용 중인 git config user.email이 GitHub 계정에 등록됐는지 확인해주세요.",
+  "retro.github.noCommitsReconnect":
+    "GitHub 재연결이 필요합니다. 재연결하면 로컬 commit이 더 정확히 표시됩니다.",
+  "retro.github.emailsSettingsLink": "GitHub Settings → Emails 바로가기",
   "retro.newDaily": "오늘의 일일 회고 작성",
   "retro.newDaily.duplicate": "오늘의 회고록이 이미 존재합니다",
   "retro.newDaily.created": "오늘의 일일 회고가 생성되었습니다",
@@ -624,6 +635,10 @@ const ko: Dict = {
   "settings.github.pushTargetNone": "선택 안함",
   "settings.github.pushTargetHint":
     "회고 마크다운을 push할 저장소입니다. 연결된 저장소 중 하나를 선택하세요.",
+  "settings.github.reconnectBanner": "GitHub 연결 업데이트 필요",
+  "settings.github.reconnectBannerMsg":
+    "gitbash 등에서 작성한 commit이 정확히 표시되도록 권한 업데이트가 필요합니다.",
+  "settings.github.reconnect": "GitHub 재연결",
   "settings.section.region": "지역 및 시간대",
   "settings.region.title": "국가 / 시간대",
   "settings.region.apply": "국가 변경 적용",
@@ -943,6 +958,11 @@ const en: Dict = {
   "retro.badge.synced": "Synced",
   "retro.github.notConnected": "GitHub not connected — commits & sync disabled",
   "retro.github.connectFromSettings": "Connect a GitHub account from Settings.",
+  "retro.github.noCommitsEmailHint":
+    "No commits found for this day. Make sure your git config user.email is registered in your GitHub account.",
+  "retro.github.noCommitsReconnect":
+    "GitHub reconnection required. Reconnecting will improve local commit detection accuracy.",
+  "retro.github.emailsSettingsLink": "GitHub Settings → Emails",
   "retro.newDaily": "Write today's daily retrospective",
   "retro.newDaily.duplicate": "Today's retrospective already exists",
   "retro.newDaily.created": "Today's daily retrospective has been created",
@@ -1030,6 +1050,10 @@ const en: Dict = {
   "settings.github.pushTargetNone": "None",
   "settings.github.pushTargetHint":
     "Retrospective markdown will be pushed to this repository.",
+  "settings.github.reconnectBanner": "GitHub connection update required",
+  "settings.github.reconnectBannerMsg":
+    "A permission update is needed to accurately display commits made via git bash or local tools.",
+  "settings.github.reconnect": "Reconnect GitHub",
   "settings.section.region": "Region & Timezone",
   "settings.region.title": "Country / Timezone",
   "settings.region.apply": "Apply country change",
@@ -1346,6 +1370,11 @@ const zh: Dict = {
   "retro.badge.synced": "已同步",
   "retro.github.notConnected": "GitHub 未连接 — 提交与同步已停用",
   "retro.github.connectFromSettings": "请在设置中连接 GitHub 账户。",
+  "retro.github.noCommitsEmailHint":
+    "当天没有找到提交记录。请确认您的 git config user.email 已在 GitHub 账户中注册。",
+  "retro.github.noCommitsReconnect":
+    "需要重新连接 GitHub。重新连接后可更准确地显示本地提交记录。",
+  "retro.github.emailsSettingsLink": "GitHub Settings → Emails",
   "retro.newDaily": "写今日每日回顾",
   "retro.newDaily.duplicate": "今天的回顾已经存在",
   "retro.newDaily.created": "今天的每日回顾已创建",
@@ -1430,6 +1459,10 @@ const zh: Dict = {
   "settings.github.pushTarget": "Push 目标仓库",
   "settings.github.pushTargetNone": "不选择",
   "settings.github.pushTargetHint": "将向此仓库 push 回顾 Markdown。",
+  "settings.github.reconnectBanner": "需要更新 GitHub 连接",
+  "settings.github.reconnectBannerMsg":
+    "需要更新权限，以便准确显示通过 git bash 等本地工具提交的记录。",
+  "settings.github.reconnect": "重新连接 GitHub",
   "settings.section.region": "地区与时区",
   "settings.region.title": "国家 / 时区",
   "settings.region.apply": "应用国家变更",
@@ -1741,6 +1774,11 @@ const ja: Dict = {
   "retro.github.notConnected": "GitHub 未接続 — コミットと同期は無効です",
   "retro.github.connectFromSettings":
     "設定から GitHub アカウントを接続してください。",
+  "retro.github.noCommitsEmailHint":
+    "この日のコミットが見つかりません。git config user.email が GitHub アカウントに登録されているか確認してください。",
+  "retro.github.noCommitsReconnect":
+    "GitHub の再接続が必要です。再接続するとローカルのコミットがより正確に表示されます。",
+  "retro.github.emailsSettingsLink": "GitHub Settings → Emails",
   "retro.newDaily": "今日の日次振り返りを書く",
   "retro.newDaily.duplicate": "今日の振り返りはすでに存在します",
   "retro.newDaily.created": "今日の日次振り返りが作成されました",
@@ -1826,6 +1864,10 @@ const ja: Dict = {
   "settings.github.pushTargetNone": "選択なし",
   "settings.github.pushTargetHint":
     "振り返りの Markdown をこのリポジトリに push します。",
+  "settings.github.reconnectBanner": "GitHub 接続のアップデートが必要です",
+  "settings.github.reconnectBannerMsg":
+    "git bash などのローカルツールでのコミットを正確に表示するには、権限の更新が必要です。",
+  "settings.github.reconnect": "GitHub を再接続",
   "settings.section.region": "地域とタイムゾーン",
   "settings.region.title": "国 / タイムゾーン",
   "settings.region.apply": "国の変更を適用",
