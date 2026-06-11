@@ -20,6 +20,7 @@ export function appReducer(state: AppState, action: AppAction): AppState {
             action.payload.dateKey,
             action.payload.status,
             action.payload.description,
+            action.payload.id,
           ),
         ],
       };
@@ -105,26 +106,25 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       };
     }
 
-    // POST 응답의 서버 ID 로 낙관적 로컬 ID 를 교체한다.
-    // 서버가 발급한 ID 와 실제 entry 내용(githubPush.synced 등)으로 덮어쓴다.
+    // POST/PUT 응답의 서버 entry 로 낙관적 로컬 entry 를 교체한다.
+    // localId 항목과 serverEntry.id 를 이미 가진 항목(예: 하이드레이션된 동일
+    // entry)을 모두 제거한 뒤 serverEntry 하나만 남긴다 → 어떤 경로(요약 덮어쓰기
+    // 등)에서도 동일 entry 가 중복 생성되지 않게 한다.
     case "entry/replaceId": {
       const { localId, serverEntry } = action.payload;
-      return {
-        ...state,
-        entries: state.entries.map((e) =>
-          e.id === localId ? serverEntry : e,
-        ),
-      };
+      const rest = state.entries.filter(
+        (e) => e.id !== localId && e.id !== serverEntry.id,
+      );
+      return { ...state, entries: [...rest, serverEntry] };
     }
 
     case "todo/replaceId": {
       const { localId, serverTodo } = action.payload;
-      return {
-        ...state,
-        todos: state.todos.map((t) =>
-          t.id === localId ? serverTodo : t,
-        ),
-      };
+      // entry/replaceId 와 동일하게 중복(localId + serverTodo.id) 제거 후 단일 유지.
+      const rest = state.todos.filter(
+        (t) => t.id !== localId && t.id !== serverTodo.id,
+      );
+      return { ...state, todos: [...rest, serverTodo] };
     }
 
     case "github/setStatus":
@@ -400,10 +400,11 @@ function createTodo(
   dateKey: string,
   status: Todo["status"] = "not-start",
   description = "",
+  id?: string,
 ): Todo {
   const now = new Date().toISOString();
   return {
-    id: createId("todo"),
+    id: id ?? createId("todo"),
     title,
     completed: status === "done",
     dateKey,
@@ -416,7 +417,12 @@ function createTodo(
 
 function applyTodoPatch(
   todo: Todo,
-  patch: Partial<Pick<Todo, "title" | "status" | "description" | "dateKey">>,
+  patch: Partial<
+    Pick<
+      Todo,
+      "title" | "status" | "description" | "dateKey" | "startTime" | "endTime"
+    >
+  >,
 ): Todo {
   const nextStatus = patch.status ?? todo.status;
   const becameDone = nextStatus === "done" && todo.status !== "done";

@@ -1,5 +1,5 @@
 import { useTranslation } from "@/shared/lib/i18n";
-import { formatMonthLabel } from "@/shared/lib/date";
+import { formatFullDate, formatMonthLabel } from "@/shared/lib/date";
 import type { CalendarView } from "../model/useCalendarNav";
 
 export interface CalendarToolbarProps {
@@ -20,12 +20,23 @@ export function CalendarToolbar({
   onToday,
   onNext,
 }: CalendarToolbarProps) {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
+
+  const title =
+    view === "day" ? formatFullDate(cursor, locale) : formatMonthLabel(cursor, locale);
 
   return (
     <div className="calendar-toolbar">
       <div className="calendar-toolbar-left">
         <div className="seg">
+          <button
+            type="button"
+            className="seg-btn"
+            aria-pressed={view === "day"}
+            onClick={() => onViewChange("day")}
+          >
+            {t("calendar.view.day")}
+          </button>
           <button
             type="button"
             className="seg-btn"
@@ -43,9 +54,7 @@ export function CalendarToolbar({
             {t("calendar.view.month")}
           </button>
         </div>
-        <h2 className="t-display-md calendar-toolbar-title">
-          {formatMonthLabel(cursor)}
-        </h2>
+        <h2 className="t-display-md calendar-toolbar-title">{title}</h2>
       </div>
 
       <div className="calendar-toolbar-nav">

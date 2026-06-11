@@ -1,3 +1,4 @@
+import { useRef, useState } from "react";
 import { Plus } from "lucide-react";
 import type { Todo } from "@/entities/todo/model/types";
 import { Pill } from "@/shared/ui/pill/Pill";
@@ -15,6 +16,7 @@ export interface WeekGridProps {
   selectedId: string | null;
   onSelect: (id: string) => void;
   onDropTodo: (todoId: string, dateKey: string) => void;
+  onAddTodo: (title: string, dateKey: string) => void;
 }
 
 export function WeekGrid({
@@ -24,11 +26,50 @@ export function WeekGrid({
   selectedId,
   onSelect,
   onDropTodo,
+  onAddTodo,
 }: WeekGridProps) {
   const { t } = useTranslation();
   const start = startOfWeek(cursor);
   const days = Array.from({ length: 7 }, (_, i) => addDays(start, i));
   const anchorKey = todayKey;
+
+  const [addingDate, setAddingDate] = useState<string | null>(null);
+  const [addingTitle, setAddingTitle] = useState("");
+  // Escape 키로 취소한 경우 blur 에서 submit 하지 않도록 플래그.
+  const escapedRef = useRef(false);
+
+  const startAdding = (dateKey: string) => {
+    escapedRef.current = false;
+    setAddingDate(dateKey);
+    setAddingTitle("");
+  };
+
+  const commitAdd = () => {
+    if (addingTitle.trim() && addingDate) {
+      onAddTodo(addingTitle.trim(), addingDate);
+    }
+    setAddingDate(null);
+    setAddingTitle("");
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      escapedRef.current = false;
+      commitAdd();
+    } else if (e.key === "Escape") {
+      escapedRef.current = true;
+      setAddingDate(null);
+      setAddingTitle("");
+    }
+  };
+
+  const handleBlur = () => {
+    if (escapedRef.current) {
+      escapedRef.current = false;
+      return;
+    }
+    commitAdd();
+  };
 
   return (
     <div
@@ -46,6 +87,7 @@ export function WeekGrid({
         const k = toDateKey(d);
         const todayCell = k === anchorKey;
         const items = byDate[k] ?? [];
+        const isAdding = addingDate === k;
 
         return (
           <DayCell
@@ -122,13 +164,37 @@ export function WeekGrid({
                 />
               ))}
 
-              <button
-                type="button"
-                className="dashed"
-                style={{ padding: "10px 12px", fontSize: 12, gap: 4 }}
-              >
-                <Plus size={12} /> {t("calendar.addCard")}
-              </button>
+              {isAdding ? (
+                <input
+                  // eslint-disable-next-line jsx-a11y/no-autofocus
+                  autoFocus
+                  value={addingTitle}
+                  onChange={(e) => setAddingTitle(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  onBlur={handleBlur}
+                  placeholder={t("calendar.addCard.placeholder")}
+                  style={{
+                    width: "100%",
+                    fontSize: 12,
+                    padding: "8px 10px",
+                    borderRadius: "var(--r-sm)",
+                    background: "var(--color-tile-3)",
+                    border: "1px solid var(--color-primary)",
+                    color: "var(--color-ink)",
+                    outline: "none",
+                    boxSizing: "border-box",
+                  }}
+                />
+              ) : (
+                <button
+                  type="button"
+                  className="dashed"
+                  style={{ padding: "10px 12px", fontSize: 12, gap: 4 }}
+                  onClick={() => startAdding(k)}
+                >
+                  <Plus size={12} /> {t("calendar.addCard")}
+                </button>
+              )}
             </div>
           </DayCell>
         );

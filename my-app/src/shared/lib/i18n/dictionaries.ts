@@ -63,8 +63,11 @@ export type TranslationKey =
   | "todo.picker.prev"
   | "todo.picker.next"
   // Calendar
+  | "calendar.view.day"
   | "calendar.view.week"
   | "calendar.view.month"
+  | "calendar.timeline.untimed"
+  | "calendar.timeline.auto"
   | "calendar.legend.notStart"
   | "calendar.legend.inProgress"
   | "calendar.legend.done"
@@ -78,6 +81,7 @@ export type TranslationKey =
   | "calendar.nav.today"
   | "calendar.nav.next"
   | "calendar.addCard"
+  | "calendar.addCard.placeholder"
   | "calendar.moreItems"
   | "calendar.days.sun"
   | "calendar.days.mon"
@@ -101,6 +105,11 @@ export type TranslationKey =
   | "calendar.taskDetail.aiRetro"
   | "calendar.taskDetail.aiRetroDesc"
   | "calendar.taskDetail.goToRetro"
+  | "calendar.taskDetail.time"
+  | "calendar.taskDetail.startTime"
+  | "calendar.taskDetail.endTime"
+  | "calendar.taskDetail.timeHint"
+  | "calendar.taskDetail.clearTime"
   // Retrospective
   | "retro.history"
   | "retro.archive"
@@ -136,6 +145,18 @@ export type TranslationKey =
   | "retro.readiness.annualMessage"
   | "retro.readiness.writeMore"
   | "retro.readiness.generate"
+  | "retro.period.weeklyTitle"
+  | "retro.period.monthlyTitle"
+  | "retro.period.yearlyTitle"
+  | "retro.period.description"
+  | "retro.period.confirm"
+  | "retro.period.cancel"
+  | "retro.period.weekLabel"
+  | "retro.period.currentBadge"
+  | "retro.overwrite.title"
+  | "retro.overwrite.message"
+  | "retro.overwrite.confirm"
+  | "retro.overwrite.cancel"
   | "retro.pager.prev"
   | "retro.pager.next"
   | "retro.pager.page"
@@ -456,7 +477,10 @@ const ko: Dict = {
   "todo.picker.next": "다음 달",
 
   "calendar.view.week": "주간",
+  "calendar.view.day": "일간",
   "calendar.view.month": "월간",
+  "calendar.timeline.untimed": "시간 미지정",
+  "calendar.timeline.auto": "자동",
   "calendar.legend.notStart": "시작 전",
   "calendar.legend.inProgress": "진행 중",
   "calendar.legend.done": "완료",
@@ -469,6 +493,7 @@ const ko: Dict = {
   "calendar.nav.today": "오늘로",
   "calendar.nav.next": "다음 →",
   "calendar.addCard": "새 카드",
+  "calendar.addCard.placeholder": "할 일 입력 후 Enter",
   "calendar.moreItems": "+{n}개 더 보기",
   "calendar.days.sun": "일",
   "calendar.days.mon": "월",
@@ -492,6 +517,11 @@ const ko: Dict = {
   "calendar.taskDetail.aiRetro": "AI 자동 회고",
   "calendar.taskDetail.aiRetroDesc": "이 작업의 진행 흐름을 회고에 묶어두면, 일요일에 자동으로 주간 요약이 생성됩니다.",
   "calendar.taskDetail.goToRetro": "회고 에디터로 이동",
+  "calendar.taskDetail.time": "시간대",
+  "calendar.taskDetail.startTime": "시작",
+  "calendar.taskDetail.endTime": "종료",
+  "calendar.taskDetail.timeHint": "선택 사항 — 비우면 일간 뷰에서 생성 시각 기준 1시간 블록으로 표시됩니다.",
+  "calendar.taskDetail.clearTime": "시간 지우기",
 
   "retro.history": "History",
   "retro.archive": "회고 아카이브",
@@ -530,6 +560,19 @@ const ko: Dict = {
     "{year}년에 회고가 있는 달이 {covered}/12 입니다.\n데이터가 부족해 요약 품질이 낮을 수 있습니다.",
   "retro.readiness.writeMore": "더 작성하기",
   "retro.readiness.generate": "그대로 생성",
+  "retro.period.weeklyTitle": "요약할 주를 선택하세요",
+  "retro.period.monthlyTitle": "요약할 달을 선택하세요",
+  "retro.period.yearlyTitle": "요약할 연도를 선택하세요",
+  "retro.period.description": "선택한 기간의 회고를 AI 가 요약합니다.",
+  "retro.period.confirm": "요약 생성",
+  "retro.period.cancel": "취소",
+  "retro.period.weekLabel": "{year}년 {week}주차",
+  "retro.period.currentBadge": "진행 중",
+  "retro.overwrite.title": "이미 요약된 회고록이 있습니다",
+  "retro.overwrite.message":
+    "이 기간에 이미 AI 요약 회고록이 있습니다.\n다시 요약해서 기존 내용을 덮어쓸까요?",
+  "retro.overwrite.confirm": "다시 요약 · 덮어쓰기",
+  "retro.overwrite.cancel": "취소",
   "retro.pager.prev": "이전",
   "retro.pager.next": "다음",
   "retro.pager.page": "{current} / {total}",
@@ -868,7 +911,10 @@ const en: Dict = {
   "todo.picker.next": "Next month",
 
   "calendar.view.week": "Week",
+  "calendar.view.day": "Day",
   "calendar.view.month": "Month",
+  "calendar.timeline.untimed": "No time",
+  "calendar.timeline.auto": "auto",
   "calendar.legend.notStart": "Not Started",
   "calendar.legend.inProgress": "In Progress",
   "calendar.legend.done": "Done",
@@ -881,6 +927,7 @@ const en: Dict = {
   "calendar.nav.today": "Today",
   "calendar.nav.next": "Next →",
   "calendar.addCard": "New card",
+  "calendar.addCard.placeholder": "Type a task and press Enter",
   "calendar.moreItems": "+{n} more",
   "calendar.days.sun": "S",
   "calendar.days.mon": "M",
@@ -904,6 +951,11 @@ const en: Dict = {
   "calendar.taskDetail.aiRetro": "AI Auto-Retrospective",
   "calendar.taskDetail.aiRetroDesc": "Link this task to a retrospective and a weekly summary will be generated automatically each Sunday.",
   "calendar.taskDetail.goToRetro": "Open retrospective editor",
+  "calendar.taskDetail.time": "Time",
+  "calendar.taskDetail.startTime": "Start",
+  "calendar.taskDetail.endTime": "End",
+  "calendar.taskDetail.timeHint": "Optional — if empty, the day view shows a 1-hour block from when it was created.",
+  "calendar.taskDetail.clearTime": "Clear time",
 
   "retro.history": "History",
   "retro.archive": "Retrospective Archive",
@@ -944,6 +996,19 @@ const en: Dict = {
     "Only {covered}/12 months have retros in {year}.\nThe summary quality may be low due to insufficient data.",
   "retro.readiness.writeMore": "Write more",
   "retro.readiness.generate": "Generate anyway",
+  "retro.period.weeklyTitle": "Select a week to summarize",
+  "retro.period.monthlyTitle": "Select a month to summarize",
+  "retro.period.yearlyTitle": "Select a year to summarize",
+  "retro.period.description": "AI will summarize the retros in the selected period.",
+  "retro.period.confirm": "Generate summary",
+  "retro.period.cancel": "Cancel",
+  "retro.period.weekLabel": "{year} Week {week}",
+  "retro.period.currentBadge": "Current",
+  "retro.overwrite.title": "A summary already exists",
+  "retro.overwrite.message":
+    "An AI summary retro already exists for this period.\nGenerate again and overwrite the existing content?",
+  "retro.overwrite.confirm": "Re-summarize & overwrite",
+  "retro.overwrite.cancel": "Cancel",
   "retro.pager.prev": "Prev",
   "retro.pager.next": "Next",
   "retro.pager.page": "{current} / {total}",
@@ -1281,8 +1346,11 @@ const zh: Dict = {
   "todo.picker.prev": "上一月",
   "todo.picker.next": "下一月",
 
+  "calendar.view.day": "日",
   "calendar.view.week": "周",
   "calendar.view.month": "月",
+  "calendar.timeline.untimed": "未设时间",
+  "calendar.timeline.auto": "自动",
   "calendar.legend.notStart": "未开始",
   "calendar.legend.inProgress": "进行中",
   "calendar.legend.done": "已完成",
@@ -1295,6 +1363,7 @@ const zh: Dict = {
   "calendar.nav.today": "今天",
   "calendar.nav.next": "下一 →",
   "calendar.addCard": "新卡片",
+  "calendar.addCard.placeholder": "输入任务后按 Enter",
   "calendar.moreItems": "+{n} 条",
   "calendar.days.sun": "日",
   "calendar.days.mon": "一",
@@ -1318,6 +1387,11 @@ const zh: Dict = {
   "calendar.taskDetail.aiRetro": "AI 自动回顾",
   "calendar.taskDetail.aiRetroDesc": "将此任务纳入回顾流程，每周日自动生成周摘要。",
   "calendar.taskDetail.goToRetro": "前往回顾编辑器",
+  "calendar.taskDetail.time": "时间段",
+  "calendar.taskDetail.startTime": "开始",
+  "calendar.taskDetail.endTime": "结束",
+  "calendar.taskDetail.timeHint": "可选 — 留空时，日视图将按创建时间显示为 1 小时区块。",
+  "calendar.taskDetail.clearTime": "清除时间",
 
   "retro.history": "历史",
   "retro.archive": "回顾归档",
@@ -1356,6 +1430,19 @@ const zh: Dict = {
     "{year}年仅有 {covered}/12 个月有回顾。\n数据不足可能导致摘要质量较低。",
   "retro.readiness.writeMore": "继续写",
   "retro.readiness.generate": "仍然生成",
+  "retro.period.weeklyTitle": "选择要摘要的周",
+  "retro.period.monthlyTitle": "选择要摘要的月",
+  "retro.period.yearlyTitle": "选择要摘要的年",
+  "retro.period.description": "AI 将摘要所选时间段的回顾。",
+  "retro.period.confirm": "生成摘要",
+  "retro.period.cancel": "取消",
+  "retro.period.weekLabel": "{year}年 第{week}周",
+  "retro.period.currentBadge": "进行中",
+  "retro.overwrite.title": "已存在摘要回顾",
+  "retro.overwrite.message":
+    "该时间段已存在 AI 摘要回顾。\n是否重新生成并覆盖现有内容？",
+  "retro.overwrite.confirm": "重新摘要并覆盖",
+  "retro.overwrite.cancel": "取消",
   "retro.pager.prev": "上一页",
   "retro.pager.next": "下一页",
   "retro.pager.page": "{current} / {total}",
@@ -1683,8 +1770,11 @@ const ja: Dict = {
   "todo.picker.prev": "前の月",
   "todo.picker.next": "次の月",
 
+  "calendar.view.day": "日",
   "calendar.view.week": "週",
   "calendar.view.month": "月",
+  "calendar.timeline.untimed": "時間未設定",
+  "calendar.timeline.auto": "自動",
   "calendar.legend.notStart": "未着手",
   "calendar.legend.inProgress": "進行中",
   "calendar.legend.done": "完了",
@@ -1697,6 +1787,7 @@ const ja: Dict = {
   "calendar.nav.today": "今日へ",
   "calendar.nav.next": "次へ →",
   "calendar.addCard": "新しいカード",
+  "calendar.addCard.placeholder": "タスクを入力して Enter",
   "calendar.moreItems": "+{n} 件以上",
   "calendar.days.sun": "日",
   "calendar.days.mon": "月",
@@ -1720,6 +1811,11 @@ const ja: Dict = {
   "calendar.taskDetail.aiRetro": "AI 自動振り返り",
   "calendar.taskDetail.aiRetroDesc": "このタスクを振り返りに紐付けると、毎週日曜日に自動で週次サマリーが生成されます。",
   "calendar.taskDetail.goToRetro": "振り返りエディターへ",
+  "calendar.taskDetail.time": "時間帯",
+  "calendar.taskDetail.startTime": "開始",
+  "calendar.taskDetail.endTime": "終了",
+  "calendar.taskDetail.timeHint": "任意 — 空欄の場合、日ビューでは作成時刻を基準に1時間のブロックとして表示されます。",
+  "calendar.taskDetail.clearTime": "時間をクリア",
 
   "retro.history": "履歴",
   "retro.archive": "振り返りアーカイブ",
@@ -1759,6 +1855,19 @@ const ja: Dict = {
     "{year}年に振り返りがある月は {covered}/12 です。\nデータ不足によりサマリーの品質が低下する可能性があります。",
   "retro.readiness.writeMore": "もっと書く",
   "retro.readiness.generate": "このまま生成",
+  "retro.period.weeklyTitle": "要約する週を選択してください",
+  "retro.period.monthlyTitle": "要約する月を選択してください",
+  "retro.period.yearlyTitle": "要約する年を選択してください",
+  "retro.period.description": "選択した期間の振り返りを AI が要約します。",
+  "retro.period.confirm": "要約を生成",
+  "retro.period.cancel": "キャンセル",
+  "retro.period.weekLabel": "{year}年 第{week}週",
+  "retro.period.currentBadge": "進行中",
+  "retro.overwrite.title": "すでに要約された振り返りがあります",
+  "retro.overwrite.message":
+    "この期間にはすでに AI 要約の振り返りがあります。\n再要約して既存の内容を上書きしますか？",
+  "retro.overwrite.confirm": "再要約・上書き",
+  "retro.overwrite.cancel": "キャンセル",
   "retro.pager.prev": "前へ",
   "retro.pager.next": "次へ",
   "retro.pager.page": "{current} / {total}",

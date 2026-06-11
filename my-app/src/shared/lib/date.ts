@@ -35,6 +35,23 @@ export function endOfWeek(date: Date) {
   return addDays(startOfWeek(date), 6);
 }
 
+/**
+ * ISO 8601 주 시작(월요일)을 반환. 서버의 weekly 기간 계산(월~일)과 정합.
+ * (startOfWeek 는 일요일 기준이므로 요약 periodStart 계산에는 이 함수를 사용한다.)
+ */
+export function startOfISOWeek(date: Date) {
+  const next = clone(date);
+  const day = next.getDay(); // 0=일 .. 6=토
+  const offset = day === 0 ? 6 : day - 1;
+  next.setDate(next.getDate() - offset);
+  return next;
+}
+
+/** ISO 주의 끝(일요일) = 월요일 + 6일 */
+export function endOfISOWeek(date: Date) {
+  return addDays(startOfISOWeek(date), 6);
+}
+
 export function startOfMonth(date: Date) {
   return new Date(date.getFullYear(), date.getMonth(), 1, 12);
 }

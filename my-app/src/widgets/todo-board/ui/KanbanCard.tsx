@@ -15,9 +15,10 @@ export interface KanbanCardProps {
     id: string,
     patch: Partial<Pick<Todo, "title" | "status" | "description" | "dateKey">>,
   ) => void;
+  onSelect: (id: string) => void;
 }
 
-function KanbanCardImpl({ todo, isDone, onUpdate }: KanbanCardProps) {
+function KanbanCardImpl({ todo, isDone, onUpdate, onSelect }: KanbanCardProps) {
   const { t } = useTranslation();
   const [dateOpen, setDateOpen] = useState(false);
   const drag = useDraggable({ kind: KANBAN_DRAG_KIND, data: { id: todo.id } });
@@ -48,7 +49,11 @@ function KanbanCardImpl({ todo, isDone, onUpdate }: KanbanCardProps) {
         <StatusIcon status={todo.status} size={16} />
       </button>
 
-      <div className="kanban-card-body">
+      <div
+        className="kanban-card-body"
+        onClick={() => onSelect(todo.id)}
+        style={{ cursor: "pointer" }}
+      >
         <p
           className="kanban-card-title"
           data-done={isDone ? "true" : undefined}
@@ -62,7 +67,8 @@ function KanbanCardImpl({ todo, isDone, onUpdate }: KanbanCardProps) {
           <div className="kanban-card-spacer" />
         )}
 
-        <div className="kanban-card-actions">
+        {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
+        <div className="kanban-card-actions" onClick={(e) => e.stopPropagation()}>
           <Pill
             tone="outline"
             as="button"

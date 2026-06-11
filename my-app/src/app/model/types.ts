@@ -56,12 +56,24 @@ export interface ArchiveAppContextValue {
     title: string,
     dateKey?: string,
     options?: { status?: TaskStatus; description?: string },
+    onCreated?: (id: string) => void,
   ) => void;
   updateTodo: (
     id: string,
     patch: Partial<Pick<Todo, "title" | "status" | "description" | "dateKey">>,
   ) => void;
   moveTodo: (id: string, dateKey: string) => void;
+  /**
+   * 할 일의 시작/종료 시각 설정 (일간 타임라인 블록·드래그 재배치용).
+   * null 을 주면 해당 시각을 비운다("HH:mm" 형식).
+   * NOTE: api.yaml Todo 스키마에 시간 필드가 없어 서버로 전송하지 않고 로컬 상태만 갱신한다
+   *   (계약 간극 — 영속화하려면 백엔드에 start_time/end_time 추가 필요. CLAUDE.md §8).
+   */
+  setTodoTime: (
+    id: string,
+    startTime: string | null,
+    endTime: string | null,
+  ) => void;
   updateEntry: (
     id: string,
     patch: Partial<
@@ -120,10 +132,34 @@ export interface ArchiveAppContextValue {
   /**
    * monthly/annual 요약 생성 전 데이터 밀도 점검.
    * - weekly·mock·오류 시 null (다이얼로그 없이 바로 생성하면 됨).
+   * - periodStart 지정 시 해당 기간을, 생략 시 직전 기간(지난 달/작년)을 점검.
    * - entry 추가/수정 전까지 결과를 캐시한다.
    */
-  checkSummaryReadiness: (kind: SummaryKind) => Promise<SummaryReadiness | null>;
-  startSummary: (kind: SummaryKind, targetDateKey: string) => void;
+  checkSummaryReadiness: (
+    kind: SummaryKind,
+    periodStart?: string,
+  ) => Promise<SummaryReadiness | null>;
+  /**
+   * 선택한 기간에 이미 요약 회고록(entry)이 존재하는지 확인.
+   * - API 모드: 서버(GET /entries)를 진실 공급원으로 조회.
+   * - mock 모드: 로컬 상태에서 확인.
+   * 덮어쓰기 전 사용자 확인 다이얼로그 분기에 사용.
+   */
+  checkRetroExists: (
+    kind: SummaryKind,
+    periodStart: string,
+    periodEnd: string,
+  ) => Promise<boolean>;
+  /**
+   * 요약 생성 시작.
+   * @param targetDateKey mock 모드 기간 계산 + entry dateKey fallback.
+   * @param periodStart API 모드에서 서버에 전달할 기간 시작일(생략 시 직전 기간).
+   */
+  startSummary: (
+    kind: SummaryKind,
+    targetDateKey: string,
+    periodStart?: string,
+  ) => void;
   minimizeSummary: () => void;
   completeSummary: () => void;
   cancelSummary: () => void;

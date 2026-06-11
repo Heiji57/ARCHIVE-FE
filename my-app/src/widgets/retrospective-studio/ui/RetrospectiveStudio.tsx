@@ -5,10 +5,12 @@ import type {
   SummaryKind,
   SummaryReadiness,
 } from "@/entities/summary/model/types";
+import { fromDateKey } from "@/shared/lib/date";
 import { ConfirmModal } from "@/shared/ui/confirm-modal/ConfirmModal";
 import { EmptyState } from "@/shared/ui/empty-state/EmptyState";
 import { useTranslation } from "@/shared/lib/i18n";
 import { useRetroFilter } from "../model/useRetroFilter";
+import { PeriodPickerModal } from "./PeriodPickerModal";
 import { RetroEditor } from "./RetroEditor";
 import { RetroSidebar } from "./RetroSidebar";
 
@@ -20,16 +22,29 @@ export function RetrospectiveStudio() {
     pushNotification,
     startSummary,
     checkSummaryReadiness,
+    checkRetroExists,
     isDemo,
   } = useArchiveApp();
   const { t } = useTranslation();
   const todayDateKey = useTodayKey();
+  const todayDate = useMemo(() => fromDateKey(todayDateKey), [todayDateKey]);
+
+  // 기간 선택 모달 상태 (열린 요약 종류; null = 닫힘)
+  const [pickerKind, setPickerKind] = useState<SummaryKind | null>(null);
 
   // 데이터 부족 시 확인 다이얼로그 상태
   const [readinessDialog, setReadinessDialog] = useState<{
     kind: SummaryKind;
     target: string;
+    periodStart: string;
     readiness: SummaryReadiness;
+  } | null>(null);
+
+  // 이미 요약된 회고록 덮어쓰기 확인 다이얼로그 상태
+  const [overwriteDialog, setOverwriteDialog] = useState<{
+    kind: SummaryKind;
+    periodStart: string;
+    anchorDateKey: string;
   } | null>(null);
 
   /** 데모 모드: GitHub 동기화 등 외부 의존성 차단 + "로그인" 액션 토스트. 차단 시 true. */
@@ -84,20 +99,63 @@ export function RetrospectiveStudio() {
     updateEntry(active.id, { synced: true });
   };
 
-  const handleSummarize = async (kind: SummaryKind) => {
-    const target = active?.dateKey ?? todayDateKey;
-    // weekly 는 점검 생략. monthly/annual 은 데이터 밀도 점검 후 분기.
-    const readiness = await checkSummaryReadiness(kind);
-    if (readiness && readiness.recommendation === "insufficient") {
-      setReadinessDialog({ kind, target, readiness });
+  // [요약] 버튼 클릭 → 기간 선택 모달을 연다.
+  const handleSummarize = (kind: SummaryKind) => {
+    if (requireLoginInDemo()) return;
+    setPickerKind(kind);
+  };
+
+  // 기간 확정 → 이미 요약된 회고록이 있으면 덮어쓰기 확인, 없으면 바로 진행.
+  const handlePeriodPicked = async (
+    periodStart: string,
+    periodEnd: string,
+    anchorDateKey: string,
+  ) => {
+    const kind = pickerKind;
+    setPickerKind(null);
+    if (!kind) return;
+    const exists = await checkRetroExists(kind, periodStart, periodEnd);
+    if (exists) {
+      setOverwriteDialog({ kind, periodStart, anchorDateKey });
       return;
     }
-    startSummary(kind, target);
+    await proceedSummary(kind, periodStart, anchorDateKey);
+  };
+
+  // 데이터 밀도 점검(monthly/yearly) 후 요약 생성. 부족하면 확인 다이얼로그.
+  const proceedSummary = async (
+    kind: SummaryKind,
+    periodStart: string,
+    anchorDateKey: string,
+  ) => {
+    const readiness = await checkSummaryReadiness(kind, periodStart);
+    if (readiness && readiness.recommendation === "insufficient") {
+      setReadinessDialog({
+        kind,
+        target: anchorDateKey,
+        periodStart,
+        readiness,
+      });
+      return;
+    }
+    startSummary(kind, anchorDateKey, periodStart);
+  };
+
+  // 덮어쓰기 확인 → 요약 진행
+  const confirmOverwrite = () => {
+    if (!overwriteDialog) return;
+    const { kind, periodStart, anchorDateKey } = overwriteDialog;
+    setOverwriteDialog(null);
+    void proceedSummary(kind, periodStart, anchorDateKey);
   };
 
   const confirmReadinessGenerate = () => {
     if (!readinessDialog) return;
-    startSummary(readinessDialog.kind, readinessDialog.target);
+    startSummary(
+      readinessDialog.kind,
+      readinessDialog.target,
+      readinessDialog.periodStart,
+    );
     setReadinessDialog(null);
   };
 
@@ -124,7 +182,7 @@ export function RetrospectiveStudio() {
         filterState={filterState}
         active={active}
         onSelect={setSelectedId}
-        onSummarize={(kind) => void handleSummarize(kind)}
+        onSummarize={handleSummarize}
         onNewDaily={handleNewDaily}
       />
 
@@ -170,6 +228,34 @@ export function RetrospectiveStudio() {
           cancelLabel={t("retro.readiness.writeMore")}
           onConfirm={confirmReadinessGenerate}
           onCancel={() => setReadinessDialog(null)}
+        />
+      ) : null}
+
+      {pickerKind ? (
+        <PeriodPickerModal
+          key={pickerKind}
+          kind={pickerKind}
+          today={todayDate}
+          onPick={(periodStart, periodEnd, anchorDateKey) =>
+            void handlePeriodPicked(periodStart, periodEnd, anchorDateKey)
+          }
+          onCancel={() => setPickerKind(null)}
+        />
+      ) : null}
+
+      {overwriteDialog ? (
+        <ConfirmModal
+          open
+          title={t("retro.overwrite.title")}
+          message={
+            <span style={{ whiteSpace: "pre-line" }}>
+              {t("retro.overwrite.message")}
+            </span>
+          }
+          confirmLabel={t("retro.overwrite.confirm")}
+          cancelLabel={t("retro.overwrite.cancel")}
+          onConfirm={confirmOverwrite}
+          onCancel={() => setOverwriteDialog(null)}
         />
       ) : null}
     </div>

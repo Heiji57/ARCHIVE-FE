@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { type CSSProperties, useState } from "react";
 import {
   ArrowRight,
   ChevronDown,
@@ -10,21 +10,38 @@ import type { TaskStatus, Todo } from "@/entities/todo/model/types";
 import { StatusIcon } from "@/entities/todo/ui/StatusIcon";
 import { formatFullDate, fromDateKey } from "@/shared/lib/date";
 import { useTranslation } from "@/shared/lib/i18n";
-import type { TodoPatch } from "../model/constants";
+
+export type TodoPatch = Partial<
+  Pick<Todo, "title" | "status" | "description" | "dateKey">
+>;
 
 export interface TaskDetailPanelProps {
   todo: Todo;
   onClose: () => void;
   onUpdate: (patch: TodoPatch) => void;
+  /** 시작/종료 시각 설정 (일간 타임라인 블록용). null = 비움. */
+  onSetTime: (startTime: string | null, endTime: string | null) => void;
   onGoToRetro: () => void;
 }
 
 const STATUS_ORDER: TaskStatus[] = ["not-start", "in-progress", "done"];
 
+const timeInputStyle: CSSProperties = {
+  flex: 1,
+  fontSize: 14,
+  padding: "11px 14px",
+  borderRadius: "var(--r-md)",
+  background: "var(--color-tile-3)",
+  border: "1px solid var(--color-divider-soft)",
+  colorScheme: "dark",
+  color: "var(--color-ink)",
+};
+
 export function TaskDetailPanel({
   todo,
   onClose,
   onUpdate,
+  onSetTime,
   onGoToRetro,
 }: TaskDetailPanelProps) {
   const [statusOpen, setStatusOpen] = useState(false);
@@ -223,6 +240,72 @@ export function TaskDetailPanel({
               color: "var(--color-ink)",
             }}
           />
+        </div>
+
+        {/* Time (optional) */}
+        <div>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              margin: "0 0 8px",
+            }}
+          >
+            <p
+              className="t-eyebrow"
+              style={{ margin: 0, color: "var(--color-body-muted)" }}
+            >
+              {t("calendar.taskDetail.time")}
+            </p>
+            {todo.startTime || todo.endTime ? (
+              <button
+                type="button"
+                onClick={() => onSetTime(null, null)}
+                style={{
+                  fontSize: 12,
+                  color: "var(--color-primary-on-dark)",
+                  background: "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                  padding: 0,
+                }}
+              >
+                {t("calendar.taskDetail.clearTime")}
+              </button>
+            ) : null}
+          </div>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <input
+              type="time"
+              aria-label={t("calendar.taskDetail.startTime")}
+              value={todo.startTime ?? ""}
+              onChange={(e) =>
+                onSetTime(e.target.value || null, todo.endTime ?? null)
+              }
+              style={timeInputStyle}
+            />
+            <span style={{ color: "var(--color-body-muted)", fontSize: 14 }}>–</span>
+            <input
+              type="time"
+              aria-label={t("calendar.taskDetail.endTime")}
+              value={todo.endTime ?? ""}
+              onChange={(e) =>
+                onSetTime(todo.startTime ?? null, e.target.value || null)
+              }
+              style={timeInputStyle}
+            />
+          </div>
+          <p
+            style={{
+              margin: "8px 0 0",
+              fontSize: 11,
+              lineHeight: 1.5,
+              color: "var(--color-body-muted)",
+            }}
+          >
+            {t("calendar.taskDetail.timeHint")}
+          </p>
         </div>
 
         {/* Description */}

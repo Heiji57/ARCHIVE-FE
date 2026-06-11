@@ -1,4 +1,3 @@
-import type { Todo } from "@/entities/todo/model/types";
 import type { TranslationKey } from "@/shared/lib/i18n";
 
 /** Drag kind for the cell-to-cell DnD on the calendar. */
@@ -25,7 +24,3 @@ export const DAY_FULL_KEYS: TranslationKey[] = [
   "calendar.days.saturday",
 ];
 
-/** Patch shape for inline todo edits from the calendar detail panel. */
-export type TodoPatch = Partial<
-  Pick<Todo, "title" | "status" | "description" | "dateKey">
->;

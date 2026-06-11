@@ -59,13 +59,21 @@ export function summaryContentToMarkdown(content: SummaryContent | null): string
     .join("\n\n");
 }
 
-/** 요약 생성 요청 (202). periodStart 생략 시 서버가 직전 기간 자동 계산. */
+/**
+ * 요약 생성 요청 (202).
+ * @param periodStart 요약할 기간의 시작일(YYYY-MM-DD).
+ *   - 주간: 해당 주 월요일 / 월간: 해당 달 1일 / 연간: 해당 해 1월 1일
+ *   - 생략 시 서버가 직전 기간(지난 주/지난 달/작년) 자동 계산.
+ */
 export async function apiGenerateSummary(
   kind: SummaryKind,
+  periodStart?: string,
 ): Promise<MappedSummary> {
   const res = await request<SummaryResponse>("/summaries/generate", {
     method: "POST",
-    query: { type: KIND_TO_TYPE[kind] },
+    query: periodStart
+      ? { type: KIND_TO_TYPE[kind], periodStart }
+      : { type: KIND_TO_TYPE[kind] },
   });
   return toSummary(res);
 }

@@ -1,5 +1,10 @@
+import { useState } from "react";
+import { X } from "lucide-react";
 import type { Todo } from "@/entities/todo/model/types";
+import { StatusIcon } from "@/entities/todo/ui/StatusIcon";
 import {
+  formatFullDate,
+  fromDateKey,
   getMonthGrid,
   isSameMonth,
   toDateKey,
@@ -28,6 +33,9 @@ export function MonthGrid({
   const { t } = useTranslation();
   const cells = getMonthGrid(cursor);
   const anchorKey = todayKey;
+
+  const [modalDate, setModalDate] = useState<string | null>(null);
+  const modalTodos = modalDate ? (byDate[modalDate] ?? []) : [];
 
   return (
     <div>
@@ -133,21 +141,143 @@ export function MonthGrid({
                   />
                 ))}
                 {more > 0 ? (
-                  <p
+                  <button
+                    type="button"
+                    onClick={() => setModalDate(k)}
                     style={{
                       margin: 0,
                       fontSize: 11,
-                      color: "var(--color-body-muted)",
+                      color: "var(--color-primary-on-dark)",
+                      background: "transparent",
+                      border: "none",
+                      padding: "2px 0",
+                      cursor: "pointer",
+                      textAlign: "left",
                     }}
                   >
                     {t("calendar.moreItems", { n: more })}
-                  </p>
+                  </button>
                 ) : null}
               </div>
             </DayCell>
           );
         })}
       </div>
+
+      {/* "n개 더 보기" 모달 */}
+      {modalDate ? (
+        <>
+          <div
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: "rgba(0,0,0,0.48)",
+              zIndex: 200,
+            }}
+            onClick={() => setModalDate(null)}
+          />
+          <div
+            style={{
+              position: "fixed",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              zIndex: 201,
+              width: 360,
+              maxHeight: "70vh",
+              display: "flex",
+              flexDirection: "column",
+              background: "var(--color-tile-1)",
+              borderRadius: "var(--r-lg)",
+              border: "1px solid var(--color-divider-soft)",
+              boxShadow: "0 24px 56px rgba(0,0,0,0.55)",
+              overflow: "hidden",
+            }}
+          >
+            {/* 헤더 */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "16px 20px 14px",
+                borderBottom: "1px solid var(--color-divider-soft)",
+                flexShrink: 0,
+              }}
+            >
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: 14,
+                  fontWeight: 600,
+                  color: "var(--color-ink)",
+                }}
+              >
+                {formatFullDate(fromDateKey(modalDate))}
+              </p>
+              <button
+                type="button"
+                className="btn-icon"
+                onClick={() => setModalDate(null)}
+                aria-label={t("calendar.taskDetail.close")}
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* 할 일 목록 */}
+            <div
+              style={{
+                overflowY: "auto",
+                padding: "12px 16px 16px",
+                display: "flex",
+                flexDirection: "column",
+                gap: 6,
+              }}
+            >
+              {modalTodos.map((todo) => (
+                <button
+                  key={todo.id}
+                  type="button"
+                  onClick={() => {
+                    onSelect(todo.id);
+                    setModalDate(null);
+                  }}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    padding: "10px 12px",
+                    borderRadius: "var(--r-sm)",
+                    background: "var(--color-tile-2)",
+                    border: "1px solid var(--color-divider-soft)",
+                    cursor: "pointer",
+                    textAlign: "left",
+                    fontSize: 13,
+                    color: "var(--color-ink)",
+                  }}
+                >
+                  <StatusIcon status={todo.status} size={14} />
+                  <span
+                    style={{
+                      overflow: "hidden",
+                      whiteSpace: "nowrap",
+                      textOverflow: "ellipsis",
+                      flex: 1,
+                      color:
+                        todo.status === "done"
+                          ? "var(--color-status-done)"
+                          : "var(--color-ink)",
+                    }}
+                  >
+                    {todo.title}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </>
+      ) : null}
     </div>
   );
 }

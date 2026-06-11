@@ -9,9 +9,10 @@ export interface KanbanColumnProps {
   col: KanbanColumnConfig;
   items: Todo[];
   onUpdate: KanbanCardProps["onUpdate"];
+  onSelect: KanbanCardProps["onSelect"];
 }
 
-export function KanbanColumn({ col, items, onUpdate }: KanbanColumnProps) {
+export function KanbanColumn({ col, items, onUpdate, onSelect }: KanbanColumnProps) {
   const { t } = useTranslation();
   const isDone = col.id === "done";
 
@@ -57,6 +58,7 @@ export function KanbanColumn({ col, items, onUpdate }: KanbanColumnProps) {
               key={todoItem.id}
               todo={todoItem}
               onUpdate={onUpdate}
+              onSelect={onSelect}
               isDone={isDone}
             />
           ))

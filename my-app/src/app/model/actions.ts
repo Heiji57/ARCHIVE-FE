@@ -18,6 +18,7 @@ export type AppAction =
   | {
       type: "todo/add";
       payload: {
+        id: string;
         title: string;
         dateKey: string;
         status?: Todo["status"];
@@ -29,7 +30,10 @@ export type AppAction =
       payload: {
         id: string;
         patch: Partial<
-          Pick<Todo, "title" | "status" | "description" | "dateKey">
+          Pick<
+            Todo,
+            "title" | "status" | "description" | "dateKey" | "startTime" | "endTime"
+          >
         >;
       };
     }

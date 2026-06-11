@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { addDays } from "@/shared/lib/date";
 
-export type CalendarView = "week" | "month";
+export type CalendarView = "day" | "week" | "month";
 
 /**
  * Encapsulates the calendar's view-mode + cursor state and the
@@ -15,7 +15,9 @@ export function useCalendarNav(anchorDate: Date) {
   const [cursor, setCursor] = useState(anchorDate);
 
   const navigate = (dir: -1 | 1) => {
-    if (view === "week") {
+    if (view === "day") {
+      setCursor((prev) => addDays(prev, dir));
+    } else if (view === "week") {
       setCursor((prev) => addDays(prev, dir * 7));
     } else {
       setCursor(

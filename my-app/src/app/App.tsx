@@ -201,7 +201,7 @@ function AppContent({
   const pages = useMemo(
     () => ({
       calendar: <CalendarPage onNavigate={onNavigate} />,
-      todos: <TodosPage />,
+      todos: <TodosPage onNavigate={onNavigate} />,
       retrospectives: <RetrospectivesPage />,
       settings: <SettingsPage />,
     }),

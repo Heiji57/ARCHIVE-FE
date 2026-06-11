@@ -311,10 +311,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // ─── API 모드: SSE 기반 비동기 요약 ─────────────────────────────────────────
   const apiSummaryAbortRef = useRef<(() => void) | null>(null);
-  // readiness 점검 결과 캐시 (kind 별). entry 추가/수정 시 무효화한다.
-  const readinessCacheRef = useRef<Map<SummaryKind, SummaryReadiness>>(
-    new Map(),
-  );
+  // readiness 점검 결과 캐시 ("kind:periodStart" 별). entry 추가/수정 시 무효화한다.
+  const readinessCacheRef = useRef<Map<string, SummaryReadiness>>(new Map());
 
   const finalizeApiSummary = (
     summaryId: string,
@@ -323,12 +321,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
   ) => {
     void apiGetSummary(summaryId)
       .then((summary) => {
+        const entryDateKey = summary.periodEnd || targetDateKey;
+        const retroType = KIND_TO_TYPE[kind];
+        // 이미 로컬에 같은 기간·종류의 entry 가 있으면(하이드레이션/이전 요약) 그
+        // id 를 재사용해 낙관적 단계에서 중복 entry 가 생기지 않게 한다.
+        const existingLocal = state.entries.find(
+          (e) => e.retroType === retroType && e.dateKey === entryDateKey,
+        );
+        const localId = existingLocal?.id ?? createId("entry");
         const entry: JournalEntry = {
-          id: createId("entry"),
-          dateKey: summary.periodEnd || targetDateKey,
+          id: localId,
+          dateKey: entryDateKey,
           title: TITLE_BY_KIND[kind],
           content: summaryContentToMarkdown(summary.content),
-          retroType: KIND_TO_TYPE[kind],
+          retroType,
           githubPush: null,
           synced: false,
           updatedAt: new Date().toISOString(),
@@ -344,17 +350,97 @@ export function AppProvider({ children }: { children: ReactNode }) {
           }),
           { category: "summary" },
         );
+        // API 모드: 생성된 entry 를 서버에 영속화한다.
+        // 저장하지 않으면 새로고침 시 주간/월간/연간 회고록이 사라진다.
+        void persistSummaryEntry(
+          localId,
+          kind,
+          entryDateKey,
+          summary.periodStart,
+          summary.periodEnd || entryDateKey,
+          entry.title,
+          entry.content,
+        );
       })
       .catch(() => dispatch({ type: "summary/cancel" }));
   };
 
-  const startSummaryViaApi = (kind: SummaryKind, targetDateKey: string) => {
+  /**
+   * 요약으로 생성된 회고록 entry 를 서버에 영속화한다.
+   *  1. POST /entries 시도 → 성공 시 서버 ID 로 로컬 임시 ID 교체.
+   *  2. 409 JOURNAL_ENTRY_ALREADY_EXISTS → 서버에 이미 존재 →
+   *     GET /entries 로 해당 기간 기존 entry 의 ID 를 찾아 PUT 으로 덮어쓴다.
+   *
+   * (덮어쓸지 여부는 생성 전 사용자 확인을 이미 거쳤다 — 여기서는 그대로 저장.)
+   */
+  const persistSummaryEntry = async (
+    localId: string,
+    kind: SummaryKind,
+    entryDateKey: string,
+    periodStart: string,
+    periodEnd: string,
+    title: string,
+    content: string,
+  ) => {
+    const retroType = KIND_TO_TYPE[kind];
+    try {
+      const serverEntry = await apiCreateEntry({
+        dateKey: entryDateKey,
+        title,
+        content,
+        retroType,
+      });
+      dispatch({ type: "entry/replaceId", payload: { localId, serverEntry } });
+    } catch (e) {
+      if (
+        !(e instanceof ApiError) ||
+        e.code !== "JOURNAL_ENTRY_ALREADY_EXISTS"
+      ) {
+        console.warn("[persistSummaryEntry] entry 생성 실패:", e);
+        return;
+      }
+      // 이미 존재 → 기존 entry 를 찾아 덮어쓴다.
+      try {
+        const existingList = await apiListEntries({
+          retroType,
+          from: periodStart,
+          to: periodEnd,
+        });
+        const existing = existingList[0];
+        if (!existing) {
+          console.warn(
+            "[persistSummaryEntry] 409 이지만 기존 entry 조회 실패 — 건너뜀",
+          );
+          return;
+        }
+        const updated = await apiUpsertEntry(existing.id, {
+          dateKey: existing.dateKey,
+          title,
+          content,
+          retroType,
+        });
+        // 로컬 임시 entry 를 서버의 기존 entry(덮어쓴 내용)로 교체한다.
+        dispatch({
+          type: "entry/replaceId",
+          payload: { localId, serverEntry: updated },
+        });
+      } catch (inner) {
+        console.warn("[persistSummaryEntry] 덮어쓰기 실패:", inner);
+      }
+    }
+  };
+
+  const startSummaryViaApi = (
+    kind: SummaryKind,
+    targetDateKey: string,
+    periodStart?: string,
+  ) => {
     dispatch({ type: "summary/start", payload: { kind, targetDateKey } });
     apiSummaryAbortRef.current?.();
     apiSummaryAbortRef.current = null;
 
     const fail = () => dispatch({ type: "summary/cancel" });
-    void apiGenerateSummary(kind)
+    void apiGenerateSummary(kind, periodStart)
       .then((summary) => {
         if (summary.status === "completed") {
           finalizeApiSummary(summary.id, kind, targetDateKey);
@@ -608,7 +694,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const value: ArchiveAppContextValue = {
     state,
     isDemo,
-    addTodo: (title, dateKey, options) => {
+    addTodo: (title, dateKey, options, onCreated) => {
       // 기본 날짜("오늘")는 user.timezone 기준 (데모는 앵커 날짜)
       const resolvedDateKey =
         dateKey ??
@@ -623,19 +709,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
           status: options?.status,
           description: options?.description,
         })
-          .then((todo) => dispatch({ type: "todo/upsert", payload: { todo } }))
+          .then((todo) => {
+            dispatch({ type: "todo/upsert", payload: { todo } });
+            onCreated?.(todo.id);
+          })
           .catch(() => reportApiError());
         return;
       }
+      const newId = createId("todo");
       dispatch({
         type: "todo/add",
         payload: {
+          id: newId,
           title,
           dateKey: resolvedDateKey,
           status: options?.status,
           description: options?.description,
         },
       });
+      onCreated?.(newId);
     },
     updateTodo: (id, patch) => {
       dispatch({ type: "todo/update", payload: { id, patch } }); // 낙관적
@@ -645,6 +737,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
       dispatch({ type: "todo/move", payload: { id, dateKey } }); // 낙관적
       if (USE_API)
         void apiUpdateTodo(id, { dateKey }).catch(() => reportApiError());
+    },
+    setTodoTime: (id, startTime, endTime) => {
+      // 로컬 전용: api.yaml Todo 에 시간 필드가 없어 서버 전송 없이 상태만 갱신한다.
+      // (계약 간극 — 백엔드에 start_time/end_time 추가 시 apiUpdateTodo 로 연동 가능.)
+      dispatch({
+        type: "todo/update",
+        payload: { id, patch: { startTime, endTime } },
+      });
     },
     updateEntry: (id, patch) => {
       dispatch({ type: "entry/update", payload: { id, patch } }); // 낙관적
@@ -938,16 +1038,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
       dispatch({ type: "settings/retention", payload: { days } });
       if (USE_API) void syncSettings({ notificationRetentionDays: days });
     },
-    checkSummaryReadiness: async (kind) => {
+    checkSummaryReadiness: async (kind, periodStart) => {
       // weekly 는 readiness 미지원 → null (바로 생성)
       if (kind === "weekly") return null;
       // mock 모드는 점검 생략
       if (!USE_API) return null;
-      const cached = readinessCacheRef.current.get(kind);
+      // periodStart 별로 캐시 키를 분리한다 (기간 선택 시 기간마다 점검 결과가 다름).
+      const cacheKey = `${kind}:${periodStart ?? "default"}`;
+      const cached = readinessCacheRef.current.get(cacheKey);
       if (cached) return cached;
       try {
-        const readiness = await apiGetSummaryReadiness(kind);
-        readinessCacheRef.current.set(kind, readiness);
+        const readiness = await apiGetSummaryReadiness(kind, periodStart);
+        readinessCacheRef.current.set(cacheKey, readiness);
         return readiness;
       } catch (e) {
         // 정상 흐름(monthly/annual)에서는 도달하지 않음. 422/네트워크 오류는
@@ -961,8 +1063,33 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return null;
       }
     },
-    startSummary: (kind, targetDateKey) => {
-      if (USE_API) startSummaryViaApi(kind, targetDateKey);
+    checkRetroExists: async (kind, periodStart, periodEnd) => {
+      const retroType = KIND_TO_TYPE[kind];
+      if (USE_API) {
+        // 서버를 진실 공급원으로 조회. 로컬 상태에 의존하지 않는다.
+        try {
+          const existing = await apiListEntries({
+            retroType,
+            from: periodStart,
+            to: periodEnd,
+          });
+          return existing.length > 0;
+        } catch (e) {
+          // 조회 실패 시 보수적으로 "없음" 처리 → 생성 시 서버 409 로 안전망 동작.
+          console.warn("[checkRetroExists] 조회 실패:", e);
+          return false;
+        }
+      }
+      // mock 모드: 로컬 상태에서 기간 내 동일 retroType entry 존재 여부 확인.
+      return state.entries.some(
+        (e) =>
+          e.retroType === retroType &&
+          e.dateKey >= periodStart &&
+          e.dateKey <= periodEnd,
+      );
+    },
+    startSummary: (kind, targetDateKey, periodStart) => {
+      if (USE_API) startSummaryViaApi(kind, targetDateKey, periodStart);
       else startSummaryInternal(kind, targetDateKey);
     },
     minimizeSummary: () => dispatch({ type: "summary/minimize" }),

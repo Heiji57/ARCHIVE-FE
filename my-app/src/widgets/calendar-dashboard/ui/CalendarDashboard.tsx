@@ -5,11 +5,13 @@ import { useTodayKey } from "@/app/providers/useToday";
 import { findTodoById } from "@/entities/todo/lib/selectors";
 import type { Todo } from "@/entities/todo/model/types";
 import { fromDateKey } from "@/shared/lib/date";
+import { toDateKey } from "@/shared/lib/date";
 import { useCalendarNav } from "../model/useCalendarNav";
 import { CalendarLegend } from "./CalendarLegend";
 import { CalendarToolbar } from "./CalendarToolbar";
+import { DayTimeline } from "./DayTimeline";
 import { MonthGrid } from "./MonthGrid";
-import { TaskDetailPanel } from "./TaskDetailPanel";
+import { TaskDetailPanel } from "@/entities/todo/ui/TaskDetailPanel";
 import { WeekGrid } from "./WeekGrid";
 
 export interface CalendarDashboardProps {
@@ -17,7 +19,7 @@ export interface CalendarDashboardProps {
 }
 
 export function CalendarDashboard({ onNavigate }: CalendarDashboardProps) {
-  const { state, updateTodo, moveTodo } = useArchiveApp();
+  const { state, addTodo, updateTodo, moveTodo, setTodoTime } = useArchiveApp();
   // "오늘" = user.timezone 기준 (데모는 앵커 날짜). useTodayKey 가 분기 처리.
   const todayCellKey = useTodayKey();
   const anchorDate = useMemo(
@@ -56,7 +58,18 @@ export function CalendarDashboard({ onNavigate }: CalendarDashboardProps) {
           onNext={() => navigate(1)}
         />
 
-        {view === "week" ? (
+        {view === "day" ? (
+          <DayTimeline
+            dayKey={toDateKey(cursor)}
+            todayKey={todayCellKey}
+            todos={state.todos}
+            selectedId={selectedId}
+            onSelect={setSelectedId}
+            onReschedule={(id, startTime, endTime) =>
+              setTodoTime(id, startTime, endTime)
+            }
+          />
+        ) : view === "week" ? (
           <WeekGrid
             cursor={cursor}
             byDate={byDate}
@@ -64,6 +77,9 @@ export function CalendarDashboard({ onNavigate }: CalendarDashboardProps) {
             selectedId={selectedId}
             onSelect={setSelectedId}
             onDropTodo={handleDropTodo}
+            onAddTodo={(title, dateKey) =>
+            addTodo(title, dateKey, undefined, setSelectedId)
+          }
           />
         ) : (
           <MonthGrid
@@ -93,6 +109,9 @@ export function CalendarDashboard({ onNavigate }: CalendarDashboardProps) {
             todo={selectedTodo}
             onClose={() => setSelectedId(null)}
             onUpdate={(patch) => updateTodo(selectedTodo.id, patch)}
+            onSetTime={(startTime, endTime) =>
+              setTodoTime(selectedTodo.id, startTime, endTime)
+            }
             onGoToRetro={() => {
               onNavigate("retrospectives");
               setSelectedId(null);
