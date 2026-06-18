@@ -16,12 +16,10 @@
   height: 6px;
   border-radius: 50%;
   background: var(--color-status-done);
-  box-shadow: 0 0 8px rgba(48, 209, 88, 0.5);
 }
 
 .sync-dot.offline {
   background: var(--color-warn);
-  box-shadow: 0 0 8px rgba(255, 159, 10, 0.5);
 }
 
 .user-chip {

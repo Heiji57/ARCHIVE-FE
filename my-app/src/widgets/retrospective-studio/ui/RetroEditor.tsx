@@ -1,5 +1,5 @@
-import { lazy, Suspense, useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import { lazy, Suspense, useEffect, useRef, useState } from "react"
+import { createPortal } from "react-dom"
 import {
   BookOpen,
   Check,
@@ -13,31 +13,31 @@ import {
   RefreshCw,
   Save,
   X,
-} from "lucide-react";
-import type { JournalEntry } from "@/entities/entry/model/types";
-import type { GitHubCommit } from "@/entities/github/model/types";
-import { useArchiveApp } from "@/app/providers/useArchiveApp";
-import { DisconnectBanner } from "@/shared/ui/disconnect-banner/DisconnectBanner";
-import { Pill } from "@/shared/ui/pill/Pill";
-import { useTodayKey } from "@/app/providers/useToday";
-import { formatFullDate, fromDateKey } from "@/shared/lib/date";
-import { useTranslation } from "@/shared/lib/i18n";
-import { EditorErrorBoundary } from "@/shared/ui/rich-editor";
-import { RETRO_LABEL_KEY } from "../model/constants";
+} from "lucide-react"
+import type { JournalEntry } from "@/entities/entry/model/types"
+import type { GitHubCommit } from "@/entities/github/model/types"
+import { useArchiveApp } from "@/app/providers/useArchiveApp"
+import { DisconnectBanner } from "@/shared/ui/disconnect-banner/DisconnectBanner"
+import { Pill } from "@/shared/ui/pill/Pill"
+import { useTodayKey } from "@/app/providers/useToday"
+import { formatFullDate, fromDateKey } from "@/shared/lib/date"
+import { useTranslation } from "@/shared/lib/i18n"
+import { EditorErrorBoundary } from "@/shared/ui/rich-editor"
+import { RETRO_LABEL_KEY } from "../model/constants"
 
 // TipTap 에디터는 번들 크기가 크므로 회고록 페이지 진입 시에만 로드
-const RichEditor = lazy(() => import("@/shared/ui/rich-editor/ui/RichEditor"));
+const RichEditor = lazy(() => import("@/shared/ui/rich-editor/ui/RichEditor"))
 
 export interface RetroEditorProps {
-  entry: JournalEntry;
-  completedTodos: { id: string; title: string }[];
-  githubConnectedAs: string;
-  isGithubConnected: boolean;
+  entry: JournalEntry
+  completedTodos: { id: string; title: string }[]
+  githubConnectedAs: string
+  isGithubConnected: boolean
   /** verified emails 캐시 보유 여부. false 면 커밋 0건 시 재연결 안내를 표시한다. */
-  hasVerifiedEmails: boolean;
-  pushTargetRepositoryId: string | null;
-  onUpdate: (patch: Partial<Pick<JournalEntry, "title" | "content">>) => void;
-  onSave: () => void;
+  hasVerifiedEmails: boolean
+  pushTargetRepositoryId: string | null
+  onUpdate: (patch: Partial<Pick<JournalEntry, "title" | "content">>) => void
+  onSave: () => void
 }
 
 export function RetroEditor({
@@ -50,70 +50,69 @@ export function RetroEditor({
   onUpdate,
   onSave,
 }: RetroEditorProps) {
-  const { t } = useTranslation();
-  const { loadCommits, pushRetrospective, pushNotification } =
-    useArchiveApp();
-  const todayDateKey = useTodayKey();
-  const d = fromDateKey(entry.dateKey);
-  const retroLabel = t(RETRO_LABEL_KEY[entry.retroType]);
+  const { t } = useTranslation()
+  const { loadCommits, pushRetrospective, pushNotification } = useArchiveApp()
+  const todayDateKey = useTodayKey()
+  const d = fromDateKey(entry.dateKey)
+  const retroLabel = t(RETRO_LABEL_KEY[entry.retroType])
 
   // 커밋 섹션은 모든 일간 회고에 표시 (오늘 + 과거 날짜 모두)
-  const isDailyEntry = entry.retroType === "daily";
+  const isDailyEntry = entry.retroType === "daily"
   // 오늘 여부 — 제목·빈 상태 문구 구분에 사용
-  const isTodayDaily = isDailyEntry && entry.dateKey === todayDateKey;
+  const isTodayDaily = isDailyEntry && entry.dateKey === todayDateKey
 
   // ─── 커밋 로드 (로컬 state — entry 별 독립 관리) ──────────────────────────
   // loadCommits 가 결과를 직접 반환하므로, 전역 state 를 거치지 않고 이 컴포넌트
   // 인스턴스(key=entry.id 로 재마운트)에 격리된 커밋 목록을 유지한다.
   // → 다른 날짜 회고를 열어도 오늘 커밋이 덮어쓰이지 않는다.
-  const [commits, setCommits] = useState<GitHubCommit[]>([]);
-  const [loadingCommits, setLoadingCommits] = useState(false);
+  const [commits, setCommits] = useState<GitHubCommit[]>([])
+  const [loadingCommits, setLoadingCommits] = useState(false)
 
   // 일간 회고를 열 때 자동으로 해당 날짜 커밋 1회 로드 (오늘 + 과거 모두)
-  const commitsLoadedRef = useRef(false);
+  const commitsLoadedRef = useRef(false)
   useEffect(() => {
-    if (!isDailyEntry || !isGithubConnected) return;
-    if (commitsLoadedRef.current) return;
-    commitsLoadedRef.current = true;
-    setLoadingCommits(true);
+    if (!isDailyEntry || !isGithubConnected) return
+    if (commitsLoadedRef.current) return
+    commitsLoadedRef.current = true
+    setLoadingCommits(true)
     void loadCommits(entry.dateKey)
       .then(setCommits)
-      .finally(() => setLoadingCommits(false));
-  }, [isDailyEntry, isGithubConnected, entry.dateKey, loadCommits]);
+      .finally(() => setLoadingCommits(false))
+  }, [isDailyEntry, isGithubConnected, entry.dateKey, loadCommits])
 
   const handleRefreshCommits = () => {
-    setLoadingCommits(true);
+    setLoadingCommits(true)
     void loadCommits(entry.dateKey)
       .then(setCommits)
-      .finally(() => setLoadingCommits(false));
-  };
+      .finally(() => setLoadingCommits(false))
+  }
 
   // ─── Push ──────────────────────────────────────────────────────────────────
-  const [pushing, setPushing] = useState(false);
+  const [pushing, setPushing] = useState(false)
 
   const handlePush = async () => {
-    if (!isGithubConnected || !pushTargetRepositoryId) return;
-    setPushing(true);
+    if (!isGithubConnected || !pushTargetRepositoryId) return
+    setPushing(true)
     const result = await pushRetrospective(
       entry.retroType,
       entry.dateKey,
       entry.content,
-    );
-    setPushing(false);
+    )
+    setPushing(false)
     if (result.ok) {
-      onSave(); // synced 마킹
+      onSave() // synced 마킹
       pushNotification("success", t("retro.editor.pushSuccess"), result.path, {
         category: "sync",
-      });
+      })
     } else {
       pushNotification("warning", t("retro.editor.pushFailed"), result.error, {
         category: "sync",
-      });
+      })
     }
-  };
+  }
 
   // ─── 확장 모드 ─────────────────────────────────────────────────────────────
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(false)
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -122,29 +121,29 @@ export function RetroEditor({
         e.shiftKey &&
         e.key.toLowerCase() === "f"
       ) {
-        e.preventDefault();
-        setExpanded((v) => !v);
-        return;
+        e.preventDefault()
+        setExpanded((v) => !v)
+        return
       }
       if (expanded && e.key === "Escape") {
-        e.preventDefault();
-        setExpanded(false);
+        e.preventDefault()
+        setExpanded(false)
       }
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [expanded]);
+    }
+    document.addEventListener("keydown", onKey)
+    return () => document.removeEventListener("keydown", onKey)
+  }, [expanded])
 
   useEffect(() => {
-    if (!expanded) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    if (!expanded) return
+    const prev = document.body.style.overflow
+    document.body.style.overflow = "hidden"
     return () => {
-      document.body.style.overflow = prev;
-    };
-  }, [expanded]);
+      document.body.style.overflow = prev
+    }
+  }, [expanded])
 
-  const canPush = isGithubConnected && !!pushTargetRepositoryId;
+  const canPush = isGithubConnected && !!pushTargetRepositoryId
 
   return (
     <article>
@@ -156,8 +155,7 @@ export function RetroEditor({
           marginBottom: 16,
           gap: 12,
           flexWrap: "wrap",
-        }}
-      >
+        }}>
         <div>
           <p className="t-eyebrow" style={{ margin: "0 0 6px" }}>
             {retroLabel}
@@ -167,8 +165,7 @@ export function RetroEditor({
               margin: 0,
               fontSize: 14,
               color: "var(--color-body-muted)",
-            }}
-          >
+            }}>
             {formatFullDate(d)}
           </p>
         </div>
@@ -181,8 +178,7 @@ export function RetroEditor({
               gap: 4,
               fontSize: 11,
               color: "var(--color-body-muted)",
-            }}
-          >
+            }}>
             <Save size={11} />
             {t("retro.editor.autoSaved")}
           </span>
@@ -193,8 +189,7 @@ export function RetroEditor({
             className="retro-expand-btn"
             onClick={() => setExpanded(true)}
             aria-label="회고록 확장"
-            title="회고록 확장 (Ctrl+Shift+F)"
-          >
+            title="회고록 확장 (Ctrl+Shift+F)">
             <Maximize2 size={14} />
           </button>
 
@@ -227,8 +222,7 @@ export function RetroEditor({
                 : !pushTargetRepositoryId
                   ? t("settings.github.pushTargetHint")
                   : ""
-            }
-          >
+            }>
             <GitCommit size={14} />
             {pushing ? t("retro.editor.pushing") : t("retro.editor.save")}
           </button>
@@ -256,8 +250,7 @@ export function RetroEditor({
               fontSize: 19,
               color: "var(--color-body-muted)",
               lineHeight: 1.4,
-            }}
-          >
+            }}>
             {t("retro.editor.sub")}
           </p>
 
@@ -285,8 +278,7 @@ export function RetroEditor({
                       display: "flex",
                       gap: 10,
                       alignItems: "center",
-                    }}
-                  >
+                    }}>
                     <CheckCircle
                       size={14}
                       style={{ color: "var(--color-status-done)" }}
@@ -301,8 +293,7 @@ export function RetroEditor({
                   margin: 0,
                   fontSize: 13,
                   color: "var(--color-body-muted)",
-                }}
-              >
+                }}>
                 {t("retro.editor.noCompleted")}
               </p>
             )}
@@ -312,8 +303,7 @@ export function RetroEditor({
           {isGithubConnected && isDailyEntry ? (
             <section
               className="section-card-tile-2"
-              style={{ marginBottom: 16 }}
-            >
+              style={{ marginBottom: 16 }}>
               <div className="section-card-head">
                 <div className="avatar avatar-sm avatar-primary">
                   <GitCommit size={14} />
@@ -328,8 +318,7 @@ export function RetroEditor({
                     marginLeft: "auto",
                     fontSize: 12,
                     color: "var(--color-body-muted)",
-                  }}
-                >
+                  }}>
                   @{githubConnectedAs}
                 </span>
                 {/* 새로고침 버튼 */}
@@ -339,8 +328,7 @@ export function RetroEditor({
                   style={{ padding: "4px 8px", fontSize: 11, marginLeft: 6 }}
                   onClick={handleRefreshCommits}
                   disabled={loadingCommits}
-                  title={t("retro.editor.loadCommits")}
-                >
+                  title={t("retro.editor.loadCommits")}>
                   <RefreshCw
                     size={11}
                     style={
@@ -358,19 +346,18 @@ export function RetroEditor({
                     margin: 0,
                     fontSize: 13,
                     color: "var(--color-body-muted)",
-                  }}
-                >
+                  }}>
                   {t("retro.editor.loadCommits")}…
                 </p>
               ) : commits.length === 0 ? (
-                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <div
+                  style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                   <p
                     style={{
                       margin: 0,
                       fontSize: 13,
                       color: "var(--color-body-muted)",
-                    }}
-                  >
+                    }}>
                     {!hasVerifiedEmails
                       ? t("retro.github.noCommitsReconnect")
                       : isTodayDaily
@@ -387,8 +374,7 @@ export function RetroEditor({
                         fontSize: 11,
                         color: "var(--color-primary)",
                         textDecoration: "underline",
-                      }}
-                    >
+                      }}>
                       {t("retro.github.emailsSettingsLink")} ↗
                     </a>
                   )}
@@ -396,8 +382,7 @@ export function RetroEditor({
               ) : (
                 <ul
                   className="t-mono"
-                  style={{ display: "flex", flexDirection: "column", gap: 6 }}
-                >
+                  style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                   {commits.map((c) => (
                     <li
                       key={`${c.repositoryId}-${c.sha}`}
@@ -411,8 +396,7 @@ export function RetroEditor({
                         gap: 10,
                         alignItems: "center",
                         flexWrap: "wrap",
-                      }}
-                    >
+                      }}>
                       {/* 출처 저장소 배지 */}
                       <span
                         style={{
@@ -424,8 +408,7 @@ export function RetroEditor({
                           padding: "2px 7px",
                           borderRadius: "var(--r-pill)",
                           whiteSpace: "nowrap",
-                        }}
-                      >
+                        }}>
                         {c.fullName}
                       </span>
                       <span style={{ flex: 1, minWidth: 160 }}>
@@ -443,8 +426,7 @@ export function RetroEditor({
                           textDecoration: "none",
                           fontSize: 11,
                         }}
-                        title={c.sha}
-                      >
+                        title={c.sha}>
                         {c.sha.slice(0, 7)}
                         <ExternalLink size={10} />
                       </a>
@@ -469,19 +451,17 @@ export function RetroEditor({
                   style={{
                     padding: 14,
                     fontSize: 13,
-                    color: "var(--color-warn, #ff9f0a)",
+                    color: "var(--color-warn, #d9a23a)",
                     background: "var(--color-tile-3)",
                     borderRadius: "var(--r-sm)",
                     fontFamily: "var(--font-mono, monospace)",
                     whiteSpace: "pre-wrap",
-                  }}
-                >
+                  }}>
                   <strong>에디터를 불러오지 못했습니다.</strong>
                   {"\n"}
                   {error.message}
                 </div>
-              )}
-            >
+              )}>
               <Suspense
                 fallback={
                   <div
@@ -490,12 +470,10 @@ export function RetroEditor({
                       padding: 12,
                       fontSize: 13,
                       color: "var(--color-body-muted)",
-                    }}
-                  >
+                    }}>
                     에디터 로딩 중...
                   </div>
-                }
-              >
+                }>
                 <RichEditor
                   key={entry.id}
                   value={entry.content}
@@ -514,9 +492,8 @@ export function RetroEditor({
           <div
             className="retro-expand-overlay"
             onClick={(e) => {
-              if (e.target === e.currentTarget) setExpanded(false);
-            }}
-          >
+              if (e.target === e.currentTarget) setExpanded(false)
+            }}>
             <div className="retro-expand-card">
               <div className="retro-expand-toolbar">
                 <span className="retro-expand-hint">
@@ -527,8 +504,7 @@ export function RetroEditor({
                   className="retro-expand-close"
                   onClick={() => setExpanded(false)}
                   aria-label="확장 닫기"
-                  title="닫기 (Esc)"
-                >
+                  title="닫기 (Esc)">
                   <Minimize2 size={14} />
                   <X size={16} />
                 </button>
@@ -546,19 +522,17 @@ export function RetroEditor({
                       style={{
                         padding: 14,
                         fontSize: 13,
-                        color: "var(--color-warn, #ff9f0a)",
+                        color: "var(--color-warn, #d9a23a)",
                         background: "var(--color-tile-3)",
                         borderRadius: "var(--r-sm)",
                         fontFamily: "var(--font-mono, monospace)",
                         whiteSpace: "pre-wrap",
-                      }}
-                    >
+                      }}>
                       <strong>에디터를 불러오지 못했습니다.</strong>
                       {"\n"}
                       {error.message}
                     </div>
-                  )}
-                >
+                  )}>
                   <Suspense
                     fallback={
                       <div
@@ -567,12 +541,10 @@ export function RetroEditor({
                           padding: 12,
                           fontSize: 13,
                           color: "var(--color-body-muted)",
-                        }}
-                      >
+                        }}>
                         에디터 로딩 중...
                       </div>
-                    }
-                  >
+                    }>
                     <RichEditor
                       value={entry.content}
                       placeholder={t("retro.editor.learnedPlaceholder")}
@@ -586,5 +558,5 @@ export function RetroEditor({
           document.body,
         )}
     </article>
-  );
+  )
 }

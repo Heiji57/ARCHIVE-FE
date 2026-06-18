@@ -331,8 +331,8 @@ export function TaskDetailPanel({
             padding: "16px 18px",
             borderRadius: "var(--r-md)",
             background:
-              "linear-gradient(180deg, rgba(10, 132, 255, 0.14), rgba(10, 132, 255, 0.04))",
-            border: "1px solid rgba(10, 132, 255, 0.28)",
+              "linear-gradient(180deg, rgba(94, 106, 210, 0.14), rgba(94, 106, 210, 0.04))",
+            border: "1px solid rgba(94, 106, 210, 0.28)",
           }}
         >
           <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>

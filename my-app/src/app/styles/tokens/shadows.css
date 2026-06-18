@@ -1,6 +1,13 @@
-/* ---------- Shadow tokens ---------- */
+/* ---------- Shadow tokens — Linear design system ----------
+   Linear elevation = surface lift + 1px hairline, NOT drop shadows.
+   Shadows are reserved only for true floating overlays (toasts, popovers).
+   ------------------------------------------------------------------ */
 :root {
-  --shadow-product: rgba(0, 0, 0, 0.45) 3px 5px 30px 0;
-  --shadow-toast: 0 12px 36px rgba(0, 0, 0, 0.6), 0 2px 8px rgba(0, 0, 0, 0.4);
-  --shadow-panel: 0 24px 60px rgba(0, 0, 0, 0.7);
+  /* Floating overlays only — kept subtle */
+  --shadow-toast:   0 4px 16px rgba(0, 0, 0, 0.5), 0 1px 4px rgba(0, 0, 0, 0.3);
+  --shadow-panel:   0 8px 32px rgba(0, 0, 0, 0.5);
+  --shadow-popover: 0 4px 20px rgba(0, 0, 0, 0.4);
+
+  /* Product screenshot / landing hero — single soft shadow */
+  --shadow-product: 0 2px 40px rgba(0, 0, 0, 0.4);
 }

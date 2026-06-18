@@ -202,10 +202,10 @@
   align-items: center;
   gap: 3px;
   font-size: 10px;
-  color: var(--color-warn, #ff9f0a);
+  color: var(--color-warn, #d9a23a);
   padding: 2px 7px;
   border-radius: var(--r-pill);
-  background: rgba(255, 159, 10, 0.14);
+  background: rgba(217, 162, 58, 0.14);
 }
 .github-repo-unlink,
 .github-repo-link {
@@ -291,7 +291,9 @@
   color: var(--color-ink);
   font-size: 13px;
   background: transparent;
-  transition: background 0.12s, border-color 0.12s;
+  transition:
+    background 0.12s,
+    border-color 0.12s;
 }
 .template-list-row:hover {
   background: var(--color-tile-3);
@@ -309,7 +311,9 @@
   justify-content: center;
   color: var(--color-ink-muted-48);
   border-radius: 50%;
-  transition: color 0.12s, transform 0.08s;
+  transition:
+    color 0.12s,
+    transform 0.08s;
   cursor: pointer;
 }
 .template-radio:hover {
@@ -349,7 +353,9 @@
   border-radius: var(--r-sm);
   color: var(--color-body-muted);
   opacity: 0;
-  transition: opacity 0.12s, color 0.12s;
+  transition:
+    opacity 0.12s,
+    color 0.12s;
   display: flex;
   align-items: center;
   cursor: pointer;
@@ -373,7 +379,9 @@
   background: transparent;
   border: 1px dashed var(--color-divider-soft);
   cursor: pointer;
-  transition: color 0.12s, border-color 0.12s;
+  transition:
+    color 0.12s,
+    border-color 0.12s;
 }
 .template-add-btn:hover {
   color: var(--color-ink);

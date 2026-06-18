@@ -97,8 +97,8 @@
   text-overflow: ellipsis;
 }
 .day-allday-chip[data-status="done"] {
-  background: rgba(48, 209, 88, 0.12);
-  border-color: rgba(48, 209, 88, 0.3);
+  background: rgba(39, 166, 68, 0.12);
+  border-color: rgba(39, 166, 68, 0.3);
   color: var(--color-status-done);
 }
 .day-allday-chip[aria-pressed="true"] {
@@ -207,11 +207,11 @@
   border-left-color: var(--color-primary);
 }
 .day-block[data-status="in-progress"] {
-  background: rgba(10, 132, 255, 0.16);
+  background: rgba(94, 106, 210, 0.16);
   border-left-color: var(--color-primary);
 }
 .day-block[data-status="done"] {
-  background: rgba(48, 209, 88, 0.12);
+  background: rgba(39, 166, 68, 0.12);
   border-left-color: var(--color-status-done);
 }
 .day-block[data-status="done"] .day-block-title {
@@ -286,10 +286,10 @@
   text-overflow: ellipsis;
 }
 .todo-month-chip[data-status="done"] {
-  background: rgba(48, 209, 88, 0.12);
+  background: rgba(39, 166, 68, 0.12);
   color: var(--color-status-done);
 }
 .todo-month-chip[data-status="in-progress"] {
-  background: rgba(10, 132, 255, 0.16);
+  background: rgba(94, 106, 210, 0.16);
   color: var(--color-primary-on-dark);
 }

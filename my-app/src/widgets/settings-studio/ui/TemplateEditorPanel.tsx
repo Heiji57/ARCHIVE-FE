@@ -1,18 +1,18 @@
-import { lazy, Suspense } from "react";
-import { RotateCcw, Save } from "lucide-react";
-import type { RetroTemplate } from "@/entities/template";
-import { EditorErrorBoundary } from "@/shared/ui/rich-editor";
-import { useTranslation } from "@/shared/lib/i18n";
+import { lazy, Suspense } from "react"
+import { RotateCcw, Save } from "lucide-react"
+import type { RetroTemplate } from "@/entities/template"
+import { EditorErrorBoundary } from "@/shared/ui/rich-editor"
+import { useTranslation } from "@/shared/lib/i18n"
 
 // TipTap 에디터는 lazy — 템플릿 카드 열 때만 로드
-const RichEditor = lazy(() => import("@/shared/ui/rich-editor/ui/RichEditor"));
+const RichEditor = lazy(() => import("@/shared/ui/rich-editor/ui/RichEditor"))
 
 export interface TemplateEditorPanelProps {
-  template: RetroTemplate;
+  template: RetroTemplate
   /** 번역된 표시 이름 (기본 템플릿은 i18n, 사용자 템플릿은 원본). */
-  displayName: string;
-  onUpdate: (patch: Partial<Pick<RetroTemplate, "name" | "content">>) => void;
-  onReset: () => void;
+  displayName: string
+  onUpdate: (patch: Partial<Pick<RetroTemplate, "name" | "content">>) => void
+  onReset: () => void
 }
 
 export function TemplateEditorPanel({
@@ -21,7 +21,7 @@ export function TemplateEditorPanel({
   onUpdate,
   onReset,
 }: TemplateEditorPanelProps) {
-  const { t } = useTranslation();
+  const { t } = useTranslation()
 
   return (
     <div className="template-editor-inner">
@@ -47,8 +47,7 @@ export function TemplateEditorPanel({
               className="btn btn-utility"
               onClick={onReset}
               title={t("settings.templates.reset")}
-              style={{ fontSize: 12, padding: "6px 12px" }}
-            >
+              style={{ fontSize: 12, padding: "6px 12px" }}>
               <RotateCcw size={12} />
               {t("settings.templates.reset")}
             </button>
@@ -62,19 +61,17 @@ export function TemplateEditorPanel({
             style={{
               padding: 14,
               fontSize: 13,
-              color: "var(--color-warn, #ff9f0a)",
+              color: "var(--color-warn, #d9a23a)",
               background: "var(--color-tile-3)",
               borderRadius: "var(--r-sm)",
               fontFamily: "var(--font-mono, monospace)",
               whiteSpace: "pre-wrap",
-            }}
-          >
+            }}>
             <strong>에디터를 불러오지 못했습니다.</strong>
             {"\n"}
             {error.message}
           </div>
-        )}
-      >
+        )}>
         <Suspense
           fallback={
             <div
@@ -83,12 +80,10 @@ export function TemplateEditorPanel({
                 padding: 12,
                 fontSize: 13,
                 color: "var(--color-body-muted)",
-              }}
-            >
+              }}>
               에디터 로딩 중...
             </div>
-          }
-        >
+          }>
           <RichEditor
             key={template.id}
             value={template.content}
@@ -98,5 +93,5 @@ export function TemplateEditorPanel({
         </Suspense>
       </EditorErrorBoundary>
     </div>
-  );
+  )
 }

@@ -89,7 +89,7 @@ export function MonthGrid({
               onDropTodo={onDropTodo}
               style={{
                 background: todayCell
-                  ? "rgba(10, 132, 255, 0.08)"
+                  ? "rgba(94, 106, 210, 0.08)"
                   : "var(--color-tile-1)",
                 minHeight: 124,
                 padding: 10,

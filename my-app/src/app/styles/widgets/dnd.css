@@ -12,7 +12,7 @@
   outline-offset: -4px;
 }
 [data-drop-over="true"] {
-  background: rgba(10, 132, 255, 0.16) !important;
+  background: rgba(94, 106, 210, 0.16) !important;
   outline: 2px solid var(--color-primary);
   outline-offset: -4px;
 }

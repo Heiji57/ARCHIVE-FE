@@ -1,55 +1,67 @@
-/* ---------- Color tokens ---------- */
+/* ---------- Color tokens — Linear design system ---------- */
 :root {
   color-scheme: dark;
 
-  --color-primary: #0a84ff;
-  --color-primary-focus: #409cff;
-  --color-primary-on-dark: #2997ff;
-  --color-primary-hover: #409cff;
-  --color-on-primary: #ffffff;
-  --color-on-dark: #f5f5f7;
+  /* Primary / accent — lavender-blue (ONLY chromatic accent) */
+  --color-primary:         #5e6ad2;
+  --color-primary-hover:   #828fff;
+  --color-primary-focus:   #5e69d1;
+  --color-primary-on-dark: #828fff;
+  --color-on-primary:      #ffffff;
+  --color-on-dark:         #f7f8f8;
 
-  --color-ink: #f5f5f7;
-  --color-body: #f5f5f7;
-  --color-body-muted: #a1a1a6;
-  --color-ink-muted-80: #a1a1a6;
-  --color-ink-muted-48: #636366;
-  --color-ink-muted-32: #48484a;
+  /* Text hierarchy */
+  --color-ink:             #f7f8f8;  /* headlines, emphasized */
+  --color-body:            #f7f8f8;
+  --color-body-muted:      #8a8f98;  /* tertiary / nav inactive / icons */
+  --color-ink-muted-80:    #d0d6e0;  /* secondary body */
+  --color-ink-muted-48:    #62666d;  /* disabled, footnotes */
+  --color-ink-muted-32:    #3e3e44;  /* deepest muted */
 
-  --color-canvas: #000000;
-  --color-canvas-parchment: #1c1c1e;
-  --color-surface-pearl: #1c1c1e;
+  /* Surfaces — 4-step depth ladder (lift + hairline, no shadows) */
+  --color-canvas:          #010102;  /* page bg — near-black, NOT pure #000 */
+  --color-canvas-parchment:#0f1011;  /* surface-1 alias */
+  --color-surface-pearl:   #0f1011;  /* surface-1 alias */
 
-  --color-tile-1: #1c1c1e;
-  --color-tile-2: #2c2c2e;
-  --color-tile-3: #0d0d0d;
-  --color-tile-4: #3a3a3c;
+  --color-tile-1:          #0f1011;  /* surface-1 — cards, panels */
+  --color-tile-2:          #141516;  /* surface-2 — elevated / featured cards */
+  --color-tile-3:          #18191a;  /* surface-3 — inputs, sub-nav, dropdowns */
+  --color-tile-4:          #191a1b;  /* surface-4 — deepest lifted surface */
 
-  --color-divider-soft: rgba(255, 255, 255, 0.06);
-  --color-hairline: #2c2c2e;
-  --color-chip-translucent: rgba(118, 118, 128, 0.24);
+  /* Borders / hairlines */
+  --color-divider-soft:    rgba(35, 37, 42, 0.7);
+  --color-hairline:        #23252a;
+  --color-hairline-strong: #34343a;
 
-  /* status */
-  --color-status-done: #30d158;
-  --color-status-progress: #0a84ff;
-  --color-status-todo: #8e8e93;
-  --color-warn: #ff9f0a;
+  /* Chip / translucent accent */
+  --color-chip-translucent: rgba(94, 106, 210, 0.12);
 
-  --ring-soft: rgba(10, 132, 255, 0.28);
+  /* Status */
+  --color-status-done:     #27a644;
+  --color-status-progress: #5e6ad2;
+  --color-status-todo:     #8a8f98;
+  --color-warn:            #d9a23a;  /* muted amber — used sparingly */
 
-  /* legacy aliases */
-  --ink: #f5f5f7;
-  --ink-muted: #a1a1a6;
-  --ink-muted-soft: #8e8e93;
-  --ink-muted-32: #48484a;
-  --canvas: #000000;
-  --canvas-parchment: #1c1c1e;
-  --surface-deep: #0d0d0d;
-  --surface-dark: #2c2c2e;
-  --surface-dark-alt: #3a3a3c;
-  --surface-black: #000000;
-  --hairline: #2c2c2e;
-  --hairline-strong: #3a3a3c;
-  --divider-soft: rgba(255, 255, 255, 0.06);
-  --chip-translucent: rgba(118, 118, 128, 0.24);
+  /* Focus ring */
+  --ring-soft:             rgba(94, 106, 210, 0.28);
+
+  /* Inverse (white-pill CTAs, landing hero button) */
+  --color-inverse-canvas:  #ffffff;
+  --color-inverse-ink:     #000000;
+
+  /* Legacy aliases — kept for back-compat, point to Linear equivalents */
+  --ink:                   #f7f8f8;
+  --ink-muted:             #8a8f98;
+  --ink-muted-soft:        #8a8f98;
+  --ink-muted-32:          #3e3e44;
+  --canvas:                #010102;
+  --canvas-parchment:      #0f1011;
+  --surface-deep:          #18191a;
+  --surface-dark:          #141516;
+  --surface-dark-alt:      #191a1b;
+  --surface-black:         #010102;
+  --hairline:              #23252a;
+  --hairline-strong:       #34343a;
+  --divider-soft:          rgba(35, 37, 42, 0.7);
+  --chip-translucent:      rgba(94, 106, 210, 0.12);
 }

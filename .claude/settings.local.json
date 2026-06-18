@@ -12,7 +12,9 @@
       "Bash(sed -n '342,400p' api.yaml)",
       "Bash(sed -n '/    UserResponse:/,/    TokenResponse:/p' api.yaml)",
       "Bash(sed -n '/    RegisterRequest:/,/    LoginRequest:/p' api.yaml)",
-      "Bash(sed -n '/    OnboardingCompleteRequest:/,/^    [A-Za-z]/p' api.yaml)"
+      "Bash(sed -n '/    OnboardingCompleteRequest:/,/^    [A-Za-z]/p' api.yaml)",
+      "Bash(awk '/01 LANDING/,/02 AUTH|sec-auth/' \"ARCHIVE Linear.dc.html\")",
+      "Bash(grep -oiE \"\\(font-size:[0-9]+px[^;]*|letter-spacing:[^;]*|>[A-Za-z가-힣][^<>]{3,60}<|linear-gradient\\\\\\([^\\)]*\\\\\\)|class=\\\\\"[^\\\\\"]*\\\\\"\\)\")"
     ]
   }
 }

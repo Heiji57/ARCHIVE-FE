@@ -1,6 +1,6 @@
 /* ---------- Scrollbar / selection / focus ---------- */
 ::selection {
-  background: rgba(10, 132, 255, 0.32);
+  background: rgba(94, 106, 210, 0.32);
 }
 
 ::-webkit-scrollbar {
@@ -9,7 +9,7 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #2c2c2e;
+  background: var(--color-hairline-strong);
   border-radius: 999px;
   border: 2px solid var(--color-canvas);
 }

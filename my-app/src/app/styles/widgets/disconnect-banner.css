@@ -1,7 +1,7 @@
 /* ---------- GitHub disconnected banner ---------- */
 .disconnect-banner {
-  background: rgba(255, 159, 10, 0.1);
-  border: 1px solid rgba(255, 159, 10, 0.3);
+  background: rgba(217, 162, 58, 0.1);
+  border: 1px solid rgba(217, 162, 58, 0.3);
   border-radius: var(--r-md);
   padding: 12px 14px;
   display: flex;

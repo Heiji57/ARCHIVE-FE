@@ -1,20 +1,21 @@
-/* ---------- Spacing & Radius tokens ---------- */
+/* ---------- Spacing & Radius tokens — Linear design system ---------- */
 :root {
-  /* spacing */
-  --s-xxs: 4px;
-  --s-xs: 8px;
-  --s-sm: 12px;
-  --s-md: 17px;
-  --s-lg: 24px;
-  --s-xl: 32px;
-  --s-xxl: 48px;
-  --s-section: 80px;
+  /* Spacing — 4px base grid */
+  --s-xxs:     4px;
+  --s-xs:      8px;
+  --s-sm:      12px;
+  --s-md:      16px;
+  --s-lg:      24px;
+  --s-xl:      32px;
+  --s-xxl:     48px;
+  --s-section: 96px;
 
-  /* radius */
-  --r-xs: 5px;
-  --r-sm: 8px;
-  --r-md: 11px;
-  --r-lg: 18px;
-  --r-xl: 28px;
-  --r-pill: 9999px;
+  /* Radius — Linear spec */
+  --r-xs:   4px;    /* chips, badges */
+  --r-sm:   6px;    /* inline tags */
+  --r-md:   8px;    /* buttons, inputs */
+  --r-lg:   12px;   /* cards, panels */
+  --r-xl:   16px;   /* product / screenshot panels */
+  --r-xxl:  24px;   /* oversized banners */
+  --r-pill: 9999px; /* toggles, status pills, avatars */
 }

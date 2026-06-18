@@ -1,14 +1,20 @@
-/* ---------- Typography tokens ---------- */
+/* ---------- Typography tokens — Linear design system ---------- */
+
+/* Inter: humanist sans (Linear app UI font, dense-data proven) */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+
 :root {
   --font-display:
-    "SF Pro Display", -apple-system, BlinkMacSystemFont, system-ui,
+    "Inter", -apple-system, BlinkMacSystemFont, system-ui,
     "Helvetica Neue", Helvetica, Arial, sans-serif;
   --font-text:
-    "SF Pro Text", -apple-system, BlinkMacSystemFont, system-ui,
+    "Inter", -apple-system, BlinkMacSystemFont, system-ui,
     "Helvetica Neue", Helvetica, Arial, sans-serif;
   --font-mono:
-    ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+    ui-monospace, "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
 
-  /* density */
-  --headline-tracking: -0.04em;
+  /* Linear type scale */
+  --headline-tracking:  -0.04em;   /* aggressive negative — display/headline */
+  --body-tracking:      -0.01em;   /* near-neutral — body */
+  --eyebrow-tracking:   +0.04em;   /* positive — eyebrow labels */
 }

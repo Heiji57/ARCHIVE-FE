@@ -332,10 +332,6 @@
   width: 100%;
   /* 오브가 첫 화면(hero-inner)으로 삐져나오지 않도록 클리핑 */
   overflow: clip;
-  /* 그룹의 min-height:100vh 오버라이드 — 콘텐츠(캘린더 창) 크기에 맞춤.
-     100vh 고정이면 창 위에 그라데이션 없는 검은 공백이 생기고,
-     그 공백을 스크롤하면 mandatory snap 이 되돌아오는 현상 발생. */
-  min-height: auto;
   justify-content: center;
   padding: 56px 0 72px;
 }
@@ -345,7 +341,7 @@
   position: relative;
   z-index: 1;
   max-width: 760px;
-  margin: 160px 20px 30px;
+  margin: 40px 20px 30px;
   background: #0e0e10;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 16px;
