@@ -1,17 +1,38 @@
-import { useRef, useState } from "react";
-import { Plus } from "lucide-react";
+import { memo, useRef, useState } from "react";
 import type { Todo } from "@/entities/todo/model/types";
-import { Pill } from "@/shared/ui/pill/Pill";
-import { addDays, startOfWeek, toDateKey } from "@/shared/lib/date";
+import { useDraggable } from "@/shared/lib/dnd";
+import { addDays, startOfISOWeek, toDateKey } from "@/shared/lib/date";
 import { useTranslation } from "@/shared/lib/i18n";
-import { DAY_ABBR_KEYS, DAY_FULL_KEYS } from "../model/constants";
+import { DAY_ABBR_KEYS, TODO_DRAG_KIND } from "../model/constants";
 import { DayCell } from "./DayCell";
-import { DraggableTaskCard } from "./DraggableTaskCard";
+
+interface WeekChipProps {
+  todo: Todo;
+  onSelect: () => void;
+}
+
+const WeekChip = memo(function WeekChipImpl({ todo, onSelect }: WeekChipProps) {
+  const drag = useDraggable({ kind: TODO_DRAG_KIND, data: { id: todo.id } });
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      data-draggable="true"
+      data-status={todo.status}
+      className="week-chip"
+      {...drag}
+    >
+      {todo.startTime ? (
+        <p className="week-chip-time">{todo.startTime.slice(0, 5)}</p>
+      ) : null}
+      <p className="week-chip-title">{todo.title}</p>
+    </button>
+  );
+});
 
 export interface WeekGridProps {
   cursor: Date;
   byDate: Record<string, Todo[]>;
-  /** "오늘" 로 강조할 날짜 키 (실제 오늘 또는 데모 앵커). */
   todayKey: string;
   selectedId: string | null;
   onSelect: (id: string) => void;
@@ -23,19 +44,16 @@ export function WeekGrid({
   cursor,
   byDate,
   todayKey,
-  selectedId,
   onSelect,
   onDropTodo,
   onAddTodo,
 }: WeekGridProps) {
   const { t } = useTranslation();
-  const start = startOfWeek(cursor);
+  const start = startOfISOWeek(cursor);
   const days = Array.from({ length: 7 }, (_, i) => addDays(start, i));
-  const anchorKey = todayKey;
 
   const [addingDate, setAddingDate] = useState<string | null>(null);
   const [addingTitle, setAddingTitle] = useState("");
-  // Escape 키로 취소한 경우 blur 에서 submit 하지 않도록 플래그.
   const escapedRef = useRef(false);
 
   const startAdding = (dateKey: string) => {
@@ -76,16 +94,12 @@ export function WeekGrid({
       style={{
         display: "grid",
         gridTemplateColumns: "repeat(7, minmax(0, 1fr))",
-        gap: 1,
-        background: "var(--color-divider-soft)",
-        borderRadius: "var(--r-lg)",
-        overflow: "hidden",
-        border: "1px solid var(--color-divider-soft)",
+        gap: 6,
       }}
     >
       {days.map((d) => {
         const k = toDateKey(d);
-        const todayCell = k === anchorKey;
+        const todayCell = k === todayKey;
         const items = byDate[k] ?? [];
         const isAdding = addingDate === k;
 
@@ -96,20 +110,24 @@ export function WeekGrid({
             onDropTodo={onDropTodo}
             style={{
               background: todayCell
-                ? "rgba(10, 132, 255, 0.07)"
+                ? "rgba(94, 106, 210, 0.07)"
                 : "var(--color-tile-1)",
-              minHeight: 380,
-              padding: "16px 14px 18px",
+              borderRadius: "var(--r-sm)",
+              border: todayCell
+                ? "1px solid rgba(94, 106, 210, 0.4)"
+                : "1px solid var(--color-divider-soft)",
+              minHeight: 340,
+              padding: "14px 10px",
               display: "flex",
               flexDirection: "column",
-              gap: 12,
+              gap: 10,
             }}
           >
-            {/* Day header */}
+            {/* Column header: abbr + date / count */}
             <div
               style={{
                 display: "flex",
-                alignItems: "baseline",
+                alignItems: "flex-start",
                 justifyContent: "space-between",
               }}
             >
@@ -120,46 +138,56 @@ export function WeekGrid({
                     color: todayCell
                       ? "var(--color-primary-on-dark)"
                       : "var(--color-body-muted)",
-                    margin: 0,
+                    margin: "0 0 2px",
                   }}
                 >
                   {t(DAY_ABBR_KEYS[d.getDay()])}
                 </p>
                 <p
                   style={{
-                    margin: "2px 0 0",
-                    fontSize: 26,
+                    margin: 0,
+                    fontSize: 20,
                     fontFamily: "var(--font-display)",
                     fontWeight: 600,
                     letterSpacing: "-0.04em",
-                    color: "var(--color-ink)",
+                    color: todayCell
+                      ? "var(--color-primary-on-dark)"
+                      : "var(--color-ink)",
                   }}
                 >
                   {d.getDate()}
                 </p>
-                <p
+              </div>
+              {items.length > 0 ? (
+                <span
                   style={{
-                    margin: 0,
                     fontSize: 11,
                     color: "var(--color-body-muted)",
+                    fontVariantNumeric: "tabular-nums",
                   }}
                 >
-                  {t(DAY_FULL_KEYS[d.getDay()])}
-                </p>
-              </div>
-              {todayCell ? (
-                <Pill tone="blue" style={{ fontSize: 10 }}>
-                  {t("calendar.today")}
-                </Pill>
+                  {items.length}
+                </span>
               ) : null}
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {/* Task chips */}
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 5,
+                flex: 1,
+                cursor: isAdding ? "default" : "text",
+              }}
+              onClick={(e) => {
+                if (e.target === e.currentTarget && !isAdding) startAdding(k);
+              }}
+            >
               {items.map((item) => (
-                <DraggableTaskCard
+                <WeekChip
                   key={item.id}
                   todo={item}
-                  active={selectedId === item.id}
                   onSelect={() => onSelect(item.id)}
                 />
               ))}
@@ -176,7 +204,7 @@ export function WeekGrid({
                   style={{
                     width: "100%",
                     fontSize: 12,
-                    padding: "8px 10px",
+                    padding: "6px 8px",
                     borderRadius: "var(--r-sm)",
                     background: "var(--color-tile-3)",
                     border: "1px solid var(--color-primary)",
@@ -185,16 +213,7 @@ export function WeekGrid({
                     boxSizing: "border-box",
                   }}
                 />
-              ) : (
-                <button
-                  type="button"
-                  className="dashed"
-                  style={{ padding: "10px 12px", fontSize: 12, gap: 4 }}
-                  onClick={() => startAdding(k)}
-                >
-                  <Plus size={12} /> {t("calendar.addCard")}
-                </button>
-              )}
+              ) : null}
             </div>
           </DayCell>
         );

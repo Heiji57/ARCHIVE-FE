@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div style="height:56px; display:flex; align-items:center; justify-content:space-between; padding:0 18px; border-bottom:1px solid #23252a; background:#010102; font-family:Inter,-apple-system,system-ui,sans-serif;">
+  <div style="display:flex; align-items:center; gap:22px;">
+    <div style="display:flex; align-items:center; gap:9px;">
+      <div style="width:22px; height:22px; border-radius:6px; background:linear-gradient(160deg,#828fff,#5e6ad2); display:flex; align-items:center; justify-content:center;"><div style="width:8px;height:8px;border-radius:2px;background:#010102;"></div></div>
+      <span style="font-size:14px; font-weight:600; letter-spacing:0.13em; color:#f7f8f8;">ARCHIVE</span>
+    </div>
+    <div style="display:flex; gap:4px;">
+      <div aria-current="{{ calCurrent }}" style="{{ calLink }}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>{{ calText }}</div>
+      <div aria-current="{{ todoCurrent }}" style="{{ todoLink }}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>{{ todoText }}</div>
+      <div aria-current="{{ retroCurrent }}" style="{{ retroLink }}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg>{{ retroText }}</div>
+      <div aria-current="{{ setCurrent }}" style="{{ setLink }}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 8 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 3.6 15a1.65 1.65 0 0 0-1.51-1H2a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 3.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 8 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09A1.65 1.65 0 0 0 16 4.6a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>{{ setText }}</div>
+    </div>
+  </div>
+  <div style="display:flex; align-items:center; gap:10px;">
+    <div style="display:flex; align-items:center; gap:8px; background:#0f1011; border:1px solid #23252a; border-radius:8px; padding:6px 10px; min-width:170px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8a8f98" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><span style="font-size:13px; color:#62666d; flex:1;">{{ searchText }}</span><span style="font-size:11px; color:#62666d; font-family:'JetBrains Mono',monospace; border:1px solid #23252a; border-radius:4px; padding:1px 5px;">⌘K</span></div>
+    <div style="display:flex; align-items:center; gap:6px; background:#0f1011; border:1px solid #23252a; border-radius:9999px; padding:5px 11px;"><span style="width:7px;height:7px;border-radius:50%;background:#27a644; box-shadow:0 0 0 3px rgba(39,166,68,0.15);"></span><span style="font-size:13px; color:#d0d6e0;">{{ syncedText }}</span></div>
+    <div style="position:relative; width:32px; height:32px; border-radius:8px; background:#0f1011; border:1px solid #23252a; display:flex; align-items:center; justify-content:center; cursor:pointer;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#d0d6e0" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg><span style="position:absolute; top:5px; right:6px; width:7px; height:7px; border-radius:50%; background:#5e6ad2; border:1.5px solid #010102;"></span></div>
+    <div style="display:flex; align-items:center; gap:8px; background:#0f1011; border:1px solid #23252a; border-radius:9999px; padding:3px 4px;"><span style="width:26px;height:26px;border-radius:50%;background:linear-gradient(160deg,#828fff,#5e6ad2); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:600; color:#010102;">J</span><span style="font-size:13px; color:#d0d6e0; padding-right:2px;">Jordan</span><span style="width:24px;height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8a8f98" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg></span></div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1320,&quot;height&quot;:56},&quot;active&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;calendar&quot;,&quot;todos&quot;,&quot;retro&quot;,&quot;settings&quot;],&quot;default&quot;:&quot;calendar&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;lang&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;en&quot;,&quot;ko&quot;],&quot;default&quot;:&quot;ko&quot;,&quot;tsType&quot;:&quot;'en'|'ko'&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const a = this.props.active || 'calendar';
+    const ko = this.props.lang === 'ko';
+    const L = ko
+      ? { cal: '캘린더', todo: '할 일', retro: '회고', set: '설정', search: '검색', synced: '동기화됨 · 3' }
+      : { cal: 'Calendar', todo: 'Todos', retro: 'Retrospectives', set: 'Settings', search: 'Search', synced: 'Synced · 3' };
+    const on = 'display:flex; align-items:center; gap:7px; font-size:14px; color:#f7f8f8; background:#141516; border-radius:8px; padding:6px 11px;';
+    const off = 'display:flex; align-items:center; gap:7px; font-size:14px; color:#8a8f98; border-radius:8px; padding:6px 11px; cursor:pointer;';
+    return {
+      calText: L.cal, todoText: L.todo, retroText: L.retro, setText: L.set, searchText: L.search, syncedText: L.synced,
+      calLink: a === 'calendar' ? on : off,
+      todoLink: a === 'todos' ? on : off,
+      retroLink: a === 'retro' ? on : off,
+      setLink: a === 'settings' ? on : off,
+      calCurrent: a === 'calendar' ? 'page' : null,
+      todoCurrent: a === 'todos' ? 'page' : null,
+      retroCurrent: a === 'retro' ? 'page' : null,
+      setCurrent: a === 'settings' ? 'page' : null,
+    };
+  }
+}
+</script>
+</body>
+</html>

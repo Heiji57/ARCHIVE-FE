@@ -2,8 +2,8 @@ import type { TaskStatus } from "@/entities/todo/model/types";
 import type { PillTone } from "@/shared/ui/pill/Pill";
 import type { TranslationKey } from "@/shared/lib/i18n";
 
-/** Day-of-week single-letter labels for the popover calendar header. */
-export const EN_DAYS = ["S", "M", "T", "W", "T", "F", "S"];
+/** Day-of-week single-letter labels for the popover calendar header (Monday-first). */
+export const EN_DAYS = ["M", "T", "W", "T", "F", "S", "S"];
 
 /**
  * Drag kind for kanban cards. Dropping a card on a column changes its status.

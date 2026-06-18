@@ -45,7 +45,7 @@ export function TaskDetailPanel({
   onGoToRetro,
 }: TaskDetailPanelProps) {
   const [statusOpen, setStatusOpen] = useState(false);
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const d = fromDateKey(todo.dateKey);
 
   const STATUS_LABEL: Record<TaskStatus, string> = {
@@ -97,7 +97,7 @@ export function TaskDetailPanel({
             color: "var(--color-body-muted)",
           }}
         >
-          {formatFullDate(d)}
+          {formatFullDate(d, locale)}
         </p>
       </div>
 
@@ -228,7 +228,7 @@ export function TaskDetailPanel({
           <input
             type="date"
             value={todo.dateKey}
-            onChange={(e) => onUpdate({ dateKey: e.target.value })}
+            onChange={(e) => { if (e.target.value) onUpdate({ dateKey: e.target.value }); }}
             style={{
               width: "100%",
               fontSize: 14,

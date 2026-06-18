@@ -18,9 +18,6 @@ export function LandingHero({ onNavigateAuth, onDemo }: LandingHeroProps) {
 
   return (
     <header className="lp-hero" id="top">
-      <div className="lp-hero-stars" aria-hidden="true" />
-      <div className="lp-hero-glow" aria-hidden="true" />
-
       <div className="lp-hero-inner">
         <span className="lp-hero-eyebrow lp-reveal" style={revealDelay(0)}>
           <span className="tag">v1.0</span> AI 자동 회고가 도착했습니다
@@ -64,16 +61,6 @@ export function LandingHero({ onNavigateAuth, onDemo }: LandingHeroProps) {
 
       {/* product UI showcase — authentic calendar mock */}
       <div className="lp-hero-art lp-reveal" style={revealDelay(120)}>
-        <span
-          className="lp-orb lp-orb-1 lp-reveal"
-          aria-hidden="true"
-          style={revealDelay(250)}
-        />
-        <span
-          className="lp-orb lp-orb-2 lp-reveal"
-          aria-hidden="true"
-          style={revealDelay(300)}
-        />
         <div
           className="lp-window"
           role="img"

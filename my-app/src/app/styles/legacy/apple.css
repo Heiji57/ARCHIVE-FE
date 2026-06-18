@@ -59,7 +59,7 @@
 .apple-pill-secondary {
   align-items: center;
   background: transparent;
-  border: 1px solid rgba(10, 132, 255, 0.4);
+  border: 1px solid rgba(94, 106, 210, 0.4);
   border-radius: 999px;
   color: var(--color-primary);
   display: inline-flex;

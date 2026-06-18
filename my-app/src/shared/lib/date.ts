@@ -74,6 +74,9 @@ export function toDateKey(date: Date) {
 
 export function fromDateKey(dateKey: string) {
   const [year, month, day] = dateKey.split("-").map(Number);
+  if (!year || !month || !day || isNaN(year) || isNaN(month) || isNaN(day)) {
+    return new Date();
+  }
   return new Date(year, month - 1, day, 12);
 }
 
@@ -149,14 +152,15 @@ export function formatFullDate(date: Date, locale: Locale = "ko") {
 }
 
 export function getMonthGrid(date: Date) {
-  const calendarStart = startOfWeek(startOfMonth(date));
+  // Monday-first grid (Linear design). Weeks start on Monday.
+  const calendarStart = startOfISOWeek(startOfMonth(date));
   return Array.from({ length: 42 }, (_, index) => addDays(calendarStart, index));
 }
 
 /** Calendar grid in compact form: weeks of 7 days, only enough to cover the month */
 export function getMonthGridCompact(date: Date) {
-  const calendarStart = startOfWeek(startOfMonth(date));
-  const calendarEnd = endOfWeek(endOfMonth(date));
+  const calendarStart = startOfISOWeek(startOfMonth(date));
+  const calendarEnd = endOfISOWeek(endOfMonth(date));
   const days: Date[] = [];
   let cursor = calendarStart;
   while (cursor.getTime() <= calendarEnd.getTime()) {

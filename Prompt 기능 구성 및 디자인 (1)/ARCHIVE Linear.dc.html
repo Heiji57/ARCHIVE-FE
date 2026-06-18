@@ -1,0 +1,1819 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { background: #060708; }
+  ::selection { background: rgba(94,106,210,0.35); }
+</style>
+</helmet>
+
+<div style="--canvas:#010102;--s1:#0f1011;--s2:#141516;--s3:#18191a;--s4:#191a1b;--hair:#23252a;--hair2:#34343a;--hair3:#3e3e44;--ink:#f7f8f8;--ink2:#d0d6e0;--ink3:#8a8f98;--ink4:#62666d;--pri:#5e6ad2;--pri-h:#828fff;--pri-f:#5e69d1;--ok:#27a644;--warn:#d9a23a; min-height:100vh; background:#060708; color:var(--ink); font-family:Inter,-apple-system,BlinkMacSystemFont,system-ui,sans-serif; -webkit-font-smoothing:antialiased; padding:0 0 120px;">
+
+  <!-- ============ GALLERY HEADER ============ -->
+  <header style="max-width:1360px; margin:0 auto; padding:64px 32px 40px; display:flex; flex-direction:column; gap:28px;">
+    <div style="display:flex; align-items:center; gap:12px;">
+      <div style="width:26px; height:26px; border-radius:7px; background:linear-gradient(160deg,#828fff,#5e6ad2); display:flex; align-items:center; justify-content:center; box-shadow:inset 0 1px 0 rgba(255,255,255,0.25);">
+        <div style="width:9px; height:9px; border-radius:2px; background:#010102;"></div>
+      </div>
+      <span style="font-size:14px; font-weight:600; letter-spacing:0.18em; color:var(--ink);">ARCHIVE</span>
+      <span style="font-size:13px; color:var(--ink4); margin:0 2px;">/</span>
+      <span style="font-size:13px; color:var(--ink3); letter-spacing:0.02em;">Linear design system</span>
+    </div>
+    <div style="display:flex; align-items:flex-end; justify-content:space-between; gap:40px; flex-wrap:wrap;">
+      <div style="max-width:760px; display:flex; flex-direction:column; gap:18px;">
+        <span style="font-size:13px; font-weight:500; letter-spacing:0.04em; color:var(--pri); text-transform:uppercase;">Redesign · pure re-skin</span>
+        <h1 style="margin:0; font-size:56px; font-weight:600; line-height:1.05; letter-spacing:-1.8px; color:var(--ink);">A productivity suite,<br>rebuilt in Linear's language.</h1>
+        <p style="margin:0; font-size:18px; line-height:1.5; letter-spacing:-0.1px; color:var(--ink3); max-width:620px;">Calendar, kanban, retrospectives, AI summaries and GitHub sync — every surface re-skinned to near-black canvas, lavender accent and a four-step surface ladder. Behavior frozen, only the skin changes.</p>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:10px; align-items:flex-end;">
+        <div style="display:flex; gap:6px; background:var(--canvas); border:1px solid var(--hair); border-radius:9999px; padding:4px;">
+          <button onClick="{{ setEn }}" style="{{ enBtnStyle }}">English</button>
+          <button onClick="{{ setKo }}" style="{{ koBtnStyle }}">한국어</button>
+        </div>
+        <span style="font-size:12px; color:var(--ink4);">layout stress-test toggle</span>
+      </div>
+    </div>
+    <!-- section index -->
+    <nav style="display:flex; flex-wrap:wrap; gap:8px; margin-top:8px;">
+      <a href="#sec-landing" style="font-size:13px; color:var(--ink2); text-decoration:none; padding:6px 12px; border:1px solid var(--hair); border-radius:8px; background:var(--s1);">01 Landing</a>
+      <a href="#sec-auth" style="font-size:13px; color:var(--ink3); text-decoration:none; padding:6px 12px; border:1px solid var(--hair); border-radius:8px;">02 Auth</a>
+      <a href="#sec-calendar" style="font-size:13px; color:var(--ink3); text-decoration:none; padding:6px 12px; border:1px solid var(--hair); border-radius:8px;">03 Calendar</a>
+      <a href="#sec-todos" style="font-size:13px; color:var(--ink3); text-decoration:none; padding:6px 12px; border:1px solid var(--hair); border-radius:8px;">04 Todos</a>
+      <a href="#sec-retro" style="font-size:13px; color:var(--ink3); text-decoration:none; padding:6px 12px; border:1px solid var(--hair); border-radius:8px;">05 Retrospectives</a>
+      <a href="#sec-settings" style="font-size:13px; color:var(--ink3); text-decoration:none; padding:6px 12px; border:1px solid var(--hair); border-radius:8px;">06 Settings</a>
+      <a href="#sec-states" style="font-size:13px; color:var(--ink3); text-decoration:none; padding:6px 12px; border:1px solid var(--hair); border-radius:8px;">07 States</a>
+      <a href="#sec-global" style="font-size:13px; color:var(--ink3); text-decoration:none; padding:6px 12px; border:1px solid var(--hair); border-radius:8px;">08 Global states</a>
+    </nav>
+  </header>
+
+  <!-- ============ FOUNDATIONS ============ -->
+  <section style="max-width:1360px; margin:0 auto; padding:24px 32px 8px;">
+    <div style="display:grid; grid-template-columns:1.1fr 1fr; gap:20px;">
+      <!-- color ladder -->
+      <div style="background:var(--s1); border:1px solid var(--hair); border-radius:12px; padding:24px; box-shadow:inset 0 1px 0 rgba(255,255,255,0.04);">
+        <div style="font-size:13px; font-weight:500; letter-spacing:0.04em; color:var(--ink3); text-transform:uppercase; margin-bottom:18px;">Surface ladder &amp; accent</div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <div style="display:flex; flex-direction:column; gap:8px; align-items:flex-start;">
+            <div style="width:84px; height:48px; border-radius:8px; background:#010102; border:1px solid var(--hair);"></div>
+            <span style="font-size:11px; color:var(--ink4); font-family:'JetBrains Mono',monospace;">canvas</span>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <div style="width:84px; height:48px; border-radius:8px; background:#0f1011; border:1px solid var(--hair);"></div>
+            <span style="font-size:11px; color:var(--ink4); font-family:'JetBrains Mono',monospace;">surface-1</span>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <div style="width:84px; height:48px; border-radius:8px; background:#141516; border:1px solid var(--hair);"></div>
+            <span style="font-size:11px; color:var(--ink4); font-family:'JetBrains Mono',monospace;">surface-2</span>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <div style="width:84px; height:48px; border-radius:8px; background:#18191a; border:1px solid var(--hair);"></div>
+            <span style="font-size:11px; color:var(--ink4); font-family:'JetBrains Mono',monospace;">surface-3</span>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <div style="width:84px; height:48px; border-radius:8px; background:linear-gradient(160deg,#828fff,#5e6ad2);"></div>
+            <span style="font-size:11px; color:var(--pri); font-family:'JetBrains Mono',monospace;">primary</span>
+          </div>
+        </div>
+        <div style="display:flex; gap:16px; margin-top:20px; flex-wrap:wrap;">
+          <div style="display:flex; align-items:center; gap:7px;"><span style="width:10px;height:10px;border-radius:50%;background:#27a644;"></span><span style="font-size:12px;color:var(--ink3);">done</span></div>
+          <div style="display:flex; align-items:center; gap:7px;"><span style="width:10px;height:10px;border-radius:50%;background:#5e6ad2;"></span><span style="font-size:12px;color:var(--ink3);">in progress</span></div>
+          <div style="display:flex; align-items:center; gap:7px;"><span style="width:10px;height:10px;border-radius:50%;background:#8a8f98;"></span><span style="font-size:12px;color:var(--ink3);">todo</span></div>
+          <div style="display:flex; align-items:center; gap:7px;"><span style="width:10px;height:10px;border-radius:50%;background:#d9a23a;"></span><span style="font-size:12px;color:var(--ink3);">warning</span></div>
+        </div>
+      </div>
+      <!-- type scale -->
+      <div style="background:var(--s1); border:1px solid var(--hair); border-radius:12px; padding:24px; box-shadow:inset 0 1px 0 rgba(255,255,255,0.04);">
+        <div style="font-size:13px; font-weight:500; letter-spacing:0.04em; color:var(--ink3); text-transform:uppercase; margin-bottom:18px;">Type — Inter, negative tracking</div>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          <div style="font-size:34px; font-weight:600; letter-spacing:-1px; line-height:1; color:var(--ink);">Display 56/40</div>
+          <div style="font-size:22px; font-weight:500; letter-spacing:-0.4px; color:var(--ink2);">Card title 22 · medium</div>
+          <div style="font-size:16px; font-weight:400; letter-spacing:-0.05px; color:var(--ink2);">Body 16 — default running text for the app.</div>
+          <div style="font-size:13px; font-weight:500; letter-spacing:0.04em; text-transform:uppercase; color:var(--ink3);">Eyebrow 13 · +tracking</div>
+          <div style="font-size:13px; font-family:'JetBrains Mono',monospace; color:var(--ink3);">mono 13 · a1f3c8e commit sha</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 01 LANDING ============ -->
+  <section id="sec-landing" style="max-width:1360px; margin:0 auto; padding:56px 32px 0;">
+    <div style="display:flex; align-items:baseline; gap:14px; margin-bottom:20px;">
+      <span style="font-size:13px; font-weight:600; color:var(--pri); font-family:'JetBrains Mono',monospace;">01</span>
+      <h2 style="margin:0; font-size:28px; font-weight:600; letter-spacing:-0.6px; color:var(--ink);">Landing</h2>
+      <span style="font-size:14px; color:var(--ink3);">marketing home · product UI as hero</span>
+    </div>
+
+    <!-- FRAME -->
+    <div style="border:1px solid var(--hair); border-radius:16px; overflow:hidden; background:var(--canvas); box-shadow:inset 0 1px 0 rgba(255,255,255,0.05);">
+
+      <!-- landing nav -->
+      <div style="height:56px; display:flex; align-items:center; justify-content:space-between; padding:0 28px; border-bottom:1px solid var(--hair); background:rgba(1,1,2,0.85);">
+        <div style="display:flex; align-items:center; gap:32px;">
+          <div style="display:flex; align-items:center; gap:9px;">
+            <div style="width:20px; height:20px; border-radius:5px; background:linear-gradient(160deg,#828fff,#5e6ad2); display:flex; align-items:center; justify-content:center;"><div style="width:7px;height:7px;border-radius:2px;background:#010102;"></div></div>
+            <span style="font-size:14px; font-weight:600; letter-spacing:0.14em;">ARCHIVE</span>
+          </div>
+          <div style="display:flex; gap:22px;">
+            <span style="font-size:14px; color:var(--ink3);">Features</span>
+            <span style="font-size:14px; color:var(--ink3);">Calendar</span>
+            <span style="font-size:14px; color:var(--ink3);">Retrospectives</span>
+            <span style="font-size:14px; color:var(--ink3);">Changelog</span>
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <button style="font-size:14px; font-weight:500; color:var(--ink); background:var(--s1); border:1px solid var(--hair); border-radius:8px; padding:8px 14px; cursor:pointer;">Sign in</button>
+          <button style="font-size:14px; font-weight:500; color:#fff; background:var(--pri); border:none; border-radius:8px; padding:8px 14px; cursor:pointer;">Get started</button>
+        </div>
+      </div>
+
+      <!-- hero -->
+      <div style="padding:84px 56px 64px; display:grid; grid-template-columns:1fr 1fr; gap:48px; align-items:center;">
+        <div style="display:flex; flex-direction:column; gap:24px;">
+          <span style="font-size:13px; font-weight:500; letter-spacing:0.06em; color:var(--pri); text-transform:uppercase;">{{ l_eyebrow }}</span>
+          <h1 style="margin:0; font-size:56px; font-weight:600; line-height:1.05; letter-spacing:-1.8px; color:var(--ink);">{{ l_h1 }}</h1>
+          <p style="margin:0; font-size:18px; line-height:1.5; letter-spacing:-0.1px; color:var(--ink3); max-width:460px;">{{ l_sub }}</p>
+          <div style="display:flex; gap:10px; max-width:440px; margin-top:4px;">
+            <input placeholder="{{ l_email }}" style="flex:1; background:var(--s1); border:1px solid var(--hair); border-radius:8px; padding:11px 12px; color:var(--ink); font-size:15px; font-family:inherit; outline:none;">
+            <button style="font-size:14px; font-weight:500; color:#fff; background:var(--pri); border:none; border-radius:8px; padding:0 18px; cursor:pointer; white-space:nowrap;">{{ l_cta }}</button>
+          </div>
+          <div style="display:flex; align-items:center; gap:14px; margin-top:2px;">
+            <button style="font-size:14px; font-weight:500; color:var(--ink2); background:none; border:none; cursor:pointer; padding:0;">{{ l_demo }} →</button>
+            <span style="width:1px; height:14px; background:var(--hair2);"></span>
+            <span style="font-size:13px; color:var(--ink4);">No credit card</span>
+          </div>
+        </div>
+
+        <!-- product window mock: month calendar -->
+        <div style="background:var(--s1); border:1px solid var(--hair); border-radius:16px; padding:14px; box-shadow:inset 0 1px 0 rgba(255,255,255,0.06);">
+          <div style="background:var(--canvas); border:1px solid var(--hair); border-radius:11px; overflow:hidden;">
+            <!-- mock nav -->
+            <div style="height:38px; display:flex; align-items:center; gap:8px; padding:0 12px; border-bottom:1px solid var(--hair);">
+              <span style="width:9px;height:9px;border-radius:50%;background:var(--hair2);"></span>
+              <span style="width:9px;height:9px;border-radius:50%;background:var(--hair2);"></span>
+              <span style="width:9px;height:9px;border-radius:50%;background:var(--hair2);"></span>
+              <div style="margin-left:8px; display:flex; gap:14px;"><span style="font-size:11px;color:var(--ink);">Calendar</span><span style="font-size:11px;color:var(--ink4);">Todos</span><span style="font-size:11px;color:var(--ink4);">Retros</span></div>
+              <div style="margin-left:auto; display:flex; align-items:center; gap:5px; background:var(--s2); border:1px solid var(--hair); border-radius:9999px; padding:2px 8px;"><span style="width:6px;height:6px;border-radius:50%;background:var(--ok);"></span><span style="font-size:10px;color:var(--ink2);">Synced · 3</span></div>
+            </div>
+            <!-- weekday row -->
+            <div style="display:grid; grid-template-columns:repeat(7,1fr); padding:8px 8px 0;">
+              <span style="font-size:10px;color:var(--ink4);text-align:center;">M</span>
+              <span style="font-size:10px;color:var(--ink4);text-align:center;">T</span>
+              <span style="font-size:10px;color:var(--ink4);text-align:center;">W</span>
+              <span style="font-size:10px;color:var(--ink4);text-align:center;">T</span>
+              <span style="font-size:10px;color:var(--ink4);text-align:center;">F</span>
+              <span style="font-size:10px;color:var(--ink4);text-align:center;">S</span>
+              <span style="font-size:10px;color:var(--ink4);text-align:center;">S</span>
+            </div>
+            <!-- grid -->
+            <div style="display:grid; grid-template-columns:repeat(7,1fr); gap:4px; padding:8px;">
+              <div style="height:58px; border-radius:6px; border:1px solid var(--hair); padding:5px;"><span style="font-size:10px;color:var(--ink4);">28</span></div>
+              <div style="height:58px; border-radius:6px; border:1px solid var(--hair); padding:5px;"><span style="font-size:10px;color:var(--ink3);">29</span><div style="margin-top:4px;height:11px;border-radius:3px;background:var(--s2);border-left:2px solid var(--ink3);"></div></div>
+              <div style="height:58px; border-radius:6px; border:1px solid var(--hair); padding:5px;"><span style="font-size:10px;color:var(--ink3);">30</span></div>
+              <div style="height:58px; border-radius:6px; border:1px solid var(--hair); padding:5px;"><span style="font-size:10px;color:var(--ink3);">1</span><div style="margin-top:4px;height:11px;border-radius:3px;background:rgba(94,106,210,0.18);border-left:2px solid var(--pri);"></div></div>
+              <div style="height:58px; border-radius:6px; border:1px solid var(--hair); padding:5px;"><span style="font-size:10px;color:var(--ink3);">2</span></div>
+              <div style="height:58px; border-radius:6px; border:1px solid var(--hair); padding:5px;"><span style="font-size:10px;color:var(--ink3);">3</span><div style="margin-top:4px;height:11px;border-radius:3px;background:var(--s2);"></div></div>
+              <div style="height:58px; border-radius:6px; border:1px solid var(--hair); padding:5px;"><span style="font-size:10px;color:var(--ink3);">4</span></div>
+
+              <div style="height:58px; border-radius:6px; border:1px solid var(--hair); padding:5px;"><span style="font-size:10px;color:var(--ink3);">5</span><div style="margin-top:4px;height:11px;border-radius:3px;background:rgba(94,106,210,0.18);border-left:2px solid var(--pri);"></div></div>
+              <div style="height:58px; border-radius:6px; border:1px solid var(--pri); background:rgba(94,106,210,0.08); padding:5px;"><span style="font-size:10px;color:var(--ink);font-weight:600;">6</span><div style="margin-top:4px;height:11px;border-radius:3px;background:rgba(94,106,210,0.22);border-left:2px solid var(--pri);"></div><div style="margin-top:3px;height:11px;border-radius:3px;background:var(--s2);"></div></div>
+              <div style="height:58px; border-radius:6px; border:1px solid var(--hair); padding:5px;"><span style="font-size:10px;color:var(--ink3);">7</span></div>
+              <div style="height:58px; border-radius:6px; border:1px solid var(--hair); padding:5px;"><span style="font-size:10px;color:var(--ink3);">8</span><div style="margin-top:4px;height:11px;border-radius:3px;background:var(--s2);text-decoration:line-through;"></div></div>
+              <div style="height:58px; border-radius:6px; border:1px solid var(--hair); padding:5px;"><span style="font-size:10px;color:var(--ink3);">9</span></div>
+              <div style="height:58px; border-radius:6px; border:1px solid var(--hair); padding:5px;"><span style="font-size:10px;color:var(--ink3);">10</span><div style="margin-top:4px;height:11px;border-radius:3px;background:rgba(94,106,210,0.18);border-left:2px solid var(--pri);"></div></div>
+              <div style="height:58px; border-radius:6px; border:1px solid var(--hair); padding:5px;"><span style="font-size:10px;color:var(--ink3);">11</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- features -->
+      <div style="padding:24px 56px 72px; display:flex; flex-direction:column; gap:32px;">
+        <div style="display:flex; flex-direction:column; gap:10px; max-width:560px;">
+          <span style="font-size:13px; font-weight:500; letter-spacing:0.06em; color:var(--ink3); text-transform:uppercase;">Everything in one archive</span>
+          <h2 style="margin:0; font-size:40px; font-weight:600; letter-spacing:-1px; line-height:1.15; color:var(--ink);">Plan, track, and remember the work.</h2>
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:20px;">
+          <!-- feature 1: kanban -->
+          <div style="background:var(--s1); border:1px solid var(--hair); border-radius:12px; padding:24px; display:flex; flex-direction:column; gap:16px; box-shadow:inset 0 1px 0 rgba(255,255,255,0.04);">
+            <div style="display:flex; gap:6px;">
+              <div style="flex:1; background:var(--canvas); border:1px solid var(--hair); border-radius:8px; padding:8px; display:flex; flex-direction:column; gap:6px;">
+                <span style="font-size:9px; color:var(--ink4);">Not started</span>
+                <div style="height:20px; border-radius:5px; background:var(--s2); border-left:2px solid var(--ink3);"></div>
+              </div>
+              <div style="flex:1; background:var(--canvas); border:1px solid var(--hair); border-radius:8px; padding:8px; display:flex; flex-direction:column; gap:6px;">
+                <span style="font-size:9px; color:var(--ink4);">In progress</span>
+                <div style="height:20px; border-radius:5px; background:rgba(94,106,210,0.16); border-left:2px solid var(--pri);"></div>
+              </div>
+              <div style="flex:1; background:var(--canvas); border:1px solid var(--hair); border-radius:8px; padding:8px; display:flex; flex-direction:column; gap:6px;">
+                <span style="font-size:9px; color:var(--ink4);">Done</span>
+                <div style="height:20px; border-radius:5px; background:rgba(39,166,68,0.14); border-left:2px solid var(--ok);"></div>
+              </div>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:6px;">
+              <h3 style="margin:0; font-size:22px; font-weight:500; letter-spacing:-0.4px; color:var(--ink);">Todo board</h3>
+              <p style="margin:0; font-size:14px; line-height:1.5; color:var(--ink3);">A three-column kanban. Drag cards across Not started, In progress and Done.</p>
+            </div>
+          </div>
+          <!-- feature 2: AI summary -->
+          <div style="background:var(--s2); border:1px solid var(--hair2); border-radius:12px; padding:24px; display:flex; flex-direction:column; gap:16px; box-shadow:inset 0 1px 0 rgba(255,255,255,0.05);">
+            <div style="background:var(--canvas); border:1px solid var(--hair); border-radius:8px; padding:12px; display:flex; flex-direction:column; gap:8px;">
+              <div style="display:flex; align-items:center; gap:7px;"><span style="width:7px;height:7px;border-radius:50%;background:var(--pri);"></span><span style="font-size:10px;color:var(--ink2);">Generating weekly summary…</span></div>
+              <div style="height:5px; border-radius:9999px; background:var(--s4); overflow:hidden;"><div style="width:68%; height:100%; background:linear-gradient(90deg,#5e6ad2,#828fff);"></div></div>
+              <div style="display:flex; flex-direction:column; gap:4px; margin-top:2px;">
+                <div style="height:6px; border-radius:3px; background:var(--s4); width:90%;"></div>
+                <div style="height:6px; border-radius:3px; background:var(--s4); width:72%;"></div>
+              </div>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:6px;">
+              <h3 style="margin:0; font-size:22px; font-weight:500; letter-spacing:-0.4px; color:var(--ink);">AI summaries</h3>
+              <p style="margin:0; font-size:14px; line-height:1.5; color:var(--ink2);">Roll your week, month or year into a written retrospective — generated from what you actually shipped.</p>
+            </div>
+          </div>
+          <!-- feature 3: commit rows -->
+          <div style="background:var(--s1); border:1px solid var(--hair); border-radius:12px; padding:24px; display:flex; flex-direction:column; gap:16px; box-shadow:inset 0 1px 0 rgba(255,255,255,0.04);">
+            <div style="background:var(--canvas); border:1px solid var(--hair); border-radius:8px; padding:4px 12px;">
+              <div style="display:flex; align-items:center; gap:8px; padding:7px 0; border-bottom:1px solid var(--hair);"><span style="font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--pri);">a1f3c8e</span><span style="font-size:10px; color:var(--ink3); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">feat: month grid</span></div>
+              <div style="display:flex; align-items:center; gap:8px; padding:7px 0; border-bottom:1px solid var(--hair);"><span style="font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--pri);">7b2d9f1</span><span style="font-size:10px; color:var(--ink3); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">fix: drag drop target</span></div>
+              <div style="display:flex; align-items:center; gap:8px; padding:7px 0;"><span style="font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--pri);">c93ae00</span><span style="font-size:10px; color:var(--ink3); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">chore: bump deps</span></div>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:6px;">
+              <h3 style="margin:0; font-size:22px; font-weight:500; letter-spacing:-0.4px; color:var(--ink);">GitHub sync</h3>
+              <p style="margin:0; font-size:14px; line-height:1.5; color:var(--ink3);">Link repos, read commits, and push retrospectives back as markdown.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- quote -->
+      <div style="padding:0 56px 72px;">
+        <div style="background:var(--s1); border:1px solid var(--hair); border-radius:12px; padding:48px; display:flex; flex-direction:column; gap:24px; box-shadow:inset 0 1px 0 rgba(255,255,255,0.04);">
+          <p style="margin:0; font-size:28px; font-weight:500; line-height:1.35; letter-spacing:-0.5px; color:var(--ink); max-width:840px;">"ARCHIVE replaced three tools. The calendar, the board and my weekly write-up now live in one quiet, fast, near-black window."</p>
+          <div style="display:flex; align-items:center; gap:12px;">
+            <div style="width:36px; height:36px; border-radius:9999px; background:linear-gradient(160deg,#828fff,#5e6ad2); display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:600; color:#010102;">J</div>
+            <div style="display:flex; flex-direction:column;">
+              <span style="font-size:14px; font-weight:500; color:var(--ink);">Jordan Park</span>
+              <span style="font-size:13px; color:var(--ink3);">Staff Engineer, indie</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- final CTA -->
+      <div style="padding:0 56px 72px;">
+        <div style="background:var(--s1); border:1px solid var(--hair); border-radius:12px; padding:64px 48px; display:flex; flex-direction:column; align-items:center; gap:24px; text-align:center; box-shadow:inset 0 1px 0 rgba(255,255,255,0.05);">
+          <h2 style="margin:0; font-size:40px; font-weight:600; letter-spacing:-1px; line-height:1.1; color:var(--ink); max-width:560px;">Start your archive today.</h2>
+          <p style="margin:0; font-size:18px; color:var(--ink3); max-width:480px;">Free while in beta. Bring your GitHub, keep your history.</p>
+          <div style="display:flex; gap:10px;">
+            <button style="font-size:14px; font-weight:500; color:#000; background:#fff; border:none; border-radius:8px; padding:11px 20px; cursor:pointer;">Get started</button>
+            <button style="font-size:14px; font-weight:500; color:var(--ink); background:var(--canvas); border:1px solid var(--hair); border-radius:8px; padding:11px 20px; cursor:pointer;">Try the demo</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- footer -->
+      <div style="padding:56px 56px 40px; border-top:1px solid var(--hair); display:flex; flex-direction:column; gap:40px;">
+        <div style="display:grid; grid-template-columns:1.4fr 1fr 1fr 1fr; gap:32px;">
+          <div style="display:flex; flex-direction:column; gap:14px;">
+            <div style="display:flex; align-items:center; gap:9px;">
+              <div style="width:20px; height:20px; border-radius:5px; background:linear-gradient(160deg,#828fff,#5e6ad2); display:flex; align-items:center; justify-content:center;"><div style="width:7px;height:7px;border-radius:2px;background:#010102;"></div></div>
+              <span style="font-size:14px; font-weight:600; letter-spacing:0.14em;">ARCHIVE</span>
+            </div>
+            <p style="margin:0; font-size:13px; color:var(--ink4); max-width:240px; line-height:1.5;">A quiet productivity suite that remembers what you did.</p>
+            <div style="display:inline-flex; align-items:center; gap:7px; background:var(--canvas); border:1px solid var(--hair); border-radius:9999px; padding:5px 11px; width:fit-content;"><span style="width:7px;height:7px;border-radius:50%;background:var(--ink3);"></span><span style="font-size:12px; color:var(--ink3);">github.com/archive</span></div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:11px;"><span style="font-size:12px; color:var(--ink4); text-transform:uppercase; letter-spacing:0.05em;">Product</span><span style="font-size:13px; color:var(--ink3);">Calendar</span><span style="font-size:13px; color:var(--ink3);">Todos</span><span style="font-size:13px; color:var(--ink3);">Retrospectives</span></div>
+          <div style="display:flex; flex-direction:column; gap:11px;"><span style="font-size:12px; color:var(--ink4); text-transform:uppercase; letter-spacing:0.05em;">Company</span><span style="font-size:13px; color:var(--ink3);">About</span><span style="font-size:13px; color:var(--ink3);">Changelog</span><span style="font-size:13px; color:var(--ink3);">Contact</span></div>
+          <div style="display:flex; flex-direction:column; gap:11px;"><span style="font-size:12px; color:var(--ink4); text-transform:uppercase; letter-spacing:0.05em;">Legal</span><span style="font-size:13px; color:var(--ink3);">Privacy</span><span style="font-size:13px; color:var(--ink3);">Terms</span></div>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center; padding-top:24px; border-top:1px solid var(--hair);">
+          <span style="font-size:12px; color:var(--ink4);">© 2026 ARCHIVE</span>
+          <span style="font-size:12px; color:var(--ink4);">Built in the dark.</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============ PLACEHOLDER SECTIONS ============ -->
+  <section id="sec-auth" style="max-width:1360px; margin:0 auto; padding:56px 32px 0;">
+    <div style="display:flex; align-items:baseline; gap:14px; margin-bottom:20px;">
+      <span style="font-size:13px; font-weight:600; color:var(--pri); font-family:'JetBrains Mono',monospace;">02</span>
+      <h2 style="margin:0; font-size:28px; font-weight:600; letter-spacing:-0.6px; color:var(--ink);">Auth &amp; onboarding</h2>
+      <span style="font-size:14px; color:var(--ink3);">centered shell · 5-step signup · OAuth · forgot / reset · 한국어 기본</span>
+    </div>
+    <div style="display:flex; flex-wrap:wrap; gap:24px;">
+
+      <!-- LOGIN -->
+      <div style="display:flex; flex-direction:column; gap:12px; width:430px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+          <span style="font-size:13px; font-weight:500; color:var(--ink3);">로그인 · Login</span>
+          <div style="display:flex; gap:4px; background:var(--canvas); border:1px solid var(--hair); border-radius:9999px; padding:3px;">
+            <button onClick="{{ setLoginDefault }}" style="{{ loginTabDefault }}">기본</button>
+            <button onClick="{{ setLoginError }}" style="{{ loginTabError }}">오류</button>
+            <button onClick="{{ setLoginLoading }}" style="{{ loginTabLoading }}">로딩</button>
+          </div>
+        </div>
+        <div style="border:1px solid var(--hair); border-radius:16px; overflow:hidden; background:var(--canvas); box-shadow:inset 0 1px 0 rgba(255,255,255,0.05); padding:40px 32px; display:flex; flex-direction:column; align-items:center; gap:24px;">
+          <div style="display:flex; flex-direction:column; align-items:center; gap:14px;">
+            <div style="width:34px; height:34px; border-radius:9px; background:linear-gradient(160deg,#828fff,#5e6ad2); display:flex; align-items:center; justify-content:center;"><div style="width:11px;height:11px;border-radius:3px;background:#010102;"></div></div>
+            <div style="display:flex; flex-direction:column; align-items:center; gap:5px;">
+              <h3 style="margin:0; font-size:22px; font-weight:600; letter-spacing:-0.4px; color:var(--ink);">다시 오신 걸 환영해요</h3>
+              <span style="font-size:14px; color:var(--ink3);">아카이브에 로그인하세요</span>
+            </div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:10px; width:100%;">
+            <button style="display:flex; align-items:center; justify-content:center; gap:9px; width:100%; font-size:14px; font-weight:500; color:var(--ink); background:var(--s1); border:1px solid var(--hair); border-radius:8px; padding:10px; cursor:pointer;"><span style="width:15px;height:15px;border-radius:50%;background:var(--ink2);"></span>GitHub으로 계속하기</button>
+            <button style="display:flex; align-items:center; justify-content:center; gap:9px; width:100%; font-size:14px; font-weight:500; color:var(--ink); background:var(--s1); border:1px solid var(--hair); border-radius:8px; padding:10px; cursor:pointer;"><span style="width:15px;height:15px;border-radius:50%;background:var(--ink3);"></span>Google로 계속하기</button>
+          </div>
+          <div style="display:flex; align-items:center; gap:12px; width:100%;"><span style="flex:1; height:1px; background:var(--hair);"></span><span style="font-size:12px; color:var(--ink4);">또는</span><span style="flex:1; height:1px; background:var(--hair);"></span></div>
+          <sc-if value="{{ loginErr }}" hint-placeholder-val="{{ false }}">
+            <div style="width:100%; display:flex; align-items:center; gap:9px; background:rgba(217,162,58,0.1); border:1px solid rgba(217,162,58,0.4); border-radius:8px; padding:10px 12px;"><span style="width:6px;height:6px;border-radius:50%;background:var(--warn);"></span><span style="font-size:13px; color:#e7c07a;">이메일 또는 비밀번호가 올바르지 않습니다.</span></div>
+          </sc-if>
+          <div style="display:flex; flex-direction:column; gap:12px; width:100%;">
+            <div style="display:flex; flex-direction:column; gap:6px;">
+              <label style="font-size:13px; color:var(--ink3);">이메일</label>
+              <input value="jordan@work.com" style="{{ loginEmailStyle }}" style-focus="border-color:#5e69d1; box-shadow:0 0 0 2px rgba(94,105,209,0.5);">
+            </div>
+            <div style="display:flex; flex-direction:column; gap:6px;">
+              <label style="font-size:13px; color:var(--ink3);">비밀번호</label>
+              <input type="password" value="passwordpassword" style="{{ loginPwStyle }}" style-focus="border-color:#5e69d1; box-shadow:0 0 0 2px rgba(94,105,209,0.5);">
+            </div>
+            <div style="display:flex; align-items:center; justify-content:space-between;">
+              <label style="display:flex; align-items:center; gap:7px; font-size:13px; color:var(--ink2); cursor:pointer;"><span style="width:15px;height:15px;border-radius:4px;border:1px solid var(--hair2); background:var(--pri); display:flex; align-items:center; justify-content:center;"><span style="width:6px;height:6px;border-radius:1px;background:#fff;"></span></span>로그인 유지</label>
+              <span style="font-size:13px; color:var(--pri); cursor:pointer;">비밀번호 찾기</span>
+            </div>
+          </div>
+          <button style="{{ loginSubmitStyle }}">{{ loginBtnLabel }}</button>
+          <span style="font-size:13px; color:var(--ink3);">계정이 없으신가요? <span style="color:var(--pri); cursor:pointer;">회원가입</span></span>
+        </div>
+      </div>
+
+      <!-- ===== SIGNUP 5-STEP SEQUENCE ===== -->
+      <div style="display:flex; flex-direction:column; gap:12px; width:100%;">
+        <span style="font-size:13px; font-weight:500; color:var(--ink3);">회원가입 · 5단계 시퀀스</span>
+        <div style="display:flex; flex-wrap:wrap; gap:16px;">
+
+          <!-- STEP 1 — email -->
+          <div style="width:300px; border:1px solid var(--hair); border-radius:16px; background:var(--canvas); box-shadow:inset 0 1px 0 rgba(255,255,255,0.05); padding:28px 24px; display:flex; flex-direction:column; gap:18px;">
+            <div style="display:flex; align-items:center; gap:6px;"><span style="flex:1; height:3px; border-radius:9999px; background:var(--pri);"></span><span style="flex:1; height:3px; border-radius:9999px; background:var(--s4);"></span><span style="flex:1; height:3px; border-radius:9999px; background:var(--s4);"></span><span style="flex:1; height:3px; border-radius:9999px; background:var(--s4);"></span><span style="flex:1; height:3px; border-radius:9999px; background:var(--s4);"></span></div>
+            <div style="display:flex; flex-direction:column; gap:5px;"><span style="font-size:11px; color:var(--ink4); font-family:'JetBrains Mono',monospace;">STEP 1 / 5</span><h3 style="margin:0; font-size:19px; font-weight:600; letter-spacing:-0.3px; color:var(--ink);">이메일 입력</h3><span style="font-size:13px; color:var(--ink3); word-break:keep-all;">가입에 사용할 이메일을 입력하세요.</span></div>
+            <div style="display:flex; flex-direction:column; gap:6px;"><label style="font-size:13px; color:var(--ink3);">이메일</label><input value="jordan@work.com" style="width:100%; background:var(--s1); border:1px solid var(--hair); border-radius:8px; padding:10px 12px; color:var(--ink); font-size:15px; font-family:inherit; outline:none;" style-focus="border-color:#5e69d1; box-shadow:0 0 0 2px rgba(94,105,209,0.5);"></div>
+            <button style="width:100%; font-size:14px; font-weight:500; color:#fff; background:var(--pri); border:none; border-radius:8px; padding:11px; cursor:pointer;">인증 코드 보내기</button>
+          </div>
+
+          <!-- STEP 1 error: already-registered -->
+          <div style="width:300px; border:1px solid var(--hair); border-radius:16px; background:var(--canvas); box-shadow:inset 0 1px 0 rgba(255,255,255,0.05); padding:28px 24px; display:flex; flex-direction:column; gap:18px;">
+            <div style="display:flex; align-items:center; gap:6px;"><span style="flex:1; height:3px; border-radius:9999px; background:var(--pri);"></span><span style="flex:1; height:3px; border-radius:9999px; background:var(--s4);"></span><span style="flex:1; height:3px; border-radius:9999px; background:var(--s4);"></span><span style="flex:1; height:3px; border-radius:9999px; background:var(--s4);"></span><span style="flex:1; height:3px; border-radius:9999px; background:var(--s4);"></span></div>
+            <div style="display:flex; flex-direction:column; gap:5px;"><span style="font-size:11px; color:var(--ink4); font-family:'JetBrains Mono',monospace;">STEP 1 / 5 · 오류</span><h3 style="margin:0; font-size:19px; font-weight:600; letter-spacing:-0.3px; color:var(--ink);">이메일 입력</h3></div>
+            <div style="display:flex; flex-direction:column; gap:6px;"><label style="font-size:13px; color:var(--ink3);">이메일</label><input value="jordan@work.com" style="width:100%; background:var(--s1); border:1px solid rgba(217,162,58,0.55); border-radius:8px; padding:10px 12px; color:var(--ink); font-size:15px; font-family:inherit; outline:none;"></div>
+            <div style="display:flex; align-items:center; gap:8px; background:rgba(217,162,58,0.1); border:1px solid rgba(217,162,58,0.4); border-radius:8px; padding:9px 11px;"><span style="color:var(--warn); font-size:12px;">!</span><span style="font-size:12px; color:#e7c07a; word-break:keep-all;">이미 가입된 이메일입니다. <span style="color:var(--pri); cursor:pointer;">로그인</span></span></div>
+            <button style="width:100%; font-size:14px; font-weight:500; color:#fff; background:var(--pri); border:none; border-radius:8px; padding:11px; cursor:pointer; opacity:0.6;">인증 코드 보내기</button>
+          </div>
+
+          <!-- STEP 2 — code -->
+          <div style="width:300px; border:1px solid var(--hair); border-radius:16px; background:var(--canvas); box-shadow:inset 0 1px 0 rgba(255,255,255,0.05); padding:28px 24px; display:flex; flex-direction:column; gap:18px;">
+            <div style="display:flex; align-items:center; gap:6px;"><span style="flex:1; height:3px; border-radius:9999px; background:var(--ok);"></span><span style="flex:1; height:3px; border-radius:9999px; background:var(--pri);"></span><span style="flex:1; height:3px; border-radius:9999px; background:var(--s4);"></span><span style="flex:1; height:3px; border-radius:9999px; background:var(--s4);"></span><span style="flex:1; height:3px; border-radius:9999px; background:var(--s4);"></span></div>
+            <div style="display:flex; flex-direction:column; gap:5px;"><span style="font-size:11px; color:var(--ink4); font-family:'JetBrains Mono',monospace;">STEP 2 / 5</span><h3 style="margin:0; font-size:19px; font-weight:600; letter-spacing:-0.3px; color:var(--ink);">코드 인증</h3><span style="font-size:13px; color:var(--ink3); word-break:keep-all;">jordan@work.com 으로 보낸 6자리</span></div>
+            <div style="display:flex; gap:7px;">
+              <div style="flex:1; aspect-ratio:1; border:1px solid var(--hair2); border-radius:8px; background:var(--s1); display:flex; align-items:center; justify-content:center; font-size:19px; font-weight:600; color:var(--ink);">4</div>
+              <div style="flex:1; aspect-ratio:1; border:1px solid var(--hair2); border-radius:8px; background:var(--s1); display:flex; align-items:center; justify-content:center; font-size:19px; font-weight:600; color:var(--ink);">8</div>
+              <div style="flex:1; aspect-ratio:1; border:2px solid var(--pri-f); border-radius:8px; background:var(--s1); display:flex; align-items:center; justify-content:center; font-size:19px; font-weight:600; color:var(--ink); box-shadow:0 0 0 2px rgba(94,105,209,0.4);">2</div>
+              <div style="flex:1; aspect-ratio:1; border:1px solid var(--hair); border-radius:8px; background:var(--s1);"></div>
+              <div style="flex:1; aspect-ratio:1; border:1px solid var(--hair); border-radius:8px; background:var(--s1);"></div>
+              <div style="flex:1; aspect-ratio:1; border:1px solid var(--hair); border-radius:8px; background:var(--s1);"></div>
+            </div>
+            <div style="display:flex; align-items:center; justify-content:space-between;"><span style="font-size:12px; color:var(--ink4);">0:42 후 재전송</span><span style="font-size:12px; color:var(--ink4);">쿨다운 중</span></div>
+            <button style="width:100%; font-size:14px; font-weight:500; color:#fff; background:var(--pri); border:none; border-radius:8px; padding:11px; cursor:pointer;">확인</button>
+          </div>
+
+          <!-- STEP 2 error: invalid / expired -->
+          <div style="width:300px; border:1px solid var(--hair); border-radius:16px; background:var(--canvas); box-shadow:inset 0 1px 0 rgba(255,255,255,0.05); padding:28px 24px; display:flex; flex-direction:column; gap:18px;">
+            <div style="display:flex; align-items:center; gap:6px;"><span style="flex:1; height:3px; border-radius:9999px; background:var(--ok);"></span><span style="flex:1; height:3px; border-radius:9999px; background:var(--pri);"></span><span style="flex:1; height:3px; border-radius:9999px; background:var(--s4);"></span><span style="flex:1; height:3px; border-radius:9999px; background:var(--s4);"></span><span style="flex:1; height:3px; border-radius:9999px; background:var(--s4);"></span></div>
+            <div style="display:flex; flex-direction:column; gap:5px;"><span style="font-size:11px; color:var(--ink4); font-family:'JetBrains Mono',monospace;">STEP 2 / 5 · 오류</span><h3 style="margin:0; font-size:19px; font-weight:600; letter-spacing:-0.3px; color:var(--ink);">코드 인증</h3></div>
+            <div style="display:flex; gap:7px;">
+              <div style="flex:1; aspect-ratio:1; border:1px solid rgba(217,162,58,0.55); border-radius:8px; background:var(--s1); display:flex; align-items:center; justify-content:center; font-size:19px; font-weight:600; color:var(--ink);">9</div>
+              <div style="flex:1; aspect-ratio:1; border:1px solid rgba(217,162,58,0.55); border-radius:8px; background:var(--s1); display:flex; align-items:center; justify-content:center; font-size:19px; font-weight:600; color:var(--ink);">9</div>
+              <div style="flex:1; aspect-ratio:1; border:1px solid rgba(217,162,58,0.55); border-radius:8px; background:var(--s1); display:flex; align-items:center; justify-content:center; font-size:19px; font-weight:600; color:var(--ink);">1</div>
+              <div style="flex:1; aspect-ratio:1; border:1px solid rgba(217,162,58,0.55); border-radius:8px; background:var(--s1); display:flex; align-items:center; justify-content:center; font-size:19px; font-weight:600; color:var(--ink);">2</div>
+              <div style="flex:1; aspect-ratio:1; border:1px solid rgba(217,162,58,0.55); border-radius:8px; background:var(--s1); display:flex; align-items:center; justify-content:center; font-size:19px; font-weight:600; color:var(--ink);">3</div>
+              <div style="flex:1; aspect-ratio:1; border:1px solid rgba(217,162,58,0.55); border-radius:8px; background:var(--s1); display:flex; align-items:center; justify-content:center; font-size:19px; font-weight:600; color:var(--ink);">4</div>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px; background:rgba(217,162,58,0.1); border:1px solid rgba(217,162,58,0.4); border-radius:8px; padding:9px 11px;"><span style="color:var(--warn); font-size:12px;">!</span><span style="font-size:12px; color:#e7c07a; word-break:keep-all;">코드가 올바르지 않거나 만료되었습니다.</span></div>
+            <button style="width:100%; font-size:14px; font-weight:500; color:var(--ink2); background:var(--s1); border:1px solid var(--hair2); border-radius:8px; padding:11px; cursor:pointer;">코드 재전송</button>
+          </div>
+
+          <!-- STEP 3 — password -->
+          <div style="width:300px; border:1px solid var(--hair); border-radius:16px; background:var(--canvas); box-shadow:inset 0 1px 0 rgba(255,255,255,0.05); padding:28px 24px; display:flex; flex-direction:column; gap:18px;">
+            <div style="display:flex; align-items:center; gap:6px;"><span style="flex:1; height:3px; border-radius:9999px; background:var(--ok);"></span><span style="flex:1; height:3px; border-radius:9999px; background:var(--ok);"></span><span style="flex:1; height:3px; border-radius:9999px; background:var(--pri);"></span><span style="flex:1; height:3px; border-radius:9999px; background:var(--s4);"></span><span style="flex:1; height:3px; border-radius:9999px; background:var(--s4);"></span></div>
+            <div style="display:flex; flex-direction:column; gap:5px;"><span style="font-size:11px; color:var(--ink4); font-family:'JetBrains Mono',monospace;">STEP 3 / 5</span><h3 style="margin:0; font-size:19px; font-weight:600; letter-spacing:-0.3px; color:var(--ink);">비밀번호 설정</h3><span style="font-size:13px; color:var(--ink3); word-break:keep-all;">최소 12자 이상</span></div>
+            <div style="display:flex; flex-direction:column; gap:10px;">
+              <input type="password" value="archivekeepsmysafe" style="width:100%; background:var(--s1); border:1px solid var(--hair); border-radius:8px; padding:10px 12px; color:var(--ink); font-size:15px; font-family:inherit; outline:none;">
+              <input type="password" value="archivekeepsmysafe" style="width:100%; background:var(--s1); border:1px solid var(--hair); border-radius:8px; padding:10px 12px; color:var(--ink); font-size:15px; font-family:inherit; outline:none;">
+              <div style="display:flex; align-items:center; gap:8px;"><div style="flex:1; height:4px; border-radius:9999px; background:var(--ok);"></div><div style="flex:1; height:4px; border-radius:9999px; background:var(--ok);"></div><div style="flex:1; height:4px; border-radius:9999px; background:var(--ok);"></div><span style="font-size:12px; color:var(--ok);">강함</span></div>
+            </div>
+            <div style="display:flex; gap:10px;"><button style="flex:1; font-size:14px; font-weight:500; color:var(--ink); background:var(--s1); border:1px solid var(--hair); border-radius:8px; padding:11px; cursor:pointer;">이전</button><button style="flex:2; font-size:14px; font-weight:500; color:#fff; background:var(--pri); border:none; border-radius:8px; padding:11px; cursor:pointer;">다음</button></div>
+          </div>
+
+          <!-- STEP 4 — display name -->
+          <div style="width:300px; border:1px solid var(--hair); border-radius:16px; background:var(--canvas); box-shadow:inset 0 1px 0 rgba(255,255,255,0.05); padding:28px 24px; display:flex; flex-direction:column; gap:18px;">
+            <div style="display:flex; align-items:center; gap:6px;"><span style="flex:1; height:3px; border-radius:9999px; background:var(--ok);"></span><span style="flex:1; height:3px; border-radius:9999px; background:var(--ok);"></span><span style="flex:1; height:3px; border-radius:9999px; background:var(--ok);"></span><span style="flex:1; height:3px; border-radius:9999px; background:var(--pri);"></span><span style="flex:1; height:3px; border-radius:9999px; background:var(--s4);"></span></div>
+            <div style="display:flex; flex-direction:column; gap:5px;"><span style="font-size:11px; color:var(--ink4); font-family:'JetBrains Mono',monospace;">STEP 4 / 5</span><h3 style="margin:0; font-size:19px; font-weight:600; letter-spacing:-0.3px; color:var(--ink);">표시 이름</h3><span style="font-size:13px; color:var(--ink3); word-break:keep-all;">동료에게 보이는 이름입니다.</span></div>
+            <div style="display:flex; align-items:center; gap:11px;"><span style="width:40px;height:40px;border-radius:50%;background:linear-gradient(160deg,#828fff,#5e6ad2); display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:600; color:#010102; flex-shrink:0;">조</span><input value="조던 박" style="flex:1; background:var(--s1); border:1px solid var(--hair); border-radius:8px; padding:10px 12px; color:var(--ink); font-size:15px; font-family:inherit; outline:none;"></div>
+            <div style="display:flex; gap:10px;"><button style="flex:1; font-size:14px; font-weight:500; color:var(--ink); background:var(--s1); border:1px solid var(--hair); border-radius:8px; padding:11px; cursor:pointer;">이전</button><button style="flex:2; font-size:14px; font-weight:500; color:#fff; background:var(--pri); border:none; border-radius:8px; padding:11px; cursor:pointer;">다음</button></div>
+          </div>
+
+          <!-- STEP 5 — country + region (multi-tz branch) -->
+          <div style="width:300px; border:1px solid var(--hair); border-radius:16px; background:var(--canvas); box-shadow:inset 0 1px 0 rgba(255,255,255,0.05); padding:28px 24px; display:flex; flex-direction:column; gap:18px;">
+            <div style="display:flex; align-items:center; gap:6px;"><span style="flex:1; height:3px; border-radius:9999px; background:var(--ok);"></span><span style="flex:1; height:3px; border-radius:9999px; background:var(--ok);"></span><span style="flex:1; height:3px; border-radius:9999px; background:var(--ok);"></span><span style="flex:1; height:3px; border-radius:9999px; background:var(--ok);"></span><span style="flex:1; height:3px; border-radius:9999px; background:var(--pri);"></span></div>
+            <div style="display:flex; flex-direction:column; gap:5px;"><span style="font-size:11px; color:var(--ink4); font-family:'JetBrains Mono',monospace;">STEP 5 / 5</span><h3 style="margin:0; font-size:19px; font-weight:600; letter-spacing:-0.3px; color:var(--ink);">국가 · 지역</h3><span style="font-size:13px; color:var(--ink3); word-break:keep-all;">미국은 시간대가 여러 개라 지역 선택이 필요해요.</span></div>
+            <div style="display:flex; flex-direction:column; gap:6px;"><label style="font-size:13px; color:var(--ink3);">국가</label><div style="display:flex; align-items:center; justify-content:space-between; background:var(--s1); border:1px solid var(--hair); border-radius:8px; padding:10px 12px;"><span style="font-size:14px; color:var(--ink);">미국 (United States)</span><span style="color:var(--ink4); font-size:11px;">▾</span></div></div>
+            <div style="display:flex; flex-direction:column; gap:6px;"><label style="font-size:13px; color:var(--pri);">시간대 · 다중 시간대 국가 ✓</label><div style="display:flex; align-items:center; justify-content:space-between; background:var(--s1); border:1px solid var(--pri-f); border-radius:8px; padding:10px 12px; box-shadow:0 0 0 2px rgba(94,105,209,0.25);"><span style="font-size:14px; color:var(--ink);">America/Los_Angeles</span><span style="color:var(--ink4); font-size:11px;">▾</span></div></div>
+            <button style="width:100%; font-size:14px; font-weight:500; color:#fff; background:var(--pri); border:none; border-radius:8px; padding:11px; cursor:pointer;">가입 완료</button>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ===== OAUTH + FORGOT + RESET ===== -->
+      <div style="display:flex; flex-direction:column; gap:12px; width:100%;">
+        <span style="font-size:13px; font-weight:500; color:var(--ink3);">OAuth 온보딩 · 비밀번호 찾기 / 재설정</span>
+        <div style="display:flex; flex-wrap:wrap; gap:16px;">
+
+          <!-- OAUTH onboarding (single-tz country → no region select) -->
+          <div style="width:300px; border:1px solid var(--hair); border-radius:16px; background:var(--canvas); box-shadow:inset 0 1px 0 rgba(255,255,255,0.05); padding:28px 24px; display:flex; flex-direction:column; gap:16px;">
+            <div style="display:flex; align-items:center; gap:9px;"><span style="width:30px;height:30px;border-radius:8px;background:var(--s1);border:1px solid var(--hair); display:flex; align-items:center; justify-content:center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="#d0d6e0"><path d="M12 2a10 10 0 0 0-3.2 19.5c.5.1.7-.2.7-.5v-1.7c-2.8.6-3.4-1.3-3.4-1.3-.5-1.2-1.1-1.5-1.1-1.5-.9-.6.1-.6.1-.6 1 .1 1.5 1 1.5 1 .9 1.5 2.3 1.1 2.9.8.1-.6.3-1.1.6-1.3-2.2-.3-4.6-1.1-4.6-5a3.9 3.9 0 0 1 1-2.7 3.6 3.6 0 0 1 .1-2.6s.8-.3 2.7 1a9.3 9.3 0 0 1 5 0c1.9-1.3 2.7-1 2.7-1 .5 1.3.2 2.3.1 2.6a3.9 3.9 0 0 1 1 2.7c0 3.9-2.4 4.7-4.6 5 .3.3.6.9.6 1.8v2.7c0 .3.2.6.7.5A10 10 0 0 0 12 2z"/></svg></span><span style="font-size:12px; color:var(--ink4);">GitHub으로 가입됨</span></div>
+            <div style="display:flex; flex-direction:column; gap:5px;"><h3 style="margin:0; font-size:19px; font-weight:600; letter-spacing:-0.3px; color:var(--ink);">거의 다 됐어요</h3><span style="font-size:13px; color:var(--ink3); word-break:keep-all;">국가만 선택하면 시작할 수 있어요.</span></div>
+            <div style="display:flex; flex-direction:column; gap:6px;"><label style="font-size:13px; color:var(--ink3);">국가</label><div style="display:flex; align-items:center; justify-content:space-between; background:var(--s1); border:1px solid var(--hair); border-radius:8px; padding:10px 12px;"><span style="font-size:14px; color:var(--ink);">대한민국</span><span style="color:var(--ink4); font-size:11px;">▾</span></div></div>
+            <span style="font-size:12px; color:var(--ink4); word-break:keep-all;">단일 시간대 국가라 시간대 선택이 생략됩니다 (Asia/Seoul).</span>
+            <button style="width:100%; font-size:14px; font-weight:500; color:#fff; background:var(--pri); border:none; border-radius:8px; padding:11px; cursor:pointer;">시작하기</button>
+          </div>
+
+          <!-- FORGOT — request -->
+          <div style="width:300px; border:1px solid var(--hair); border-radius:16px; background:var(--canvas); box-shadow:inset 0 1px 0 rgba(255,255,255,0.05); padding:28px 24px; display:flex; flex-direction:column; gap:16px;">
+            <div style="display:flex; flex-direction:column; gap:5px;"><h3 style="margin:0; font-size:19px; font-weight:600; letter-spacing:-0.3px; color:var(--ink);">비밀번호 재설정</h3><span style="font-size:13px; color:var(--ink3); word-break:keep-all;">재설정 링크를 이메일로 보내드려요.</span></div>
+            <div style="display:flex; flex-direction:column; gap:6px;"><label style="font-size:13px; color:var(--ink3);">이메일</label><input value="jordan@work.com" style="width:100%; background:var(--s1); border:1px solid var(--hair); border-radius:8px; padding:10px 12px; color:var(--ink); font-size:15px; font-family:inherit; outline:none;"></div>
+            <button style="width:100%; font-size:14px; font-weight:500; color:#fff; background:var(--pri); border:none; border-radius:8px; padding:11px; cursor:pointer;">링크 보내기</button>
+            <span style="font-size:13px; color:var(--ink3); text-align:center;"><span style="color:var(--pri); cursor:pointer;">로그인으로 돌아가기</span></span>
+          </div>
+
+          <!-- FORGOT — check inbox confirmation -->
+          <div style="width:300px; border:1px solid var(--hair); border-radius:16px; background:var(--canvas); box-shadow:inset 0 1px 0 rgba(255,255,255,0.05); padding:28px 24px; display:flex; flex-direction:column; gap:16px;">
+            <div style="width:40px; height:40px; border-radius:10px; background:rgba(39,166,68,0.12); border:1px solid rgba(39,166,68,0.4); display:flex; align-items:center; justify-content:center;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#27a644" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg></div>
+            <div style="display:flex; flex-direction:column; gap:6px;"><h3 style="margin:0; font-size:19px; font-weight:600; letter-spacing:-0.3px; color:var(--ink);">메일함을 확인하세요</h3><p style="margin:0; font-size:13px; color:var(--ink3); line-height:1.55; word-break:keep-all;">jordan@work.com 으로 재설정 링크를 보냈어요. 15분 내에 도착하지 않으면 다시 시도하세요.</p></div>
+            <button style="width:100%; font-size:14px; font-weight:500; color:var(--ink2); background:var(--s1); border:1px solid var(--hair2); border-radius:8px; padding:11px; cursor:pointer;">메일 다시 보내기</button>
+          </div>
+
+          <!-- RESET — token + new password -->
+          <div style="width:300px; border:1px solid var(--hair); border-radius:16px; background:var(--canvas); box-shadow:inset 0 1px 0 rgba(255,255,255,0.05); padding:28px 24px; display:flex; flex-direction:column; gap:16px;">
+            <div style="display:flex; flex-direction:column; gap:5px;"><span style="font-size:11px; color:var(--ink4); font-family:'JetBrains Mono',monospace;">token · valid</span><h3 style="margin:0; font-size:19px; font-weight:600; letter-spacing:-0.3px; color:var(--ink);">새 비밀번호</h3></div>
+            <div style="display:flex; flex-direction:column; gap:10px;"><input type="password" value="newarchivepass24" style="width:100%; background:var(--s1); border:1px solid var(--hair); border-radius:8px; padding:10px 12px; color:var(--ink); font-size:15px; font-family:inherit; outline:none;"><input type="password" value="newarchivepass24" style="width:100%; background:var(--s1); border:1px solid var(--hair); border-radius:8px; padding:10px 12px; color:var(--ink); font-size:15px; font-family:inherit; outline:none;"><div style="display:flex; align-items:center; gap:8px;"><div style="flex:1; height:4px; border-radius:9999px; background:var(--ok);"></div><div style="flex:1; height:4px; border-radius:9999px; background:var(--ok);"></div><div style="flex:1; height:4px; border-radius:9999px; background:var(--s4);"></div><span style="font-size:12px; color:var(--ink3);">보통</span></div></div>
+            <button style="width:100%; font-size:14px; font-weight:500; color:#fff; background:var(--pri); border:none; border-radius:8px; padding:11px; cursor:pointer;">비밀번호 변경</button>
+          </div>
+
+          <!-- RESET — token expired/invalid -->
+          <div style="width:300px; border:1px solid var(--hair); border-radius:16px; background:var(--canvas); box-shadow:inset 0 1px 0 rgba(255,255,255,0.05); padding:28px 24px; display:flex; flex-direction:column; gap:16px;">
+            <div style="width:40px; height:40px; border-radius:10px; background:rgba(217,162,58,0.12); border:1px solid rgba(217,162,58,0.4); display:flex; align-items:center; justify-content:center; color:var(--warn); font-size:20px;">!</div>
+            <div style="display:flex; flex-direction:column; gap:6px;"><span style="font-size:11px; color:var(--ink4); font-family:'JetBrains Mono',monospace;">token · invalid / expired</span><h3 style="margin:0; font-size:19px; font-weight:600; letter-spacing:-0.3px; color:var(--ink);">링크가 만료되었어요</h3><p style="margin:0; font-size:13px; color:var(--ink3); line-height:1.55; word-break:keep-all;">이 재설정 링크는 더 이상 유효하지 않습니다. 새 링크를 요청하세요.</p></div>
+            <button style="width:100%; font-size:14px; font-weight:500; color:#fff; background:var(--pri); border:none; border-radius:8px; padding:11px; cursor:pointer;">새 링크 요청</button>
+          </div>
+
+        </div>
+      </div>
+
+      </div>
+  </section>
+
+  <section id="sec-calendar" style="max-width:1360px; margin:0 auto; padding:56px 32px 0;">
+    <div style="display:flex; align-items:baseline; gap:14px; margin-bottom:20px;">
+      <span style="font-size:13px; font-weight:600; color:var(--pri); font-family:'JetBrains Mono',monospace;">03</span>
+      <h2 style="margin:0; font-size:28px; font-weight:600; letter-spacing:-0.6px; color:var(--ink);">App shell &amp; Calendar</h2>
+      <span style="font-size:14px; color:var(--ink3);">top-bar nav · sticky sub-header · month / week / day · detail panel</span>
+    </div>
+    <div style="position:relative; border:1px solid var(--hair); border-radius:16px; overflow:hidden; background:var(--canvas); box-shadow:inset 0 1px 0 rgba(255,255,255,0.05);">
+
+      <!-- ===== APP TOP NAV ===== -->
+      <dc-import name="AppNav" active="calendar" lang="{{ navLang }}" hint-size="100%,56px"></dc-import>
+
+      <!-- ===== STICKY SUB-HEADER ===== -->
+      <div style="display:flex; align-items:flex-end; justify-content:space-between; gap:20px; padding:22px 24px; border-bottom:1px solid var(--hair); background:linear-gradient(180deg,rgba(1,1,2,0.97),rgba(1,1,2,0.9));">
+        <div style="display:flex; flex-direction:column; gap:6px;">
+          <span style="font-size:13px; font-weight:500; letter-spacing:0.05em; color:var(--ink3); text-transform:uppercase;">{{ calEyebrow }}</span>
+          <h3 style="margin:0; font-size:28px; font-weight:600; letter-spacing:-0.6px; color:var(--ink);">{{ calTitle }}</h3>
+          <span style="font-size:14px; color:var(--ink3);">{{ calDesc }}</span>
+        </div>
+        <button style="display:flex; align-items:center; gap:7px; font-size:14px; font-weight:500; color:#fff; background:var(--pri); border:none; border-radius:8px; padding:9px 14px; cursor:pointer;"><span style="font-size:16px; line-height:1;">+</span>{{ calNewTask }}</button>
+      </div>
+
+      <!-- ===== TOOLBAR ===== -->
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; padding:16px 24px; border-bottom:1px solid var(--hair); flex-wrap:wrap;">
+        <div style="display:flex; align-items:center; gap:14px;">
+          <div style="display:flex; gap:4px; background:var(--canvas); border:1px solid var(--hair); border-radius:9999px; padding:4px;">
+            <button onClick="{{ setViewMonth }}" style="{{ viewMonthStyle }}">Month</button>
+            <button onClick="{{ setViewWeek }}" style="{{ viewWeekStyle }}">Week</button>
+            <button onClick="{{ setViewDay }}" style="{{ viewDayStyle }}">Day</button>
+          </div>
+          <div style="display:flex; align-items:center; gap:6px;">
+            <button style="width:30px; height:30px; border-radius:8px; background:var(--s1); border:1px solid var(--hair); color:var(--ink2); cursor:pointer; font-size:14px;">‹</button>
+            <button style="font-size:13px; font-weight:500; color:var(--ink2); background:var(--s1); border:1px solid var(--hair); border-radius:8px; padding:0 12px; height:30px; cursor:pointer;">Today</button>
+            <button style="width:30px; height:30px; border-radius:8px; background:var(--s1); border:1px solid var(--hair); color:var(--ink2); cursor:pointer; font-size:14px;">›</button>
+          </div>
+          <span style="font-size:18px; font-weight:600; letter-spacing:-0.3px; color:var(--ink);">June 2026</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
+          <div style="display:flex; align-items:center; gap:13px;">
+            <div style="display:flex; align-items:center; gap:6px;"><span style="width:9px;height:9px;border-radius:2px;background:#27a644;"></span><span style="font-size:12px; color:var(--ink3);">Done</span></div>
+            <div style="display:flex; align-items:center; gap:6px;"><span style="width:9px;height:9px;border-radius:2px;background:#5e6ad2;"></span><span style="font-size:12px; color:var(--ink3);">In progress</span></div>
+            <div style="display:flex; align-items:center; gap:6px;"><span style="width:9px;height:9px;border-radius:2px;background:#8a8f98;"></span><span style="font-size:12px; color:var(--ink3);">Todo</span></div>
+          </div>
+          <span style="width:1px; height:18px; background:var(--hair);"></span>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span style="font-size:11px; color:var(--ink4); text-transform:uppercase; letter-spacing:0.04em;">State</span>
+            <div style="display:flex; gap:3px; background:var(--canvas); border:1px solid var(--hair); border-radius:9999px; padding:3px;">
+              <button onClick="{{ setStDefault }}" style="{{ stDefaultStyle }}">Default</button>
+              <button onClick="{{ setStEmpty }}" style="{{ stEmptyStyle }}">Empty</button>
+              <button onClick="{{ setStLoading }}" style="{{ stLoadingStyle }}">Loading</button>
+            </div>
+          </div>
+          <button onClick="{{ toggleDetail }}" style="{{ detailBtnStyle }}">Detail panel</button>
+        </div>
+      </div>
+
+      <!-- ===== BODY ===== -->
+      <div style="padding:20px 24px 28px; min-height:520px;">
+        <!-- LOADING -->
+        <sc-if value="{{ calLoading }}" hint-placeholder-val="{{ false }}">
+          <div style="display:grid; grid-template-columns:repeat(7,1fr); gap:6px;">
+            <div style="grid-column:1 / -1; display:grid; grid-template-columns:repeat(7,1fr); gap:6px;">
+              <div style="height:106px; border-radius:8px; background:var(--s1); border:1px solid var(--hair); opacity:0.7;"></div>
+              <div style="height:106px; border-radius:8px; background:var(--s1); border:1px solid var(--hair); opacity:0.55;"></div>
+              <div style="height:106px; border-radius:8px; background:var(--s1); border:1px solid var(--hair); opacity:0.7;"></div>
+              <div style="height:106px; border-radius:8px; background:var(--s1); border:1px solid var(--hair); opacity:0.5;"></div>
+              <div style="height:106px; border-radius:8px; background:var(--s1); border:1px solid var(--hair); opacity:0.7;"></div>
+              <div style="height:106px; border-radius:8px; background:var(--s1); border:1px solid var(--hair); opacity:0.55;"></div>
+              <div style="height:106px; border-radius:8px; background:var(--s1); border:1px solid var(--hair); opacity:0.65;"></div>
+            </div>
+            <div style="grid-column:1 / -1; display:flex; align-items:center; justify-content:center; gap:9px; padding:24px;"><span style="width:7px;height:7px;border-radius:50%;background:var(--pri);"></span><span style="font-size:13px; color:var(--ink3);">Loading your tasks…</span></div>
+          </div>
+        </sc-if>
+
+        <!-- EMPTY -->
+        <sc-if value="{{ calEmpty }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; padding:90px 24px; text-align:center;">
+            <div style="width:48px; height:48px; border-radius:12px; background:var(--s1); border:1px solid var(--hair); display:flex; align-items:center; justify-content:center;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#5e6ad2" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg></div>
+            <div style="display:flex; flex-direction:column; gap:6px; max-width:340px;">
+              <h4 style="margin:0; font-size:18px; font-weight:600; color:var(--ink);">No tasks this month</h4>
+              <p style="margin:0; font-size:14px; color:var(--ink3); line-height:1.5; word-break:keep-all;">Create your first task or import from a linked GitHub repo to fill the calendar.</p>
+            </div>
+            <button style="font-size:14px; font-weight:500; color:#fff; background:var(--pri); border:none; border-radius:8px; padding:9px 16px; cursor:pointer;">+ New task</button>
+          </div>
+        </sc-if>
+
+        <!-- MONTH -->
+        <sc-if value="{{ showMonth }}" hint-placeholder-val="{{ true }}">
+          <div>
+            <div style="display:grid; grid-template-columns:repeat(7,1fr); gap:6px; margin-bottom:8px;">
+              <span style="font-size:11px; color:var(--ink4); text-transform:uppercase; letter-spacing:0.05em; padding-left:2px;">Mon</span>
+              <span style="font-size:11px; color:var(--ink4); text-transform:uppercase; letter-spacing:0.05em; padding-left:2px;">Tue</span>
+              <span style="font-size:11px; color:var(--ink4); text-transform:uppercase; letter-spacing:0.05em; padding-left:2px;">Wed</span>
+              <span style="font-size:11px; color:var(--ink4); text-transform:uppercase; letter-spacing:0.05em; padding-left:2px;">Thu</span>
+              <span style="font-size:11px; color:var(--ink4); text-transform:uppercase; letter-spacing:0.05em; padding-left:2px;">Fri</span>
+              <span style="font-size:11px; color:var(--ink4); text-transform:uppercase; letter-spacing:0.05em; padding-left:2px;">Sat</span>
+              <span style="font-size:11px; color:var(--ink4); text-transform:uppercase; letter-spacing:0.05em; padding-left:2px;">Sun</span>
+            </div>
+            <div style="display:grid; grid-template-columns:repeat(7,1fr); gap:6px;">
+              <sc-for list="{{ monthDays }}" as="d" hint-placeholder-count="35">
+                <div style="{{ d.cellStyle }}">
+                  <span style="{{ d.numStyle }}">{{ d.num }}</span>
+                  <sc-for list="{{ d.chips }}" as="c" hint-placeholder-count="0">
+                    <div style="{{ c.cont }}"><span style="{{ c.txt }}">{{ c.text }}</span></div>
+                  </sc-for>
+                  <sc-if value="{{ d.hasMore }}" hint-placeholder-val="{{ false }}">
+                    <span style="font-size:10px; color:var(--ink4); padding-left:2px;">{{ d.moreLabel }}</span>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- WEEK -->
+        <sc-if value="{{ showWeek }}" hint-placeholder-val="{{ false }}">
+          <div style="display:grid; grid-template-columns:repeat(7,1fr); gap:6px;">
+            <sc-for list="{{ weekDays }}" as="d" hint-placeholder-count="7">
+              <div style="background:var(--canvas); border:1px solid var(--hair); border-radius:10px; overflow:hidden; min-height:460px; display:flex; flex-direction:column;">
+                <div style="{{ d.headStyle }}">
+                  <div style="display:flex; flex-direction:column; gap:1px;"><span style="{{ d.nameStyle }}">{{ d.name }}</span><span style="{{ d.dateStyle }}">{{ d.date }}</span></div>
+                  <span style="{{ d.countStyle }}">{{ d.count }}</span>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:5px; padding:8px;">
+                  <sc-for list="{{ d.chips }}" as="c" hint-placeholder-count="0">
+                    <div style="{{ c.cont }}; display:flex; flex-direction:column; gap:2px;"><span style="font-size:9px; color:var(--ink4); font-family:'JetBrains Mono',monospace;">{{ c.time }}</span><span style="{{ c.txt }}">{{ c.text }}</span></div>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <!-- DAY -->
+        <sc-if value="{{ showDay }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex; flex-direction:column; gap:10px;">
+            <!-- all-day / unscheduled strip -->
+            <div style="display:flex; align-items:center; gap:10px; background:var(--s1); border:1px solid var(--hair); border-radius:10px; padding:8px 12px;">
+              <span style="font-size:11px; color:var(--ink4); text-transform:uppercase; letter-spacing:0.04em; width:64px; flex-shrink:0;">All-day</span>
+              <div style="display:flex; gap:6px; flex-wrap:wrap; flex:1;">
+                <sc-for list="{{ dayAllDay }}" as="c" hint-placeholder-count="2">
+                  <div style="{{ c.cont }}; padding:3px 9px;"><span style="{{ c.txt }}">{{ c.text }}</span></div>
+                </sc-for>
+              </div>
+            </div>
+            <!-- timeline -->
+            <div style="display:flex; gap:0;">
+              <div style="display:flex; flex-direction:column; width:56px; flex-shrink:0;">
+                <sc-for list="{{ dayHours }}" as="h" hint-placeholder-count="15">
+                  <div style="height:46px; font-size:11px; color:var(--ink4); text-align:right; padding-right:10px; font-family:'JetBrains Mono',monospace; transform:translateY(-6px);">{{ h.label }}</div>
+                </sc-for>
+              </div>
+              <div style="position:relative; flex:1; border-left:1px solid var(--hair);">
+                <sc-for list="{{ dayHours }}" as="h" hint-placeholder-count="15">
+                  <div style="height:46px; border-bottom:1px solid var(--hair);"></div>
+                </sc-for>
+                <!-- drop-target line (mid-drag) -->
+                <div style="{{ dayDropStyle }}"></div>
+                <div style="{{ dayDropLabelStyle }}">13:00</div>
+                <!-- positioned time blocks -->
+                <sc-for list="{{ dayBlocks }}" as="b" hint-placeholder-count="6">
+                  <div style="{{ b.contStyle }}">
+                    <sc-if value="{{ b.showHandle }}" hint-placeholder-val="{{ false }}">
+                      <div style="position:absolute; top:5px; right:6px; display:flex; flex-direction:column; gap:2px;"><span style="width:11px;height:1.5px;background:var(--ink4);border-radius:1px;"></span><span style="width:11px;height:1.5px;background:var(--ink4);border-radius:1px;"></span><span style="width:11px;height:1.5px;background:var(--ink4);border-radius:1px;"></span></div>
+                    </sc-if>
+                    <span style="{{ b.textStyle }}">{{ b.text }}</span>
+                    <span style="font-size:11px; color:var(--ink3); font-family:'JetBrains Mono',monospace;">{{ b.time }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+
+      <!-- ===== TASK DETAIL SLIDE-OVER ===== -->
+      <sc-if value="{{ detailOpen }}" hint-placeholder-val="{{ true }}">
+        <div style="position:absolute; top:0; right:0; bottom:0; width:360px; background:var(--s3); border-left:1px solid var(--hair2); box-shadow:-24px 0 48px rgba(0,0,0,0.4); display:flex; flex-direction:column;">
+          <div style="display:flex; align-items:center; justify-content:space-between; padding:18px 20px; border-bottom:1px solid var(--hair);">
+            <span style="font-size:13px; font-weight:500; color:var(--ink3); text-transform:uppercase; letter-spacing:0.05em;">Task detail</span>
+            <button onClick="{{ toggleDetail }}" style="width:26px; height:26px; border-radius:7px; background:var(--s1); border:1px solid var(--hair); color:var(--ink3); cursor:pointer; font-size:14px;">✕</button>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:20px; padding:20px; overflow:auto;">
+            <input value="Ship calendar" style="font-size:20px; font-weight:600; letter-spacing:-0.3px; color:var(--ink); background:transparent; border:none; outline:none; padding:0;">
+            <div style="display:flex; flex-direction:column; gap:14px;">
+              <div style="display:flex; align-items:center; gap:12px;"><span style="width:80px; font-size:13px; color:var(--ink4);">Status</span><div style="display:flex; align-items:center; gap:7px; background:rgba(94,106,210,0.16); border:1px solid rgba(94,106,210,0.4); border-radius:9999px; padding:3px 10px;"><span style="width:7px;height:7px;border-radius:50%;background:var(--pri);"></span><span style="font-size:12px; color:var(--ink);">In progress</span></div></div>
+              <div style="display:flex; align-items:center; gap:12px;"><span style="width:80px; font-size:13px; color:var(--ink4);">Date</span><span style="font-size:14px; color:var(--ink2);">June 11, 2026</span></div>
+              <div style="display:flex; align-items:center; gap:12px;"><span style="width:80px; font-size:13px; color:var(--ink4);">Time</span><span style="font-size:14px; color:var(--ink2);">2:00 PM – 4:00 PM</span></div>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+              <span style="font-size:13px; color:var(--ink4);">Description</span>
+              <div style="background:var(--s1); border:1px solid var(--hair); border-radius:8px; padding:12px; font-size:14px; line-height:1.55; color:var(--ink2); min-height:90px;">Finish the month grid, wire drag-to-reschedule, and ship behind the calendar flag.</div>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+              <span style="font-size:13px; color:var(--ink4);">Status</span>
+              <div style="display:flex; gap:6px;">
+                <button style="flex:1; font-size:12px; color:var(--ink2); background:var(--s1); border:1px solid var(--hair); border-radius:7px; padding:7px; cursor:pointer;">Not started</button>
+                <button style="flex:1; font-size:12px; color:#fff; background:var(--pri); border:1px solid var(--pri); border-radius:7px; padding:7px; cursor:pointer;">In progress</button>
+                <button style="flex:1; font-size:12px; color:var(--ink2); background:var(--s1); border:1px solid var(--hair); border-radius:7px; padding:7px; cursor:pointer;">Done</button>
+              </div>
+            </div>
+          </div>
+          <div style="margin-top:auto; display:flex; gap:8px; padding:16px 20px; border-top:1px solid var(--hair);">
+            <button style="flex:1; font-size:14px; font-weight:500; color:#fff; background:var(--pri); border:none; border-radius:8px; padding:10px; cursor:pointer;">Save</button>
+            <button style="font-size:14px; font-weight:500; color:#e07a7a; background:var(--s1); border:1px solid var(--hair); border-radius:8px; padding:10px 14px; cursor:pointer;">Delete</button>
+          </div>
+        </div>
+      </sc-if>
+
+    </div>
+
+    <!-- ===== STANDALONE WEEK & DAY FRAMES (full fidelity) ===== -->
+    <div style="display:grid; grid-template-columns:1fr; gap:20px; margin-top:20px;">
+      <!-- WEEK -->
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <span style="font-size:13px; font-weight:500; color:var(--ink3);">Week view · 주간 — 7 day lanes, stacked task chips, today highlighted</span>
+        <div style="border:1px solid var(--hair); border-radius:14px; overflow:hidden; background:var(--canvas);">
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; padding:14px 18px; border-bottom:1px solid var(--hair); flex-wrap:wrap;">
+            <div style="display:flex; align-items:center; gap:12px;">
+              <div style="display:flex; gap:4px; background:var(--canvas); border:1px solid var(--hair); border-radius:9999px; padding:4px;"><span style="font-size:13px; color:var(--ink3); padding:5px 12px;">Month</span><span style="font-size:13px; color:var(--ink); background:var(--s3); border-radius:9999px; padding:5px 12px;">Week</span><span style="font-size:13px; color:var(--ink3); padding:5px 12px;">Day</span></div>
+              <span style="font-size:16px; font-weight:600; color:var(--ink);">Jun 8 – 14, 2026</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:13px;"><div style="display:flex; align-items:center; gap:6px;"><span style="width:9px;height:9px;border-radius:2px;background:#27a644;"></span><span style="font-size:12px; color:var(--ink3);">Done</span></div><div style="display:flex; align-items:center; gap:6px;"><span style="width:9px;height:9px;border-radius:2px;background:#5e6ad2;"></span><span style="font-size:12px; color:var(--ink3);">In progress</span></div><div style="display:flex; align-items:center; gap:6px;"><span style="width:9px;height:9px;border-radius:2px;background:#8a8f98;"></span><span style="font-size:12px; color:var(--ink3);">Todo</span></div></div>
+          </div>
+          <div style="padding:14px 18px;">
+            <div style="display:grid; grid-template-columns:repeat(7,1fr); gap:6px;">
+              <sc-for list="{{ weekDays }}" as="d" hint-placeholder-count="7">
+                <div style="background:var(--canvas); border:1px solid var(--hair); border-radius:10px; overflow:hidden; min-height:300px; display:flex; flex-direction:column;">
+                  <div style="{{ d.headStyle }}"><div style="display:flex; flex-direction:column; gap:1px;"><span style="{{ d.nameStyle }}">{{ d.name }}</span><span style="{{ d.dateStyle }}">{{ d.date }}</span></div><span style="{{ d.countStyle }}">{{ d.count }}</span></div>
+                  <div style="display:flex; flex-direction:column; gap:5px; padding:8px;">
+                    <sc-for list="{{ d.chips }}" as="c" hint-placeholder-count="0">
+                      <div style="{{ c.cont }}; display:flex; flex-direction:column; gap:2px;"><span style="font-size:9px; color:var(--ink4); font-family:'JetBrains Mono',monospace;">{{ c.time }}</span><span style="{{ c.txt }}">{{ c.text }}</span></div>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DAY -->
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <span style="font-size:13px; font-weight:500; color:var(--ink3);">Day view · 일간 — time axis, positioned blocks, all-day strip, drag handle + drop-target line</span>
+        <div style="border:1px solid var(--hair); border-radius:14px; overflow:hidden; background:var(--canvas);">
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; padding:14px 18px; border-bottom:1px solid var(--hair);">
+            <div style="display:flex; align-items:center; gap:12px;">
+              <div style="display:flex; gap:4px; background:var(--canvas); border:1px solid var(--hair); border-radius:9999px; padding:4px;"><span style="font-size:13px; color:var(--ink3); padding:5px 12px;">Month</span><span style="font-size:13px; color:var(--ink3); padding:5px 12px;">Week</span><span style="font-size:13px; color:var(--ink); background:var(--s3); border-radius:9999px; padding:5px 12px;">Day</span></div>
+              <span style="font-size:16px; font-weight:600; color:var(--ink);">Thursday, Jun 11</span>
+            </div>
+            <span style="font-size:12px; color:var(--ink4);">mid-drag → drop at 13:00</span>
+          </div>
+          <div style="padding:14px 18px;">
+            <div style="display:flex; flex-direction:column; gap:10px;">
+              <div style="display:flex; align-items:center; gap:10px; background:var(--s1); border:1px solid var(--hair); border-radius:10px; padding:8px 12px;">
+                <span style="font-size:11px; color:var(--ink4); text-transform:uppercase; letter-spacing:0.04em; width:64px; flex-shrink:0;">All-day</span>
+                <div style="display:flex; gap:6px; flex-wrap:wrap; flex:1;">
+                  <sc-for list="{{ dayAllDay }}" as="c" hint-placeholder-count="2"><div style="{{ c.cont }}; padding:3px 9px;"><span style="{{ c.txt }}">{{ c.text }}</span></div></sc-for>
+                </div>
+              </div>
+              <div style="display:flex; gap:0;">
+                <div style="display:flex; flex-direction:column; width:56px; flex-shrink:0;">
+                  <sc-for list="{{ dayHours }}" as="h" hint-placeholder-count="15"><div style="height:46px; font-size:11px; color:var(--ink4); text-align:right; padding-right:10px; font-family:'JetBrains Mono',monospace; transform:translateY(-6px);">{{ h.label }}</div></sc-for>
+                </div>
+                <div style="position:relative; flex:1; border-left:1px solid var(--hair);">
+                  <sc-for list="{{ dayHours }}" as="h" hint-placeholder-count="15"><div style="height:46px; border-bottom:1px solid var(--hair);"></div></sc-for>
+                  <div style="{{ dayDropStyle }}"></div>
+                  <div style="{{ dayDropLabelStyle }}">13:00</div>
+                  <sc-for list="{{ dayBlocks }}" as="b" hint-placeholder-count="6">
+                    <div style="{{ b.contStyle }}">
+                      <sc-if value="{{ b.showHandle }}" hint-placeholder-val="{{ false }}"><div style="position:absolute; top:5px; right:6px; display:flex; flex-direction:column; gap:2px;"><span style="width:11px;height:1.5px;background:var(--ink4);border-radius:1px;"></span><span style="width:11px;height:1.5px;background:var(--ink4);border-radius:1px;"></span><span style="width:11px;height:1.5px;background:var(--ink4);border-radius:1px;"></span></div></sc-if>
+                      <span style="{{ b.textStyle }}">{{ b.text }}</span>
+                      <span style="font-size:11px; color:var(--ink3); font-family:'JetBrains Mono',monospace;">{{ b.time }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="sec-todos" style="max-width:1360px; margin:0 auto; padding:56px 32px 0;">
+    <div style="display:flex; align-items:baseline; gap:14px; margin-bottom:20px;">
+      <span style="font-size:13px; font-weight:600; color:var(--pri); font-family:'JetBrains Mono',monospace;">04</span>
+      <h2 style="margin:0; font-size:28px; font-weight:600; letter-spacing:-0.6px; color:var(--ink);">Todos kanban</h2>
+      <span style="font-size:14px; color:var(--ink3);">quick capture · 3 columns · drag-over state</span>
+    </div>
+    <div style="position:relative; border:1px solid var(--hair); border-radius:16px; overflow:hidden; background:var(--canvas); box-shadow:inset 0 1px 0 rgba(255,255,255,0.05);">
+      <dc-import name="AppNav" active="todos" lang="{{ navLang }}" hint-size="100%,56px"></dc-import>
+
+      <!-- sub-header -->
+      <div style="display:flex; align-items:flex-end; justify-content:space-between; gap:20px; padding:22px 24px; border-bottom:1px solid var(--hair); background:linear-gradient(180deg,rgba(1,1,2,0.97),rgba(1,1,2,0.9));">
+        <div style="display:flex; flex-direction:column; gap:6px;">
+          <span style="font-size:13px; font-weight:500; letter-spacing:0.05em; color:var(--ink3); text-transform:uppercase;">워크스페이스</span>
+          <h3 style="margin:0; font-size:28px; font-weight:600; letter-spacing:-0.6px; color:var(--ink);">할 일</h3>
+          <span style="font-size:14px; color:var(--ink3);">보드에서 작업을 만들고 옮기세요.</span>
+        </div>
+      </div>
+
+      <!-- quick capture -->
+      <div style="position:relative; padding:18px 24px; border-bottom:1px solid var(--hair); display:flex; gap:10px; align-items:center;">
+        <div style="flex:1; display:flex; align-items:center; gap:10px; background:var(--s1); border:1px solid var(--hair); border-radius:8px; padding:10px 12px;">
+          <span style="font-size:16px; color:var(--ink4); line-height:1;">+</span>
+          <input placeholder="작업 추가…" style="flex:1; background:transparent; border:none; outline:none; color:var(--ink); font-size:15px; font-family:inherit;">
+        </div>
+        <div style="position:relative;">
+          <button style="display:flex; align-items:center; gap:8px; font-size:14px; color:var(--ink2); background:var(--s1); border:1px solid var(--hair2); border-radius:8px; padding:10px 12px; cursor:pointer;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>Jun 11<span style="color:var(--ink4); font-size:11px;">▾</span></button>
+          <!-- date popover (open) -->
+          <div style="position:absolute; top:48px; left:0; z-index:20; width:240px; background:var(--s3); border:1px solid var(--hair2); border-radius:12px; box-shadow:0 18px 40px rgba(0,0,0,0.5); padding:14px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;"><span style="font-size:13px; font-weight:600; color:var(--ink);">June 2026</span><div style="display:flex; gap:4px;"><span style="color:var(--ink3); cursor:pointer; font-size:13px;">‹</span><span style="color:var(--ink3); cursor:pointer; font-size:13px;">›</span></div></div>
+            <div style="display:grid; grid-template-columns:repeat(7,1fr); gap:2px;">
+              <span style="font-size:9px; color:var(--ink4); text-align:center;">M</span><span style="font-size:9px; color:var(--ink4); text-align:center;">T</span><span style="font-size:9px; color:var(--ink4); text-align:center;">W</span><span style="font-size:9px; color:var(--ink4); text-align:center;">T</span><span style="font-size:9px; color:var(--ink4); text-align:center;">F</span><span style="font-size:9px; color:var(--ink4); text-align:center;">S</span><span style="font-size:9px; color:var(--ink4); text-align:center;">S</span>
+              <span style="font-size:11px; color:var(--ink3); text-align:center; padding:4px 0;">9</span>
+              <span style="font-size:11px; color:var(--ink3); text-align:center; padding:4px 0;">10</span>
+              <span style="font-size:11px; color:#fff; text-align:center; padding:4px 0; background:var(--pri); border-radius:6px;">11</span>
+              <span style="font-size:11px; color:var(--ink3); text-align:center; padding:4px 0;">12</span>
+              <span style="font-size:11px; color:var(--ink3); text-align:center; padding:4px 0;">13</span>
+              <span style="font-size:11px; color:var(--ink3); text-align:center; padding:4px 0;">14</span>
+              <span style="font-size:11px; color:var(--ink3); text-align:center; padding:4px 0;">15</span>
+            </div>
+          </div>
+        </div>
+        <button style="font-size:14px; font-weight:500; color:#fff; background:var(--pri); border:none; border-radius:8px; padding:10px 18px; cursor:pointer;">Add</button>
+      </div>
+
+      <!-- filter + state toggle -->
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; padding:14px 24px; border-bottom:1px solid var(--hair); flex-wrap:wrap;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <div style="display:flex; gap:4px; background:var(--canvas); border:1px solid var(--hair); border-radius:9999px; padding:4px;">
+            <button style="font-size:13px; font-weight:500; border:none; border-radius:9999px; padding:5px 13px; cursor:pointer; background:var(--s2); color:var(--ink);">오늘</button>
+            <button style="font-size:13px; font-weight:500; border:none; border-radius:9999px; padding:5px 13px; cursor:pointer; background:transparent; color:var(--ink3);">전체</button>
+          </div>
+          <span style="font-size:13px; color:var(--ink4);">작업 9개</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span style="font-size:11px; color:var(--ink4); text-transform:uppercase; letter-spacing:0.04em;">State</span>
+          <div style="display:flex; gap:3px; background:var(--canvas); border:1px solid var(--hair); border-radius:9999px; padding:3px;">
+            <button onClick="{{ setKbDefault }}" style="{{ kbDefaultStyle }}">Default</button>
+            <button onClick="{{ setKbDrag }}" style="{{ kbDragStyle }}">Drag</button>
+            <button onClick="{{ setKbEmpty }}" style="{{ kbEmptyStyle }}">Empty</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- board -->
+      <div style="padding:20px 24px 28px; min-height:420px;">
+        <sc-if value="{{ kbBoard }}" hint-placeholder-val="{{ true }}">
+          <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:16px; align-items:start;">
+            <sc-for list="{{ kanbanCols }}" as="col" hint-placeholder-count="3">
+              <div style="background:rgba(15,16,17,0.4); border:1px solid var(--hair); border-radius:12px; padding:12px; display:flex; flex-direction:column; gap:10px;">
+                <div style="display:flex; align-items:center; gap:8px; padding:2px 4px;">
+                  <span style="{{ col.headDot }}"></span>
+                  <span style="font-size:14px; font-weight:500; color:var(--ink2);">{{ col.name }}</span>
+                  <span style="{{ col.countStyle }}">{{ col.count }}</span>
+                </div>
+                <sc-for list="{{ col.cards }}" as="c" hint-placeholder-count="3">
+                  <div style="{{ c.contStyle }}">
+                    <span style="{{ c.titleStyle }}">{{ c.title }}</span>
+                    <div style="display:flex; align-items:center; gap:10px;">
+                      <span style="{{ c.dotStyle }}"></span>
+                      <span style="font-size:12px; color:var(--ink4);">{{ c.date }}</span>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#3e3e44" stroke-width="2" style="margin-left:auto;"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+                    </div>
+                  </div>
+                </sc-for>
+                <sc-if value="{{ col.showDrop }}" hint-placeholder-val="{{ false }}">
+                  <div style="border:1.5px dashed var(--pri); border-radius:10px; background:rgba(94,106,210,0.07); padding:18px; display:flex; align-items:center; justify-content:center;"><span style="font-size:12px; color:var(--pri);">Drop here</span></div>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+        <sc-if value="{{ kbEmpty }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; padding:70px 24px; text-align:center;">
+            <div style="width:48px; height:48px; border-radius:12px; background:var(--s1); border:1px solid var(--hair); display:flex; align-items:center; justify-content:center;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#5e6ad2" stroke-width="2"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+            <div style="display:flex; flex-direction:column; gap:6px; max-width:340px;">
+              <h4 style="margin:0; font-size:18px; font-weight:600; color:var(--ink);">Your board is clear</h4>
+              <p style="margin:0; font-size:14px; color:var(--ink3); line-height:1.5; word-break:keep-all;">Add a task above to start tracking it across Not started, In progress and Done.</p>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+
+    </div>
+  </section>
+
+  <section id="sec-retro" style="max-width:1360px; margin:0 auto; padding:56px 32px 0;">
+    <div style="display:flex; align-items:baseline; gap:14px; margin-bottom:20px;">
+      <span style="font-size:13px; font-weight:600; color:var(--pri); font-family:'JetBrains Mono',monospace;">05</span>
+      <h2 style="margin:0; font-size:28px; font-weight:600; letter-spacing:-0.6px; color:var(--ink);">Retrospective Studio</h2>
+      <span style="font-size:14px; color:var(--ink3);">sidebar + editor · AI summary · period &amp; overwrite dialogs</span>
+    </div>
+    <div style="position:relative; border:1px solid var(--hair); border-radius:16px; overflow:hidden; background:var(--canvas); box-shadow:inset 0 1px 0 rgba(255,255,255,0.05);">
+      <dc-import name="AppNav" active="retro" lang="{{ navLang }}" hint-size="100%,56px"></dc-import>
+
+      <!-- sub-header -->
+      <div style="display:flex; align-items:flex-end; justify-content:space-between; gap:20px; padding:22px 24px; border-bottom:1px solid var(--hair); background:linear-gradient(180deg,rgba(1,1,2,0.97),rgba(1,1,2,0.9)); flex-wrap:wrap;">
+        <div style="display:flex; flex-direction:column; gap:6px;">
+          <span style="font-size:13px; font-weight:500; letter-spacing:0.05em; color:var(--ink3); text-transform:uppercase;">워크스페이스</span>
+          <h3 style="margin:0; font-size:28px; font-weight:600; letter-spacing:-0.6px; color:var(--ink);">회고</h3>
+          <span style="font-size:14px; color:var(--ink3);">기록하고, 돌아보고, AI가 한 주를 요약하게 하세요.</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span style="font-size:11px; color:var(--ink4); text-transform:uppercase; letter-spacing:0.04em;">State</span>
+          <div style="display:flex; gap:3px; background:var(--canvas); border:1px solid var(--hair); border-radius:9999px; padding:3px; flex-wrap:wrap;">
+            <button onClick="{{ setRsEditor }}" style="{{ rsEditorStyle }}">Editor</button>
+            <button onClick="{{ setRsEmpty }}" style="{{ rsEmptyStyle }}">Empty</button>
+            <button onClick="{{ setRsPeriod }}" style="{{ rsPeriodStyle }}">Period</button>
+            <button onClick="{{ setRsReady }}" style="{{ rsReadyStyle }}">Readiness</button>
+            <button onClick="{{ setRsOver }}" style="{{ rsOverStyle }}">Overwrite</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- BODY -->
+      <sc-if value="{{ rsBody }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex; min-height:560px;">
+          <!-- sidebar -->
+          <div style="width:288px; border-right:1px solid var(--hair); display:flex; flex-direction:column; gap:14px; padding:18px 16px;">
+            <div style="display:flex; gap:5px; flex-wrap:wrap;">
+              <span style="font-size:12px; color:var(--ink3); background:var(--s2); border-radius:9999px; padding:4px 11px;">Weekly</span>
+              <span style="font-size:12px; color:var(--ink4); border:1px solid var(--hair); border-radius:9999px; padding:4px 11px;">Daily</span>
+              <span style="font-size:12px; color:var(--ink4); border:1px solid var(--hair); border-radius:9999px; padding:4px 11px;">Monthly</span>
+              <span style="font-size:12px; color:var(--ink4); border:1px solid var(--hair); border-radius:9999px; padding:4px 11px;">Yearly</span>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:4px;">
+              <sc-for list="{{ retroEntries }}" as="e" hint-placeholder-count="5">
+                <div style="{{ e.itemStyle }}">
+                  <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+                    <span style="font-size:11px; color:var(--ink4); font-family:'JetBrains Mono',monospace;">{{ e.date }}</span>
+                    <sc-if value="{{ e.syncShow }}" hint-placeholder-val="{{ true }}">
+                      <span style="display:flex; align-items:center; gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:var(--ok);"></span><span style="font-size:10px; color:var(--ink4);">synced</span></span>
+                    </sc-if>
+                  </div>
+                  <span style="{{ e.titleStyle }}">{{ e.title }}</span>
+                  <span style="{{ e.badgeStyle }}; width:fit-content;">{{ e.type }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+
+          <!-- editor -->
+          <div style="flex:1; display:flex; flex-direction:column;">
+            <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:16px; padding:20px 24px 14px; border-bottom:1px solid var(--hair);">
+              <div style="display:flex; flex-direction:column; gap:8px; flex:1;">
+                <input value="Shipped the calendar" style="font-size:24px; font-weight:600; letter-spacing:-0.5px; color:var(--ink); background:transparent; border:none; outline:none; padding:0;">
+                <div style="display:flex; align-items:center; gap:10px; font-size:13px; color:var(--ink4);"><span style="color:#aab2ff; background:rgba(94,106,210,0.14); border-radius:9999px; padding:2px 9px; font-size:11px;">Weekly</span><span>Jun 8 – 14, 2026</span><span>·</span><span style="display:flex; align-items:center; gap:5px;"><span style="width:6px;height:6px;border-radius:50%;background:var(--ok);"></span>Synced 2h ago</span></div>
+              </div>
+              <div style="display:flex; gap:8px;">
+                <button style="display:flex; align-items:center; gap:7px; font-size:13px; font-weight:500; color:var(--ink); background:var(--s1); border:1px solid var(--hair2); border-radius:8px; padding:8px 12px; cursor:pointer;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#828fff" stroke-width="2"><path d="M12 3l1.9 5.8L20 10l-6.1 1.2L12 17l-1.9-5.8L4 10l6.1-1.2z"/></svg>Generate summary</button>
+                <button style="display:flex; align-items:center; gap:7px; font-size:13px; font-weight:500; color:var(--ink2); background:var(--s1); border:1px solid var(--hair); border-radius:8px; padding:8px 12px; cursor:pointer;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 0 0-3.2 19.5c.5.1.7-.2.7-.5v-1.7c-2.8.6-3.4-1.3-3.4-1.3-.5-1.2-1.1-1.5-1.1-1.5-.9-.6.1-.6.1-.6 1 .1 1.5 1 1.5 1 .9 1.5 2.3 1.1 2.9.8.1-.6.3-1.1.6-1.3-2.2-.300-4.6-1.1-4.6-5a3.9 3.9 0 0 1 1-2.7 3.6 3.6 0 0 1 .1-2.6s.8-.3 2.7 1a9.3 9.3 0 0 1 5 0c1.9-1.3 2.7-1 2.7-1 .5 1.3.2 2.3.1 2.6a3.9 3.9 0 0 1 1 2.7c0 3.9-2.4 4.7-4.6 5 .3.3.6.9.6 1.8v2.7c0 .3.2.6.7.5A10 10 0 0 0 12 2z"/></svg>Push</button>
+              </div>
+            </div>
+            <!-- toolbar -->
+            <div style="display:flex; align-items:center; gap:2px; padding:8px 24px; border-bottom:1px solid var(--hair);">
+              <button style="width:30px;height:30px;border-radius:7px;background:transparent;border:none;color:var(--ink2); font-weight:700; font-size:14px; cursor:pointer;">B</button>
+              <button style="width:30px;height:30px;border-radius:7px;background:transparent;border:none;color:var(--ink2); font-style:italic; font-size:14px; cursor:pointer;">I</button>
+              <span style="width:1px; height:16px; background:var(--hair); margin:0 5px;"></span>
+              <button style="height:30px; padding:0 9px; border-radius:7px;background:transparent;border:none;color:var(--ink2); font-weight:600; font-size:13px; cursor:pointer;">H1</button>
+              <button style="height:30px; padding:0 9px; border-radius:7px;background:var(--s2);border:none;color:var(--ink); font-weight:600; font-size:13px; cursor:pointer;">H2</button>
+              <span style="width:1px; height:16px; background:var(--hair); margin:0 5px;"></span>
+              <button style="width:30px;height:30px;border-radius:7px;background:transparent;border:none;color:var(--ink2); cursor:pointer; display:flex; align-items:center; justify-content:center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg></button>
+              <button style="width:30px;height:30px;border-radius:7px;background:transparent;border:none;color:var(--ink2); cursor:pointer; display:flex; align-items:center; justify-content:center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 6h11M10 12h11M10 18h11M4 6h1v4M4 10h2M6 16a2 2 0 1 0-2 2"/></svg></button>
+              <button style="width:30px;height:30px;border-radius:7px;background:transparent;border:none;color:var(--ink2); cursor:pointer; display:flex; align-items:center; justify-content:center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg></button>
+              <button style="width:30px;height:30px;border-radius:7px;background:transparent;border:none;color:var(--ink3); cursor:pointer; font-family:'JetBrains Mono',monospace; font-size:12px;">&lt;/&gt;</button>
+            </div>
+            <!-- content -->
+            <div style="padding:24px; display:flex; flex-direction:column; gap:16px;">
+              <h4 style="margin:0; font-size:20px; font-weight:600; letter-spacing:-0.3px; color:var(--ink);">What shipped</h4>
+              <p style="margin:0; font-size:16px; line-height:1.6; color:var(--ink2); max-width:680px;">The month grid landed behind the calendar flag this week. Drag-to-reschedule now works across days, and the task detail panel reads and writes status inline.</p>
+              <ul style="margin:0; padding-left:20px; display:flex; flex-direction:column; gap:8px;">
+                <li style="font-size:16px; line-height:1.5; color:var(--ink2);">Month / week / day views with a shared task model</li>
+                <li style="font-size:16px; line-height:1.5; color:var(--ink2);">Inline quick-add and overflow "+N more" chips</li>
+                <li style="font-size:16px; line-height:1.5; color:var(--ink2);">GitHub commits linked to <span style="font-family:'JetBrains Mono',monospace; font-size:13px; color:#828fff;">a1f3c8e</span></li>
+              </ul>
+              <h4 style="margin:0; font-size:20px; font-weight:600; letter-spacing:-0.3px; color:var(--ink);">What's next</h4>
+              <p style="margin:0; font-size:16px; line-height:1.6; color:var(--ink2); max-width:680px;">Wire the week timeline drag, then start the monthly AI roll-up so the studio can summarize four weeks at once.</p>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- EMPTY -->
+      <sc-if value="{{ rsEmpty }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; padding:110px 24px; text-align:center;">
+          <div style="width:48px; height:48px; border-radius:12px; background:var(--s1); border:1px solid var(--hair); display:flex; align-items:center; justify-content:center;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#5e6ad2" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg></div>
+          <div style="display:flex; flex-direction:column; gap:6px; max-width:360px;">
+            <h4 style="margin:0; font-size:18px; font-weight:600; color:var(--ink);">No retrospectives yet</h4>
+            <p style="margin:0; font-size:14px; color:var(--ink3); line-height:1.5; word-break:keep-all;">Write your first reflection, or let AI generate a weekly summary from your tasks and commits.</p>
+          </div>
+          <div style="display:flex; gap:10px;">
+            <button style="font-size:14px; font-weight:500; color:#fff; background:var(--pri); border:none; border-radius:8px; padding:9px 16px; cursor:pointer;">New retrospective</button>
+            <button style="font-size:14px; font-weight:500; color:var(--ink2); background:var(--s1); border:1px solid var(--hair); border-radius:8px; padding:9px 16px; cursor:pointer;">Generate with AI</button>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- MODAL SCRIM -->
+      <sc-if value="{{ rsScrim }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute; inset:0; background:rgba(0,0,0,0.62); display:flex; align-items:center; justify-content:center; z-index:30;">
+          <!-- period picker -->
+          <sc-if value="{{ rsPeriod }}" hint-placeholder-val="{{ false }}">
+            <div style="width:420px; background:var(--s3); border:1px solid var(--hair2); border-radius:16px; box-shadow:0 24px 60px rgba(0,0,0,0.6); padding:28px; display:flex; flex-direction:column; gap:20px;">
+              <div style="display:flex; flex-direction:column; gap:6px;">
+                <h4 style="margin:0; font-size:20px; font-weight:600; letter-spacing:-0.3px; color:var(--ink);">Choose a period</h4>
+                <span style="font-size:14px; color:var(--ink3);">AI will summarize everything in this range.</span>
+              </div>
+              <div style="display:flex; gap:6px; background:var(--canvas); border:1px solid var(--hair); border-radius:9999px; padding:4px;">
+                <button style="flex:1; font-size:13px; font-weight:500; border:none; border-radius:9999px; padding:7px; background:var(--s2); color:var(--ink); cursor:pointer;">Weekly</button>
+                <button style="flex:1; font-size:13px; font-weight:500; border:none; border-radius:9999px; padding:7px; background:transparent; color:var(--ink3); cursor:pointer;">Monthly</button>
+                <button style="flex:1; font-size:13px; font-weight:500; border:none; border-radius:9999px; padding:7px; background:transparent; color:var(--ink3); cursor:pointer;">Yearly</button>
+              </div>
+              <div style="display:flex; align-items:center; justify-content:space-between; background:var(--s1); border:1px solid var(--hair); border-radius:10px; padding:14px 16px;">
+                <button style="width:28px;height:28px;border-radius:7px;background:var(--canvas);border:1px solid var(--hair);color:var(--ink2);cursor:pointer;">‹</button>
+                <div style="display:flex; flex-direction:column; align-items:center; gap:2px;"><span style="font-size:15px; font-weight:600; color:var(--ink);">Jun 8 – 14, 2026</span><span style="font-size:12px; color:var(--ink4);">Week 24</span></div>
+                <button style="width:28px;height:28px;border-radius:7px;background:var(--canvas);border:1px solid var(--hair);color:var(--ink2);cursor:pointer;">›</button>
+              </div>
+              <div style="display:flex; gap:10px; justify-content:flex-end;">
+                <button onClick="{{ setRsEditor }}" style="font-size:14px; font-weight:500; color:var(--ink2); background:var(--s1); border:1px solid var(--hair); border-radius:8px; padding:9px 16px; cursor:pointer;">Cancel</button>
+                <button onClick="{{ setRsEditor }}" style="font-size:14px; font-weight:500; color:#fff; background:var(--pri); border:none; border-radius:8px; padding:9px 16px; cursor:pointer;">Generate</button>
+              </div>
+            </div>
+          </sc-if>
+          <!-- readiness dialog -->
+          <sc-if value="{{ rsReadiness }}" hint-placeholder-val="{{ false }}">
+            <div style="width:400px; background:var(--s3); border:1px solid var(--hair2); border-radius:16px; box-shadow:0 24px 60px rgba(0,0,0,0.6); padding:28px; display:flex; flex-direction:column; gap:18px;">
+              <div style="width:40px; height:40px; border-radius:10px; background:rgba(217,162,58,0.12); border:1px solid rgba(217,162,58,0.4); display:flex; align-items:center; justify-content:center; color:var(--warn); font-size:20px;">!</div>
+              <div style="display:flex; flex-direction:column; gap:8px;">
+                <h4 style="margin:0; font-size:20px; font-weight:600; letter-spacing:-0.3px; color:var(--ink);">Not much to summarize</h4>
+                <p style="margin:0; font-size:14px; line-height:1.55; color:var(--ink3); word-break:keep-all;">This month only has 2 logged tasks. AI summaries work best with a denser record. Generate anyway?</p>
+              </div>
+              <div style="display:flex; gap:10px; justify-content:flex-end;">
+                <button onClick="{{ setRsEditor }}" style="font-size:14px; font-weight:500; color:var(--ink2); background:var(--s1); border:1px solid var(--hair); border-radius:8px; padding:9px 16px; cursor:pointer;">Cancel</button>
+                <button onClick="{{ setRsEditor }}" style="font-size:14px; font-weight:500; color:#fff; background:var(--pri); border:none; border-radius:8px; padding:9px 16px; cursor:pointer;">Generate anyway</button>
+              </div>
+            </div>
+          </sc-if>
+          <!-- overwrite dialog -->
+          <sc-if value="{{ rsOverwrite }}" hint-placeholder-val="{{ false }}">
+            <div style="width:400px; background:var(--s3); border:1px solid var(--hair2); border-radius:16px; box-shadow:0 24px 60px rgba(0,0,0,0.6); padding:28px; display:flex; flex-direction:column; gap:18px;">
+              <div style="display:flex; flex-direction:column; gap:8px;">
+                <h4 style="margin:0; font-size:20px; font-weight:600; letter-spacing:-0.3px; color:var(--ink);">Summary already exists</h4>
+                <p style="margin:0; font-size:14px; line-height:1.55; color:var(--ink3); word-break:keep-all;">A weekly summary for <span style="color:var(--ink2);">Jun 8 – 14</span> already exists. Overwriting will replace its contents.</p>
+              </div>
+              <div style="display:flex; gap:10px; justify-content:flex-end;">
+                <button onClick="{{ setRsEditor }}" style="font-size:14px; font-weight:500; color:var(--ink2); background:var(--s1); border:1px solid var(--hair); border-radius:8px; padding:9px 16px; cursor:pointer;">Keep both</button>
+                <button onClick="{{ setRsEditor }}" style="font-size:14px; font-weight:500; color:#fff; background:#b4532f; border:none; border-radius:8px; padding:9px 16px; cursor:pointer;">Overwrite</button>
+              </div>
+            </div>
+          </sc-if>
+        </div>
+      </sc-if>
+
+    </div>
+  </section>
+
+  <section id="sec-settings" style="max-width:1360px; margin:0 auto; padding:56px 32px 0;">
+    <div style="display:flex; align-items:baseline; gap:14px; margin-bottom:20px;">
+      <span style="font-size:13px; font-weight:600; color:var(--pri); font-family:'JetBrains Mono',monospace;">06</span>
+      <h2 style="margin:0; font-size:28px; font-weight:600; letter-spacing:-0.6px; color:var(--ink);">Settings</h2>
+      <span style="font-size:14px; color:var(--ink3);">card grid · GitHub · preferences · templates · sessions</span>
+    </div>
+    <div style="border:1px solid var(--hair); border-radius:16px; overflow:hidden; background:var(--canvas); box-shadow:inset 0 1px 0 rgba(255,255,255,0.05);">
+      <dc-import name="AppNav" active="settings" lang="{{ navLang }}" hint-size="100%,56px"></dc-import>
+
+      <!-- sub-header -->
+      <div style="display:flex; align-items:flex-end; justify-content:space-between; gap:20px; padding:22px 24px; border-bottom:1px solid var(--hair); background:linear-gradient(180deg,rgba(1,1,2,0.97),rgba(1,1,2,0.9));">
+        <div style="display:flex; flex-direction:column; gap:6px;">
+          <span style="font-size:13px; font-weight:500; letter-spacing:0.05em; color:var(--ink3); text-transform:uppercase;">계정</span>
+          <h3 style="margin:0; font-size:28px; font-weight:600; letter-spacing:-0.6px; color:var(--ink);">설정</h3>
+          <span style="font-size:14px; color:var(--ink3);">연동, 환경설정, 템플릿, 세션.</span>
+        </div>
+      </div>
+
+      <div style="padding:28px 24px 36px; display:flex; flex-direction:column; gap:36px;">
+
+        <!-- INTEGRATIONS -->
+        <div style="display:flex; flex-direction:column; gap:14px;">
+          <div style="display:flex; flex-direction:column; gap:3px;">
+            <span style="font-size:14px; font-weight:600; color:var(--ink);">연동</span>
+            <span style="font-size:13px; color:var(--ink4);">외부 서비스를 연결해 작업을 동기화하세요.</span>
+          </div>
+          <div style="background:var(--s1); border:1px solid var(--hair); border-radius:12px; padding:24px; display:flex; flex-direction:column; gap:20px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:16px;">
+              <div style="display:flex; align-items:center; gap:12px;">
+                <div style="width:38px; height:38px; border-radius:9px; background:var(--canvas); border:1px solid var(--hair); display:flex; align-items:center; justify-content:center;"><svg width="20" height="20" viewBox="0 0 24 24" fill="#d0d6e0"><path d="M12 2a10 10 0 0 0-3.2 19.5c.5.1.7-.2.7-.5v-1.7c-2.8.6-3.4-1.3-3.4-1.3-.5-1.2-1.1-1.5-1.1-1.5-.9-.6.1-.6.1-.6 1 .1 1.5 1 1.5 1 .9 1.5 2.3 1.1 2.9.8.1-.6.3-1.1.6-1.3-2.2-.3-4.6-1.1-4.6-5a3.9 3.9 0 0 1 1-2.7 3.6 3.6 0 0 1 .1-2.6s.8-.3 2.7 1a9.3 9.3 0 0 1 5 0c1.9-1.3 2.7-1 2.7-1 .5 1.3.2 2.3.1 2.6a3.9 3.9 0 0 1 1 2.7c0 3.9-2.4 4.7-4.6 5 .3.3.6.9.6 1.8v2.7c0 .3.2.6.7.5A10 10 0 0 0 12 2z"/></svg></div>
+                <div style="display:flex; flex-direction:column; gap:2px;">
+                  <span style="font-size:16px; font-weight:600; color:var(--ink);">GitHub</span>
+                  <span style="font-size:13px; color:var(--ink4);">커밋 읽기, 회고 푸시.</span>
+                </div>
+              </div>
+              <div style="display:flex; gap:3px; background:var(--canvas); border:1px solid var(--hair); border-radius:9999px; padding:3px;">
+                <button onClick="{{ setGhConn }}" style="{{ ghConnStyle }}">Connected</button>
+                <button onClick="{{ setGhDisc }}" style="{{ ghDiscStyle }}">Off</button>
+                <button onClick="{{ setGhErr }}" style="{{ ghErrStyle }}">Error</button>
+              </div>
+            </div>
+
+            <!-- connected -->
+            <sc-if value="{{ ghConnected }}" hint-placeholder-val="{{ true }}">
+              <div style="display:flex; flex-direction:column; gap:14px;">
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 14px; background:var(--canvas); border:1px solid var(--hair); border-radius:10px;">
+                  <div style="display:flex; align-items:center; gap:9px;"><span style="width:8px;height:8px;border-radius:50%;background:var(--ok); box-shadow:0 0 0 3px rgba(39,166,68,0.15);"></span><span style="font-size:14px; color:var(--ink2);">Connected as <span style="color:var(--ink); font-weight:500;">@jordan</span></span></div>
+                  <button style="font-size:13px; font-weight:500; color:var(--ink2); background:var(--s1); border:1px solid var(--hair2); border-radius:8px; padding:7px 12px; cursor:pointer;">Sync all</button>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:8px;">
+                  <span style="font-size:12px; color:var(--ink4); text-transform:uppercase; letter-spacing:0.04em;">Linked repositories</span>
+                  <sc-for list="{{ repos }}" as="r" hint-placeholder-count="3">
+                    <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 14px; background:var(--canvas); border:1px solid var(--hair); border-radius:10px;">
+                      <div style="display:flex; align-items:center; gap:10px;">
+                        <span style="font-size:14px; font-family:'JetBrains Mono',monospace; color:var(--ink);">{{ r.name }}</span>
+                        <sc-if value="{{ r.pushTarget }}" hint-placeholder-val="{{ false }}">
+                          <span style="font-size:10px; font-weight:500; color:#aab2ff; background:rgba(94,106,210,0.14); border-radius:9999px; padding:2px 8px;">push target</span>
+                        </sc-if>
+                      </div>
+                      <div style="display:flex; align-items:center; gap:14px;">
+                        <div style="display:flex; align-items:center; gap:8px;"><span style="font-size:12px; color:var(--ink4);">Commit read</span><div style="{{ r.commitTrack }}"><div style="{{ r.commitKnob }}"></div></div></div>
+                        <button style="width:26px; height:26px; border-radius:7px; background:var(--s1); border:1px solid var(--hair); color:var(--ink4); cursor:pointer; font-size:13px;">✕</button>
+                      </div>
+                    </div>
+                  </sc-for>
+                </div>
+                <!-- add repo picker (open) -->
+                <div style="background:var(--canvas); border:1px solid var(--hair); border-radius:10px; padding:12px 14px; display:flex; flex-direction:column; gap:10px;">
+                  <div style="display:flex; align-items:center; justify-content:space-between;"><span style="font-size:13px; color:var(--ink3);">Add repository</span><span style="font-size:11px; color:var(--ink4);">2 available</span></div>
+                  <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                    <button style="display:flex; align-items:center; gap:7px; font-size:13px; font-family:'JetBrains Mono',monospace; color:var(--ink2); background:var(--s1); border:1px solid var(--hair2); border-radius:8px; padding:7px 11px; cursor:pointer;"><span style="color:var(--pri);">+</span>archive/mobile</button>
+                    <button style="display:flex; align-items:center; gap:7px; font-size:13px; font-family:'JetBrains Mono',monospace; color:var(--ink2); background:var(--s1); border:1px solid var(--hair2); border-radius:8px; padding:7px 11px; cursor:pointer;"><span style="color:var(--pri);">+</span>archive/infra</button>
+                  </div>
+                </div>
+              </div>
+            </sc-if>
+
+            <!-- disconnected -->
+            <sc-if value="{{ ghDisconnected }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex; flex-direction:column; align-items:center; gap:14px; padding:24px; text-align:center;">
+                <span style="font-size:14px; color:var(--ink3); max-width:360px; line-height:1.5; word-break:keep-all;">GitHub isn't connected. Link your account to read commits and push retrospectives back as markdown.</span>
+                <button style="display:flex; align-items:center; gap:8px; font-size:14px; font-weight:500; color:#fff; background:var(--pri); border:none; border-radius:8px; padding:9px 16px; cursor:pointer;"><svg width="15" height="15" viewBox="0 0 24 24" fill="#fff"><path d="M12 2a10 10 0 0 0-3.2 19.5c.5.1.7-.2.7-.5v-1.7c-2.8.6-3.4-1.3-3.4-1.3-.5-1.2-1.1-1.5-1.1-1.5-.9-.6.1-.6.1-.6 1 .1 1.5 1 1.5 1 .9 1.5 2.3 1.1 2.9.8.1-.6.3-1.1.6-1.3-2.2-.3-4.6-1.1-4.6-5a3.9 3.9 0 0 1 1-2.7 3.6 3.6 0 0 1 .1-2.6s.8-.3 2.7 1a9.3 9.3 0 0 1 5 0c1.9-1.3 2.7-1 2.7-1 .5 1.3.2 2.3.1 2.6a3.9 3.9 0 0 1 1 2.7c0 3.9-2.4 4.7-4.6 5 .3.3.6.9.6 1.8v2.7c0 .3.2.6.7.5A10 10 0 0 0 12 2z"/></svg>Connect GitHub</button>
+              </div>
+            </sc-if>
+
+            <!-- error -->
+            <sc-if value="{{ ghError }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex; align-items:center; gap:14px; padding:16px; background:rgba(217,162,58,0.08); border:1px solid rgba(217,162,58,0.35); border-radius:10px;">
+                <span style="width:34px; height:34px; border-radius:9px; background:rgba(217,162,58,0.14); display:flex; align-items:center; justify-content:center; color:var(--warn); font-size:18px; flex-shrink:0;">!</span>
+                <div style="display:flex; flex-direction:column; gap:2px; flex:1;"><span style="font-size:14px; font-weight:500; color:var(--ink);">Couldn't reach GitHub</span><span style="font-size:13px; color:var(--ink3);">The token may have expired or access was revoked.</span></div>
+                <button style="font-size:13px; font-weight:500; color:var(--ink); background:var(--s1); border:1px solid var(--hair2); border-radius:8px; padding:8px 14px; cursor:pointer;">Reconnect</button>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+
+        <!-- PREFERENCES -->
+        <div style="display:flex; flex-direction:column; gap:14px;">
+          <div style="display:flex; flex-direction:column; gap:3px;">
+            <span style="font-size:14px; font-weight:600; color:var(--ink);">환경설정</span>
+            <span style="font-size:13px; color:var(--ink4);">언어, 지역, 자동화.</span>
+          </div>
+          <div style="display:grid; grid-template-columns:repeat(2,1fr); gap:16px;">
+            <!-- language -->
+            <div style="background:var(--s1); border:1px solid var(--hair); border-radius:12px; padding:24px; display:flex; flex-direction:column; gap:14px;">
+              <div style="display:flex; flex-direction:column; gap:3px;"><span style="font-size:15px; font-weight:600; color:var(--ink);">Language</span><span style="font-size:13px; color:var(--ink4);">Interface display language.</span></div>
+              <div style="display:flex; gap:6px; background:var(--canvas); border:1px solid var(--hair); border-radius:9px; padding:4px;">
+                <button onClick="{{ setEn }}" style="{{ langEnStyle }}">English</button>
+                <button onClick="{{ setKo }}" style="{{ langKoStyle }}">한국어</button>
+              </div>
+            </div>
+            <!-- region -->
+            <div style="background:var(--s1); border:1px solid var(--hair); border-radius:12px; padding:24px; display:flex; flex-direction:column; gap:14px;">
+              <div style="display:flex; flex-direction:column; gap:3px;"><span style="font-size:15px; font-weight:600; color:var(--ink);">Region &amp; timezone</span><span style="font-size:13px; color:var(--ink4);">Used for due dates and summaries.</span></div>
+              <div style="display:flex; flex-direction:column; gap:8px;">
+                <div style="display:flex; align-items:center; justify-content:space-between; background:var(--canvas); border:1px solid var(--hair); border-radius:8px; padding:9px 12px;"><span style="font-size:14px; color:var(--ink);">South Korea</span><span style="color:var(--ink4); font-size:11px;">▾</span></div>
+                <div style="display:flex; align-items:center; justify-content:space-between; background:var(--canvas); border:1px solid var(--hair); border-radius:8px; padding:9px 12px;"><span style="font-size:14px; color:var(--ink);">Asia/Seoul · GMT+9</span><span style="color:var(--ink4); font-size:11px;">▾</span></div>
+              </div>
+            </div>
+            <!-- auto-summary -->
+            <div style="background:var(--s1); border:1px solid var(--hair); border-radius:12px; padding:24px; display:flex; flex-direction:column; gap:14px;">
+              <div style="display:flex; flex-direction:column; gap:3px;"><span style="font-size:15px; font-weight:600; color:var(--ink);">Auto summaries</span><span style="font-size:13px; color:var(--ink4);">Generate retrospectives on a schedule.</span></div>
+              <div style="display:flex; flex-direction:column; gap:11px;">
+                <div style="display:flex; align-items:center; justify-content:space-between;"><span style="font-size:14px; color:var(--ink2);">Weekly · Mondays</span><div style="{{ autoWeekly.track }}"><div style="{{ autoWeekly.knob }}"></div></div></div>
+                <div style="display:flex; align-items:center; justify-content:space-between;"><span style="font-size:14px; color:var(--ink2);">Monthly · 1st</span><div style="{{ autoMonthly.track }}"><div style="{{ autoMonthly.knob }}"></div></div></div>
+                <div style="display:flex; align-items:center; justify-content:space-between;"><span style="font-size:14px; color:var(--ink2);">Yearly · Jan 1</span><div style="{{ autoYearly.track }}"><div style="{{ autoYearly.knob }}"></div></div></div>
+              </div>
+            </div>
+            <!-- notifications -->
+            <div style="background:var(--s1); border:1px solid var(--hair); border-radius:12px; padding:24px; display:flex; flex-direction:column; gap:14px;">
+              <div style="display:flex; flex-direction:column; gap:3px;"><span style="font-size:15px; font-weight:600; color:var(--ink);">Notifications</span><span style="font-size:13px; color:var(--ink4);">How long to keep read notifications.</span></div>
+              <div style="display:flex; align-items:center; justify-content:space-between;">
+                <span style="font-size:14px; color:var(--ink2);">Retention</span>
+                <div style="display:flex; align-items:center; gap:0; background:var(--canvas); border:1px solid var(--hair); border-radius:8px; overflow:hidden;">
+                  <button style="width:32px; height:34px; background:var(--s1); border:none; border-right:1px solid var(--hair); color:var(--ink2); cursor:pointer; font-size:16px;">−</button>
+                  <span style="padding:0 14px; font-size:14px; color:var(--ink);">30 days</span>
+                  <button style="width:32px; height:34px; background:var(--s1); border:none; border-left:1px solid var(--hair); color:var(--ink2); cursor:pointer; font-size:16px;">+</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- WORKSPACE -->
+        <div style="display:flex; flex-direction:column; gap:14px;">
+          <div style="display:flex; flex-direction:column; gap:3px;">
+            <span style="font-size:14px; font-weight:600; color:var(--ink);">워크스페이스</span>
+            <span style="font-size:13px; color:var(--ink4);">템플릿과 활성 세션.</span>
+          </div>
+          <!-- templates -->
+          <div style="background:var(--s1); border:1px solid var(--hair); border-radius:12px; padding:24px; display:grid; grid-template-columns:240px 1fr; gap:24px;">
+            <div style="display:flex; flex-direction:column; gap:10px;">
+              <div style="display:flex; align-items:center; justify-content:space-between;"><span style="font-size:15px; font-weight:600; color:var(--ink);">Templates</span><button style="font-size:12px; color:var(--pri); background:none; border:none; cursor:pointer;">+ New</button></div>
+              <div style="display:flex; flex-direction:column; gap:4px;">
+                <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border-radius:9px; background:var(--s2); border:1px solid var(--hair2);"><span style="font-size:13px; color:var(--ink);">Weekly</span><span style="font-size:10px; color:#6fd089; background:rgba(39,166,68,0.12); border-radius:9999px; padding:2px 7px;">active</span></div>
+                <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border-radius:9px;"><span style="font-size:13px; color:var(--ink3);">Daily</span></div>
+                <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border-radius:9px;"><span style="font-size:13px; color:var(--ink3);">Monthly</span></div>
+                <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border-radius:9px;"><span style="font-size:13px; color:var(--ink3);">Yearly</span></div>
+              </div>
+            </div>
+            <!-- editor panel -->
+            <div style="display:flex; flex-direction:column; gap:12px; border-left:1px solid var(--hair); padding-left:24px;">
+              <div style="display:flex; align-items:center; justify-content:space-between;"><span style="font-size:14px; font-weight:500; color:var(--ink);">Weekly template</span><div style="display:flex; gap:8px;"><button style="font-size:12px; color:var(--ink3); background:var(--s2); border:1px solid var(--hair); border-radius:7px; padding:6px 10px; cursor:pointer;">Reset</button><button style="font-size:12px; color:#e07a7a; background:var(--s2); border:1px solid var(--hair); border-radius:7px; padding:6px 10px; cursor:pointer;">Delete</button></div></div>
+              <div style="background:var(--canvas); border:1px solid var(--hair); border-radius:8px; padding:14px; font-family:'JetBrains Mono',monospace; font-size:13px; line-height:1.7; color:var(--ink2); min-height:140px;"># What shipped<br>- <br><br>## Blockers<br>- <br><br>## Next week<br>- </div>
+              <div style="display:flex; gap:8px; justify-content:flex-end;"><button style="font-size:13px; font-weight:500; color:var(--ink2); background:var(--s2); border:1px solid var(--hair); border-radius:8px; padding:8px 14px; cursor:pointer;">Set active</button><button style="font-size:13px; font-weight:500; color:#fff; background:var(--pri); border:none; border-radius:8px; padding:8px 14px; cursor:pointer;">Save</button></div>
+            </div>
+          </div>
+          <!-- sessions -->
+          <div style="background:var(--s1); border:1px solid var(--hair); border-radius:12px; padding:24px; display:flex; flex-direction:column; gap:14px;">
+            <div style="display:flex; align-items:center; justify-content:space-between;"><span style="font-size:15px; font-weight:600; color:var(--ink);">Active sessions</span><button style="font-size:12px; font-weight:500; color:#e07a7a; background:var(--s2); border:1px solid var(--hair); border-radius:8px; padding:7px 12px; cursor:pointer;">Revoke all others</button></div>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+              <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 14px; background:var(--canvas); border:1px solid var(--hair); border-radius:10px;">
+                <div style="display:flex; align-items:center; gap:12px;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#8a8f98" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg><div style="display:flex; flex-direction:column; gap:1px;"><span style="font-size:14px; color:var(--ink);">MacBook Pro · Chrome</span><span style="font-size:12px; color:var(--ink4);">Seoul · active now</span></div></div>
+                <span style="font-size:11px; color:#6fd089; background:rgba(39,166,68,0.12); border-radius:9999px; padding:3px 9px;">This device</span>
+              </div>
+              <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 14px; background:var(--canvas); border:1px solid var(--hair); border-radius:10px;">
+                <div style="display:flex; align-items:center; gap:12px;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#8a8f98" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg><div style="display:flex; flex-direction:column; gap:1px;"><span style="font-size:14px; color:var(--ink);">iPhone · Safari</span><span style="font-size:12px; color:var(--ink4);">Seoul · 3h ago</span></div></div>
+                <button style="font-size:12px; font-weight:500; color:var(--ink2); background:var(--s1); border:1px solid var(--hair2); border-radius:7px; padding:6px 12px; cursor:pointer;">Revoke</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <section id="sec-states" style="max-width:1360px; margin:0 auto; padding:56px 32px 0;">
+    <div style="display:flex; align-items:baseline; gap:14px; margin-bottom:20px;">
+      <span style="font-size:13px; font-weight:600; color:var(--pri); font-family:'JetBrains Mono',monospace;">07</span>
+      <h2 style="margin:0; font-size:28px; font-weight:600; letter-spacing:-0.6px; color:var(--ink);">Interaction states</h2>
+      <span style="font-size:14px; color:var(--ink3);">every variant side by side · the building blocks</span>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:16px;">
+
+      <!-- NAV LINK -->
+      <div style="background:var(--s1); border:1px solid var(--hair); border-radius:12px; padding:22px 24px; display:flex; flex-direction:column; gap:16px;">
+        <span style="font-size:13px; font-weight:600; color:var(--ink2);">Nav link</span>
+        <div style="display:flex; gap:28px; flex-wrap:wrap;">
+          <div style="display:flex; flex-direction:column; gap:8px;"><div style="display:flex; align-items:center; gap:7px; font-size:14px; color:var(--ink3); border-radius:8px; padding:6px 11px;"><span style="width:7px;height:7px;border-radius:2px;background:var(--ink4);"></span>Calendar</div><span style="font-size:11px; color:var(--ink4);">default</span></div>
+          <div style="display:flex; flex-direction:column; gap:8px;"><div style="display:flex; align-items:center; gap:7px; font-size:14px; color:var(--ink2); background:rgba(255,255,255,0.04); border-radius:8px; padding:6px 11px;"><span style="width:7px;height:7px;border-radius:2px;background:var(--ink3);"></span>Calendar</div><span style="font-size:11px; color:var(--ink4);">hover</span></div>
+          <div style="display:flex; flex-direction:column; gap:8px;"><div aria-current="page" style="display:flex; align-items:center; gap:7px; font-size:14px; color:var(--ink); background:var(--s3); border-radius:8px; padding:6px 11px;"><span style="width:7px;height:7px;border-radius:2px;background:var(--pri);"></span>Calendar</div><span style="font-size:11px; color:var(--pri);">aria-current</span></div>
+          <div style="display:flex; flex-direction:column; gap:8px;"><div style="display:flex; align-items:center; gap:7px; font-size:14px; color:var(--ink2); border-radius:8px; padding:6px 11px; box-shadow:0 0 0 2px rgba(94,105,209,0.5);"><span style="width:7px;height:7px;border-radius:2px;background:var(--ink3);"></span>Calendar</div><span style="font-size:11px; color:var(--ink4);">focus ring</span></div>
+        </div>
+      </div>
+
+      <!-- BUTTONS -->
+      <div style="background:var(--s1); border:1px solid var(--hair); border-radius:12px; padding:22px 24px; display:flex; flex-direction:column; gap:18px;">
+        <span style="font-size:13px; font-weight:600; color:var(--ink2);">Button</span>
+        <!-- primary -->
+        <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+          <span style="font-size:11px; color:var(--ink4); width:64px;">Primary</span>
+          <div style="display:flex; flex-direction:column; gap:6px; align-items:center;"><button style="font-size:14px; font-weight:500; color:#fff; background:var(--pri); border:none; border-radius:8px; padding:9px 16px;">Save</button><span style="font-size:11px; color:var(--ink4);">default</span></div>
+          <div style="display:flex; flex-direction:column; gap:6px; align-items:center;"><button style="font-size:14px; font-weight:500; color:#fff; background:var(--pri-h); border:none; border-radius:8px; padding:9px 16px;">Save</button><span style="font-size:11px; color:var(--ink4);">hover</span></div>
+          <div style="display:flex; flex-direction:column; gap:6px; align-items:center;"><button style="font-size:14px; font-weight:500; color:#fff; background:var(--pri-f); border:none; border-radius:8px; padding:9px 16px; transform:translateY(1px);">Save</button><span style="font-size:11px; color:var(--ink4);">pressed</span></div>
+          <div style="display:flex; flex-direction:column; gap:6px; align-items:center;"><button style="font-size:14px; font-weight:500; color:#fff; background:var(--pri); border:none; border-radius:8px; padding:9px 16px; box-shadow:0 0 0 2px rgba(94,105,209,0.5);">Save</button><span style="font-size:11px; color:var(--ink4);">focus</span></div>
+          <div style="display:flex; flex-direction:column; gap:6px; align-items:center;"><button style="font-size:14px; font-weight:500; color:#fff; background:var(--pri); border:none; border-radius:8px; padding:9px 16px; opacity:0.4; cursor:not-allowed;">Save</button><span style="font-size:11px; color:var(--ink4);">disabled</span></div>
+        </div>
+        <!-- secondary -->
+        <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+          <span style="font-size:11px; color:var(--ink4); width:64px;">Secondary</span>
+          <div style="display:flex; flex-direction:column; gap:6px; align-items:center;"><button style="font-size:14px; font-weight:500; color:var(--ink); background:var(--s2); border:1px solid var(--hair2); border-radius:8px; padding:9px 16px;">Cancel</button><span style="font-size:11px; color:var(--ink4);">default</span></div>
+          <div style="display:flex; flex-direction:column; gap:6px; align-items:center;"><button style="font-size:14px; font-weight:500; color:var(--ink); background:var(--s3); border:1px solid var(--hair3); border-radius:8px; padding:9px 16px;">Cancel</button><span style="font-size:11px; color:var(--ink4);">hover</span></div>
+          <div style="display:flex; flex-direction:column; gap:6px; align-items:center;"><button style="font-size:14px; font-weight:500; color:var(--ink); background:var(--s2); border:1px solid var(--hair2); border-radius:8px; padding:9px 16px; box-shadow:0 0 0 2px rgba(94,105,209,0.5);">Cancel</button><span style="font-size:11px; color:var(--ink4);">focus</span></div>
+          <div style="display:flex; flex-direction:column; gap:6px; align-items:center;"><button style="font-size:14px; font-weight:500; color:var(--ink); background:var(--s2); border:1px solid var(--hair); border-radius:8px; padding:9px 16px; opacity:0.4;">Cancel</button><span style="font-size:11px; color:var(--ink4);">disabled</span></div>
+        </div>
+        <!-- tertiary -->
+        <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+          <span style="font-size:11px; color:var(--ink4); width:64px;">Tertiary</span>
+          <div style="display:flex; flex-direction:column; gap:6px; align-items:center;"><button style="font-size:14px; font-weight:500; color:var(--ink2); background:transparent; border:none; border-radius:8px; padding:9px 14px;">Skip</button><span style="font-size:11px; color:var(--ink4);">default</span></div>
+          <div style="display:flex; flex-direction:column; gap:6px; align-items:center;"><button style="font-size:14px; font-weight:500; color:var(--ink); background:rgba(255,255,255,0.04); border:none; border-radius:8px; padding:9px 14px;">Skip</button><span style="font-size:11px; color:var(--ink4);">hover</span></div>
+          <div style="display:flex; flex-direction:column; gap:6px; align-items:center;"><button style="font-size:14px; font-weight:500; color:var(--ink4); background:transparent; border:none; border-radius:8px; padding:9px 14px; opacity:0.5;">Skip</button><span style="font-size:11px; color:var(--ink4);">disabled</span></div>
+        </div>
+      </div>
+
+      <!-- TEXT INPUT -->
+      <div style="background:var(--s1); border:1px solid var(--hair); border-radius:12px; padding:22px 24px; display:flex; flex-direction:column; gap:16px;">
+        <span style="font-size:13px; font-weight:600; color:var(--ink2);">Text input</span>
+        <div style="display:flex; gap:16px; flex-wrap:wrap;">
+          <div style="display:flex; flex-direction:column; gap:6px;"><input value="jordan@work.com" style="width:200px; background:var(--canvas); border:1px solid var(--hair); border-radius:8px; padding:9px 12px; color:var(--ink); font-size:14px; font-family:inherit; outline:none;"><span style="font-size:11px; color:var(--ink4);">default</span></div>
+          <div style="display:flex; flex-direction:column; gap:6px;"><input value="jordan@work.com" style="width:200px; background:var(--canvas); border:1px solid var(--pri-f); border-radius:8px; padding:9px 12px; color:var(--ink); font-size:14px; font-family:inherit; outline:none; box-shadow:0 0 0 2px rgba(94,105,209,0.5);"><span style="font-size:11px; color:var(--pri);">focus</span></div>
+          <div style="display:flex; flex-direction:column; gap:6px;"><input value="not-an-email" style="width:200px; background:var(--canvas); border:1px solid var(--warn); border-radius:8px; padding:9px 12px; color:var(--ink); font-size:14px; font-family:inherit; outline:none;"><span style="font-size:11px; color:var(--warn);">error</span></div>
+          <div style="display:flex; flex-direction:column; gap:6px;"><input value="locked@work.com" disabled style="width:200px; background:var(--s2); border:1px solid var(--hair); border-radius:8px; padding:9px 12px; color:var(--ink4); font-size:14px; font-family:inherit; outline:none; opacity:0.6;"><span style="font-size:11px; color:var(--ink4);">disabled</span></div>
+        </div>
+      </div>
+
+      <!-- KANBAN CARD -->
+      <div style="background:var(--s1); border:1px solid var(--hair); border-radius:12px; padding:22px 24px; display:flex; flex-direction:column; gap:16px;">
+        <span style="font-size:13px; font-weight:600; color:var(--ink2);">Kanban card</span>
+        <div style="display:flex; gap:18px; flex-wrap:wrap; align-items:flex-start;">
+          <div style="display:flex; flex-direction:column; gap:6px;"><div style="width:200px; background:var(--canvas); border:1px solid var(--hair); border-left:2px solid var(--pri); border-radius:10px; padding:12px 14px; display:flex; flex-direction:column; gap:9px;"><span style="font-size:14px; font-weight:500; color:var(--ink);">Ship calendar</span><div style="display:flex; align-items:center; gap:9px;"><span style="width:8px;height:8px;border-radius:50%;background:var(--pri);"></span><span style="font-size:12px; color:var(--ink4);">Jun 11</span></div></div><span style="font-size:11px; color:var(--ink4);">default</span></div>
+          <div style="display:flex; flex-direction:column; gap:6px;"><div style="width:200px; background:var(--s2); border:1px solid var(--hair2); border-left:2px solid var(--pri); border-radius:10px; padding:12px 14px; display:flex; flex-direction:column; gap:9px; box-shadow:0 6px 16px rgba(0,0,0,0.3);"><span style="font-size:14px; font-weight:500; color:var(--ink);">Ship calendar</span><div style="display:flex; align-items:center; gap:9px;"><span style="width:8px;height:8px;border-radius:50%;background:var(--pri);"></span><span style="font-size:12px; color:var(--ink4);">Jun 11</span></div></div><span style="font-size:11px; color:var(--ink4);">hover (lift)</span></div>
+          <div style="display:flex; flex-direction:column; gap:6px;"><div style="width:200px; background:var(--canvas); border:1px solid var(--pri); border-left:2px solid var(--pri); border-radius:10px; padding:12px 14px; display:flex; flex-direction:column; gap:9px; box-shadow:0 16px 32px rgba(0,0,0,0.55); transform:rotate(-1.5deg);"><span style="font-size:14px; font-weight:500; color:var(--ink);">Ship calendar</span><div style="display:flex; align-items:center; gap:9px;"><span style="width:8px;height:8px;border-radius:50%;background:var(--pri);"></span><span style="font-size:12px; color:var(--ink4);">Jun 11</span></div></div><span style="font-size:11px; color:var(--pri);">dragging</span></div>
+          <div style="display:flex; flex-direction:column; gap:6px;"><div style="width:200px; min-height:78px; border:1.5px dashed var(--pri); border-radius:10px; background:rgba(94,106,210,0.07); display:flex; flex-direction:column; gap:8px; padding:10px;"><div style="height:2px; background:var(--pri); border-radius:9999px;"></div><div style="flex:1; display:flex; align-items:center; justify-content:center;"><span style="font-size:12px; color:var(--pri);">Drop here</span></div></div><span style="font-size:11px; color:var(--pri);">drop-target column</span></div>
+        </div>
+      </div>
+
+      <!-- CALENDAR DAY CELL -->
+      <div style="background:var(--s1); border:1px solid var(--hair); border-radius:12px; padding:22px 24px; display:flex; flex-direction:column; gap:16px;">
+        <span style="font-size:13px; font-weight:600; color:var(--ink2);">Calendar day cell</span>
+        <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:flex-start;">
+          <div style="display:flex; flex-direction:column; gap:6px;"><div style="width:120px; height:96px; border:1px solid var(--hair); border-radius:8px; background:var(--canvas); padding:8px;"><span style="font-size:12px; color:var(--ink3);">11</span></div><span style="font-size:11px; color:var(--ink4);">default</span></div>
+          <div style="display:flex; flex-direction:column; gap:6px;"><div style="width:120px; height:96px; border:1px solid var(--pri); border-radius:8px; background:rgba(94,106,210,0.06); padding:8px;"><span style="font-size:12px; color:var(--ink); font-weight:600;">11</span></div><span style="font-size:11px; color:var(--pri);">today</span></div>
+          <div style="display:flex; flex-direction:column; gap:6px;"><div style="width:120px; height:96px; border:1px solid var(--hair); border-radius:8px; background:#0a0b0c; padding:8px;"><span style="font-size:12px; color:var(--hair3);">2</span></div><span style="font-size:11px; color:var(--ink4);">out-of-month</span></div>
+          <div style="display:flex; flex-direction:column; gap:6px;"><div style="width:120px; height:96px; border:1px solid var(--hair2); border-radius:8px; background:var(--s1); padding:8px;"><span style="font-size:12px; color:var(--ink2);">11</span></div><span style="font-size:11px; color:var(--ink4);">hover</span></div>
+          <div style="display:flex; flex-direction:column; gap:6px;"><div style="width:120px; height:96px; border:1.5px dashed var(--pri); border-radius:8px; background:rgba(94,106,210,0.08); padding:8px; display:flex; flex-direction:column; justify-content:space-between;"><span style="font-size:12px; color:var(--ink);">11</span><span style="font-size:10px; color:var(--pri);">drop</span></div><span style="font-size:11px; color:var(--pri);">drag-over</span></div>
+          <div style="display:flex; flex-direction:column; gap:6px;"><div style="width:120px; height:96px; border:1px solid var(--hair); border-radius:8px; background:var(--canvas); padding:8px; display:flex; flex-direction:column; gap:3px;"><span style="font-size:12px; color:var(--ink3);">11</span><div style="height:11px; border-radius:3px; background:rgba(94,106,210,0.2); border-left:2px solid var(--pri);"></div><span style="font-size:10px; color:var(--ink4);">+2 more</span></div><span style="font-size:11px; color:var(--ink4);">+N overflow</span></div>
+        </div>
+      </div>
+
+      <!-- SEGMENTED TAB -->
+      <div style="background:var(--s1); border:1px solid var(--hair); border-radius:12px; padding:22px 24px; display:flex; flex-direction:column; gap:16px;">
+        <span style="font-size:13px; font-weight:600; color:var(--ink2);">Toggle / segmented tab</span>
+        <div style="display:flex; gap:22px; flex-wrap:wrap; align-items:flex-start;">
+          <div style="display:flex; flex-direction:column; gap:6px;"><div style="display:flex; gap:4px; background:var(--canvas); border:1px solid var(--hair); border-radius:9999px; padding:4px;"><span style="font-size:13px; color:var(--ink); background:var(--s3); border-radius:9999px; padding:5px 13px;">Month</span><span style="font-size:13px; color:var(--ink3); padding:5px 13px;">Week</span><span style="font-size:13px; color:var(--ink3); padding:5px 13px;">Day</span></div><span style="font-size:11px; color:var(--ink4);">selected = Month</span></div>
+          <div style="display:flex; flex-direction:column; gap:6px;"><div style="display:flex; gap:4px; background:var(--canvas); border:1px solid var(--hair); border-radius:9999px; padding:4px;"><span style="font-size:13px; color:var(--ink3); padding:5px 13px;">Month</span><span style="font-size:13px; color:var(--ink2); background:rgba(255,255,255,0.04); border-radius:9999px; padding:5px 13px;">Week</span><span style="font-size:13px; color:var(--ink3); padding:5px 13px;">Day</span></div><span style="font-size:11px; color:var(--ink4);">hover = Week</span></div>
+          <div style="display:flex; flex-direction:column; gap:6px;"><div style="display:flex; gap:4px; background:var(--canvas); border:1px solid var(--hair); border-radius:9999px; padding:4px; opacity:0.45;"><span style="font-size:13px; color:var(--ink3); padding:5px 13px;">Month</span><span style="font-size:13px; color:var(--ink3); padding:5px 13px;">Week</span><span style="font-size:13px; color:var(--ink3); padding:5px 13px;">Day</span></div><span style="font-size:11px; color:var(--ink4);">disabled</span></div>
+        </div>
+      </div>
+
+      <!-- TIPTAP TOOLBAR -->
+      <div style="background:var(--s1); border:1px solid var(--hair); border-radius:12px; padding:22px 24px; display:flex; flex-direction:column; gap:16px;">
+        <span style="font-size:13px; font-weight:600; color:var(--ink2);">Editor toolbar · TipTap</span>
+        <div style="display:flex; align-items:center; gap:3px; flex-wrap:wrap; background:var(--canvas); border:1px solid var(--hair); border-radius:10px; padding:6px 8px; width:fit-content;">
+          <button style="width:30px;height:30px;border-radius:7px;background:var(--s3);border:none;color:var(--ink); font-weight:700; font-size:14px;">B</button>
+          <button style="width:30px;height:30px;border-radius:7px;background:transparent;border:none;color:var(--ink2); font-style:italic; font-size:14px;">I</button>
+          <button style="width:30px;height:30px;border-radius:7px;background:transparent;border:none;color:var(--ink2); text-decoration:underline; font-size:14px;">U</button>
+          <span style="width:1px; height:18px; background:var(--hair); margin:0 4px;"></span>
+          <button style="height:30px; padding:0 9px; border-radius:7px;background:transparent;border:none;color:var(--ink2); font-weight:600; font-size:13px;">H1</button>
+          <button style="height:30px; padding:0 9px; border-radius:7px;background:var(--s3);border:none;color:var(--ink); font-weight:600; font-size:13px;">H2</button>
+          <button style="height:30px; padding:0 9px; border-radius:7px;background:transparent;border:none;color:var(--ink2); font-weight:600; font-size:13px;">H3</button>
+          <span style="width:1px; height:18px; background:var(--hair); margin:0 4px;"></span>
+          <button style="width:30px;height:30px;border-radius:7px;background:transparent;border:none;color:var(--ink2); display:flex; align-items:center; justify-content:center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg></button>
+          <button style="width:30px;height:30px;border-radius:7px;background:transparent;border:none;color:var(--ink2); display:flex; align-items:center; justify-content:center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 6h11M10 12h11M10 18h11M4 6h1v4M4 10h2M6 16a2 2 0 1 0-2 2"/></svg></button>
+          <button style="width:30px;height:30px;border-radius:7px;background:transparent;border:none;color:var(--ink2); display:flex; align-items:center; justify-content:center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg></button>
+          <button style="width:30px;height:30px;border-radius:7px;background:transparent;border:none;color:var(--ink2); display:flex; align-items:center; justify-content:center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h6M9 17l-2 4M14 3h7v7M21 3l-9 9"/></svg></button>
+          <button style="width:30px;height:30px;border-radius:7px;background:transparent;border:none;color:var(--ink4); font-family:'JetBrains Mono',monospace; font-size:12px; opacity:0.5;">&lt;/&gt;</button>
+        </div>
+        <div style="display:flex; gap:28px; flex-wrap:wrap;">
+          <span style="font-size:12px; color:var(--ink4);"><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:var(--s3); margin-right:6px; vertical-align:middle;"></span>active = Bold · H2</span>
+          <span style="font-size:12px; color:var(--ink4);">disabled = Code (opacity 0.5)</span>
+        </div>
+        <!-- placeholder + save indicator -->
+        <div style="display:flex; gap:16px; flex-wrap:wrap;">
+          <div style="display:flex; flex-direction:column; gap:6px;"><div style="width:280px; height:64px; background:var(--canvas); border:1px solid var(--hair); border-radius:8px; padding:12px;"><span style="font-size:14px; color:var(--ink4);">Write your retrospective…</span></div><span style="font-size:11px; color:var(--ink4);">empty placeholder</span></div>
+          <div style="display:flex; flex-direction:column; gap:6px; justify-content:center;">
+            <div style="display:flex; align-items:center; gap:7px; background:var(--canvas); border:1px solid var(--hair); border-radius:9999px; padding:6px 12px; width:fit-content;"><span style="width:12px;height:12px;border-radius:50%;border:2px solid var(--hair2); border-top-color:var(--pri); display:inline-block;"></span><span style="font-size:12px; color:var(--ink3);">Saving…</span></div>
+            <div style="display:flex; align-items:center; gap:7px; background:var(--canvas); border:1px solid rgba(39,166,68,0.4); border-radius:9999px; padding:6px 12px; width:fit-content;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#27a644" stroke-width="3"><path d="M5 12l5 5L20 6"/></svg><span style="font-size:12px; color:var(--ink3);">Synced</span></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section id="sec-global" style="max-width:1360px; margin:0 auto; padding:56px 32px 0;">
+    <div style="display:flex; align-items:baseline; gap:14px; margin-bottom:20px;">
+      <span style="font-size:13px; font-weight:600; color:var(--pri); font-family:'JetBrains Mono',monospace;">08</span>
+      <h2 style="margin:0; font-size:28px; font-weight:600; letter-spacing:-0.6px; color:var(--ink);">Global states</h2>
+      <span style="font-size:14px; color:var(--ink3);">overlays &amp; transient surfaces shared across the app</span>
+    </div>
+
+    <div style="display:flex; flex-wrap:wrap; gap:24px; align-items:flex-start;">
+
+      <!-- NOTIFICATION PANEL -->
+      <div style="display:flex; flex-direction:column; gap:12px; width:360px;">
+        <span style="font-size:13px; font-weight:500; color:var(--ink3);">Notification panel</span>
+        <div style="border:1px solid var(--hair); border-radius:14px; overflow:hidden; background:var(--s3); box-shadow:0 18px 44px rgba(0,0,0,0.45);">
+          <div style="display:flex; align-items:center; justify-content:space-between; padding:16px 18px; border-bottom:1px solid var(--hair);">
+            <span style="font-size:15px; font-weight:600; color:var(--ink);">Notifications</span>
+            <div style="display:flex; gap:10px;"><span style="font-size:12px; color:var(--pri); cursor:pointer;">Mark all read</span><span style="font-size:12px; color:var(--ink4); cursor:pointer;">Clear</span></div>
+          </div>
+          <div style="display:flex; flex-direction:column;">
+            <div style="display:flex; gap:11px; padding:14px 18px; border-bottom:1px solid var(--hair); background:rgba(94,106,210,0.05);">
+              <span style="width:8px;height:8px;border-radius:50%;background:var(--ok); margin-top:5px; flex-shrink:0;"></span>
+              <div style="display:flex; flex-direction:column; gap:3px; flex:1;"><span style="font-size:13px; color:var(--ink);">Synced <span style="font-family:'JetBrains Mono',monospace; color:#aab2ff;">archive/web</span> · 3 commits</span><span style="font-size:11px; color:var(--ink4);">sync · 2m ago</span></div>
+              <span style="width:6px;height:6px;border-radius:50%;background:var(--pri); margin-top:5px;"></span>
+            </div>
+            <div style="display:flex; gap:11px; padding:14px 18px; border-bottom:1px solid var(--hair); background:rgba(94,106,210,0.05);">
+              <span style="width:8px;height:8px;border-radius:50%;background:var(--pri); margin-top:5px; flex-shrink:0;"></span>
+              <div style="display:flex; flex-direction:column; gap:3px; flex:1;"><span style="font-size:13px; color:var(--ink);">Weekly summary is ready</span><span style="font-size:11px; color:var(--ink4);">summary · 1h ago</span></div>
+              <span style="width:6px;height:6px;border-radius:50%;background:var(--pri); margin-top:5px;"></span>
+            </div>
+            <div style="display:flex; gap:11px; padding:14px 18px; border-bottom:1px solid var(--hair);">
+              <span style="width:8px;height:8px;border-radius:50%;background:var(--warn); margin-top:5px; flex-shrink:0;"></span>
+              <div style="display:flex; flex-direction:column; gap:3px; flex:1;"><span style="font-size:13px; color:var(--ink3);">New device signed in</span><span style="font-size:11px; color:var(--ink4);">system · yesterday</span></div>
+            </div>
+          </div>
+          <div style="display:flex; gap:8px; padding:12px 18px; border-top:1px solid var(--hair);"><button style="flex:1; font-size:12px; color:var(--ink3); background:var(--s1); border:1px solid var(--hair); border-radius:7px; padding:7px; cursor:pointer;">Clear read</button><button style="flex:1; font-size:12px; color:var(--ink3); background:var(--s1); border:1px solid var(--hair); border-radius:7px; padding:7px; cursor:pointer;">Clear all</button></div>
+        </div>
+        <!-- empty -->
+        <div style="border:1px solid var(--hair); border-radius:14px; background:var(--s3); padding:32px; display:flex; flex-direction:column; align-items:center; gap:8px; text-align:center;">
+          <div style="width:34px;height:34px;border-radius:9px;background:var(--s1);border:1px solid var(--hair); display:flex; align-items:center; justify-content:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#62666d" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg></div>
+          <span style="font-size:13px; color:var(--ink3);">You're all caught up</span>
+          <span style="font-size:12px; color:var(--ink4);">No new notifications</span>
+        </div>
+      </div>
+
+      <!-- TOASTS -->
+      <div style="display:flex; flex-direction:column; gap:12px; width:340px;">
+        <span style="font-size:13px; font-weight:500; color:var(--ink3);">Toast viewport</span>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          <div style="display:flex; align-items:center; gap:11px; background:var(--s3); border:1px solid var(--hair2); border-radius:10px; padding:13px 14px; box-shadow:0 12px 28px rgba(0,0,0,0.4);">
+            <span style="width:18px;height:18px;border-radius:50%;background:rgba(39,166,68,0.16); display:flex; align-items:center; justify-content:center;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#27a644" stroke-width="3"><path d="M5 12l5 5L20 6"/></svg></span>
+            <span style="font-size:14px; color:var(--ink); flex:1;">Task created</span>
+            <span style="font-size:14px; color:var(--ink4); cursor:pointer;">✕</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:11px; background:var(--s3); border:1px solid var(--hair2); border-radius:10px; padding:13px 14px; box-shadow:0 12px 28px rgba(0,0,0,0.4);">
+            <span style="width:8px;height:8px;border-radius:50%;background:var(--pri);"></span>
+            <span style="font-size:14px; color:var(--ink); flex:1;">Generating summary…</span>
+            <span style="font-size:14px; color:var(--ink4); cursor:pointer;">✕</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:11px; background:var(--s3); border:1px solid rgba(217,162,58,0.4); border-radius:10px; padding:13px 14px; box-shadow:0 12px 28px rgba(0,0,0,0.4);">
+            <span style="width:8px;height:8px;border-radius:50%;background:var(--warn);"></span>
+            <span style="font-size:14px; color:var(--ink); flex:1;">Demo mode — sign in to save</span>
+            <button style="font-size:12px; font-weight:500; color:#fff; background:var(--pri); border:none; border-radius:6px; padding:5px 11px; cursor:pointer;">Login</button>
+            <span style="font-size:14px; color:var(--ink4); cursor:pointer;">✕</span>
+          </div>
+        </div>
+
+        <!-- AI summary chip + status -->
+        <span style="font-size:13px; font-weight:500; color:var(--ink3); margin-top:8px;">AI summary chip</span>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <div style="display:flex; align-items:center; gap:11px; background:var(--s3); border:1px solid var(--hair2); border-radius:9999px; padding:9px 14px; box-shadow:0 12px 28px rgba(0,0,0,0.4); width:fit-content;">
+            <span style="width:14px;height:14px;border-radius:50%;border:2px solid var(--hair2); border-top-color:var(--pri); display:inline-block;"></span>
+            <span style="font-size:13px; color:var(--ink2);">Generating summary · 68%</span>
+            <span style="font-size:12px; color:var(--ink4); cursor:pointer;">▴</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:9px; background:var(--s3); border:1px solid rgba(39,166,68,0.4); border-radius:9999px; padding:9px 14px; width:fit-content;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#27a644" stroke-width="3"><path d="M5 12l5 5L20 6"/></svg><span style="font-size:13px; color:var(--ink2);">Summary ready</span></div>
+          <div style="display:flex; align-items:center; gap:9px; background:var(--s3); border:1px solid rgba(217,162,58,0.4); border-radius:9999px; padding:9px 14px; width:fit-content;"><span style="color:var(--warn); font-size:13px;">!</span><span style="font-size:13px; color:var(--ink2);">Generation failed · retry</span></div>
+        </div>
+      </div>
+
+      <!-- AI SUMMARY OVERLAY -->
+      <div style="display:flex; flex-direction:column; gap:12px; width:400px;">
+        <span style="font-size:13px; font-weight:500; color:var(--ink3);">AI summary overlay · in progress</span>
+        <div style="border:1px solid var(--hair2); border-radius:16px; background:var(--s3); box-shadow:0 24px 60px rgba(0,0,0,0.6); padding:28px; display:flex; flex-direction:column; gap:20px;">
+          <div style="display:flex; align-items:center; justify-content:space-between;">
+            <div style="display:flex; align-items:center; gap:10px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#828fff" stroke-width="2"><path d="M12 3l1.9 5.8L20 10l-6.1 1.2L12 17l-1.9-5.8L4 10l6.1-1.2z"/></svg><span style="font-size:17px; font-weight:600; color:var(--ink);">Weekly summary</span></div>
+            <span style="font-size:14px; color:var(--ink4); cursor:pointer;">—</span>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:10px;">
+            <div style="display:flex; align-items:center; justify-content:space-between;"><span style="font-size:13px; color:var(--ink3);">Reading commits &amp; tasks…</span><span style="font-size:13px; color:var(--ink2); font-family:'JetBrains Mono',monospace;">68%</span></div>
+            <div style="height:6px; border-radius:9999px; background:var(--s4); overflow:hidden;"><div style="width:68%; height:100%; background:linear-gradient(90deg,#5e6ad2,#828fff);"></div></div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:10px;">
+            <div style="display:flex; align-items:center; gap:9px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#27a644" stroke-width="3"><path d="M5 12l5 5L20 6"/></svg><span style="font-size:13px; color:var(--ink3);">Collected 14 commits across 2 repos</span></div>
+            <div style="display:flex; align-items:center; gap:9px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#27a644" stroke-width="3"><path d="M5 12l5 5L20 6"/></svg><span style="font-size:13px; color:var(--ink3);">Read 9 tasks from the board</span></div>
+            <div style="display:flex; align-items:center; gap:9px;"><span style="width:13px;height:13px;border-radius:50%;border:2px solid var(--hair2); border-top-color:var(--pri); display:inline-block;"></span><span style="font-size:13px; color:var(--ink2);">Drafting the narrative…</span></div>
+          </div>
+          <button style="font-size:13px; font-weight:500; color:var(--ink2); background:var(--s1); border:1px solid var(--hair); border-radius:8px; padding:9px; cursor:pointer;">Run in background</button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- DEMO BANNER -->
+    <div style="display:flex; flex-direction:column; gap:12px; margin-top:24px;">
+      <span style="font-size:13px; font-weight:500; color:var(--ink3);">Demo banner (fixed bottom, guest mode)</span>
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; background:var(--s2); border:1px solid var(--hair2); border-radius:12px; padding:14px 20px; box-shadow:0 -12px 30px rgba(0,0,0,0.3);">
+        <div style="display:flex; align-items:center; gap:11px;"><span style="font-size:11px; font-weight:600; color:#aab2ff; background:rgba(94,106,210,0.16); border-radius:9999px; padding:3px 10px; text-transform:uppercase; letter-spacing:0.04em;">Demo</span><span style="font-size:14px; color:var(--ink2); word-break:keep-all;">You're exploring a demo workspace. Changes won't be saved.</span></div>
+        <div style="display:flex; gap:10px;"><button style="font-size:14px; font-weight:500; color:var(--ink2); background:var(--canvas); border:1px solid var(--hair); border-radius:8px; padding:9px 14px; cursor:pointer;">Dismiss</button><button style="font-size:14px; font-weight:500; color:#fff; background:var(--pri); border:none; border-radius:8px; padding:9px 16px; cursor:pointer;">Login to save</button></div>
+      </div>
+    </div>
+
+    <!-- CONFIRM DIALOGS (destructive actions) -->
+    <div style="display:flex; flex-direction:column; gap:12px; margin-top:24px;">
+      <span style="font-size:13px; font-weight:500; color:var(--ink3);">Confirm dialogs · 파괴적 동작 (repo 해제 · 세션 종료 · 템플릿 삭제)</span>
+      <div style="display:flex; flex-wrap:wrap; gap:16px;">
+        <!-- unlink repo -->
+        <div style="width:380px; background:var(--s3); border:1px solid var(--hair2); border-radius:16px; box-shadow:0 24px 60px rgba(0,0,0,0.5); padding:26px; display:flex; flex-direction:column; gap:16px;">
+          <div style="display:flex; flex-direction:column; gap:8px;"><h4 style="margin:0; font-size:19px; font-weight:600; letter-spacing:-0.3px; color:var(--ink);">저장소 연결 해제</h4><p style="margin:0; font-size:14px; line-height:1.55; color:var(--ink3); word-break:keep-all;"><span style="font-family:'JetBrains Mono',monospace; color:var(--ink2);">archive/web</span> 의 커밋을 더 이상 읽지 않습니다. 기존 회고는 유지됩니다.</p></div>
+          <div style="display:flex; gap:10px; justify-content:flex-end;"><button style="font-size:14px; font-weight:500; color:var(--ink2); background:var(--s1); border:1px solid var(--hair); border-radius:8px; padding:9px 16px; cursor:pointer;">취소</button><button style="font-size:14px; font-weight:500; color:#fff; background:#b4532f; border:none; border-radius:8px; padding:9px 16px; cursor:pointer;">연결 해제</button></div>
+        </div>
+        <!-- revoke session -->
+        <div style="width:380px; background:var(--s3); border:1px solid var(--hair2); border-radius:16px; box-shadow:0 24px 60px rgba(0,0,0,0.5); padding:26px; display:flex; flex-direction:column; gap:16px;">
+          <div style="display:flex; flex-direction:column; gap:8px;"><h4 style="margin:0; font-size:19px; font-weight:600; letter-spacing:-0.3px; color:var(--ink);">세션 종료</h4><p style="margin:0; font-size:14px; line-height:1.55; color:var(--ink3); word-break:keep-all;"><span style="color:var(--ink2);">iPhone · Safari</span> 기기를 로그아웃합니다. 해당 기기는 다시 로그인해야 합니다.</p></div>
+          <div style="display:flex; gap:10px; justify-content:flex-end;"><button style="font-size:14px; font-weight:500; color:var(--ink2); background:var(--s1); border:1px solid var(--hair); border-radius:8px; padding:9px 16px; cursor:pointer;">취소</button><button style="font-size:14px; font-weight:500; color:#fff; background:#b4532f; border:none; border-radius:8px; padding:9px 16px; cursor:pointer;">종료</button></div>
+        </div>
+        <!-- delete template -->
+        <div style="width:380px; background:var(--s3); border:1px solid var(--hair2); border-radius:16px; box-shadow:0 24px 60px rgba(0,0,0,0.5); padding:26px; display:flex; flex-direction:column; gap:16px;">
+          <div style="display:flex; align-items:center; gap:12px;"><span style="width:36px;height:36px;border-radius:9px;background:rgba(180,83,47,0.14);border:1px solid rgba(180,83,47,0.4); display:flex; align-items:center; justify-content:center; color:#e0815f; flex-shrink:0;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></span><div style="display:flex; flex-direction:column; gap:4px;"><h4 style="margin:0; font-size:19px; font-weight:600; letter-spacing:-0.3px; color:var(--ink);">템플릿 삭제</h4><p style="margin:0; font-size:13px; line-height:1.5; color:var(--ink3); word-break:keep-all;">"Weekly" 템플릿을 삭제합니다. 되돌릴 수 없습니다.</p></div></div>
+          <div style="display:flex; gap:10px; justify-content:flex-end;"><button style="font-size:14px; font-weight:500; color:var(--ink2); background:var(--s1); border:1px solid var(--hair); border-radius:8px; padding:9px 16px; cursor:pointer;">취소</button><button style="font-size:14px; font-weight:500; color:#fff; background:#b4532f; border:none; border-radius:8px; padding:9px 16px; cursor:pointer;">삭제</button></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECURITY MODAL -->
+    <div style="display:flex; flex-direction:column; gap:12px; margin-top:24px;">
+      <span style="font-size:13px; font-weight:500; color:var(--ink3);">Security logout modal (refresh-token reuse)</span>
+      <div style="position:relative; border:1px solid var(--hair); border-radius:16px; overflow:hidden; background:rgba(0,0,0,0.55); min-height:300px; display:flex; align-items:center; justify-content:center; padding:32px;">
+        <div style="position:absolute; inset:0; opacity:0.25; background:repeating-linear-gradient(0deg,transparent,transparent 38px,rgba(35,37,42,0.6) 38px,rgba(35,37,42,0.6) 39px);"></div>
+        <div style="position:relative; width:420px; background:var(--s3); border:1px solid var(--hair2); border-radius:16px; box-shadow:0 24px 60px rgba(0,0,0,0.7); padding:28px; display:flex; flex-direction:column; gap:18px;">
+          <div style="width:42px; height:42px; border-radius:11px; background:rgba(217,162,58,0.12); border:1px solid rgba(217,162,58,0.4); display:flex; align-items:center; justify-content:center;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#d9a23a" stroke-width="2"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <h4 style="margin:0; font-size:20px; font-weight:600; letter-spacing:-0.3px; color:var(--ink);">Signed out for your security</h4>
+            <p style="margin:0; font-size:14px; line-height:1.55; color:var(--ink3); word-break:keep-all;">We detected an unusual sign-in token and ended this session as a precaution. Please sign in again.</p>
+          </div>
+          <button style="font-size:14px; font-weight:500; color:#fff; background:var(--pri); border:none; border-radius:8px; padding:11px; cursor:pointer;">Sign in again</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1424,&quot;height&quot;:900},&quot;lang&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;en&quot;,&quot;ko&quot;],&quot;default&quot;:&quot;ko&quot;,&quot;tsType&quot;:&quot;'en'|'ko'&quot;}}">
+class Component extends DCLogic {
+  state = { lang: 'ko', loginState: 'default', calView: 'month', calState: 'default', detailOpen: true, kanbanState: 'default', retroState: 'editor', ghState: 'connected' };
+
+  settingsVals() {
+    const s = this.state.ghState;
+    const pill = (active) => 'font-size:12px; font-weight:500; border:none; border-radius:9999px; padding:4px 11px; cursor:pointer; ' + (active ? 'background:#141516; color:#f7f8f8;' : 'background:transparent; color:#8a8f98;');
+    const sw = (on) => ({
+      track: `width:36px; height:21px; border-radius:9999px; position:relative; cursor:pointer; border:1px solid ${on ? '#5e6ad2' : '#34343a'}; background:${on ? '#5e6ad2' : '#141516'};`,
+      knob: `position:absolute; top:2px; ${on ? 'right:2px' : 'left:2px'}; width:15px; height:15px; border-radius:50%; background:#fff;`,
+    });
+    const repo = (name, pushTarget, commitRead) => {
+      const t = sw(commitRead);
+      return { name, pushTarget, commitTrack: t.track, commitKnob: t.knob };
+    };
+    return {
+      ghConnStyle: pill(s === 'connected'), ghDiscStyle: pill(s === 'disconnected'), ghErrStyle: pill(s === 'error'),
+      setGhConn: () => this.setState({ ghState: 'connected' }),
+      setGhDisc: () => this.setState({ ghState: 'disconnected' }),
+      setGhErr: () => this.setState({ ghState: 'error' }),
+      ghConnected: s === 'connected', ghDisconnected: s === 'disconnected', ghError: s === 'error',
+      repos: [repo('archive/web', true, true), repo('archive/api', false, true), repo('archive/docs', false, false)],
+      autoWeekly: sw(true), autoMonthly: sw(true), autoYearly: sw(false),
+      langEnStyle: 'flex:1; font-size:13px; font-weight:500; border:none; border-radius:7px; padding:8px; cursor:pointer; ' + ((this.props.lang ?? this.state.lang) === 'en' ? 'background:#5e6ad2; color:#fff;' : 'background:#0f1011; color:#8a8f98;'),
+      langKoStyle: 'flex:1; font-size:13px; font-weight:500; border:none; border-radius:7px; padding:8px; cursor:pointer; ' + ((this.props.lang ?? this.state.lang) === 'ko' ? 'background:#5e6ad2; color:#fff;' : 'background:#0f1011; color:#8a8f98;'),
+    };
+  }
+
+  retroVals() {
+    const s = this.state.retroState;
+    const pill = (active) => 'font-size:12px; font-weight:500; border:none; border-radius:9999px; padding:4px 11px; cursor:pointer; ' + (active ? 'background:#141516; color:#f7f8f8;' : 'background:transparent; color:#8a8f98;');
+    const entry = (date, title, type, synced, active) => {
+      const tm = { Weekly: { bg: 'rgba(94,106,210,0.14)', col: '#aab2ff' }, Monthly: { bg: 'rgba(39,166,68,0.12)', col: '#6fd089' }, Daily: { bg: '#141516', col: '#8a8f98' } }[type];
+      return {
+        date, title, type, syncShow: synced,
+        itemStyle: 'display:flex; flex-direction:column; gap:8px; padding:12px; border-radius:10px; cursor:pointer; border:1px solid ' + (active ? '#34343a' : 'transparent') + '; background:' + (active ? '#141516' : 'transparent') + ';',
+        titleStyle: 'font-size:13px; font-weight:500; color:' + (active ? '#f7f8f8' : '#d0d6e0') + '; line-height:1.4;',
+        badgeStyle: `font-size:10px; font-weight:500; color:${tm.col}; background:${tm.bg}; border-radius:9999px; padding:2px 8px;`,
+      };
+    };
+    return {
+      rsEditorStyle: pill(s === 'editor'), rsEmptyStyle: pill(s === 'empty'),
+      rsPeriodStyle: pill(s === 'period'), rsReadyStyle: pill(s === 'readiness'), rsOverStyle: pill(s === 'overwrite'),
+      setRsEditor: () => this.setState({ retroState: 'editor' }),
+      setRsEmpty: () => this.setState({ retroState: 'empty' }),
+      setRsPeriod: () => this.setState({ retroState: 'period' }),
+      setRsReady: () => this.setState({ retroState: 'readiness' }),
+      setRsOver: () => this.setState({ retroState: 'overwrite' }),
+      rsBody: s !== 'empty', rsEmpty: s === 'empty',
+      rsPeriod: s === 'period', rsReadiness: s === 'readiness', rsOverwrite: s === 'overwrite',
+      rsScrim: s === 'period' || s === 'readiness' || s === 'overwrite',
+      retroEntries: [
+        entry('Jun 8 – 14', 'Shipped the calendar', 'Weekly', true, true),
+        entry('Jun 1 – 7', 'Auth flow polish', 'Weekly', true, false),
+        entry('May 2026', 'May in review', 'Monthly', true, false),
+        entry('Jun 11', 'Tuesday notes', 'Daily', false, false),
+        entry('Jun 10', 'Monday notes', 'Daily', true, false),
+      ],
+    };
+  }
+
+  kanbanVals() {
+    const s = this.state.kanbanState;
+    const pill = (active) => 'font-size:12px; font-weight:500; border:none; border-radius:9999px; padding:4px 11px; cursor:pointer; ' + (active ? 'background:#141516; color:#f7f8f8;' : 'background:transparent; color:#8a8f98;');
+    const drag = s === 'drag';
+    const card = (title, date, status, dragging) => {
+      const accent = { todo: '#8a8f98', progress: '#5e6ad2', done: '#27a644' }[status];
+      let st = `background:#0f1011; border:1px solid #23252a; border-left:2px solid ${accent}; border-radius:10px; padding:12px 14px; display:flex; flex-direction:column; gap:9px; cursor:grab;`;
+      if (dragging) st += ' box-shadow:0 14px 30px rgba(0,0,0,0.55); border-color:#5e6ad2; transform:rotate(-1.4deg);';
+      const dot = { todo: '#8a8f98', progress: '#5e6ad2', done: '#27a644' }[status];
+      return { title, date, contStyle: st, dotStyle: `width:8px;height:8px;border-radius:50%;background:${dot};`, titleStyle: 'font-size:14px; font-weight:500; color:#f7f8f8; line-height:1.4;' + (status === 'done' ? ' text-decoration:line-through; color:#8a8f98;' : '') };
+    };
+    const cols = [
+      { name: '시작 전', count: 3, dot: '#8a8f98', showDrop: false, cards: [card('Write tests', 'Jun 5', 'todo'), card('Plan sprint', 'Jun 20', 'todo'), card('Send invoices', 'Jun 27', 'todo')] },
+      { name: '진행 중', count: 3, dot: '#5e6ad2', showDrop: drag, cards: [card('Ship calendar', 'Jun 11', 'progress', drag), card('Design review', 'Jun 3', 'progress'), card('Q3 kickoff', 'Jun 24', 'progress')] },
+      { name: '완료', count: 3, dot: '#27a644', showDrop: false, cards: [card('Standup', 'Jun 5', 'done'), card('Deploy v2', 'Jun 12', 'done'), card('Sprint retro', 'Jun 20', 'done')] },
+    ].map(c => ({
+      ...c,
+      headDot: `width:9px;height:9px;border-radius:50%;background:${c.dot};`,
+      countStyle: 'font-size:12px; color:#62666d; background:#0f1011; border:1px solid #23252a; border-radius:9999px; padding:1px 8px;',
+    }));
+    return {
+      kbDefaultStyle: pill(s === 'default'), kbEmptyStyle: pill(s === 'empty'), kbDragStyle: pill(s === 'drag'),
+      setKbDefault: () => this.setState({ kanbanState: 'default' }),
+      setKbEmpty: () => this.setState({ kanbanState: 'empty' }),
+      setKbDrag: () => this.setState({ kanbanState: 'drag' }),
+      kbBoard: s !== 'empty', kbEmpty: s === 'empty',
+      kanbanCols: cols,
+    };
+  }
+
+  chip(text, status) {
+    const map = {
+      done: { bg: 'rgba(39,166,68,0.09)', bd: '#27a644', col: '#8a8f98', deco: 'line-through' },
+      progress: { bg: 'rgba(94,106,210,0.16)', bd: '#5e6ad2', col: '#f7f8f8', deco: 'none' },
+      todo: { bg: '#141516', bd: '#8a8f98', col: '#d0d6e0', deco: 'none' },
+    };
+    const m = map[status];
+    return {
+      text,
+      cont: `background:${m.bg}; border-left:2px solid ${m.bd}; border-radius:4px; padding:2px 6px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; cursor:pointer;`,
+      txt: `font-size:11px; line-height:1.4; color:${m.col}; text-decoration:${m.deco};`,
+    };
+  }
+
+  buildMonth() {
+    const chipsByDay = {
+      3: [['Design review', 'progress']],
+      5: [['Standup', 'done'], ['Write tests', 'todo']],
+      11: [['Ship calendar', 'progress'], ['Reply to PR', 'todo']],
+      12: [['Deploy v2', 'done']],
+      18: [['1:1 with lead', 'progress']],
+      20: [['Sprint retro', 'done'], ['Plan sprint', 'todo']],
+      24: [['Q3 kickoff', 'progress']],
+      27: [['Backup DB', 'done'], ['Send invoices', 'todo']],
+    };
+    const moreByDay = { 11: 2 };
+    const out = [];
+    for (let i = 0; i < 35; i++) {
+      const dim = i >= 30;
+      const num = dim ? i - 29 : i + 1;
+      const today = !dim && num === 11;
+      const base = 'min-height:106px; border-radius:8px; padding:8px; display:flex; flex-direction:column; gap:4px; overflow:hidden; border:1px solid ';
+      const cellStyle = today
+        ? base + '#5e6ad2; background:rgba(94,106,210,0.06);'
+        : dim
+          ? base + '#1a1b1d; background:#0a0b0c;'
+          : base + '#23252a; background:#010102;';
+      const numStyle = 'font-size:12px; ' + (today ? 'color:#f7f8f8; font-weight:600;' : dim ? 'color:#3e3e44;' : 'color:#8a8f98;');
+      const chips = (!dim && chipsByDay[num]) ? chipsByDay[num].map(c => this.chip(c[0], c[1])) : [];
+      const more = (!dim && moreByDay[num]) ? moreByDay[num] : 0;
+      out.push({ num, dim, today, cellStyle, numStyle, chips, hasMore: more > 0, moreLabel: `+${more} more` });
+    }
+    return out;
+  }
+
+  buildWeek() {
+    const data = [
+      ['Mon', '월', 8, false, [['Standup', 'done', '09:00'], ['Write tests', 'todo', '14:00']]],
+      ['Tue', '화', 9, false, [['Design review', 'progress', '10:30'], ['1:1 with lead', 'progress', '16:00']]],
+      ['Wed', '수', 10, false, [['Backup DB', 'done', '08:00']]],
+      ['Thu', '목', 11, true, [['Ship calendar', 'progress', '14:00'], ['Reply to PR', 'todo', '16:30'], ['Standup', 'done', '09:00'], ['Plan sprint', 'todo', '17:00']]],
+      ['Fri', '금', 12, false, [['Deploy v2', 'done', '11:00'], ['Demo', 'progress', '15:00']]],
+      ['Sat', '토', 13, false, [['Groceries', 'todo', '—']]],
+      ['Sun', '일', 14, false, []],
+    ];
+    const ko = this.lang() === 'ko';
+    return data.map(([name, kname, date, today, chips]) => ({
+      name: ko ? kname : name, date, today, count: chips.length,
+      headStyle: 'display:flex; align-items:center; justify-content:space-between; padding:9px 10px; border-bottom:1px solid #23252a;' + (today ? ' background:rgba(94,106,210,0.08);' : ''),
+      nameStyle: 'font-size:11px; font-weight:500; color:' + (today ? '#828fff' : '#62666d') + '; text-transform:uppercase; letter-spacing:0.04em;',
+      dateStyle: 'font-size:15px; font-weight:600; color:' + (today ? '#f7f8f8' : '#8a8f98') + ';',
+      countStyle: 'font-size:10px; color:#62666d;',
+      chips: chips.map(c => { const ch = this.chip(c[0], c[1]); ch.time = c[2]; return ch; }),
+    }));
+  }
+
+  buildDay() {
+    const startH = 7, endH = 21, rowH = 46;
+    const hours = [];
+    for (let h = startH; h <= endH; h++) hours.push({ label: (h < 10 ? '0' : '') + h + ':00' });
+    const map = {
+      done: { bg: 'rgba(39,166,68,0.10)', bd: '#27a644', col: '#d0d6e0' },
+      progress: { bg: 'rgba(94,106,210,0.18)', bd: '#5e6ad2', col: '#f7f8f8' },
+      todo: { bg: '#141516', bd: '#8a8f98', col: '#d0d6e0' },
+    };
+    const y = (h, mLeft) => (h - startH) * rowH + (mLeft / 60) * rowH;
+    const block = (sh, sm, eh, em, text, status, time, opts = {}) => {
+      const top = y(sh, sm), height = y(eh, em) - top, m = map[status];
+      const left = opts.left || 8, right = opts.right || 8;
+      let st = `position:absolute; left:${left}px; right:${right}px; top:${top}px; height:${height}px; background:${m.bg}; border:1px solid #23252a; border-left:3px solid ${m.bd}; border-radius:7px; padding:6px 9px; display:flex; flex-direction:column; gap:2px; overflow:hidden; cursor:grab;`;
+      if (opts.dragging) st += ' box-shadow:0 16px 34px rgba(0,0,0,0.55); border-color:#5e6ad2; opacity:0.95; transform:rotate(-0.6deg) scale(1.01); z-index:5;';
+      return { text, time, contStyle: st, textStyle: `font-size:13px; font-weight:500; color:${m.col};`, showHandle: !!opts.handle || !!opts.dragging, dragging: !!opts.dragging };
+    };
+    const dropTop = y(13, 0);
+    return {
+      dayHours: hours,
+      dayAxisHeight: (endH - startH) * rowH,
+      dayRowH: rowH,
+      dayAllDay: [this.chip('Reading list (unscheduled)', 'todo'), this.chip('Invoices', 'todo')],
+      dayDropStyle: `position:absolute; left:0; right:0; top:${dropTop}px; height:2px; background:#5e69d1; box-shadow:0 0 0 1px rgba(94,105,209,0.4); z-index:6;`,
+      dayDropLabelStyle: `position:absolute; left:6px; top:${dropTop - 9}px; font-size:10px; font-weight:600; color:#fff; background:#5e69d1; border-radius:4px; padding:1px 6px; z-index:7;`,
+      dayBlocks: [
+        block(9, 0, 9, 30, 'Standup', 'done', '09:00–09:30'),
+        block(10, 30, 12, 0, 'Design review', 'progress', '10:30–12:00', { handle: true }),
+        // overlapping/adjacent pair 14:00–15:30
+        block(14, 0, 15, 30, 'Ship calendar', 'progress', '14:00–15:30', { right: '52%' }),
+        block(14, 0, 15, 0, 'Pairing', 'todo', '14:00–15:00', { left: '52%' }),
+        block(16, 30, 17, 0, 'Reply to PR', 'todo', '16:30–17:00'),
+        // mid-drag block landing on the 13:00 drop line
+        block(13, 0, 13, 50, 'Deploy v2', 'done', 'drop → 13:00', { dragging: true }),
+      ],
+    };
+  }
+
+  lang() { return this.props.lang ?? this.state.lang; }
+
+  calendarVals() {
+    const v = this.state.calView, s = this.state.calState;
+    const seg = (active) => 'font-size:13px; font-weight:500; border:none; border-radius:9999px; padding:6px 14px; cursor:pointer; ' + (active ? 'background:#141516; color:#f7f8f8;' : 'background:transparent; color:#8a8f98;');
+    const pill = (active) => 'font-size:12px; font-weight:500; border:none; border-radius:9999px; padding:4px 11px; cursor:pointer; ' + (active ? 'background:#141516; color:#f7f8f8;' : 'background:transparent; color:#8a8f98;');
+    const day = this.buildDay();
+    const ko = this.lang() === 'ko';
+    return {
+      navLang: this.lang(),
+      calNewTask: ko ? '새 작업' : 'New task',
+      calEyebrow: ko ? '워크스페이스' : 'Workspace',
+      calTitle: ko ? '캘린더' : 'Calendar',
+      calDesc: ko ? '한 달 동안의 작업을 계획하고 추적하세요.' : 'Plan and track your tasks across the month.',
+      viewMonthStyle: seg(v === 'month'),
+      viewWeekStyle: seg(v === 'week'),
+      viewDayStyle: seg(v === 'day'),
+      setViewMonth: () => this.setState({ calView: 'month' }),
+      setViewWeek: () => this.setState({ calView: 'week' }),
+      setViewDay: () => this.setState({ calView: 'day' }),
+      stDefaultStyle: pill(s === 'default'),
+      stEmptyStyle: pill(s === 'empty'),
+      stLoadingStyle: pill(s === 'loading'),
+      setStDefault: () => this.setState({ calState: 'default' }),
+      setStEmpty: () => this.setState({ calState: 'empty' }),
+      setStLoading: () => this.setState({ calState: 'loading' }),
+      calLoading: s === 'loading',
+      calEmpty: s === 'empty',
+      calContent: s === 'default',
+      showMonth: s === 'default' && v === 'month',
+      showWeek: s === 'default' && v === 'week',
+      showDay: s === 'default' && v === 'day',
+      monthDays: this.buildMonth(),
+      weekDays: this.buildWeek(),
+      ...day,
+      detailOpen: this.state.detailOpen,
+      toggleDetail: () => this.setState(st => ({ detailOpen: !st.detailOpen })),
+      detailBtnStyle: 'font-size:12px; font-weight:500; border-radius:8px; padding:6px 12px; cursor:pointer; border:1px solid #23252a; ' + (this.state.detailOpen ? 'background:#141516; color:#f7f8f8;' : 'background:#010102; color:#8a8f98;'),
+    };
+  }
+
+  renderVals() {
+    const lang = this.props.lang ?? this.state.lang;
+    const en = {
+      l_eyebrow: 'Your work, archived',
+      l_h1: 'The workspace that remembers what you did.',
+      l_sub: 'Calendar, kanban and retrospectives in one near-black window. Bring your GitHub, keep your history.',
+      l_email: 'you@work.com',
+      l_cta: 'Get started',
+      l_demo: 'Try the demo',
+    };
+    const ko = {
+      l_eyebrow: '당신의 작업을 아카이브',
+      l_h1: '내가 한 일을 기억하는 워크스페이스.',
+      l_sub: '캘린더, 칸반, 회고를 near-black 한 창에. GitHub을 연결하고 기록을 남기세요.',
+      l_email: 'you@work.com',
+      l_cta: '시작하기',
+      l_demo: '데모 보기',
+    };
+    const t = lang === 'ko' ? ko : en;
+
+    const base = 'font-size:13px; font-weight:500; border:none; border-radius:9999px; padding:6px 14px; cursor:pointer;';
+    const on = base + ' background:#141516; color:#f7f8f8;';
+    const off = base + ' background:transparent; color:#8a8f98;';
+
+    // login state toggle
+    const ls = this.state.loginState;
+    const tabBase = 'font-size:12px; font-weight:500; border:none; border-radius:9999px; padding:4px 11px; cursor:pointer;';
+    const tabOn = tabBase + ' background:#141516; color:#f7f8f8;';
+    const tabOff = tabBase + ' background:transparent; color:#8a8f98;';
+    const inputBase = 'width:100%; background:#0f1011; border-radius:8px; padding:10px 12px; color:#f7f8f8; font-size:15px; font-family:inherit; outline:none; border:1px solid ';
+    const errBorder = 'rgba(217,162,58,0.55)';
+    const okBorder = '#23252a';
+    const submitBase = 'width:100%; font-size:14px; font-weight:500; color:#fff; border:none; border-radius:8px; padding:11px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:9px; background:';
+
+    return {
+      ...t,
+      ...this.calendarVals(),
+      ...this.kanbanVals(),
+      ...this.retroVals(),
+      ...this.settingsVals(),
+      enBtnStyle: lang === 'en' ? on : off,
+      koBtnStyle: lang === 'ko' ? on : off,
+      setEn: () => this.setState({ lang: 'en' }),
+      setKo: () => this.setState({ lang: 'ko' }),
+      // login
+      loginErr: ls === 'error',
+      loginTabDefault: ls === 'default' ? tabOn : tabOff,
+      loginTabError: ls === 'error' ? tabOn : tabOff,
+      loginTabLoading: ls === 'loading' ? tabOn : tabOff,
+      loginEmailStyle: inputBase + (ls === 'error' ? errBorder : okBorder),
+      loginPwStyle: inputBase + (ls === 'error' ? errBorder : okBorder),
+      loginSubmitStyle: submitBase + (ls === 'loading' ? '#5e69d1; opacity:0.85;' : '#5e6ad2;'),
+      loginBtnLabel: ls === 'loading' ? (this.lang() === 'ko' ? '로그인 중…' : 'Signing in…') : (this.lang() === 'ko' ? '로그인' : 'Sign in'),
+      setLoginDefault: () => this.setState({ loginState: 'default' }),
+      setLoginError: () => this.setState({ loginState: 'error' }),
+      setLoginLoading: () => this.setState({ loginState: 'loading' }),
+    };
+  }
+}
+</script>
+</body>
+</html>

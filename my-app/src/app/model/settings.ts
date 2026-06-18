@@ -14,7 +14,7 @@ export interface AppSettings {
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
-  locale: "ko",
+  locale: "en",
   autoSummary: { weekly: true, monthly: true, yearly: true },
   notificationRetentionDays: 30,
   lastScheduleCheckAt: null,

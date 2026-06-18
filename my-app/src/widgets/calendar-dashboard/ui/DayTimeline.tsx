@@ -398,8 +398,7 @@ export function DayTimeline({
 
           {isToday ? (
             <div className="day-now-line" style={{ top: nowMin * PX_PER_MIN }}>
-              <span className="day-now-dot" />
-              <span className="day-now-time">{formatTime(nowMin)}</span>
+              <span className="day-now-pill">{formatTime(nowMin)}</span>
             </div>
           ) : null}
 

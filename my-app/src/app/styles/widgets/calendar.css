@@ -25,9 +25,8 @@
   gap: 8px;
 }
 
-/* Status legend row below the grid */
+/* Status legend — sits at the toolbar's right edge (Linear design) */
 .calendar-legend {
-  margin-top: 40px;
   display: flex;
   gap: 28px;
   align-items: center;
@@ -138,35 +137,31 @@
   border-top: 1px solid var(--color-divider-soft);
 }
 
-/* 현재 시각선 */
+/* 현재 시각선 — Linear design: lavender line + pill label */
 .day-now-line {
   position: absolute;
-  left: 56px;
+  left: 0;
   right: 12px;
   height: 0;
-  border-top: 1.5px solid #ff453a;
+  border-top: 1.5px solid #5e69d1;
   z-index: 5;
   pointer-events: none;
 }
-.day-now-dot {
+.day-now-pill {
   position: absolute;
-  left: 0;
-  top: -4px;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #ff453a;
-  transform: translateX(-50%);
-}
-.day-now-time {
-  position: absolute;
-  left: 12px;
-  top: -8px;
+  left: 2px;
+  top: -9px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 9px;
+  background: #5e69d1;
+  color: #fff;
   font-size: 10px;
-  font-weight: 600;
-  color: #ff453a;
-  background: var(--color-tile-1);
-  padding: 0 4px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 /* 블록이 놓이는 트랙 (시각 거터를 비운 영역) */
@@ -216,6 +211,7 @@
 }
 .day-block[data-status="done"] .day-block-title {
   color: var(--color-status-done);
+  text-decoration: line-through;
 }
 .day-block-head {
   display: flex;
@@ -271,14 +267,16 @@
 }
 
 
-/* Todo chip inside MonthGrid cells */
+/* Todo chip inside MonthGrid cells — left accent bar + status colors */
 .todo-month-chip {
   display: block;
   width: 100%;
   text-align: left;
   font-size: 11px;
-  padding: 3px 6px;
+  padding: 3px 6px 3px 7px;
   border-radius: 4px;
+  border: none;
+  border-left: 3px solid #8a8f98;
   background: var(--color-tile-2);
   color: var(--color-ink);
   overflow: hidden;
@@ -286,10 +284,53 @@
   text-overflow: ellipsis;
 }
 .todo-month-chip[data-status="done"] {
-  background: rgba(39, 166, 68, 0.12);
+  background: rgba(39, 166, 68, 0.09);
+  border-left-color: #27a644;
   color: var(--color-status-done);
+  text-decoration: line-through;
 }
 .todo-month-chip[data-status="in-progress"] {
   background: rgba(94, 106, 210, 0.16);
+  border-left-color: #5e6ad2;
   color: var(--color-primary-on-dark);
+}
+
+/* Week view chip */
+.week-chip {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 5px 8px;
+  border-radius: 5px;
+  border: none;
+  border-left: 3px solid #8a8f98;
+  background: var(--color-tile-2);
+  cursor: pointer;
+}
+.week-chip[data-status="in-progress"] {
+  background: rgba(94, 106, 210, 0.16);
+  border-left-color: #5e6ad2;
+}
+.week-chip[data-status="done"] {
+  background: rgba(39, 166, 68, 0.09);
+  border-left-color: #27a644;
+}
+.week-chip-time {
+  margin: 0 0 1px;
+  font-size: 10px;
+  color: var(--color-body-muted);
+  font-variant-numeric: tabular-nums;
+}
+.week-chip-title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-ink);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.week-chip[data-status="done"] .week-chip-title {
+  color: var(--color-status-done);
+  text-decoration: line-through;
 }

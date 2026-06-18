@@ -65,18 +65,8 @@ export function AppShell({ route, children, onNavigate }: AppShellProps) {
   const currentUser = state.currentUser
   const initial = currentUser?.displayName?.[0]?.toUpperCase() ?? "?"
 
-  const isGithubConnected = Boolean(
-    state.githubConfig && state.githubConfig.enabled,
-  )
-  const minsAgo = state.githubConfig?.lastSyncedAt
-    ? Math.max(
-        1,
-        Math.round(
-          (Date.now() - new Date(state.githubConfig.lastSyncedAt).getTime()) /
-            60000,
-        ),
-      )
-    : 0
+  const isGithubConnected = state.github.status === "connected"
+  const commitCount = state.github.linkedRepositories.length
 
   const unreadCount = state.notifications.filter((n) => !n.read).length
 
@@ -157,7 +147,7 @@ export function AppShell({ route, children, onNavigate }: AppShellProps) {
               className="sync-chip"
               title={
                 isGithubConnected
-                  ? t("sync.minutesAgo", { n: minsAgo })
+                  ? t("sync.connected")
                   : t("sync.disconnected")
               }>
               <span
@@ -165,7 +155,7 @@ export function AppShell({ route, children, onNavigate }: AppShellProps) {
               />
               <span>
                 {isGithubConnected
-                  ? t("sync.synced", { n: minsAgo })
+                  ? t("sync.synced", { n: commitCount })
                   : t("sync.offline")}
               </span>
             </div>

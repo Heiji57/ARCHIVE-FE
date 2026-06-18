@@ -24,3 +24,17 @@ export const DAY_FULL_KEYS: TranslationKey[] = [
   "calendar.days.saturday",
 ];
 
+/**
+ * Month-grid column headers in Monday-first order (Linear design).
+ * Distinct from DAY_ABBR_KEYS (Sun→Sat) which is indexed by Date.getDay().
+ */
+export const MONTH_HEADER_KEYS: TranslationKey[] = [
+  "calendar.days.mon",
+  "calendar.days.tue",
+  "calendar.days.wed",
+  "calendar.days.thu",
+  "calendar.days.fri",
+  "calendar.days.sat",
+  "calendar.days.sun",
+];
+

@@ -10,7 +10,7 @@ import {
   toDateKey,
 } from "@/shared/lib/date";
 import { useTranslation } from "@/shared/lib/i18n";
-import { DAY_ABBR_KEYS } from "../model/constants";
+import { MONTH_HEADER_KEYS } from "../model/constants";
 import { DayCell } from "./DayCell";
 import { DraggableMonthChip } from "./DraggableMonthChip";
 
@@ -30,7 +30,7 @@ export function MonthGrid({
   onSelect,
   onDropTodo,
 }: MonthGridProps) {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const cells = getMonthGrid(cursor);
   const anchorKey = todayKey;
 
@@ -46,7 +46,7 @@ export function MonthGrid({
           marginBottom: 8,
         }}
       >
-        {DAY_ABBR_KEYS.map((key, i) => (
+        {MONTH_HEADER_KEYS.map((key, i) => (
           <div
             key={i}
             style={{
@@ -55,7 +55,8 @@ export function MonthGrid({
               letterSpacing: "0.18em",
               fontWeight: 600,
               textTransform: "uppercase",
-              color: i === 0 ? "var(--color-warn)" : "var(--color-body-muted)",
+              // Sunday is the last column (index 6) in the Monday-first grid.
+              color: i === 6 ? "var(--color-warn)" : "var(--color-body-muted)",
             }}
           >
             {t(key)}
@@ -67,11 +68,7 @@ export function MonthGrid({
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(7, 1fr)",
-          gap: 1,
-          background: "var(--color-divider-soft)",
-          borderRadius: "var(--r-lg)",
-          overflow: "hidden",
-          border: "1px solid var(--color-divider-soft)",
+          gap: 4,
         }}
       >
         {cells.map((d) => {
@@ -89,14 +86,18 @@ export function MonthGrid({
               onDropTodo={onDropTodo}
               style={{
                 background: todayCell
-                  ? "rgba(94, 106, 210, 0.08)"
+                  ? "rgba(94, 106, 210, 0.06)"
                   : "var(--color-tile-1)",
                 minHeight: 124,
                 padding: 10,
-                opacity: inMonth ? 1 : 0.4,
+                opacity: inMonth ? 1 : 0.35,
                 display: "flex",
                 flexDirection: "column",
                 gap: 6,
+                borderRadius: "var(--r-sm)",
+                border: todayCell
+                  ? "1px solid var(--color-primary)"
+                  : "1px solid var(--color-divider-soft)",
               }}
             >
               <div
@@ -213,7 +214,7 @@ export function MonthGrid({
                   color: "var(--color-ink)",
                 }}
               >
-                {formatFullDate(fromDateKey(modalDate))}
+                {formatFullDate(fromDateKey(modalDate), locale)}
               </p>
               <button
                 type="button"

@@ -7,7 +7,6 @@ import type { Todo } from "@/entities/todo/model/types";
 import { fromDateKey } from "@/shared/lib/date";
 import { toDateKey } from "@/shared/lib/date";
 import { useCalendarNav } from "../model/useCalendarNav";
-import { CalendarLegend } from "./CalendarLegend";
 import { CalendarToolbar } from "./CalendarToolbar";
 import { DayTimeline } from "./DayTimeline";
 import { MonthGrid } from "./MonthGrid";
@@ -90,8 +89,6 @@ export function CalendarDashboard({ onNavigate }: CalendarDashboardProps) {
             onDropTodo={handleDropTodo}
           />
         )}
-
-        <CalendarLegend />
       </div>
 
       <div
