@@ -24,7 +24,10 @@ export async function apiCreateTodo(input: {
   /** UTC ISO datetime (localTimeToUtcISO 변환 후 전달) */
   startTimeUtc?: string | null;
   endTimeUtc?: string | null;
+  /** start_time/end_time 중 하나라도 있으면 필수 (api.yaml TodoCreateRequest) */
+  timezone?: string | null;
 }): Promise<Todo> {
+  const hasTime = input.startTimeUtc != null || input.endTimeUtc != null;
   const res = await request<TodoResponse>("/todos", {
     method: "POST",
     body: {
@@ -34,6 +37,7 @@ export async function apiCreateTodo(input: {
       status: input.status ?? "not-start",
       ...(input.startTimeUtc !== undefined && { start_time: input.startTimeUtc }),
       ...(input.endTimeUtc !== undefined && { end_time: input.endTimeUtc }),
+      ...(hasTime && { timezone: input.timezone ?? null }),
     },
   });
   return toTodo(res);

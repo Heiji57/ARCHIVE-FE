@@ -873,6 +873,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           description: options?.description,
           startTimeUtc: localTimeToUtcISO(resolvedDateKey, startTime, tz),
           endTimeUtc: localTimeToUtcISO(resolvedDateKey, endTime, tz),
+          timezone: tz ?? null,
         })
           .then((todo) => {
             dispatch({ type: "todo/upsert", payload: { todo } });
