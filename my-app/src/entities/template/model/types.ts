@@ -8,6 +8,8 @@ export interface RetroTemplate {
   content: string;
   /** true = one of the 4 built-in defaults (editable/resettable, not deletable) */
   isDefault: boolean;
+  /** true = currently active for this retroType (server-authoritative) */
+  isActive: boolean;
   createdAt: string;
   updatedAt: string;
 }

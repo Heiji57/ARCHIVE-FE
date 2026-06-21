@@ -21,6 +21,7 @@ export interface DayTimelineProps {
   selectedId: string | null;
   onSelect: (id: string) => void;
   onReschedule: (id: string, startTime: string, endTime: string) => void;
+  onAddTodo?: (title: string, dateKey: string, opts: { startTime: string; endTime: string }) => void;
 }
 
 const HOURS = Array.from({ length: 24 }, (_, h) => h);
@@ -105,6 +106,7 @@ export function DayTimeline({
   selectedId,
   onSelect,
   onReschedule,
+  onAddTodo,
 }: DayTimelineProps) {
   const { t } = useTranslation();
   const isToday = dayKey === todayKey;
@@ -127,8 +129,11 @@ export function DayTimeline({
 
   const [drag, setDrag] = useState<DragState | null>(null);
   const [nowMin, setNowMin] = useState(() => currentMinutes());
+  const [addState, setAddState] = useState<{ startMin: number } | null>(null);
+  const [addTitle, setAddTitle] = useState("");
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const trackRef = useRef<HTMLDivElement | null>(null);
+  const addInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (!isToday) return;
@@ -402,7 +407,21 @@ export function DayTimeline({
             </div>
           ) : null}
 
-          <div className="day-timeline-track" ref={trackRef}>
+          <div
+            className="day-timeline-track"
+            ref={trackRef}
+            onClick={(e) => {
+              if (!onAddTodo) return;
+              if ((e.target as Element).closest(".day-block")) return;
+              const rect = trackRef.current?.getBoundingClientRect();
+              if (!rect) return;
+              const relY = e.clientY - rect.top + (scrollRef.current?.scrollTop ?? 0);
+              const startMin = snap(Math.max(0, Math.min(MINUTES_IN_DAY - 60, relY / PX_PER_MIN)));
+              setAddState({ startMin });
+              setAddTitle("");
+              setTimeout(() => addInputRef.current?.focus(), 0);
+            }}
+          >
             {previewBlocks.map((b) => {
               const dragging = drag?.id === b.todo.id;
               const durationMin = b.endMin - b.startMin;
@@ -461,6 +480,52 @@ export function DayTimeline({
                 </div>
               );
             })}
+
+            {/* 빈 시간 클릭 → 인라인 추가 입력 */}
+            {addState ? (
+              <div
+                className="day-add-block"
+                style={{
+                  position: "absolute",
+                  top: addState.startMin * PX_PER_MIN,
+                  left: 2,
+                  right: 6,
+                  zIndex: 20,
+                }}
+              >
+                <input
+                  ref={addInputRef}
+                  className="day-add-input"
+                  placeholder={t("calendar.addCard.placeholder")}
+                  value={addTitle}
+                  onChange={(e) => setAddTitle(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && addTitle.trim()) {
+                      onAddTodo!(
+                        addTitle.trim(),
+                        dayKey,
+                        {
+                          startTime: formatTime(addState.startMin),
+                          endTime: formatTime(Math.min(MINUTES_IN_DAY, addState.startMin + 60)),
+                        },
+                      );
+                      setAddState(null);
+                      setAddTitle("");
+                    } else if (e.key === "Escape") {
+                      setAddState(null);
+                      setAddTitle("");
+                    }
+                  }}
+                  onBlur={() => {
+                    setAddState(null);
+                    setAddTitle("");
+                  }}
+                />
+                <span className="day-add-time">
+                  {formatTime(addState.startMin)} – {formatTime(Math.min(MINUTES_IN_DAY, addState.startMin + 60))}
+                </span>
+              </div>
+            ) : null}
           </div>
         </div>
       </div>

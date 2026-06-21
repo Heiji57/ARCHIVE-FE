@@ -21,9 +21,10 @@ export interface KanbanCardProps {
 function KanbanCardImpl({ todo, isDone, onUpdate, onSelect }: KanbanCardProps) {
   const { t } = useTranslation();
   const [dateOpen, setDateOpen] = useState(false);
-  const drag = useDraggable({ kind: KANBAN_DRAG_KIND, data: { id: todo.id } });
+  const { isDragging, ...dragHandlers } = useDraggable({ kind: KANBAN_DRAG_KIND, data: { id: todo.id } });
 
   const advance = () => {
+
     const next: TaskStatus =
       todo.status === "not-start"
         ? "in-progress"
@@ -37,8 +38,10 @@ function KanbanCardImpl({ todo, isDone, onUpdate, onSelect }: KanbanCardProps) {
     <div
       className="kanban-card"
       data-done={isDone ? "true" : undefined}
+      data-status={todo.status}
       data-draggable="true"
-      {...drag}
+      data-dragging={isDragging ? "true" : undefined}
+      {...dragHandlers}
     >
       <button
         type="button"

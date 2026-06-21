@@ -1,13 +1,3 @@
-/**
- * Lightweight, framework-agnostic Drag-and-Drop layer.
- *
- * Goals:
- *  - Mouse + touch via Pointer events (no HTML5 DnD quirks)
- *  - Identifies drops by "kind" + opaque payload, so the same primitive
- *    can be reused for todos→calendar cells, or future surfaces (e.g.
- *    dragging entries, reordering settings rows).
- *  - Surface code only consumes useDraggable / useDropTarget hooks.
- */
 import {
   createContext,
   useCallback,
@@ -26,10 +16,20 @@ export interface DragPayload<K extends DragKind = DragKind> {
   data: unknown;
 }
 
+/** 드래그 시작 시 캡처한 원본 요소 치수 + 포인터 오프셋. 고스트 크기·위치 계산에 사용. */
+export interface DragRect {
+  width: number;
+  height: number;
+  /** 요소 내 포인터의 상대 X (ghost를 클릭한 위치에 맞춰 정렬하기 위함). */
+  offsetX: number;
+  offsetY: number;
+}
+
 interface DragState {
   payload: DragPayload | null;
   pointer: { x: number; y: number } | null;
   overTargetId: string | null;
+  dragRect: DragRect | null;
 }
 
 interface DropHandler {
@@ -41,7 +41,11 @@ interface DropHandler {
 
 interface DndContextValue {
   state: DragState;
-  startDrag: (payload: DragPayload, pointer: { x: number; y: number }) => void;
+  startDrag: (
+    payload: DragPayload,
+    pointer: { x: number; y: number },
+    dragRect?: DragRect,
+  ) => void;
   endDrag: () => void;
   registerDrop: (handler: DropHandler) => () => void;
 }
@@ -53,18 +57,23 @@ export function DndProvider({ children }: { children: ReactNode }) {
     payload: null,
     pointer: null,
     overTargetId: null,
+    dragRect: null,
   });
   const handlersRef = useRef<Map<string, DropHandler>>(new Map());
 
   const startDrag = useCallback(
-    (payload: DragPayload, pointer: { x: number; y: number }) => {
-      setState({ payload, pointer, overTargetId: null });
+    (
+      payload: DragPayload,
+      pointer: { x: number; y: number },
+      dragRect?: DragRect,
+    ) => {
+      setState({ payload, pointer, overTargetId: null, dragRect: dragRect ?? null });
     },
     [],
   );
 
   const endDrag = useCallback(() => {
-    setState({ payload: null, pointer: null, overTargetId: null });
+    setState({ payload: null, pointer: null, overTargetId: null, dragRect: null });
   }, []);
 
   const registerDrop = useCallback((handler: DropHandler) => {
@@ -74,7 +83,15 @@ export function DndProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  // Global pointer move/up to track the active drag.
+  // 드래그 중 body에 data-dnd-dragging 부여 → CSS hover 억제 선택자에 사용
+  useEffect(() => {
+    if (state.payload) {
+      document.body.dataset.dndDragging = "true";
+    } else {
+      delete document.body.dataset.dndDragging;
+    }
+  }, [state.payload]);
+
   useEffect(() => {
     if (!state.payload) return;
 
@@ -109,7 +126,7 @@ export function DndProvider({ children }: { children: ReactNode }) {
           break;
         }
       }
-      setState({ payload: null, pointer: null, overTargetId: null });
+      setState({ payload: null, pointer: null, overTargetId: null, dragRect: null });
     };
 
     window.addEventListener("pointermove", onMove);

@@ -12,15 +12,16 @@ interface WeekChipProps {
 }
 
 const WeekChip = memo(function WeekChipImpl({ todo, onSelect }: WeekChipProps) {
-  const drag = useDraggable({ kind: TODO_DRAG_KIND, data: { id: todo.id } });
+  const { isDragging, ...dragHandlers } = useDraggable({ kind: TODO_DRAG_KIND, data: { id: todo.id } });
   return (
     <button
       type="button"
       onClick={onSelect}
       data-draggable="true"
+      data-dragging={isDragging ? "true" : undefined}
       data-status={todo.status}
       className="week-chip"
-      {...drag}
+      {...dragHandlers}
     >
       {todo.startTime ? (
         <p className="week-chip-time">{todo.startTime.slice(0, 5)}</p>

@@ -21,6 +21,9 @@ export async function apiCreateTodo(input: {
   dateKey: string;
   description?: string;
   status?: TaskStatus;
+  /** UTC ISO datetime (localTimeToUtcISO 변환 후 전달) */
+  startTimeUtc?: string | null;
+  endTimeUtc?: string | null;
 }): Promise<Todo> {
   const res = await request<TodoResponse>("/todos", {
     method: "POST",
@@ -29,20 +32,37 @@ export async function apiCreateTodo(input: {
       date_key: input.dateKey,
       description: input.description ?? "",
       status: input.status ?? "not-start",
+      ...(input.startTimeUtc !== undefined && { start_time: input.startTimeUtc }),
+      ...(input.endTimeUtc !== undefined && { end_time: input.endTimeUtc }),
     },
   });
   return toTodo(res);
 }
 
+/**
+ * Todo 부분 수정. 시간 필드는 UTC ISO datetime + IANA timezone 으로 전송한다
+ * (api.yaml TodoUpdateRequest: omit=unchanged, null=clear, string=set).
+ */
 export async function apiUpdateTodo(
   id: string,
-  patch: Partial<Pick<Todo, "title" | "status" | "description" | "dateKey">>,
+  patch: Partial<
+    Pick<Todo, "title" | "status" | "description" | "dateKey">
+  > & {
+    /** UTC ISO datetime 또는 null(clear). omit 시 미변경. */
+    startTime?: string | null;
+    endTime?: string | null;
+    /** start/end 중 하나라도 non-null 로 설정 시 필수. */
+    timezone?: string | null;
+  },
 ): Promise<Todo> {
   const body: components["schemas"]["TodoUpdateRequest"] = {};
   if (patch.title !== undefined) body.title = patch.title;
   if (patch.status !== undefined) body.status = patch.status;
   if (patch.description !== undefined) body.description = patch.description;
   if (patch.dateKey !== undefined) body.date_key = patch.dateKey;
+  if (patch.startTime !== undefined) body.start_time = patch.startTime;
+  if (patch.endTime !== undefined) body.end_time = patch.endTime;
+  if (patch.timezone !== undefined) body.timezone = patch.timezone;
   const res = await request<TodoResponse>(`/todos/${id}`, {
     method: "PATCH",
     body,

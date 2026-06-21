@@ -17,16 +17,63 @@
   outline-offset: -4px;
 }
 
+/* 드래그 중인 원본 요소 — 반투명 처리 */
+[data-dragging="true"] {
+  opacity: 0.3;
+  transition: opacity 100ms;
+}
+
+/* 드래그 고스트 진행 중에는 다른 카드들의 hover 효과 전부 억제 */
+body[data-dnd-dragging] .kanban-card:hover,
+body[data-dnd-dragging] .week-chip:hover,
+body[data-dnd-dragging] .todo-month-chip:hover,
+body[data-dnd-dragging] .day-block:hover {
+  transform: none !important;
+  box-shadow: none !important;
+  filter: none !important;
+  background: revert !important;
+  border-color: revert !important;
+}
+
+/* 마우스를 따라다니는 드래그 고스트 카드 */
 .drag-ghost {
   position: fixed;
   pointer-events: none;
-  z-index: 100;
+  z-index: 9999;
   background: var(--color-tile-1);
-  border: 1px solid var(--color-primary);
+  border: 1.5px solid var(--color-primary);
   border-radius: var(--r-md);
-  padding: 8px 12px;
-  box-shadow: var(--shadow-toast);
+  padding: 10px 14px 11px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(94, 106, 210, 0.15);
+  box-sizing: border-box;
+  overflow: hidden;
+  opacity: 0.95;
+  transform: rotate(1.5deg);
+}
+.drag-ghost-title {
+  margin: 0;
   font-size: 13px;
-  max-width: 260px;
-  opacity: 0.92;
+  font-weight: 600;
+  letter-spacing: -0.14px;
+  color: var(--color-ink);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.drag-ghost-meta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 6px;
+}
+.drag-ghost-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.drag-ghost-date {
+  font-size: 11px;
+  color: var(--color-body-muted);
+  font-variant-numeric: tabular-nums;
 }

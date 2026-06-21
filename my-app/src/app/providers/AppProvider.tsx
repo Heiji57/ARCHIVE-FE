@@ -1,6 +1,7 @@
 import {
   useCallback,
   useEffect,
+  useMemo,
   useReducer,
   useRef,
   useState,
@@ -46,19 +47,23 @@ import {
   type SummaryKind,
   type SummaryReadiness,
 } from "@/entities/summary/model/types";
-import { getTodosInRange } from "@/entities/todo/lib/selectors";
+import type { Todo } from "@/entities/todo/model/types";
+import { getTodosInRange, sortTodos } from "@/entities/todo/lib/selectors";
 import { getEntriesInRange } from "@/entities/entry/lib/selectors";
-import { DEMO_ANCHOR_DATE_KEY } from "@/app/config/demo";
+import { DEMO_ANCHOR_DATE_KEY, isDemoMode } from "@/app/config/demo";
 import {
+  computeAutoTodoTime,
   endOfMonth,
   endOfWeek,
   endOfYear,
   fromDateKey,
+  localTimeToUtcISO,
   startOfMonth,
   startOfWeek,
   startOfYear,
   todayKeyInTz,
 } from "@/shared/lib/date";
+import { createCoalescingQueue } from "@/shared/lib/coalesce";
 import { createId } from "@/shared/lib/id";
 import { translate } from "@/shared/lib/i18n";
 import { ConfirmModal } from "@/shared/ui";
@@ -109,9 +114,15 @@ import {
   apiUpdateProfile,
   apiUpdateRepo,
   apiUpdateSettings,
+  apiUpdateTemplate,
   apiUpdateTodo,
   apiUpsertEntry,
   apiVerifyEmailCode,
+  apiListTemplates,
+  apiCreateTemplate,
+  apiDeleteTemplate,
+  apiResetTemplate,
+  apiSetActiveTemplate,
   streamNotifications,
   streamSummary,
   summaryContentToMarkdown,
@@ -525,6 +536,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
         dispatch({ type: "hydrate/notifications", payload: { notifications } }),
       )
       .catch(() => {});
+    void apiListTemplates()
+      .then((templates) => {
+        // is_active 플래그로 각 retroType의 활성 템플릿 ID 추출
+        const activeIds: Record<string, string> = {};
+        for (const t of templates) {
+          if (t.isActive) activeIds[t.retroType] = t.id;
+        }
+        dispatch({
+          type: "hydrate/templates",
+          payload: { templates, activeTemplateIds: activeIds },
+        });
+      })
+      .catch(() => {});
   }, [state.currentUser?.id]);
 
   // ─── GitHub 연결 프로브 (API·mock 양쪽) ──────────────────────────────────────
@@ -574,14 +598,131 @@ export function AppProvider({ children }: { children: ReactNode }) {
       { transient: true },
     );
   };
+  // ─── 디바운스 코얼레싱 큐 ────────────────────────────────────────────────────
+  // 변경이 잦은 서버 쓰기(todo/회고/설정/프로필)를 idle 후 1회로 합쳐 보낸다.
+  // UI 는 각 핸들러에서 즉시 낙관적 dispatch 하므로 체감 지연은 없다.
+  const COALESCE_MS = 1000;
+
+  // 큐 send 클로저는 1회만 생성되므로 최신 state 를 ref 로 참조한다.
+  const reportApiErrorRef = useRef<() => void>(() => {});
+  reportApiErrorRef.current = reportApiError;
+  const latestRef = useRef({
+    settings: state.settings,
+    entries: state.entries,
+  });
+  latestRef.current = { settings: state.settings, entries: state.entries };
+
+  type TodoQueuePatch = Partial<
+    Pick<Todo, "title" | "status" | "description" | "dateKey">
+  > & { startTime?: string | null; endTime?: string | null; timezone?: string | null };
+  type EntryQueuePatch = Partial<
+    Pick<JournalEntry, "title" | "content" | "retroType">
+  >;
+  type ProfileQueuePatch = Partial<Pick<User, "displayName" | "avatarUrl">>;
+  type TemplateQueuePatch = { name?: string | null; content?: string | null };
+
+  const todoQueueRef = useRef<ReturnType<
+    typeof createCoalescingQueue<TodoQueuePatch>
+  > | null>(null);
+  const entryQueueRef = useRef<ReturnType<
+    typeof createCoalescingQueue<EntryQueuePatch>
+  > | null>(null);
+  const settingsQueueRef = useRef<ReturnType<
+    typeof createCoalescingQueue<Partial<AppSettings>>
+  > | null>(null);
+  const profileQueueRef = useRef<ReturnType<
+    typeof createCoalescingQueue<ProfileQueuePatch>
+  > | null>(null);
+  const templateQueueRef = useRef<ReturnType<
+    typeof createCoalescingQueue<TemplateQueuePatch>
+  > | null>(null);
+
+  if (!todoQueueRef.current) {
+    todoQueueRef.current = createCoalescingQueue<TodoQueuePatch>({
+      delayMs: COALESCE_MS,
+      send: (id, merged) => apiUpdateTodo(id, merged),
+      onError: () => reportApiErrorRef.current(),
+    });
+  }
+  if (!entryQueueRef.current) {
+    entryQueueRef.current = createCoalescingQueue<EntryQueuePatch>({
+      delayMs: COALESCE_MS,
+      send: (id, merged) => {
+        const base = latestRef.current.entries.find((e) => e.id === id);
+        if (!base) return Promise.resolve();
+        return apiUpsertEntry(id, {
+          dateKey: base.dateKey,
+          title: merged.title ?? base.title,
+          content: merged.content ?? base.content,
+          retroType: merged.retroType ?? base.retroType,
+        });
+      },
+      onError: () => reportApiErrorRef.current(),
+    });
+  }
+  if (!settingsQueueRef.current) {
+    settingsQueueRef.current = createCoalescingQueue<Partial<AppSettings>>({
+      delayMs: COALESCE_MS,
+      // settings 는 전체 교체(PUT) — 누적 patch(기본 merge: undefined 무시, 최신 우선)를
+      // send 시점의 최신 settings 에 합쳐 보낸다. autoSummary 는 호출부에서 항상
+      // 완전한 객체를 넘기므로 last-wins 로 충분하다.
+      send: (_key, merged) => {
+        const cur = latestRef.current.settings;
+        const full: AppSettings = {
+          ...cur,
+          ...merged,
+          autoSummary: { ...cur.autoSummary, ...(merged.autoSummary ?? {}) },
+        };
+        return apiUpdateSettings(full);
+      },
+      onError: () => reportApiErrorRef.current(),
+    });
+  }
+  if (!profileQueueRef.current) {
+    profileQueueRef.current = createCoalescingQueue<ProfileQueuePatch>({
+      delayMs: COALESCE_MS,
+      send: (_key, merged) => apiUpdateProfile(merged),
+      onError: () => reportApiErrorRef.current(),
+    });
+  }
+  if (!templateQueueRef.current) {
+    templateQueueRef.current = createCoalescingQueue<TemplateQueuePatch>({
+      delayMs: COALESCE_MS,
+      send: (id, merged) => apiUpdateTemplate(id, merged),
+      onError: () => reportApiErrorRef.current(),
+    });
+  }
+
+  const todoQueue = todoQueueRef.current;
+  const entryQueue = entryQueueRef.current;
+  const settingsQueue = settingsQueueRef.current;
+  const profileQueue = profileQueueRef.current;
+  const templateQueue = templateQueueRef.current;
+
+  // 페이지 이탈/탭 숨김 시 대기 중 변경을 즉시 전송해 유실 창을 최소화.
+  useEffect(() => {
+    if (!USE_API) return;
+    const flushAll = () => {
+      todoQueue.flushAll();
+      entryQueue.flushAll();
+      settingsQueue.flushAll();
+      profileQueue.flushAll();
+      templateQueue.flushAll();
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") flushAll();
+    };
+    window.addEventListener("beforeunload", flushAll);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.removeEventListener("beforeunload", flushAll);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [todoQueue, entryQueue, settingsQueue, profileQueue, templateQueue]);
+
   // 설정은 전체 교체(PUT)이므로 현재 settings 에 patch 를 합쳐 전송.
   const syncSettings = (patch: Partial<AppSettings>) => {
-    const next: AppSettings = {
-      ...state.settings,
-      ...patch,
-      autoSummary: { ...state.settings.autoSummary, ...(patch.autoSummary ?? {}) },
-    };
-    return apiUpdateSettings(next).catch(() => reportApiError());
+    settingsQueue.enqueue("settings", patch);
   };
 
   // ─── GitHub 저장소 연동 (서버 모델) ──────────────────────────────────────────
@@ -605,6 +746,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const runGitHubRefresh = () => {
+    // 데모: GitHub 연결을 제공하지 않는다(가짜 연결/목 데이터 없이 미연결 유지).
+    if (isDemoMode()) {
+      dispatch({
+        type: "github/setLinked",
+        payload: {
+          status: "not-connected",
+          repositories: [],
+          login: null,
+          pushTargetRepositoryId: null,
+          hasVerifiedEmails: false,
+        },
+      });
+      return;
+    }
     if (!USE_API) {
       // mock: "연결됨"으로 간주, 기존 연결 목록 유지, login=developer
       dispatch({
@@ -691,8 +846,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   // ─── Context value ────────────────────────────────────────────────────────
+  const sortedTodos = useMemo(() => sortTodos(state.todos), [state.todos]);
+  const sortedState = useMemo(
+    () => ({ ...state, todos: sortedTodos }),
+    [state, sortedTodos],
+  );
   const value: ArchiveAppContextValue = {
-    state,
+    state: sortedState,
     isDemo,
     addTodo: (title, dateKey, options, onCreated) => {
       // 기본 날짜("오늘")는 user.timezone 기준 (데모는 앵커 날짜)
@@ -701,13 +861,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
         (isDemo
           ? DEMO_ANCHOR_DATE_KEY
           : todayKeyInTz(state.currentUser?.timezone ?? undefined));
+      // 현재 시각 기준으로 다음 30분 경계를 시작 시간으로 자동 설정
+      const { startTime, endTime } = computeAutoTodoTime();
       if (USE_API) {
+        const tz = state.currentUser?.timezone ?? undefined;
         // 서버가 id 를 발급하므로 생성은 await 후 dispatch
         void apiCreateTodo({
           title,
           dateKey: resolvedDateKey,
           status: options?.status,
           description: options?.description,
+          startTimeUtc: localTimeToUtcISO(resolvedDateKey, startTime, tz),
+          endTimeUtc: localTimeToUtcISO(resolvedDateKey, endTime, tz),
         })
           .then((todo) => {
             dispatch({ type: "todo/upsert", payload: { todo } });
@@ -725,25 +890,38 @@ export function AppProvider({ children }: { children: ReactNode }) {
           dateKey: resolvedDateKey,
           status: options?.status,
           description: options?.description,
+          startTime,
+          endTime,
         },
       });
       onCreated?.(newId);
     },
     updateTodo: (id, patch) => {
       dispatch({ type: "todo/update", payload: { id, patch } }); // 낙관적
-      if (USE_API) void apiUpdateTodo(id, patch).catch(() => reportApiError());
+      // 디바운스 코얼레싱 — 빠른 연속 수정(제목/설명 등)을 idle 후 1회 PATCH 로 합침.
+      if (USE_API) todoQueue.enqueue(id, patch);
     },
     moveTodo: (id, dateKey) => {
       dispatch({ type: "todo/move", payload: { id, dateKey } }); // 낙관적
-      if (USE_API)
-        void apiUpdateTodo(id, { dateKey }).catch(() => reportApiError());
+      // updateTodo 와 같은 id 큐를 공유 → 수정+이동이 1회 PATCH 로 머지됨.
+      if (USE_API) todoQueue.enqueue(id, { dateKey });
     },
     setTodoTime: (id, startTime, endTime) => {
-      // 로컬 전용: api.yaml Todo 에 시간 필드가 없어 서버 전송 없이 상태만 갱신한다.
-      // (계약 간극 — 백엔드에 start_time/end_time 추가 시 apiUpdateTodo 로 연동 가능.)
       dispatch({
         type: "todo/update",
         payload: { id, patch: { startTime, endTime } },
+      }); // 낙관적 (로컬 "HH:mm")
+      if (!USE_API) return;
+      // 서버는 UTC ISO + timezone 으로 보관 → 할 일 날짜·사용자 timezone 으로 환산.
+      const todo = state.todos.find((t) => t.id === id);
+      const dateKey = todo?.dateKey;
+      if (!dateKey) return;
+      const tz = state.currentUser?.timezone ?? undefined;
+      const hasTime = Boolean(startTime || endTime);
+      todoQueue.enqueue(id, {
+        startTime: startTime ? localTimeToUtcISO(dateKey, startTime, tz) : null,
+        endTime: endTime ? localTimeToUtcISO(dateKey, endTime, tz) : null,
+        timezone: hasTime ? (tz ?? null) : null,
       });
     },
     updateEntry: (id, patch) => {
@@ -752,18 +930,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (patch.content !== undefined || patch.title !== undefined) {
         readinessCacheRef.current.clear();
       }
-      // USE_API=true 일 때는 서버의 githubPush 필드로 synced 를 결정한다.
-      // localStorage 서명(retroSyncStore) 은 더 이상 사용하지 않는다.
+      // 디바운스 코얼레싱 — 본문 타이핑을 idle 후 1회 upsert 로 합침.
+      // (synced 는 서버 githubPush 필드 기반 — base 는 send 시점 최신값 사용)
       if (USE_API) {
-        const base = state.entries.find((e) => e.id === id);
-        if (base) {
-          void apiUpsertEntry(id, {
-            dateKey: base.dateKey,
-            title: patch.title ?? base.title,
-            content: patch.content ?? base.content,
-            retroType: patch.retroType ?? base.retroType,
-          }).catch(() => reportApiError());
-        }
+        entryQueue.enqueue(id, {
+          title: patch.title,
+          content: patch.content,
+          retroType: patch.retroType,
+        });
       }
     },
     createDailyEntry: (dateKey, onIdReplaced) => {
@@ -1114,26 +1288,73 @@ export function AppProvider({ children }: { children: ReactNode }) {
     },
     // ─── Templates ──────────────────────────────────────────────────────────
     addTemplate: (retroType, name, content) => {
+      const localId = createId("template");
       const template: RetroTemplate = {
-        id: createId("template"),
+        id: localId,
         name,
         retroType,
         content,
         isDefault: false,
+        isActive: false,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
       dispatch({ type: "template/add", payload: { template } });
+      if (USE_API) {
+        void apiCreateTemplate({ retroType, name, content })
+          .then((serverTemplate) => {
+            // 로컬 낙관적 ID → 서버 ID 교체
+            dispatch({
+              type: "template/replaceId",
+              payload: { localId, serverTemplate },
+            });
+          })
+          .catch(() => reportApiError());
+      }
       return template;
     },
-    updateTemplate: (id, patch) =>
-      dispatch({ type: "template/update", payload: { id, patch } }),
-    deleteTemplate: (id) =>
-      dispatch({ type: "template/delete", payload: { id } }),
-    resetTemplate: (retroType) =>
-      dispatch({ type: "template/resetDefault", payload: { retroType } }),
-    setActiveTemplate: (retroType, id) =>
-      dispatch({ type: "template/setActive", payload: { retroType, id } }),
+    updateTemplate: (id, patch) => {
+      dispatch({ type: "template/update", payload: { id, patch } });
+      if (USE_API) {
+        templateQueue.enqueue(id, {
+          name: patch.name,
+          content: patch.content,
+        });
+      }
+    },
+    deleteTemplate: (id) => {
+      dispatch({ type: "template/delete", payload: { id } });
+      if (USE_API) {
+        void apiDeleteTemplate(id).catch(() => reportApiError());
+      }
+    },
+    resetTemplate: (retroType) => {
+      dispatch({ type: "template/resetDefault", payload: { retroType } });
+      if (USE_API) {
+        const defaultTpl = state.templates.find(
+          (t) => t.retroType === retroType && t.isDefault,
+        );
+        if (defaultTpl) {
+          void apiResetTemplate(defaultTpl.id)
+            .then((serverTemplate) => {
+              dispatch({
+                type: "template/update",
+                payload: {
+                  id: serverTemplate.id,
+                  patch: { content: serverTemplate.content, name: serverTemplate.name },
+                },
+              });
+            })
+            .catch(() => reportApiError());
+        }
+      }
+    },
+    setActiveTemplate: (retroType, id) => {
+      dispatch({ type: "template/setActive", payload: { retroType, id } });
+      if (USE_API) {
+        void apiSetActiveTemplate(retroType, id).catch(() => reportApiError());
+      }
+    },
     // ─── Auth ────────────────────────────────────────────────────────────
     // USE_API 플래그로 실제 API ↔ mock 을 전환한다.
     login: async (email, password, rememberMe) => {
@@ -1149,7 +1370,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
       return result;
     },
     logout: () => {
-      if (USE_API) void apiLogout();
+      if (USE_API) {
+        // 대기 중 변경을 세션 종료 전에 모두 전송.
+        todoQueue.flushAll();
+        entryQueue.flushAll();
+        settingsQueue.flushAll();
+        profileQueue.flushAll();
+        templateQueue.flushAll();
+        void apiLogout();
+      }
       dispatch({ type: "auth/logout" });
     },
     requestEmailCode: (email, mode) =>
@@ -1204,8 +1433,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         ? apiConfirmPasswordReset(token, newPassword, newPasswordConfirm)
         : mockConfirmPasswordReset(token, newPassword),
     updateProfile: (patch: Partial<Pick<User, "displayName" | "avatarUrl">>) => {
-      if (USE_API) void apiUpdateProfile(patch);
-      dispatch({ type: "auth/updateProfile", payload: { patch } });
+      dispatch({ type: "auth/updateProfile", payload: { patch } }); // 낙관적
+      // 디바운스 코얼레싱 — displayName 타이핑을 idle 후 1회 PATCH 로 합침.
+      if (USE_API) profileQueue.enqueue("profile", patch);
     },
     // ─── 지역/시간대 ────────────────────────────────────────────────────────
     /**

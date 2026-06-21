@@ -23,6 +23,7 @@ import { SettingsPage } from "@/pages/settings/ui/SettingsPage";
 import { SignupPage } from "@/pages/signup/ui/SignupPage";
 import { TodosPage } from "@/pages/todos/ui/TodosPage";
 import { DndProvider } from "@/shared/lib/dnd";
+import { TodoDragGhost } from "@/app/TodoDragGhost";
 import { I18nProvider } from "@/shared/lib/i18n";
 import { AppShell } from "@/widgets/app-shell";
 import { ToastViewport } from "@/widgets/notifications";
@@ -102,6 +103,7 @@ function LocalizedShell({
   return (
     <I18nProvider locale={state.settings.locale}>
       <DndProvider>
+        <TodoDragGhost />
         <AuthGate
           resolved={resolved}
           navigateApp={navigateApp}

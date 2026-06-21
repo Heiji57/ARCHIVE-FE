@@ -104,6 +104,60 @@ export function todayKeyInTz(timeZone?: string): string {
   }
 }
 
+/** date 시점에서 IANA timeZone 의 UTC 대비 오프셋(ms). (wall = utc + offset) */
+function tzOffsetMs(date: Date, timeZone: string): number {
+  const dtf = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    hourCycle: "h23",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+  const parts = dtf.formatToParts(date);
+  const map: Record<string, number> = {};
+  for (const p of parts) if (p.type !== "literal") map[p.type] = Number(p.value);
+  const asUTC = Date.UTC(
+    map.year,
+    map.month - 1,
+    map.day,
+    map.hour,
+    map.minute,
+    map.second,
+  );
+  return asUTC - date.getTime();
+}
+
+/**
+ * dateKey(YYYY-MM-DD) + "HH:mm" 벽시계 시각(timeZone 기준)을 UTC ISO 문자열로 변환.
+ * 서버 Todo start_time/end_time(UTC) 전송용. timeZone 생략 시 브라우저 로컬.
+ */
+export function localTimeToUtcISO(
+  dateKey: string,
+  hhmm: string,
+  timeZone?: string,
+): string {
+  const guess = Date.parse(`${dateKey}T${hhmm}:00Z`); // 벽시계를 UTC 로 가정
+  if (Number.isNaN(guess)) return new Date().toISOString();
+  if (!timeZone) return new Date(guess).toISOString();
+  const offset = tzOffsetMs(new Date(guess), timeZone);
+  return new Date(guess - offset).toISOString();
+}
+
+/** UTC ISO 문자열을 timeZone 기준 "HH:mm" 벽시계 시각으로 변환. (서버 → FE 표시용) */
+export function utcISOToLocalTime(iso: string, timeZone?: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return new Intl.DateTimeFormat("en-GB", {
+    timeZone,
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).format(d);
+}
+
 export function isSameMonth(left: Date, right: Date) {
   return (
     left.getFullYear() === right.getFullYear() &&
@@ -275,4 +329,24 @@ export function isHiddenAfterDone(completedAt: string | null | undefined, now = 
   const t = new Date(completedAt).getTime();
   if (Number.isNaN(t)) return false;
   return now - t >= 24 * 60 * 60 * 1000;
+}
+
+/**
+ * 현재 시각 기준으로 다음 30분 경계를 시작 시간으로, 1시간 후를 종료 시간으로 반환.
+ * 예: 3:12 → { startTime: "03:30", endTime: "04:30" }
+ *     3:45 → { startTime: "04:00", endTime: "05:00" }
+ */
+export function computeAutoTodoTime(): { startTime: string; endTime: string } {
+  const now = new Date();
+  const h = now.getHours();
+  const m = now.getMinutes();
+  const rawStartM = Math.ceil(m / 30) * 30;
+  const startH = rawStartM >= 60 ? (h + 1) % 24 : h;
+  const startM = rawStartM >= 60 ? 0 : rawStartM;
+  const endH = (startH + 1) % 24;
+  const endM = startM;
+  return {
+    startTime: `${pad(startH)}:${pad(startM)}`,
+    endTime: `${pad(endH)}:${pad(endM)}`,
+  };
 }

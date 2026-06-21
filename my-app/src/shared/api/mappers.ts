@@ -8,9 +8,11 @@ import type {
   NoticeType,
   NotificationItem,
 } from "@/entities/notification/model/types";
+import type { RetroTemplate } from "@/entities/template/model/types";
 import type { Todo } from "@/entities/todo/model/types";
 import type { OAuthProvider, User } from "@/entities/user/model/types";
 import type { AppSettings, Locale } from "@/app/model/settings";
+import { utcISOToLocalTime } from "@/shared/lib/date";
 import type { components } from "./schema";
 
 type UserResponse = components["schemas"]["UserResponse"];
@@ -18,6 +20,7 @@ type TodoResponse = components["schemas"]["TodoResponse"];
 type EntryResponse = components["schemas"]["EntryResponse"];
 type SettingsResponse = components["schemas"]["SettingsResponse"];
 type NotificationResponse = components["schemas"]["NotificationResponse"];
+type RetroTemplateResponse = components["schemas"]["RetroTemplateResponse"];
 
 /**
  * API UserResponse({id,email})를 FE User 로 변환.
@@ -46,6 +49,13 @@ export function toUser(
 
 // ─── Todo ─────────────────────────────────────────────────────────────────
 export function toTodo(api: TodoResponse): Todo {
+  // 서버는 시간을 UTC ISO + timezone 으로 보관 → FE 표시는 "HH:mm" 벽시계로 환산.
+  const startTime = api.start_time
+    ? utcISOToLocalTime(api.start_time, api.timezone ?? undefined)
+    : null;
+  const endTime = api.end_time
+    ? utcISOToLocalTime(api.end_time, api.timezone ?? undefined)
+    : null;
   return {
     id: api.id,
     title: api.title,
@@ -55,6 +65,8 @@ export function toTodo(api: TodoResponse): Todo {
     description: api.description,
     createdAt: api.created_at,
     completedAt: api.completed_at ?? null,
+    startTime,
+    endTime,
   };
 }
 
@@ -128,5 +140,18 @@ export function toNotification(api: NotificationResponse): NotificationItem {
     message: api.message,
     timestamp: api.created_at,
     read: api.is_read,
+  };
+}
+
+export function toTemplate(api: RetroTemplateResponse): RetroTemplate {
+  return {
+    id: api.id,
+    name: api.name,
+    retroType: api.retro_type,
+    content: api.content,
+    isDefault: api.is_default,
+    isActive: api.is_active,
+    createdAt: api.created_at,
+    updatedAt: api.updated_at ?? api.created_at,
   };
 }

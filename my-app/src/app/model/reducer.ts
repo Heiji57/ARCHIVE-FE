@@ -21,6 +21,8 @@ export function appReducer(state: AppState, action: AppAction): AppState {
             action.payload.status,
             action.payload.description,
             action.payload.id,
+            action.payload.startTime,
+            action.payload.endTime,
           ),
         ],
       };
@@ -72,6 +74,16 @@ export function appReducer(state: AppState, action: AppAction): AppState {
 
     case "hydrate/settings":
       return { ...state, settings: action.payload.settings };
+
+    case "hydrate/templates":
+      return {
+        ...state,
+        templates: action.payload.templates,
+        activeTemplateIds: {
+          ...state.activeTemplateIds,
+          ...action.payload.activeTemplateIds,
+        },
+      };
 
     case "entry/update":
       return {
@@ -310,6 +322,21 @@ export function appReducer(state: AppState, action: AppAction): AppState {
         templates: [...state.templates, action.payload.template],
       };
 
+    case "template/replaceId": {
+      const { localId, serverTemplate } = action.payload;
+      const nextActive = { ...state.activeTemplateIds };
+      if (nextActive[serverTemplate.retroType] === localId) {
+        nextActive[serverTemplate.retroType] = serverTemplate.id;
+      }
+      return {
+        ...state,
+        templates: state.templates.map((t) =>
+          t.id === localId ? serverTemplate : t,
+        ),
+        activeTemplateIds: nextActive,
+      };
+    }
+
     case "template/update":
       return {
         ...state,
@@ -401,6 +428,8 @@ function createTodo(
   status: Todo["status"] = "not-start",
   description = "",
   id?: string,
+  startTime?: string,
+  endTime?: string,
 ): Todo {
   const now = new Date().toISOString();
   return {
@@ -412,6 +441,8 @@ function createTodo(
     completedAt: status === "done" ? now : null,
     status,
     description,
+    startTime: startTime ?? null,
+    endTime: endTime ?? null,
   };
 }
 

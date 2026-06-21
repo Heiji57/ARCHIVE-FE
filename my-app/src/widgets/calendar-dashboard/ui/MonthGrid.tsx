@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { X } from "lucide-react";
+import { useRef, useState } from "react";
+import { Plus, X } from "lucide-react";
 import type { Todo } from "@/entities/todo/model/types";
 import { StatusIcon } from "@/entities/todo/ui/StatusIcon";
 import {
@@ -17,10 +17,10 @@ import { DraggableMonthChip } from "./DraggableMonthChip";
 export interface MonthGridProps {
   cursor: Date;
   byDate: Record<string, Todo[]>;
-  /** "오늘" 로 강조할 날짜 키 (실제 오늘 또는 데모 앵커). */
   todayKey: string;
   onSelect: (id: string) => void;
   onDropTodo: (todoId: string, dateKey: string) => void;
+  onAddTodo: (title: string, dateKey: string) => void;
 }
 
 export function MonthGrid({
@@ -29,13 +29,49 @@ export function MonthGrid({
   todayKey,
   onSelect,
   onDropTodo,
+  onAddTodo,
 }: MonthGridProps) {
   const { t, locale } = useTranslation();
   const cells = getMonthGrid(cursor);
   const anchorKey = todayKey;
 
   const [modalDate, setModalDate] = useState<string | null>(null);
+  const [hoverDate, setHoverDate] = useState<string | null>(null);
+  const [addingDate, setAddingDate] = useState<string | null>(null);
+  const [addingTitle, setAddingTitle] = useState("");
+  const [modalAdding, setModalAdding] = useState(false);
+  const [modalAddTitle, setModalAddTitle] = useState("");
+  const cellInputRef = useRef<HTMLInputElement | null>(null);
+  const modalInputRef = useRef<HTMLInputElement | null>(null);
   const modalTodos = modalDate ? (byDate[modalDate] ?? []) : [];
+
+  const startCellAdd = (dateKey: string) => {
+    setAddingDate(dateKey);
+    setAddingTitle("");
+    setTimeout(() => cellInputRef.current?.focus(), 0);
+  };
+
+  const commitCellAdd = () => {
+    if (addingTitle.trim() && addingDate) {
+      onAddTodo(addingTitle.trim(), addingDate);
+    }
+    setAddingDate(null);
+    setAddingTitle("");
+  };
+
+  const startModalAdd = () => {
+    setModalAdding(true);
+    setModalAddTitle("");
+    setTimeout(() => modalInputRef.current?.focus(), 0);
+  };
+
+  const commitModalAdd = () => {
+    if (modalAddTitle.trim() && modalDate) {
+      onAddTodo(modalAddTitle.trim(), modalDate);
+    }
+    setModalAdding(false);
+    setModalAddTitle("");
+  };
 
   return (
     <div>
@@ -55,7 +91,6 @@ export function MonthGrid({
               letterSpacing: "0.18em",
               fontWeight: 600,
               textTransform: "uppercase",
-              // Sunday is the last column (index 6) in the Monday-first grid.
               color: i === 6 ? "var(--color-warn)" : "var(--color-body-muted)",
             }}
           >
@@ -78,6 +113,8 @@ export function MonthGrid({
           const items = byDate[k] ?? [];
           const visible = items.slice(0, 3);
           const more = items.length - visible.length;
+          const isHovered = hoverDate === k;
+          const isAdding = addingDate === k;
 
           return (
             <DayCell
@@ -98,8 +135,12 @@ export function MonthGrid({
                 border: todayCell
                   ? "1px solid var(--color-primary)"
                   : "1px solid var(--color-divider-soft)",
+                position: "relative",
               }}
+              onMouseEnter={() => setHoverDate(k)}
+              onMouseLeave={() => { if (!isAdding) setHoverDate(null); }}
             >
+              {/* 날짜 헤더 */}
               <div
                 style={{
                   display: "flex",
@@ -118,21 +159,46 @@ export function MonthGrid({
                 >
                   {d.getDate()}
                 </span>
-                {todayCell ? (
-                  <span
-                    style={{
-                      fontSize: 9,
-                      letterSpacing: "0.14em",
-                      color: "var(--color-primary-on-dark)",
-                      fontWeight: 600,
-                      textTransform: "uppercase",
-                    }}
-                  >
-                    {t("calendar.today")}
-                  </span>
-                ) : null}
+                <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                  {todayCell ? (
+                    <span
+                      style={{
+                        fontSize: 9,
+                        letterSpacing: "0.14em",
+                        color: "var(--color-primary-on-dark)",
+                        fontWeight: 600,
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      {t("calendar.today")}
+                    </span>
+                  ) : null}
+                  {/* hover 시 + 버튼 */}
+                  {(isHovered || isAdding) && inMonth ? (
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); startCellAdd(k); }}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        width: 18,
+                        height: 18,
+                        borderRadius: 4,
+                        background: "var(--color-primary)",
+                        border: "none",
+                        cursor: "default",
+                        flexShrink: 0,
+                      }}
+                      title="할일 추가"
+                    >
+                      <Plus size={11} color="#fff" strokeWidth={2.5} />
+                    </button>
+                  ) : null}
+                </div>
               </div>
 
+              {/* 칩 목록 */}
               <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
                 {visible.map((item) => (
                   <DraggableMonthChip
@@ -152,7 +218,7 @@ export function MonthGrid({
                       background: "transparent",
                       border: "none",
                       padding: "2px 0",
-                      cursor: "pointer",
+                      cursor: "default",
                       textAlign: "left",
                     }}
                   >
@@ -160,6 +226,30 @@ export function MonthGrid({
                   </button>
                 ) : null}
               </div>
+
+              {/* 인라인 추가 입력 */}
+              {isAdding ? (
+                <input
+                  ref={cellInputRef}
+                  className="month-add-input"
+                  placeholder={t("calendar.addCard.placeholder")}
+                  value={addingTitle}
+                  onChange={(e) => setAddingTitle(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      commitCellAdd();
+                    } else if (e.key === "Escape") {
+                      setAddingDate(null);
+                      setAddingTitle("");
+                      setHoverDate(null);
+                    }
+                  }}
+                  onBlur={() => {
+                    commitCellAdd();
+                    setHoverDate(null);
+                  }}
+                />
+              ) : null}
             </DayCell>
           );
         })}
@@ -175,7 +265,7 @@ export function MonthGrid({
               background: "rgba(0,0,0,0.48)",
               zIndex: 200,
             }}
-            onClick={() => setModalDate(null)}
+            onClick={() => { setModalDate(null); setModalAdding(false); }}
           />
           <div
             style={{
@@ -219,7 +309,7 @@ export function MonthGrid({
               <button
                 type="button"
                 className="btn-icon"
-                onClick={() => setModalDate(null)}
+                onClick={() => { setModalDate(null); setModalAdding(false); }}
                 aria-label={t("calendar.taskDetail.close")}
               >
                 <X size={16} />
@@ -230,10 +320,11 @@ export function MonthGrid({
             <div
               style={{
                 overflowY: "auto",
-                padding: "12px 16px 16px",
+                padding: "12px 16px 0",
                 display: "flex",
                 flexDirection: "column",
                 gap: 6,
+                flex: 1,
               }}
             >
               {modalTodos.map((todo) => (
@@ -256,6 +347,7 @@ export function MonthGrid({
                     textAlign: "left",
                     fontSize: 13,
                     color: "var(--color-ink)",
+                    flexShrink: 0,
                   }}
                 >
                   <StatusIcon status={todo.status} size={14} />
@@ -275,7 +367,47 @@ export function MonthGrid({
                   </span>
                 </button>
               ))}
+
+              {/* 모달 인라인 추가 */}
+              {modalAdding ? (
+                <input
+                  ref={modalInputRef}
+                  className="month-add-input"
+                  placeholder={t("calendar.addCard.placeholder")}
+                  value={modalAddTitle}
+                  onChange={(e) => setModalAddTitle(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") commitModalAdd();
+                    else if (e.key === "Escape") { setModalAdding(false); setModalAddTitle(""); }
+                  }}
+                  onBlur={commitModalAdd}
+                  style={{ flexShrink: 0 }}
+                />
+              ) : null}
             </div>
+
+            {/* 모달 하단 추가 버튼 */}
+            <button
+              type="button"
+              onClick={startModalAdd}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 7,
+                margin: "10px 16px 16px",
+                padding: "9px 12px",
+                borderRadius: "var(--r-sm)",
+                background: "transparent",
+                border: "1px dashed var(--color-divider-soft)",
+                cursor: "pointer",
+                fontSize: 12,
+                color: "var(--color-body-muted)",
+                flexShrink: 0,
+              }}
+            >
+              <Plus size={13} />
+              {t("calendar.addCard")}
+            </button>
           </div>
         </>
       ) : null}

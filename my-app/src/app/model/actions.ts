@@ -23,6 +23,8 @@ export type AppAction =
         dateKey: string;
         status?: Todo["status"];
         description?: string;
+        startTime?: string;
+        endTime?: string;
       };
     }
   | {
@@ -45,6 +47,7 @@ export type AppAction =
   | { type: "hydrate/entries"; payload: { entries: JournalEntry[] } }
   | { type: "hydrate/notifications"; payload: { notifications: NotificationItem[] } }
   | { type: "hydrate/settings"; payload: { settings: AppSettings } }
+  | { type: "hydrate/templates"; payload: { templates: RetroTemplate[]; activeTemplateIds: Record<string, string> } }
   | {
       type: "entry/update";
       payload: {
@@ -108,6 +111,7 @@ export type AppAction =
       };
     }
   | { type: "template/delete"; payload: { id: string } }
+  | { type: "template/replaceId"; payload: { localId: string; serverTemplate: RetroTemplate } }
   | {
       type: "template/resetDefault";
       payload: { retroType: RetrospectiveType };

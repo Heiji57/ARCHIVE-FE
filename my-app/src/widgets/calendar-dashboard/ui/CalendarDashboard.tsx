@@ -67,6 +67,12 @@ export function CalendarDashboard({ onNavigate }: CalendarDashboardProps) {
             onReschedule={(id, startTime, endTime) =>
               setTodoTime(id, startTime, endTime)
             }
+            onAddTodo={(title, dateKey, opts) => {
+              addTodo(title, dateKey, undefined, (newId) => {
+                setSelectedId(newId);
+                setTodoTime(newId, opts.startTime, opts.endTime);
+              });
+            }}
           />
         ) : view === "week" ? (
           <WeekGrid
@@ -87,6 +93,9 @@ export function CalendarDashboard({ onNavigate }: CalendarDashboardProps) {
             todayKey={todayCellKey}
             onSelect={setSelectedId}
             onDropTodo={handleDropTodo}
+            onAddTodo={(title, dateKey) =>
+              addTodo(title, dateKey, undefined, setSelectedId)
+            }
           />
         )}
       </div>

@@ -9,16 +9,17 @@ export interface DraggableMonthChipProps {
 }
 
 function DraggableMonthChipImpl({ todo, onSelect }: DraggableMonthChipProps) {
-  const drag = useDraggable({ kind: TODO_DRAG_KIND, data: { id: todo.id } });
+  const { isDragging, ...dragHandlers } = useDraggable({ kind: TODO_DRAG_KIND, data: { id: todo.id } });
 
   return (
     <button
       type="button"
       onClick={onSelect}
       data-draggable="true"
+      data-dragging={isDragging ? "true" : undefined}
       data-status={todo.status}
       className="todo-month-chip"
-      {...drag}
+      {...dragHandlers}
     >
       {todo.title}
     </button>

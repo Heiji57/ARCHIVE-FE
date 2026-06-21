@@ -63,6 +63,14 @@ export {
   apiRevokeOtherSessions,
 } from "./sessions";
 export {
+  apiListTemplates,
+  apiCreateTemplate,
+  apiUpdateTemplate,
+  apiDeleteTemplate,
+  apiResetTemplate,
+  apiSetActiveTemplate,
+} from "./templates";
+export {
   apiGetConnection,
   apiListAvailableRepos,
   apiListLinkedRepos,

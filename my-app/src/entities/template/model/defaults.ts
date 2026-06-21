@@ -70,6 +70,7 @@ export const DEFAULT_TEMPLATES: RetroTemplate[] = (
   retroType: type,
   content: DEFAULT_TEMPLATE_CONTENT[type],
   isDefault: true,
+  isActive: true,
   createdAt: EPOCH,
   updatedAt: EPOCH,
 }));
