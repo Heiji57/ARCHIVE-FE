@@ -1,8 +1,7 @@
 import { useState } from "react";
-import { Bell } from "lucide-react";
 import { useArchiveApp } from "@/app/providers/useArchiveApp";
 import { useTranslation } from "@/shared/lib/i18n";
-import { SettingsCardHeader } from "./SettingsCardHeader";
+import { SettingRow } from "./SettingRow";
 
 export function NotificationsCard() {
   const { state, setNotificationRetention } = useArchiveApp();
@@ -12,16 +11,14 @@ export function NotificationsCard() {
   );
 
   return (
-    <section className="settings-card">
-      <SettingsCardHeader
-        icon={<Bell size={20} />}
-        iconVariant="ink"
-        eyebrow={t("settings.section.notifications")}
-        title={t("settings.notifications.retention.label")}
-      />
-
+    <SettingRow
+      label={t("settings.notifications.retention.label")}
+      description={t("settings.notifications.retention.hint")}
+      htmlFor="settings-retention"
+    >
       <div className="notif-retention-box">
         <input
+          id="settings-retention"
           type="number"
           min={1}
           max={365}
@@ -38,6 +35,6 @@ export function NotificationsCard() {
           {t("settings.notifications.retention.unit")}
         </span>
       </div>
-    </section>
+    </SettingRow>
   );
 }

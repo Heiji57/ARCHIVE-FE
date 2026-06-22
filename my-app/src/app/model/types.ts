@@ -129,6 +129,7 @@ export interface ArchiveAppContextValue {
   setLocale: (locale: Locale) => void;
   setAutoSummary: (patch: Partial<AppSettings["autoSummary"]>) => void;
   setNotificationRetention: (days: number) => void;
+  setAccountType: (accountType: import("@/app/model/settings").AccountType) => void;
   /**
    * monthly/annual 요약 생성 전 데이터 밀도 점검.
    * - weekly·mock·오류 시 null (다이얼로그 없이 바로 생성하면 됨).

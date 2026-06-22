@@ -197,15 +197,14 @@ export async function apiLogout(): Promise<void> {
 }
 
 export async function apiUpdateProfile(
-  patch: Partial<Pick<User, "displayName" | "avatarUrl">>,
+  patch: Partial<Pick<User, "displayName" | "avatarUrl" | "accountType">>,
 ): Promise<void> {
-  // API 는 display_name 만 수용 (응답엔 미포함). best-effort.
-  if (patch.displayName === undefined) return;
+  const body: Record<string, unknown> = {};
+  if (patch.displayName !== undefined) body.display_name = patch.displayName;
+  if (patch.accountType !== undefined) body.accountType = patch.accountType;
+  if (Object.keys(body).length === 0) return;
   try {
-    await request("/auth/me", {
-      method: "PATCH",
-      body: { display_name: patch.displayName },
-    });
+    await request("/auth/me", { method: "PATCH", body });
   } catch {
     // 무시 — 로컬 상태는 AppProvider 가 낙관적으로 유지
   }

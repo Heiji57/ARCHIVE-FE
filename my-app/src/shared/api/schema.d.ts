@@ -3081,6 +3081,8 @@ export interface components {
         };
         UpdateProfileRequest: {
             display_name?: string | null;
+            /** @enum {string} */
+            accountType?: "developer" | "user";
         };
         OnboardingCompleteRequest: {
             /** @description ISO 3166-1 alpha-2 ?? ?? (? 249?? ??) */
@@ -3143,6 +3145,8 @@ export interface components {
              * @example Asia/Seoul
              */
             timezone: string;
+            /** @enum {string} */
+            accountType: "developer" | "user";
         };
         ApiResponseToken: components["schemas"]["ApiResponseEmpty"] & {
             data?: components["schemas"]["TokenResponse"];

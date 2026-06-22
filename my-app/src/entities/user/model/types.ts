@@ -1,3 +1,5 @@
+import type { AccountType } from "@/app/model/settings";
+
 export type OAuthProvider = "github" | "google";
 
 export interface User {
@@ -9,6 +11,7 @@ export interface User {
   region: string | null;
   /** IANA timezone (서버가 country/region 으로 계산). 날짜 표시용. */
   timezone: string;
+  accountType: AccountType;
   /** 아래 3개는 API 미제공 — 클라 전용(표시·호환용). */
   displayName: string;
   oauthProvider: OAuthProvider | null;

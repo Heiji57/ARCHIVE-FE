@@ -285,6 +285,16 @@ export function appReducer(state: AppState, action: AppAction): AppState {
         },
       };
 
+    case "settings/accountType":
+      return {
+        ...state,
+        settings: {
+          ...state.settings,
+          accountType: action.payload.accountType,
+          accountTypeDetermined: true,
+        },
+      };
+
     case "summary/start": {
       const now = new Date();
       return {
@@ -389,6 +399,12 @@ export function appReducer(state: AppState, action: AppAction): AppState {
         ...state,
         currentUser: action.payload.user,
         rememberMe: action.payload.rememberMe,
+        // 서버에서 받은 accountType을 settings에 동기화 (accountTypeDetermined = true).
+        settings: {
+          ...state.settings,
+          accountType: action.payload.user.accountType,
+          accountTypeDetermined: true,
+        },
         // GitHub 연결 상태는 계정/세션에 종속 → 로그인 시 초기화하고 서버에서 재조회.
         github: INITIAL_GITHUB_STATE,
       };
@@ -487,6 +503,9 @@ export function ensureSettings(
       DEFAULT_SETTINGS.notificationRetentionDays,
     lastScheduleCheckAt:
       partial.lastScheduleCheckAt ?? DEFAULT_SETTINGS.lastScheduleCheckAt,
+    accountType: partial.accountType ?? DEFAULT_SETTINGS.accountType,
+    accountTypeDetermined:
+      partial.accountTypeDetermined ?? DEFAULT_SETTINGS.accountTypeDetermined,
   };
 }
 

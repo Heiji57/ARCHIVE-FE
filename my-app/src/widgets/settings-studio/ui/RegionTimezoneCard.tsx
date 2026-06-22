@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { Clock, Globe } from "lucide-react";
 import { useArchiveApp } from "@/app/providers/useArchiveApp";
 import {
   countryDefaultTimezone,
@@ -9,9 +8,9 @@ import {
 } from "@/shared/lib/geo";
 import { ConfirmModal, SearchableSelect } from "@/shared/ui";
 import { useTranslation } from "@/shared/lib/i18n";
-import { SettingsCardHeader } from "./SettingsCardHeader";
+import { SettingRow } from "./SettingRow";
 
-/** 설정 — 국가 + timezone 변경.
+/** 설정 — 국가 + timezone 변경 (행 기반).
  *
  * 흐름:
  *  1. 국가 선택 → GET /settings/countries/{code}/timezones
@@ -77,11 +76,7 @@ export function RegionTimezoneCard() {
 
   const changed = country !== (user?.country ?? "");
   const canApply =
-    changed &&
-    !!country &&
-    !loadingTz &&
-    (!tzMulti || !!selectedTz) &&
-    !applying;
+    changed && !!country && !loadingTz && (!tzMulti || !!selectedTz) && !applying;
 
   // 모달 메시지: timezone 명시 여부
   const displayTz = tzMulti ? selectedTz : countryDefaultTimezone(country);
@@ -122,134 +117,100 @@ export function RegionTimezoneCard() {
   };
 
   return (
-    <section className="settings-card">
-      <SettingsCardHeader
-        icon={<Globe size={20} />}
-        iconVariant="primary"
-        eyebrow={t("settings.section.region")}
-        title={t("settings.region.title")}
-      />
-
+    <>
       {/* 국가 선택 */}
-      <div className="auth-field" style={{ marginBottom: 12 }}>
-        <label className="text-field-label" htmlFor="settings-country">
-          {t("auth.signup.country")}
-        </label>
-        <SearchableSelect
-          id="settings-country"
-          className="select"
-          ariaLabel={t("auth.signup.country")}
-          options={countryOptions}
-          value={country}
-          onChange={onCountryChange}
-          placeholder={t("auth.signup.countryPlaceholder")}
-          searchPlaceholder={t("ui.select.search")}
-          emptyText={t("ui.select.empty")}
-        />
-      </div>
-
-      {/* 다중 tz 국가: timezone 선택 드롭다운 */}
-      {tzMulti ? (
-        <div className="auth-field" style={{ marginBottom: 12 }}>
-          <label className="text-field-label" htmlFor="settings-country-tz">
-            {t("settings.region.selectTimezone")}
-          </label>
+      <SettingRow
+        label={t("auth.signup.country")}
+        description={t("settings.region.countryHint")}
+        htmlFor="settings-country"
+      >
+        <div className="ss-select-wrap">
           <SearchableSelect
-            id="settings-country-tz"
+            id="settings-country"
             className="select"
-            ariaLabel={t("settings.region.selectTimezone")}
-            options={tzOptions}
-            value={selectedTz}
-            onChange={setSelectedTz}
-            placeholder={loadingTz ? t("settings.region.loadingTz") : t("settings.timezone.label")}
+            ariaLabel={t("auth.signup.country")}
+            options={countryOptions}
+            value={country}
+            onChange={onCountryChange}
+            placeholder={t("auth.signup.countryPlaceholder")}
             searchPlaceholder={t("ui.select.search")}
             emptyText={t("ui.select.empty")}
           />
         </div>
-      ) : null}
+      </SettingRow>
 
-      {/* 단일 tz 국가: 예상 timezone 표시 */}
-      {!tzMulti && selectedTz && changed ? (
-        <p
-          style={{
-            margin: "0 0 10px",
-            fontSize: 12,
-            color: "var(--color-body-muted)",
-          }}
-        >
-          {t("settings.region.autoTz", { timezone: selectedTz })}
-        </p>
-      ) : null}
+      {/* 국가가 바뀌면 적용 영역 노출 (다중 tz 선택 + 적용 버튼) */}
+      {changed ? (
+        <div className="setting-row setting-row--stacked">
+          <div className="setting-apply-block">
+            {tzMulti ? (
+              <div className="ss-select-wrap" style={{ width: "100%" }}>
+                <SearchableSelect
+                  id="settings-country-tz"
+                  className="select"
+                  ariaLabel={t("settings.region.selectTimezone")}
+                  options={tzOptions}
+                  value={selectedTz}
+                  onChange={setSelectedTz}
+                  placeholder={
+                    loadingTz
+                      ? t("settings.region.loadingTz")
+                      : t("settings.region.selectTimezone")
+                  }
+                  searchPlaceholder={t("ui.select.search")}
+                  emptyText={t("ui.select.empty")}
+                />
+              </div>
+            ) : null}
 
-      <button
-        type="button"
-        className="btn btn-primary settings-action-btn"
-        onClick={() => canApply && setModalOpen(true)}
-        disabled={!canApply}
-        style={{ marginBottom: tzMulti && !selectedTz && changed ? 6 : 20 }}
-      >
-        {applying
-          ? t("settings.region.applying")
-          : loadingTz
-            ? t("settings.region.loadingTz")
-            : t("settings.region.apply")}
-      </button>
+            {!tzMulti && selectedTz ? (
+              <p className="setting-apply-hint">
+                {t("settings.region.autoTz", { timezone: selectedTz })}
+              </p>
+            ) : null}
 
-      {/* 다중 tz 국가 + timezone 미선택 시 안내 */}
-      {tzMulti && !selectedTz && changed ? (
-        <p
-          style={{
-            margin: "0 0 20px",
-            fontSize: 11,
-            color: "var(--color-body-muted)",
-            lineHeight: 1.5,
-          }}
-        >
-          {t("settings.region.selectTimezoneHint")}
-        </p>
-      ) : null}
+            <button
+              type="button"
+              className="btn btn-primary settings-action-btn"
+              onClick={() => canApply && setModalOpen(true)}
+              disabled={!canApply}
+            >
+              {applying
+                ? t("settings.region.applying")
+                : loadingTz
+                  ? t("settings.region.loadingTz")
+                  : t("settings.region.apply")}
+            </button>
 
-      {/* ── 타임존 단독 변경 ─────────────────────────────────────────────── */}
-      <div
-        style={{
-          borderTop: "1px solid var(--color-divider-soft)",
-          paddingTop: 16,
-        }}
-      >
-        <div
-          style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}
-        >
-          <Clock size={14} style={{ color: "var(--color-primary)" }} />
-          <label
-            className="text-field-label"
-            htmlFor="settings-timezone"
-            style={{ margin: 0 }}
-          >
-            {t("settings.timezone.label")}
-          </label>
+            {tzMulti && !selectedTz ? (
+              <p className="setting-apply-hint">
+                {t("settings.region.selectTimezoneHint")}
+              </p>
+            ) : null}
+          </div>
         </div>
-        <p
-          style={{
-            margin: "0 0 8px",
-            fontSize: 11,
-            color: "var(--color-body-muted)",
-            lineHeight: 1.5,
-          }}
-        >
-          {t("settings.timezone.hint")}
-        </p>
-        <SearchableSelect
-          id="settings-timezone"
-          className="select"
-          ariaLabel={t("settings.timezone.label")}
-          options={globalTzOptions}
-          value={user?.timezone ?? ""}
-          onChange={(v) => void onTimezoneChange(v)}
-          placeholder={t("settings.timezone.label")}
-          searchPlaceholder={t("ui.select.search")}
-          emptyText={t("ui.select.empty")}
-        />
-      </div>
+      ) : null}
+
+      {/* 타임존 단독 변경 (즉시 적용) */}
+      <SettingRow
+        label={t("settings.timezone.label")}
+        description={t("settings.timezone.hint")}
+        htmlFor="settings-timezone"
+      >
+        <div className="ss-select-wrap">
+          <SearchableSelect
+            id="settings-timezone"
+            className="select"
+            ariaLabel={t("settings.timezone.label")}
+            options={globalTzOptions}
+            value={user?.timezone ?? ""}
+            onChange={(v) => void onTimezoneChange(v)}
+            placeholder={t("settings.timezone.label")}
+            searchPlaceholder={t("ui.select.search")}
+            emptyText={t("ui.select.empty")}
+          />
+        </div>
+      </SettingRow>
 
       <ConfirmModal
         open={modalOpen}
@@ -261,6 +222,6 @@ export function RegionTimezoneCard() {
         onCancel={() => void commitCountry(true)}
         onDismiss={() => setModalOpen(false)}
       />
-    </section>
+    </>
   );
 }

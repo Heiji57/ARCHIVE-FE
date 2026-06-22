@@ -24,10 +24,11 @@ import { SignupPage } from "@/pages/signup/ui/SignupPage";
 import { TodosPage } from "@/pages/todos/ui/TodosPage";
 import { DndProvider } from "@/shared/lib/dnd";
 import { TodoDragGhost } from "@/app/TodoDragGhost";
-import { I18nProvider } from "@/shared/lib/i18n";
+import { I18nProvider, useTranslation } from "@/shared/lib/i18n";
 import { AppShell } from "@/widgets/app-shell";
 import { ToastViewport } from "@/widgets/notifications";
 import { SummaryFloatingChip, SummaryOverlay } from "@/widgets/summary";
+import { AccountTypeForm, AuthShell } from "@/widgets/auth";
 
 type ResolvedRoute =
   | { kind: "auth"; route: AuthRoute }
@@ -186,8 +187,25 @@ function AuthGate({
     }
   }
 
+  // Authenticated but hasn't set account type yet → show selection screen
+  if (!state.settings.accountTypeDetermined) {
+    return <AccountTypeScreen />;
+  }
+
   const appRoute = resolved.kind === "app" ? resolved.route : "calendar";
   return <AppContent route={appRoute} onNavigate={navigateApp} />;
+}
+
+function AccountTypeScreen() {
+  const { t } = useTranslation();
+  return (
+    <AuthShell
+      title={t("onboarding.accountType.title")}
+      subtitle={t("onboarding.accountType.subtitle")}
+    >
+      <AccountTypeForm />
+    </AuthShell>
+  );
 }
 
 function AppContent({

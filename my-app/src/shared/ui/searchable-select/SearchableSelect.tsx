@@ -67,6 +67,8 @@ export function SearchableSelect({
   const triggerRef = useRef<HTMLButtonElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  // 패널이 실제로 마운트된 뒤 단 한 번만 검색창에 포커스하기 위한 가드.
+  const focusedRef = useRef(false);
 
   const selected = useMemo(
     () => options.find((o) => o.value === value) ?? null,
@@ -103,9 +105,18 @@ export function SearchableSelect({
     setActive(filtered.findIndex((o) => o.value === value));
   }, [open, computeRect]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // 드롭다운은 rect 계산 후(다음 렌더)에야 portal 로 마운트되므로, open 토글 시점엔
+  // input 이 아직 없어 focus 가 무시된다. rect 가 준비된 뒤 한 번만 포커스한다.
   useEffect(() => {
-    if (open) inputRef.current?.focus();
-  }, [open]);
+    if (!open) {
+      focusedRef.current = false;
+      return;
+    }
+    if (rect && !focusedRef.current) {
+      focusedRef.current = true;
+      inputRef.current?.focus();
+    }
+  }, [open, rect]);
 
   // 스크롤/리사이즈 시 위치 갱신 + 외부 클릭 닫기
   useEffect(() => {

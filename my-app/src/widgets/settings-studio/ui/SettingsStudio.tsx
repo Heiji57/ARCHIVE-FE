@@ -2,6 +2,9 @@ import type { ReactNode } from "react";
 import type { AppSettings } from "@/app/model/settings";
 import type { TranslationKey } from "@/shared/lib/i18n";
 import { useTranslation } from "@/shared/lib/i18n";
+import { useArchiveApp } from "@/app/providers/useArchiveApp";
+import { can } from "@/shared/lib/permissions";
+import { AccountTypeCard } from "./AccountTypeCard";
 import { AutoSummaryCard } from "./AutoSummaryCard";
 import { GithubCard } from "./GithubCard";
 import { LanguageCard } from "./LanguageCard";
@@ -32,26 +35,40 @@ function SettingsSection({
 }
 
 export function SettingsStudio() {
+  const { state } = useArchiveApp();
+  const showGithub = can(state.settings.accountType, "github");
+
   return (
     <div className="page settings-page">
-      <SettingsSection
-        label="settings.section.integrations"
-        hint="settings.group.integrations.hint"
-      >
-        <div className="settings-grid">
-          <GithubCard />
-        </div>
-      </SettingsSection>
+      {showGithub && (
+        <SettingsSection
+          label="settings.section.integrations"
+          hint="settings.group.integrations.hint"
+        >
+          <div className="settings-grid">
+            <GithubCard />
+          </div>
+        </SettingsSection>
+      )}
 
       <SettingsSection
         label="settings.section.preferences"
         hint="settings.group.preferences.hint"
       >
-        <div className="settings-grid">
+        <div className="settings-card settings-list">
           <LanguageCard />
           <RegionTimezoneCard />
-          <AutoSummaryCard />
+          <AccountTypeCard />
           <NotificationsCard />
+        </div>
+      </SettingsSection>
+
+      <SettingsSection
+        label="settings.section.autoSummary"
+        hint="settings.autoSummary.description"
+      >
+        <div className="settings-card settings-list">
+          <AutoSummaryCard />
         </div>
       </SettingsSection>
 

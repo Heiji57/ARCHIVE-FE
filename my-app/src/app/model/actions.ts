@@ -12,7 +12,7 @@ import type {
 import type { RetroTemplate } from "@/entities/template";
 import type { Todo } from "@/entities/todo/model/types";
 import type { User } from "@/entities/user/model/types";
-import type { AppSettings, Locale } from "@/app/model/settings";
+import type { AccountType, AppSettings, Locale } from "@/app/model/settings";
 
 export type AppAction =
   | {
@@ -94,6 +94,7 @@ export type AppAction =
     }
   | { type: "settings/retention"; payload: { days: number } }
   | { type: "settings/scheduleCheck"; payload: { timestamp: string } }
+  | { type: "settings/accountType"; payload: { accountType: AccountType } }
   | {
       type: "summary/start";
       payload: { kind: SummaryKind; targetDateKey: string };

@@ -1213,6 +1213,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       dispatch({ type: "settings/retention", payload: { days } });
       if (USE_API) void syncSettings({ notificationRetentionDays: days });
     },
+    setAccountType: (accountType) => {
+      dispatch({ type: "settings/accountType", payload: { accountType } });
+      if (USE_API) void apiUpdateProfile({ accountType }).catch(() => {});
+    },
     checkSummaryReadiness: async (kind, periodStart) => {
       // weekly 는 readiness 미지원 → null (바로 생성)
       if (kind === "weekly") return null;

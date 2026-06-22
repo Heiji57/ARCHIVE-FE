@@ -11,7 +11,7 @@ import type {
 import type { RetroTemplate } from "@/entities/template/model/types";
 import type { Todo } from "@/entities/todo/model/types";
 import type { OAuthProvider, User } from "@/entities/user/model/types";
-import type { AppSettings, Locale } from "@/app/model/settings";
+import { DEFAULT_SETTINGS, type AccountType, type AppSettings, type Locale } from "@/app/model/settings";
 import { utcISOToLocalTime } from "@/shared/lib/date";
 import type { components } from "./schema";
 
@@ -39,6 +39,7 @@ export function toUser(
     country: api.country,
     region: api.region ?? null,
     timezone: api.timezone,
+    accountType: api.accountType as AccountType,
     // 아래는 API 미제공 — 클라 전용 보존/폴백
     displayName: opts.displayName?.trim() || fallbackName,
     oauthProvider: opts.oauthProvider ?? null,
@@ -96,7 +97,7 @@ export function toEntry(api: EntryResponse): JournalEntry {
 }
 
 // ─── Settings ────────────────────────────────────────────────────────────────
-export function toSettings(api: SettingsResponse): AppSettings {
+export function toSettings(api: SettingsResponse, current?: AppSettings): AppSettings {
   return {
     locale: api.locale as Locale,
     autoSummary: {
@@ -106,6 +107,9 @@ export function toSettings(api: SettingsResponse): AppSettings {
     },
     notificationRetentionDays: api.notificationRetentionDays,
     lastScheduleCheckAt: api.lastScheduleCheckAt ?? null,
+    // FE-only fields — preserve existing local values (not stored server-side)
+    accountType: current?.accountType ?? DEFAULT_SETTINGS.accountType,
+    accountTypeDetermined: current?.accountTypeDetermined ?? DEFAULT_SETTINGS.accountTypeDetermined,
   };
 }
 

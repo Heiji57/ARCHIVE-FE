@@ -277,12 +277,15 @@ export type TranslationKey =
   | "settings.github.reconnectBannerMsg"
   | "settings.github.reconnect"
   | "settings.language.label"
+  | "settings.language.rowHint"
+  | "settings.region.countryHint"
   | "settings.autoSummary.weekly"
   | "settings.autoSummary.monthly"
   | "settings.autoSummary.yearly"
   | "settings.autoSummary.description"
   | "settings.notifications.retention.label"
   | "settings.notifications.retention.unit"
+  | "settings.notifications.retention.hint"
   // Settings — Templates
   | "settings.section.templates"
   | "settings.templates.title"
@@ -404,7 +407,21 @@ export type TranslationKey =
   | "auth.oauth.google"
   | "auth.oauth.processing"
   // Auth — header
-  | "auth.header.logout";
+  | "auth.header.logout"
+  // Onboarding — account type selection
+  | "onboarding.accountType.title"
+  | "onboarding.accountType.subtitle"
+  | "onboarding.accountType.developer"
+  | "onboarding.accountType.developerDesc"
+  | "onboarding.accountType.user"
+  | "onboarding.accountType.userDesc"
+  | "onboarding.accountType.continue"
+  | "onboarding.accountType.skip"
+  // Settings — account type
+  | "settings.accountType.title"
+  | "settings.accountType.hint"
+  | "settings.accountType.developer"
+  | "settings.accountType.user";
 
 type Dict = Record<TranslationKey, string>;
 
@@ -704,6 +721,8 @@ const ko: Dict = {
     "AI 자동 요약은 이 시간대의 새벽 1시에 실행됩니다.",
   "settings.timezone.updated": "시간대가 변경되었습니다",
   "settings.language.label": "언어 선택",
+  "settings.language.rowHint": "인터페이스 표시 언어",
+  "settings.region.countryHint": "날짜·요약 기준 지역",
   "settings.autoSummary.weekly": "주간 자동 요약",
   "settings.autoSummary.monthly": "월간 자동 요약",
   "settings.autoSummary.yearly": "연간 자동 요약",
@@ -711,6 +730,7 @@ const ko: Dict = {
     "활성화하면 해당 기간이 끝나는 자정에 AI가 자동으로 회고를 요약합니다.",
   "settings.notifications.retention.label": "알림 보관 기간",
   "settings.notifications.retention.unit": "일",
+  "settings.notifications.retention.hint": "오래된 알림을 자동으로 삭제합니다.",
   "settings.section.templates": "회고록 템플릿",
   "settings.templates.title": "Retro Templates",
   "settings.templates.description":
@@ -840,6 +860,20 @@ const ko: Dict = {
   "auth.oauth.processing": "처리 중…",
 
   "auth.header.logout": "로그아웃",
+
+  "onboarding.accountType.title": "어떻게 사용하실 예정인가요?",
+  "onboarding.accountType.subtitle": "작업 방식에 맞는 경험을 제공합니다. 언제든 설정에서 변경할 수 있어요.",
+  "onboarding.accountType.developer": "개발자",
+  "onboarding.accountType.developerDesc": "GitHub 커밋 기록, 회고 연동 등 개발자 특화 기능을 포함합니다.",
+  "onboarding.accountType.user": "일반 사용자",
+  "onboarding.accountType.userDesc": "캘린더, 할 일, 회고 중심의 기본 경험입니다.",
+  "onboarding.accountType.continue": "시작하기",
+  "onboarding.accountType.skip": "건너뛰기 (일반 사용자로 시작)",
+
+  "settings.accountType.title": "계정 유형",
+  "settings.accountType.hint": "개발자 계정은 GitHub 연동 및 커밋 기록 기능을 제공합니다.",
+  "settings.accountType.developer": "개발자",
+  "settings.accountType.user": "일반 사용자",
 };
 
 const en: Dict = {
@@ -1141,6 +1175,8 @@ const en: Dict = {
     "AI auto-summary runs at 1 AM in this timezone.",
   "settings.timezone.updated": "Timezone updated",
   "settings.language.label": "Language",
+  "settings.language.rowHint": "Interface display language",
+  "settings.region.countryHint": "Region used for dates & summaries",
   "settings.autoSummary.weekly": "Weekly auto-summary",
   "settings.autoSummary.monthly": "Monthly auto-summary",
   "settings.autoSummary.yearly": "Yearly auto-summary",
@@ -1148,6 +1184,7 @@ const en: Dict = {
     "When on, the AI will summarize retrospectives automatically at midnight when the period ends.",
   "settings.notifications.retention.label": "Notification retention",
   "settings.notifications.retention.unit": "days",
+  "settings.notifications.retention.hint": "Old notifications are deleted automatically.",
   "settings.section.templates": "Retro Templates",
   "settings.templates.title": "Retro Templates",
   "settings.templates.description":
@@ -1278,6 +1315,20 @@ const en: Dict = {
   "auth.oauth.processing": "Processing…",
 
   "auth.header.logout": "Sign out",
+
+  "onboarding.accountType.title": "How will you use ARCHIVE?",
+  "onboarding.accountType.subtitle": "We'll tailor the experience to your workflow. You can change this anytime in Settings.",
+  "onboarding.accountType.developer": "Developer",
+  "onboarding.accountType.developerDesc": "Includes GitHub commit history, retrospective sync, and developer-focused features.",
+  "onboarding.accountType.user": "Regular User",
+  "onboarding.accountType.userDesc": "A focused experience centered on calendar, to-dos, and retrospectives.",
+  "onboarding.accountType.continue": "Get started",
+  "onboarding.accountType.skip": "Skip (start as Regular User)",
+
+  "settings.accountType.title": "Account Type",
+  "settings.accountType.hint": "Developer accounts include GitHub integration and commit history.",
+  "settings.accountType.developer": "Developer",
+  "settings.accountType.user": "Regular User",
 };
 
 const zh: Dict = {
@@ -1571,6 +1622,8 @@ const zh: Dict = {
   "settings.timezone.hint": "AI 自动摘要将在该时区的凌晨 1 点执行。",
   "settings.timezone.updated": "时区已更新",
   "settings.language.label": "语言",
+  "settings.language.rowHint": "界面显示语言",
+  "settings.region.countryHint": "用于日期和摘要的地区",
   "settings.autoSummary.weekly": "周自动摘要",
   "settings.autoSummary.monthly": "月自动摘要",
   "settings.autoSummary.yearly": "年自动摘要",
@@ -1578,6 +1631,7 @@ const zh: Dict = {
     "启用后,AI 会在对应周期结束的午夜自动生成摘要。",
   "settings.notifications.retention.label": "通知保留时长",
   "settings.notifications.retention.unit": "天",
+  "settings.notifications.retention.hint": "自动删除旧通知。",
   "settings.section.templates": "回顾模板",
   "settings.templates.title": "Retro Templates",
   "settings.templates.description":
@@ -1701,6 +1755,20 @@ const zh: Dict = {
   "auth.oauth.processing": "处理中…",
 
   "auth.header.logout": "退出登录",
+
+  "onboarding.accountType.title": "您打算如何使用 ARCHIVE？",
+  "onboarding.accountType.subtitle": "我们将根据您的工作方式定制体验。您可以随时在设置中更改。",
+  "onboarding.accountType.developer": "开发者",
+  "onboarding.accountType.developerDesc": "包含 GitHub 提交记录、回顾同步等开发者专属功能。",
+  "onboarding.accountType.user": "普通用户",
+  "onboarding.accountType.userDesc": "以日历、待办事项和回顾为中心的基础体验。",
+  "onboarding.accountType.continue": "开始使用",
+  "onboarding.accountType.skip": "跳过（以普通用户身份开始）",
+
+  "settings.accountType.title": "账户类型",
+  "settings.accountType.hint": "开发者账户包含 GitHub 集成和提交记录功能。",
+  "settings.accountType.developer": "开发者",
+  "settings.accountType.user": "普通用户",
 };
 
 const ja: Dict = {
@@ -1999,6 +2067,8 @@ const ja: Dict = {
     "AI 自動要約はこのタイムゾーンの午前1時に実行されます。",
   "settings.timezone.updated": "タイムゾーンを変更しました",
   "settings.language.label": "言語",
+  "settings.language.rowHint": "インターフェース表示言語",
+  "settings.region.countryHint": "日付・要約の基準となる地域",
   "settings.autoSummary.weekly": "週次自動サマリー",
   "settings.autoSummary.monthly": "月次自動サマリー",
   "settings.autoSummary.yearly": "年次自動サマリー",
@@ -2006,6 +2076,7 @@ const ja: Dict = {
     "ON にすると、期間終了の真夜中に AI が自動的に振り返りをサマリーします。",
   "settings.notifications.retention.label": "通知保持期間",
   "settings.notifications.retention.unit": "日",
+  "settings.notifications.retention.hint": "古い通知を自動的に削除します。",
   "settings.section.templates": "振り返りテンプレート",
   "settings.templates.title": "Retro Templates",
   "settings.templates.description":
@@ -2135,6 +2206,20 @@ const ja: Dict = {
   "auth.oauth.processing": "処理中…",
 
   "auth.header.logout": "サインアウト",
+
+  "onboarding.accountType.title": "ARCHIVEをどのように使いますか？",
+  "onboarding.accountType.subtitle": "あなたの作業スタイルに合った体験を提供します。設定からいつでも変更できます。",
+  "onboarding.accountType.developer": "開発者",
+  "onboarding.accountType.developerDesc": "GitHubのコミット履歴、振り返り連携など開発者向け機能を含みます。",
+  "onboarding.accountType.user": "一般ユーザー",
+  "onboarding.accountType.userDesc": "カレンダー、タスク、振り返りを中心としたシンプルな体験です。",
+  "onboarding.accountType.continue": "始める",
+  "onboarding.accountType.skip": "スキップ（一般ユーザーとして開始）",
+
+  "settings.accountType.title": "アカウントタイプ",
+  "settings.accountType.hint": "開発者アカウントはGitHub連携とコミット履歴機能を含みます。",
+  "settings.accountType.developer": "開発者",
+  "settings.accountType.user": "一般ユーザー",
 };
 
 export const DICTIONARIES: Record<Locale, Dict> = { ko, en, zh, ja };

@@ -17,6 +17,7 @@ import {
 import type { JournalEntry } from "@/entities/entry/model/types"
 import type { GitHubCommit } from "@/entities/github/model/types"
 import { useArchiveApp } from "@/app/providers/useArchiveApp"
+import { can } from "@/shared/lib/permissions"
 import { DisconnectBanner } from "@/shared/ui/disconnect-banner/DisconnectBanner"
 import { Pill } from "@/shared/ui/pill/Pill"
 import { useTodayKey } from "@/app/providers/useToday"
@@ -51,7 +52,8 @@ export function RetroEditor({
   onSave,
 }: RetroEditorProps) {
   const { t } = useTranslation()
-  const { loadCommits, pushRetrospective, pushNotification } = useArchiveApp()
+  const { state, loadCommits, pushRetrospective, pushNotification } = useArchiveApp()
+  const isGithubEnabled = can(state.settings.accountType, "github")
   const todayDateKey = useTodayKey()
   const d = fromDateKey(entry.dateKey)
   const retroLabel = t(RETRO_LABEL_KEY[entry.retroType])
@@ -193,45 +195,49 @@ export function RetroEditor({
             <Maximize2 size={14} />
           </button>
 
-          {isGithubConnected ? (
-            entry.synced ? (
-              <Pill tone="green">
-                <Check size={10} /> {t("retro.editor.synced")}
-              </Pill>
-            ) : (
-              <Pill tone="warn">
-                <Clock size={10} /> {t("retro.editor.pending")}
-              </Pill>
-            )
-          ) : (
-            <Pill tone="ghost">
-              <Lock size={10} /> {t("settings.github.notConnected")}
-            </Pill>
-          )}
+          {isGithubEnabled && (
+            <>
+              {isGithubConnected ? (
+                entry.synced ? (
+                  <Pill tone="green">
+                    <Check size={10} /> {t("retro.editor.synced")}
+                  </Pill>
+                ) : (
+                  <Pill tone="warn">
+                    <Clock size={10} /> {t("retro.editor.pending")}
+                  </Pill>
+                )
+              ) : (
+                <Pill tone="ghost">
+                  <Lock size={10} /> {t("settings.github.notConnected")}
+                </Pill>
+              )}
 
-          {/* Push 버튼 */}
-          <button
-            type="button"
-            onClick={() => void handlePush()}
-            className="btn btn-primary"
-            style={{ padding: "10px 22px" }}
-            disabled={!canPush || pushing}
-            title={
-              !isGithubConnected
-                ? t("retro.github.connectFromSettings")
-                : !pushTargetRepositoryId
-                  ? t("settings.github.pushTargetHint")
-                  : ""
-            }>
-            <GitCommit size={14} />
-            {pushing ? t("retro.editor.pushing") : t("retro.editor.save")}
-          </button>
+              {/* Push 버튼 */}
+              <button
+                type="button"
+                onClick={() => void handlePush()}
+                className="btn btn-primary"
+                style={{ padding: "10px 22px" }}
+                disabled={!canPush || pushing}
+                title={
+                  !isGithubConnected
+                    ? t("retro.github.connectFromSettings")
+                    : !pushTargetRepositoryId
+                      ? t("settings.github.pushTargetHint")
+                      : ""
+                }>
+                <GitCommit size={14} />
+                {pushing ? t("retro.editor.pushing") : t("retro.editor.save")}
+              </button>
+            </>
+          )}
         </div>
       </div>
 
-      {!isGithubConnected ? (
+      {isGithubEnabled && !isGithubConnected ? (
         <DisconnectBanner message={t("retro.github.notConnected")} />
-      ) : !pushTargetRepositoryId ? (
+      ) : isGithubEnabled && !pushTargetRepositoryId ? (
         <DisconnectBanner message={t("settings.github.pushTargetHint")} />
       ) : null}
 
@@ -299,8 +305,8 @@ export function RetroEditor({
             )}
           </section>
 
-          {/* 커밋 기록 (모든 일간 회고 + GitHub 연결 시 표시) */}
-          {isGithubConnected && isDailyEntry ? (
+          {/* 커밋 기록 (개발자 계정 + 일간 회고 + GitHub 연결 시 표시) */}
+          {isGithubEnabled && isGithubConnected && isDailyEntry ? (
             <section
               className="section-card-tile-2"
               style={{ marginBottom: 16 }}>

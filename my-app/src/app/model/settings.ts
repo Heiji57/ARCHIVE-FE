@@ -1,4 +1,5 @@
 export type Locale = "ko" | "en" | "zh" | "ja";
+export type AccountType = "developer" | "user";
 
 export interface AutoSummarySettings {
   weekly: boolean;
@@ -11,6 +12,9 @@ export interface AppSettings {
   autoSummary: AutoSummarySettings;
   notificationRetentionDays: number;
   lastScheduleCheckAt: string | null;
+  accountType: AccountType;
+  /** true once the user has seen and confirmed/skipped the account type screen */
+  accountTypeDetermined: boolean;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -18,6 +22,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   autoSummary: { weekly: true, monthly: true, yearly: true },
   notificationRetentionDays: 30,
   lastScheduleCheckAt: null,
+  accountType: "user",
+  accountTypeDetermined: false,
 };
 
 export const SUPPORTED_LOCALES: Array<{ code: Locale; label: string; native: string }> = [
