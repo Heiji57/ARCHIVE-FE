@@ -1,9 +1,9 @@
-import { type CSSProperties, useState } from "react";
+import { type CSSProperties, useEffect, useState } from "react";
 import {
   ArrowRight,
   ChevronDown,
-  MoreHorizontal,
   Sparkles,
+  Trash2,
   X,
 } from "lucide-react";
 import type { TaskStatus, Todo } from "@/entities/todo/model/types";
@@ -22,6 +22,8 @@ export interface TaskDetailPanelProps {
   /** 시작/종료 시각 설정 (일간 타임라인 블록용). null = 비움. */
   onSetTime: (startTime: string | null, endTime: string | null) => void;
   onGoToRetro: () => void;
+  /** 작업 삭제 (휴지통 버튼 / Delete 키). */
+  onDelete: () => void;
 }
 
 const STATUS_ORDER: TaskStatus[] = ["not-start", "in-progress", "done"];
@@ -43,10 +45,30 @@ export function TaskDetailPanel({
   onUpdate,
   onSetTime,
   onGoToRetro,
+  onDelete,
 }: TaskDetailPanelProps) {
   const [statusOpen, setStatusOpen] = useState(false);
   const { t, locale } = useTranslation();
   const d = fromDateKey(todo.dateKey);
+
+  // Delete 키로 작업 삭제 — 단, 입력란(제목/설명/날짜 등)에 포커스가 있을 땐
+  // 텍스트 편집을 방해하지 않도록 무시한다.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Delete") return;
+      const el = document.activeElement;
+      const tag = el?.tagName;
+      const editable =
+        tag === "INPUT" ||
+        tag === "TEXTAREA" ||
+        (el as HTMLElement | null)?.isContentEditable;
+      if (editable) return;
+      e.preventDefault();
+      onDelete();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onDelete]);
 
   const STATUS_LABEL: Record<TaskStatus, string> = {
     "not-start": t("todo.col.notStart.ko"),
@@ -77,8 +99,14 @@ export function TaskDetailPanel({
             {t("calendar.taskDetail.title")}
           </p>
           <div style={{ display: "flex", gap: 4 }}>
-            <button type="button" className="btn-icon" aria-label="More">
-              <MoreHorizontal size={16} />
+            <button
+              type="button"
+              className="btn-icon detail-delete-btn"
+              aria-label={t("calendar.taskDetail.delete")}
+              title={t("calendar.taskDetail.delete")}
+              onClick={onDelete}
+            >
+              <Trash2 size={16} />
             </button>
             <button
               type="button"

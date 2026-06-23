@@ -73,7 +73,17 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       return { ...state, notifications: action.payload.notifications };
 
     case "hydrate/settings":
-      return { ...state, settings: action.payload.settings };
+      // SettingsResponse 에 없는 FE/서버-User 전용 필드(accountType,
+      // accountTypeDetermined)는 서버 settings 로 덮어쓰지 않고 기존 값을 보존한다.
+      // (accountType 은 세션 복원/로그인 시 user 로부터 별도 동기화된다)
+      return {
+        ...state,
+        settings: {
+          ...action.payload.settings,
+          accountType: state.settings.accountType,
+          accountTypeDetermined: state.settings.accountTypeDetermined,
+        },
+      };
 
     case "hydrate/templates":
       return {
@@ -399,12 +409,6 @@ export function appReducer(state: AppState, action: AppAction): AppState {
         ...state,
         currentUser: action.payload.user,
         rememberMe: action.payload.rememberMe,
-        // 서버에서 받은 accountType을 settings에 동기화 (accountTypeDetermined = true).
-        settings: {
-          ...state.settings,
-          accountType: action.payload.user.accountType,
-          accountTypeDetermined: true,
-        },
         // GitHub 연결 상태는 계정/세션에 종속 → 로그인 시 초기화하고 서버에서 재조회.
         github: INITIAL_GITHUB_STATE,
       };

@@ -18,7 +18,8 @@ export interface CalendarDashboardProps {
 }
 
 export function CalendarDashboard({ onNavigate }: CalendarDashboardProps) {
-  const { state, addTodo, updateTodo, moveTodo, setTodoTime } = useArchiveApp();
+  const { state, addTodo, updateTodo, moveTodo, setTodoTime, removeTodo } =
+    useArchiveApp();
   // "오늘" = user.timezone 기준 (데모는 앵커 날짜). useTodayKey 가 분기 처리.
   const todayCellKey = useTodayKey();
   const anchorDate = useMemo(
@@ -67,6 +68,7 @@ export function CalendarDashboard({ onNavigate }: CalendarDashboardProps) {
             onReschedule={(id, startTime, endTime) =>
               setTodoTime(id, startTime, endTime)
             }
+            onUntime={(id) => setTodoTime(id, null, null)}
             onAddTodo={(title, dateKey, opts) => {
               addTodo(title, dateKey, undefined, (newId) => {
                 setSelectedId(newId);
@@ -120,6 +122,10 @@ export function CalendarDashboard({ onNavigate }: CalendarDashboardProps) {
             }
             onGoToRetro={() => {
               onNavigate("retrospectives");
+              setSelectedId(null);
+            }}
+            onDelete={() => {
+              removeTodo(selectedTodo.id);
               setSelectedId(null);
             }}
           />

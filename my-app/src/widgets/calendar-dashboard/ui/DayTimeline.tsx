@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type { Todo } from "@/entities/todo/model/types";
 import { StatusIcon } from "@/entities/todo/ui/StatusIcon";
 import { useTranslation } from "@/shared/lib/i18n";
@@ -21,11 +22,15 @@ export interface DayTimelineProps {
   selectedId: string | null;
   onSelect: (id: string) => void;
   onReschedule: (id: string, startTime: string, endTime: string) => void;
+  /** 시간 제거(미지정으로 전환). */
+  onUntime: (id: string) => void;
   onAddTodo?: (title: string, dateKey: string, opts: { startTime: string; endTime: string }) => void;
 }
 
 const HOURS = Array.from({ length: 24 }, (_, h) => h);
 const DRAG_THRESHOLD_PX = 4;
+/** 미지정 칩을 타임라인에 놓을 때 기본 블록 길이(분). */
+const CHIP_DROP_MIN = 60;
 
 type DragMode = "pending" | "free" | "resize-top" | "resize-bottom";
 
@@ -44,6 +49,24 @@ interface DragState {
   trackWidth: number;
   /** 커서 X 절대 위치로 결정되는 목표 레인. */
   targetLane: number;
+}
+
+/** 미지정 칩 → 타임라인 드래그 상태(렌더용). */
+interface ChipDragState {
+  id: string;
+  title: string;
+  status: Todo["status"];
+  x: number;
+  y: number;
+  /** 커서가 타임라인(시간 영역) 위인지 — true 면 고스트가 블록 형태로 변신. */
+  overTimeline: boolean;
+  /** overTimeline 일 때 놓일 시작 분(15분 스냅). */
+  startMin: number;
+  /** 원본 칩 UI 의 측정 크기(px) — 칩 형태 고스트 크기. */
+  chipW: number;
+  chipH: number;
+  /** 타임라인 블록 너비(px) — 블록 형태 고스트 너비(트랙 1레인 폭). */
+  blockW: number;
 }
 
 function currentMinutes(): number {
@@ -66,6 +89,12 @@ function visualSpan(b: Span): Span {
 
 function overlapsSpan(a: Span, b: Span) {
   return a.startMin < b.endMin && a.endMin > b.startMin;
+}
+
+function pointInEl(x: number, y: number, el: HTMLElement | null): boolean {
+  if (!el) return false;
+  const r = el.getBoundingClientRect();
+  return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
 }
 
 /**
@@ -106,14 +135,15 @@ export function DayTimeline({
   selectedId,
   onSelect,
   onReschedule,
+  onUntime,
   onAddTodo,
 }: DayTimelineProps) {
   const { t } = useTranslation();
   const isToday = dayKey === todayKey;
 
   const { blocks: rawBlocks, untimed } = useMemo(
-    () => buildTimeline(todos, dayKey, todayKey),
-    [todos, dayKey, todayKey],
+    () => buildTimeline(todos, dayKey),
+    [todos, dayKey],
   );
 
   /** 사용자가 드래그로 지정한 블록별 선호 레인. 빈 레인일 때만 적용돼 충돌이 없다. */
@@ -131,9 +161,29 @@ export function DayTimeline({
   const [nowMin, setNowMin] = useState(() => currentMinutes());
   const [addState, setAddState] = useState<{ startMin: number } | null>(null);
   const [addTitle, setAddTitle] = useState("");
+  /** 블록을 미지정 영역 위로 끌고 있는지(드롭 시 시간 제거) — 강조용. */
+  const [blockOverUntimed, setBlockOverUntimed] = useState(false);
+  /** 미지정 칩 드래그(렌더용). */
+  const [chipDrag, setChipDrag] = useState<ChipDragState | null>(null);
+  /** 타임라인 블록을 미지정 영역 위로 끌 때 따라다닐 칩 고스트 커서 위치. */
+  const [blockGhostPos, setBlockGhostPos] = useState<{ x: number; y: number } | null>(
+    null,
+  );
+
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const trackRef = useRef<HTMLDivElement | null>(null);
   const addInputRef = useRef<HTMLInputElement | null>(null);
+  const untimedRef = useRef<HTMLDivElement | null>(null);
+
+  // 칩 드래그 보조 ref (포인터 업 판정에 최신값 사용)
+  const chipStartRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const chipUpRef = useRef<{
+    id: string;
+    moved: boolean;
+    overTimeline: boolean;
+    startMin: number;
+    clientY: number;
+  } | null>(null);
 
   useEffect(() => {
     if (!isToday) return;
@@ -151,6 +201,16 @@ export function DayTimeline({
   useEffect(() => {
     setLanePrefs({});
   }, [dayKey]);
+
+  /** 커서 clientY → 타임라인 시작 분(15분 스냅). 트랙 rect 은 스크롤을 이미 반영한다. */
+  const trackStartMinFromClientY = (clientY: number): number => {
+    const rect = trackRef.current?.getBoundingClientRect();
+    if (!rect) return 0;
+    const relY = clientY - rect.top;
+    return snap(
+      Math.max(0, Math.min(MINUTES_IN_DAY - CHIP_DROP_MIN, relY / PX_PER_MIN)),
+    );
+  };
 
   const handlePointerDown = (e: React.PointerEvent, block: TimelineBlock) => {
     if (e.button !== 0 && e.pointerType === "mouse") return;
@@ -197,6 +257,13 @@ export function DayTimeline({
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
+    // free 드래그 중 미지정 영역 위 여부 — 드롭 시 시간 제거 강조 + 칩 고스트로 모핑.
+    if (drag && (drag.mode === "free" || drag.mode === "pending")) {
+      const over = pointInEl(e.clientX, e.clientY, untimedRef.current);
+      setBlockOverUntimed(over);
+      setBlockGhostPos(over ? { x: e.clientX, y: e.clientY } : null);
+    }
+
     setDrag((prev) => {
       if (!prev) return prev;
 
@@ -272,8 +339,20 @@ export function DayTimeline({
 
     const d = drag;
     setDrag(null);
+    const overUntimed = blockOverUntimed;
+    setBlockOverUntimed(false);
+    setBlockGhostPos(null);
 
     if (d.mode === "free") {
+      // 미지정 영역에 놓으면 시간 제거.
+      if (d.moved && overUntimed) {
+        setLanePrefs((p) => {
+          const { [d.id]: _, ...rest } = p;
+          return rest;
+        });
+        onUntime(d.id);
+        return;
+      }
       const timeChanged = d.deltaMin !== 0;
       const laneChanged = d.targetLane !== d.dragBlockLane;
       if (timeChanged || laneChanged) {
@@ -306,11 +385,84 @@ export function DayTimeline({
     }
   };
 
+  // ─── 미지정 칩 → 타임라인 드래그 (영역 기반 모핑 고스트) ──────────────────────
+  // 커서가 타임라인 위면 고스트가 "블록", 미지정 영역 위면 "칩" 형태. 1초 정지 없이
+  // 영역 진입 즉시 전환되며, 너비 transition 으로 양옆 stretch 효과를 낸다.
+  const handleChipPointerDown = (e: React.PointerEvent, todo: Todo) => {
+    if (e.button !== 0 && e.pointerType === "mouse") return;
+    e.preventDefault();
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    // 원본 칩 UI 의 실제 크기 측정 → 고스트 칩 형태 크기로 사용.
+    const chipRect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    // 블록 형태 너비 = 트랙(1레인) 폭. 실제 블록 width:calc(100% - 6px) 와 맞춘다.
+    const blockW = Math.max(80, (trackRef.current?.clientWidth ?? 240) - 6);
+    chipStartRef.current = { x: e.clientX, y: e.clientY };
+    chipUpRef.current = {
+      id: todo.id,
+      moved: false,
+      overTimeline: false,
+      startMin: 0,
+      clientY: e.clientY,
+    };
+    setChipDrag({
+      id: todo.id,
+      title: todo.title,
+      status: todo.status,
+      x: e.clientX,
+      y: e.clientY,
+      overTimeline: false,
+      startMin: 0,
+      chipW: Math.round(chipRect.width),
+      chipH: Math.round(chipRect.height),
+      blockW,
+    });
+  };
+
+  const handleChipPointerMove = (e: React.PointerEvent) => {
+    const up = chipUpRef.current;
+    if (!up) return;
+    const x = e.clientX;
+    const y = e.clientY;
+
+    const movedNow =
+      Math.max(
+        Math.abs(x - chipStartRef.current.x),
+        Math.abs(y - chipStartRef.current.y),
+      ) > DRAG_THRESHOLD_PX;
+    const overTimeline = pointInEl(x, y, scrollRef.current);
+    const startMin = overTimeline ? trackStartMinFromClientY(y) : 0;
+    up.moved = up.moved || movedNow;
+    up.overTimeline = overTimeline;
+    up.startMin = startMin;
+    up.clientY = y;
+
+    setChipDrag((prev) =>
+      prev ? { ...prev, x, y, overTimeline, startMin } : prev,
+    );
+  };
+
+  const handleChipPointerUp = (e: React.PointerEvent) => {
+    (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
+    const up = chipUpRef.current;
+    chipUpRef.current = null;
+    setChipDrag(null);
+    if (!up) return;
+
+    if (!up.moved) {
+      onSelect(up.id);
+      return;
+    }
+    if (up.overTimeline) {
+      const startMin = up.startMin;
+      const endMin = Math.min(MINUTES_IN_DAY, startMin + CHIP_DROP_MIN);
+      onReschedule(up.id, formatTime(startMin), formatTime(endMin));
+    }
+  };
+
   /**
    * 드래그 중 실시간 레이아웃.
    * - free: layoutFreeDrag (커밋과 동일한 함수)로 시간 이동 + 레인 재배치.
    * - resize-*: 해당 엣지 시간 조정 후 선호 레인을 유지한 채 재배치.
-   * drag 참조가 바뀔 때만 실행 (deltaMin 15분 스냅, targetLane 변화 시).
    */
   const previewBlocks = useMemo(() => {
     if (!drag) return blocks;
@@ -361,33 +513,46 @@ export function DayTimeline({
 
   return (
     <div className="day-timeline">
-      {untimed.length > 0 ? (
-        <div className="day-allday">
-          <span className="day-allday-label">{t("calendar.timeline.untimed")}</span>
-          <div className="day-allday-items">
-            {untimed.map((todo) => (
+      {/* 시간 미지정 영역 — 항상 표시(드롭 존). 블록을 끌어다 놓으면 시간 제거됨. */}
+      <div
+        className="day-allday"
+        ref={untimedRef}
+        data-drop-active={blockOverUntimed ? "" : undefined}
+      >
+        <span className="day-allday-label">{t("calendar.timeline.untimed")}</span>
+        <div className="day-allday-items">
+          {untimed.length > 0 ? (
+            untimed.map((todo) => (
               <button
                 key={todo.id}
                 type="button"
                 className="day-allday-chip"
                 data-status={todo.status}
+                data-dragging={chipDrag?.id === todo.id ? "" : undefined}
                 aria-pressed={selectedId === todo.id}
-                onClick={() => onSelect(todo.id)}
+                onPointerDown={(e) => handleChipPointerDown(e, todo)}
+                onPointerMove={handleChipPointerMove}
+                onPointerUp={handleChipPointerUp}
+                onPointerCancel={handleChipPointerUp}
               >
                 <StatusIcon status={todo.status} size={12} />
                 <span className="day-allday-chip-title">{todo.title}</span>
               </button>
-            ))}
-          </div>
+            ))
+          ) : (
+            <span className="day-allday-empty">
+              {t("calendar.timeline.untimedEmpty")}
+            </span>
+          )}
         </div>
-      ) : null}
+      </div>
 
       <div className="day-timeline-scroll" ref={scrollRef}>
         <div
           className="day-timeline-grid"
           style={{
             height: 24 * HOUR_PX,
-            userSelect: drag ? "none" : undefined,
+            userSelect: drag || chipDrag ? "none" : undefined,
           }}
         >
           {HOURS.map((h) => (
@@ -413,10 +578,8 @@ export function DayTimeline({
             onClick={(e) => {
               if (!onAddTodo) return;
               if ((e.target as Element).closest(".day-block")) return;
-              const rect = trackRef.current?.getBoundingClientRect();
-              if (!rect) return;
-              const relY = e.clientY - rect.top + (scrollRef.current?.scrollTop ?? 0);
-              const startMin = snap(Math.max(0, Math.min(MINUTES_IN_DAY - 60, relY / PX_PER_MIN)));
+              // 트랙 rect.top 은 스크롤을 이미 반영하므로 scrollTop 을 더하지 않는다.
+              const startMin = trackStartMinFromClientY(e.clientY);
               setAddState({ startMin });
               setAddTitle("");
               setTimeout(() => addInputRef.current?.focus(), 0);
@@ -424,6 +587,9 @@ export function DayTimeline({
           >
             {previewBlocks.map((b) => {
               const dragging = drag?.id === b.todo.id;
+              // 드래그 블록이 미지정 영역 위면 칩 고스트로 대체 → 시각적으로만 숨긴다.
+              // (DOM 에서 제거하면 setPointerCapture 가 풀려 드래그가 멈추므로 opacity 로 숨김)
+              const hiddenForUntimed = dragging && blockOverUntimed;
               const durationMin = b.endMin - b.startMin;
               const top = b.startMin * PX_PER_MIN;
               const height = Math.max(durationMin, MIN_BLOCK_MIN) * PX_PER_MIN;
@@ -442,16 +608,19 @@ export function DayTimeline({
                     height,
                     left: `calc(${b.lane * laneWidth}% + 2px)`,
                     width: `calc(${laneWidth}% - 6px)`,
+                    opacity: hiddenForUntimed ? 0 : undefined,
                   }}
                   onPointerDown={(e) => handlePointerDown(e, b)}
                   onPointerMove={handlePointerMove}
                   onPointerUp={handlePointerUp}
+                  onPointerCancel={handlePointerUp}
                 >
                   <div
                     className="day-block-resize day-block-resize-t"
                     onPointerDown={(e) => handleResizeDown(e, b, "resize-top")}
                     onPointerMove={handlePointerMove}
                     onPointerUp={handlePointerUp}
+                    onPointerCancel={handlePointerUp}
                   />
 
                   <div className="day-block-head">
@@ -462,12 +631,6 @@ export function DayTimeline({
                     <span className="day-block-time">
                       {formatTime(b.startMin)} –{" "}
                       {formatTime(b.startMin + durationMin)}
-                      {b.derived ? (
-                        <span className="day-block-auto">
-                          {" "}
-                          · {t("calendar.timeline.auto")}
-                        </span>
-                      ) : null}
                     </span>
                   ) : null}
 
@@ -476,6 +639,7 @@ export function DayTimeline({
                     onPointerDown={(e) => handleResizeDown(e, b, "resize-bottom")}
                     onPointerMove={handlePointerMove}
                     onPointerUp={handlePointerUp}
+                    onPointerCancel={handlePointerUp}
                   />
                 </div>
               );
@@ -529,6 +693,70 @@ export function DayTimeline({
           </div>
         </div>
       </div>
+
+      {/* 미지정 칩 드래그 고스트 — 영역에 따라 칩↔블록 모핑(단일 엘리먼트, 너비/높이 stretch).
+          - 칩 형태: 측정한 원본 칩 크기, 커서 중앙 정렬로 따라다님.
+          - 블록 형태: 실제 1시간 블록처럼 트랙 폭 × 1시간 높이. 트랙 안쪽(좌측 정렬 +
+            해당 시각 슬롯)에 배치해 시간 지정 영역을 벗어나지 않게 한다. */}
+      {chipDrag
+        ? (() => {
+            let style: React.CSSProperties;
+            if (chipDrag.overTimeline) {
+              const r = trackRef.current?.getBoundingClientRect();
+              style = {
+                left: (r?.left ?? chipDrag.x) + 2,
+                top: (r?.top ?? chipDrag.y) + chipDrag.startMin * PX_PER_MIN,
+                width: chipDrag.blockW,
+                height: CHIP_DROP_MIN * PX_PER_MIN,
+                // 트랙 좌상단 기준 배치 → 커서 중앙 정렬 transform 해제.
+                transform: "none",
+              };
+            } else {
+              style = {
+                left: chipDrag.x,
+                top: chipDrag.y,
+                width: chipDrag.chipW,
+                height: chipDrag.chipH,
+              };
+            }
+            return createPortal(
+              <div
+                className="chip-drag-ghost"
+                data-form={chipDrag.overTimeline ? "block" : "chip"}
+                style={style}
+              >
+                <StatusIcon status={chipDrag.status} size={12} />
+                <span className="chip-drag-ghost-title">{chipDrag.title}</span>
+                {chipDrag.overTimeline ? (
+                  <span className="chip-drag-ghost-time">
+                    {formatTime(chipDrag.startMin)}–
+                    {formatTime(chipDrag.startMin + CHIP_DROP_MIN)}
+                  </span>
+                ) : null}
+              </div>,
+              document.body,
+            );
+          })()
+        : null}
+
+      {/* 타임라인 블록을 미지정 영역 위로 끌면 칩 UI 고스트로 변경 */}
+      {drag?.mode === "free" && blockOverUntimed && blockGhostPos
+        ? (() => {
+            const dragged = blocks.find((b) => b.todo.id === drag.id);
+            if (!dragged) return null;
+            return createPortal(
+              <div
+                className="chip-drag-ghost"
+                data-form="chip"
+                style={{ left: blockGhostPos.x, top: blockGhostPos.y, maxWidth: 220 }}
+              >
+                <StatusIcon status={dragged.todo.status} size={12} />
+                <span className="chip-drag-ghost-title">{dragged.todo.title}</span>
+              </div>,
+              document.body,
+            );
+          })()
+        : null}
     </div>
   );
 }

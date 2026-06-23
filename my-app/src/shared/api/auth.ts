@@ -24,6 +24,7 @@ import { setAccessToken } from "./tokenStore";
 
 type TokenResponse = components["schemas"]["TokenResponse"];
 type UserResponse = components["schemas"]["UserResponse"];
+type UpdateProfileResponse = components["schemas"]["UpdateProfileResponse"];
 
 async function fetchMe(opts?: {
   displayName?: string | null;
@@ -203,11 +204,15 @@ export async function apiUpdateProfile(
   if (patch.displayName !== undefined) body.display_name = patch.displayName;
   if (patch.accountType !== undefined) body.accountType = patch.accountType;
   if (Object.keys(body).length === 0) return;
-  try {
-    await request("/auth/me", { method: "PATCH", body });
-  } catch {
-    // 무시 — 로컬 상태는 AppProvider 가 낙관적으로 유지
-  }
+  // 에러는 호출 측(profileQueue.onError / setAccountType)에서 토스트로 표면화한다.
+  // 여기서 삼키면 DB 미반영을 진단할 수 없다.
+  const res = await request<UpdateProfileResponse>("/auth/me", {
+    method: "PATCH",
+    body,
+  });
+  // accountType 변경 시 서버가 새 access token 을 발급한다(JWT 의 accountType
+  // 클레임 갱신). non-null 이면 즉시 교체해야 이후 요청이 새 권한으로 인가된다.
+  if (res?.accessToken) setAccessToken(res.accessToken);
 }
 
 /** 앱 시작 시 refresh 쿠키로 세션 복원. 성공하면 User, 실패하면 null. */

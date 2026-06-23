@@ -75,6 +75,7 @@ import {
   apiCompleteSignup,
   apiCreateEntry,
   apiCreateTodo,
+  apiDeleteTodo,
   apiDeleteNotification,
   apiGenerateSummary,
   apiGetConnection,
@@ -230,6 +231,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // recorded check, and queue them for processing.
   const scheduleRanRef = useRef(false);
   useEffect(() => {
+    // API 모드: 자동 요약은 서버 Cron 이 담당한다 (CLAUDE.md §7). 로컬 스케줄러가
+    // 돌면 새로고침마다 lastScheduleCheckAt=null 로 밀린 요약을 오인 감지해
+    // AI 요약 오버레이가 떠버린다 → API 모드에서는 비활성화.
+    if (USE_API) return;
     if (scheduleRanRef.current) return;
     scheduleRanRef.current = true;
 
@@ -501,6 +506,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     void apiRestoreSession().then((user) => {
       if (user) {
         dispatch({ type: "auth/login", payload: { user, rememberMe: true } });
+        // API 모드: 서버에 저장된 accountType을 settings에 반영하고 온보딩 화면을 건너뜀.
+        dispatch({ type: "settings/accountType", payload: { accountType: user.accountType } });
       } else {
         dispatch({ type: "auth/logout" });
       }
@@ -601,7 +608,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // ─── 디바운스 코얼레싱 큐 ────────────────────────────────────────────────────
   // 변경이 잦은 서버 쓰기(todo/회고/설정/프로필)를 idle 후 1회로 합쳐 보낸다.
   // UI 는 각 핸들러에서 즉시 낙관적 dispatch 하므로 체감 지연은 없다.
-  const COALESCE_MS = 1000;
+  // 입력이 3초간 멈출 때까지 전송을 미뤄, 타이핑 중에는 요청을 보내지 않는다.
+  const COALESCE_MS = 3000;
 
   // 큐 send 클로저는 1회만 생성되므로 최신 state 를 ref 로 참조한다.
   const reportApiErrorRef = useRef<() => void>(() => {});
@@ -777,7 +785,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     // GET /github/connection → 연결 상태 + login + pushTarget + hasVerifiedEmails
     void apiGetConnection()
       .then((connection) => {
-        if (!connection.connected) {
+        // 진단: 200 인데 미연결로 보이는 경우 실제 응답값을 확인한다.
+        // eslint-disable-next-line no-console
+        console.info("[github] connection 응답:", connection);
+        if (!connection || !connection.connected) {
           dispatch({
             type: "github/setLinked",
             payload: {
@@ -907,7 +918,28 @@ export function AppProvider({ children }: { children: ReactNode }) {
       // updateTodo 와 같은 id 큐를 공유 → 수정+이동이 1회 PATCH 로 머지됨.
       if (USE_API) todoQueue.enqueue(id, { dateKey });
     },
+    removeTodo: (id) => {
+      if (requireLoginInDemo()) return;
+      dispatch({ type: "todo/remove", payload: { id } }); // 낙관적
+      if (USE_API) {
+        // 대기 중 수정 큐를 취소하고 삭제 요청.
+        todoQueue.cancel(id);
+        void apiDeleteTodo(id).catch(() => reportApiError());
+      }
+    },
     setTodoTime: (id, startTime, endTime) => {
+      // 시작만 지정되고 끝이 비어 있으면 끝을 시작+60분으로 자동 보정한다.
+      // (일간 캘린더 블록은 시각상 +1시간으로 그려지므로 데이터도 일치시켜,
+      //  블록을 눌러 상세를 봐도 끝 시간이 채워져 있도록 한다.)
+      if (startTime && !endTime) {
+        const m = /^(\d{1,2}):(\d{2})$/.exec(startTime);
+        if (m) {
+          const total = Math.min(24 * 60 - 1, Number(m[1]) * 60 + Number(m[2]) + 60);
+          endTime = `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(
+            total % 60,
+          ).padStart(2, "0")}`;
+        }
+      }
       dispatch({
         type: "todo/update",
         payload: { id, patch: { startTime, endTime } },
@@ -1215,7 +1247,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
     },
     setAccountType: (accountType) => {
       dispatch({ type: "settings/accountType", payload: { accountType } });
-      if (USE_API) void apiUpdateProfile({ accountType }).catch(() => {});
+      // accountType 은 서버 User 속성 → currentUser 도 낙관적으로 동기화해
+      // 다음 하이드레이션/복원 전까지 로컬 일관성을 유지한다.
+      dispatch({ type: "auth/updateUser", payload: { patch: { accountType } } });
+      // 서버 영속화. 실패 시 조용히 넘기지 않고 토스트로 알린다 (DB 미반영 진단).
+      if (USE_API) {
+        void apiUpdateProfile({ accountType })
+          .then(() => {
+            // 프로필 PATCH 가 새 access token(developer 클레임)을 교체한 뒤에야
+            // GitHub 연결을 재프로브한다. GET /github/connection 은 developer 토큰이
+            // 아니면 403 → 모드 전환 직후엔 연결이 not-connected 로 고정되어 회고
+            // 커밋 섹션이 안 뜨므로, 변경 완료 시점에 한 번 다시 조회한다.
+            githubProbedRef.current = null;
+            runGitHubRefresh();
+          })
+          .catch(() => reportApiError());
+      }
     },
     checkSummaryReadiness: async (kind, periodStart) => {
       // weekly 는 readiness 미지원 → null (바로 생성)
@@ -1367,10 +1414,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         ? await apiLogin(email, password)
         : await mockLogin(email, password);
       if (result.ok) {
-        dispatch({
-          type: "auth/login",
-          payload: { user: result.user, rememberMe },
-        });
+        dispatch({ type: "auth/login", payload: { user: result.user, rememberMe } });
+        if (USE_API) {
+          dispatch({ type: "settings/accountType", payload: { accountType: result.user.accountType } });
+        }
       }
       return result;
     },
@@ -1398,10 +1445,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         ? await apiCompleteSignup(input)
         : await mockCompleteSignup(input);
       if (result.ok) {
-        dispatch({
-          type: "auth/login",
-          payload: { user: result.user, rememberMe: input.rememberMe },
-        });
+        dispatch({ type: "auth/login", payload: { user: result.user, rememberMe: input.rememberMe } });
+        if (USE_API) {
+          dispatch({ type: "settings/accountType", payload: { accountType: result.user.accountType } });
+        }
       }
       return result;
     },
@@ -1410,10 +1457,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         ? await apiOAuthLogin(provider)
         : await mockOAuthLogin(provider);
       if (result.kind === "success") {
-        dispatch({
-          type: "auth/login",
-          payload: { user: result.user, rememberMe: true },
-        });
+        dispatch({ type: "auth/login", payload: { user: result.user, rememberMe: true } });
+        if (USE_API) {
+          dispatch({ type: "settings/accountType", payload: { accountType: result.user.accountType } });
+        }
       }
       // onboarding-required / error 는 호출 측(OAuthButtons)이 라우팅 처리
       return result;
@@ -1423,10 +1470,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         ? await apiCompleteOnboarding(input)
         : await mockCompleteOnboarding(input);
       if (result.ok) {
-        dispatch({
-          type: "auth/login",
-          payload: { user: result.user, rememberMe: true },
-        });
+        dispatch({ type: "auth/login", payload: { user: result.user, rememberMe: true } });
+        if (USE_API) {
+          dispatch({ type: "settings/accountType", payload: { accountType: result.user.accountType } });
+        }
       }
       return result;
     },

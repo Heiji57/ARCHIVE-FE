@@ -3,7 +3,7 @@ import { DEFAULT_SETTINGS } from "@/app/model/settings";
 import type { PersistedAppState } from "@/app/model/types";
 import { DEFAULT_ACTIVE_TEMPLATE_IDS, DEFAULT_TEMPLATES } from "@/entities/template";
 
-const STORAGE_KEY = "archive-app-state-v5";
+const STORAGE_KEY = "archive-app-state-v6";
 
 export function loadAppState(fallback: PersistedAppState): PersistedAppState {
   if (typeof window === "undefined") {

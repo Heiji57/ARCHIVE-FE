@@ -37,13 +37,6 @@ export function snap(min: number): number {
   return Math.round(min / SNAP_MIN) * SNAP_MIN;
 }
 
-/** ISO 타임스탬프의 로컬 시:분을 자정 기준 분으로. 파싱 실패 시 null. */
-function minutesFromCreatedAt(createdAt: string): number | null {
-  const d = new Date(createdAt);
-  if (Number.isNaN(d.getTime())) return null;
-  return d.getHours() * 60 + d.getMinutes();
-}
-
 export interface TimelineBlock {
   todo: Todo;
   /** 자정 기준 시작/종료 분. */
@@ -63,32 +56,23 @@ export interface TimelineModel {
   untimed: Todo[];
 }
 
-/** todo 하나의 (startMin, endMin, derived) 를 계산. 배치 불가면 null. */
+/**
+ * todo 하나의 (startMin, endMin, derived) 를 계산. 배치 불가(시간 미지정)면 null.
+ * 명시적 startTime 이 없으면 "시간 미지정"으로 보고 상단 미지정 영역으로 보낸다.
+ * (이전엔 오늘 한정 createdAt 기준으로 블록을 유도했으나, 기본 시간은 생성 시점에
+ *  실제 저장되므로 렌더 단계 유도는 제거 — 미지정 = 명시적 시작 시간 없음.)
+ */
 function resolveTimes(
   todo: Todo,
-  isToday: boolean,
 ): { startMin: number; endMin: number; derived: boolean } | null {
   const start = parseTime(todo.startTime);
-  if (start !== null) {
-    const parsedEnd = parseTime(todo.endTime);
-    const end =
-      parsedEnd !== null && parsedEnd > start
-        ? parsedEnd
-        : start + DEFAULT_BLOCK_MIN;
-    return { startMin: start, endMin: Math.min(end, MINUTES_IN_DAY), derived: false };
-  }
-  // 명시 시간 없음 → 오늘 한정 createdAt 기준 1시간 블록
-  if (isToday) {
-    const created = minutesFromCreatedAt(todo.createdAt);
-    if (created !== null) {
-      return {
-        startMin: created,
-        endMin: Math.min(created + DEFAULT_BLOCK_MIN, MINUTES_IN_DAY),
-        derived: true,
-      };
-    }
-  }
-  return null;
+  if (start === null) return null;
+  const parsedEnd = parseTime(todo.endTime);
+  const end =
+    parsedEnd !== null && parsedEnd > start
+      ? parsedEnd
+      : start + DEFAULT_BLOCK_MIN;
+  return { startMin: start, endMin: Math.min(end, MINUTES_IN_DAY), derived: false };
 }
 
 /**
@@ -189,14 +173,12 @@ export function assignLanes(
 
 /**
  * 특정 날짜(dayKey)의 할 일들을 일간 타임라인 모델로 변환한다.
- * @param todayKey "오늘"의 dateKey — dayKey 가 오늘일 때만 시간 미지정 할 일을 createdAt 으로 유도.
+ * 명시적 시작 시간이 없는 할 일은 상단 "시간 미지정" 영역(untimed)으로 분류된다.
  */
 export function buildTimeline(
   todos: Todo[],
   dayKey: string,
-  todayKey: string,
 ): TimelineModel {
-  const isToday = dayKey === todayKey;
   const dayTodos = todos.filter((t) => t.dateKey === dayKey);
 
   const placed: { todo: Todo; startMin: number; endMin: number; derived: boolean }[] =
@@ -204,7 +186,7 @@ export function buildTimeline(
   const untimed: Todo[] = [];
 
   for (const todo of dayTodos) {
-    const r = resolveTimes(todo, isToday);
+    const r = resolveTimes(todo);
     if (r) placed.push({ todo, ...r });
     else untimed.push(todo);
   }

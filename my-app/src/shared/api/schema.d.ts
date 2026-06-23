@@ -580,7 +580,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["ApiResponseUser"];
+                        "application/json": components["schemas"]["ApiResponseUpdateProfile"];
                     };
                 };
                 401: components["responses"]["Unauthorized_401"];
@@ -3154,6 +3154,18 @@ export interface components {
         ApiResponseUser: components["schemas"]["ApiResponseEmpty"] & {
             data?: components["schemas"]["UserResponse"];
         };
+        UpdateProfileResponse: {
+            user: components["schemas"]["UserResponse"];
+            /**
+             * @description accountType 변경 시에만 발급되는 새 access token.
+             *     FE는 이 값이 non-null이면 기존 토큰을 즉시 교체해야 한다.
+             *     그 외 변경(displayName 등)은 null.
+             */
+            accessToken?: string | null;
+        };
+        ApiResponseUpdateProfile: components["schemas"]["ApiResponseEmpty"] & {
+            data?: components["schemas"]["UpdateProfileResponse"];
+        };
         OAuthLinkInitResponse: {
             /**
              * Format: uri
@@ -3346,11 +3358,14 @@ export interface components {
         ApiResponseEntryList: components["schemas"]["ApiResponseEmpty"] & {
             data?: components["schemas"]["EntryResponse"][];
         };
+        /**
+         * @description 템플릿이 적용되면 템플릿 섹션 헤더가 키가 된다.
+         *     템플릿이 없으면 기본 4개 키(achievements/challenges/learnings/next_focus)가 사용된다.
+         */
         SummaryContentResponse: {
-            achievements?: string[];
-            challenges?: string[];
-            learnings?: string[];
-            next_focus?: string[];
+            sections: {
+                [key: string]: string[];
+            };
         };
         SummaryResponse: {
             id: string;

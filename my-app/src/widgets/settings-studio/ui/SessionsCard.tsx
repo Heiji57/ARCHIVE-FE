@@ -42,9 +42,14 @@ export function SessionsCard() {
       .catch(() => setSessions([]));
   }, [listSessions]);
 
+  // 최초 마운트 시 1회만 조회한다.
+  // listSessions 는 컨텍스트 value 의 인라인 함수라 매 렌더 새 참조가 되어,
+  // [load] 에 의존하면 앱 상태 변경(예: 템플릿 타이핑)마다 GET /auth/sessions 가
+  // 재실행되어 요청이 폭주한다. 세션 목록은 revoke 시 load() 로 수동 갱신한다.
   useEffect(() => {
     load();
-  }, [load]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleRevoke = async (s: Session) => {
     setBusy(s.sessionId);

@@ -67,6 +67,7 @@ export type TranslationKey =
   | "calendar.view.week"
   | "calendar.view.month"
   | "calendar.timeline.untimed"
+  | "calendar.timeline.untimedEmpty"
   | "calendar.timeline.auto"
   | "calendar.legend.notStart"
   | "calendar.legend.inProgress"
@@ -110,6 +111,7 @@ export type TranslationKey =
   | "calendar.taskDetail.endTime"
   | "calendar.taskDetail.timeHint"
   | "calendar.taskDetail.clearTime"
+  | "calendar.taskDetail.delete"
   // Retrospective
   | "retro.history"
   | "retro.archive"
@@ -450,9 +452,9 @@ const ko: Dict = {
     "연동, 환경설정, 템플릿, 세션.",
 
   "sync.connected": "GitHub 연결됨",
-  "sync.disconnected": "연결 없음",
-  "sync.offline": "오프라인",
-  "sync.synced": "연결됨 · {n}",
+  "sync.disconnected": "GitHub 미연결",
+  "sync.offline": "GitHub 미연결",
+  "sync.synced": "GitHub · {n}개 연결",
   "sync.status": "연결 상태",
   "sync.connectInSettings": "설정에서 연결하세요",
   "sync.ago.m": "{n}분 전 연결",
@@ -497,6 +499,7 @@ const ko: Dict = {
   "calendar.view.day": "일간",
   "calendar.view.month": "월간",
   "calendar.timeline.untimed": "시간 미지정",
+  "calendar.timeline.untimedEmpty": "여기로 끌어다 놓으면 시간이 해제됩니다",
   "calendar.timeline.auto": "자동",
   "calendar.legend.notStart": "시작 전",
   "calendar.legend.inProgress": "진행 중",
@@ -539,6 +542,7 @@ const ko: Dict = {
   "calendar.taskDetail.endTime": "종료",
   "calendar.taskDetail.timeHint": "선택 사항 — 비우면 일간 뷰에서 생성 시각 기준 1시간 블록으로 표시됩니다.",
   "calendar.taskDetail.clearTime": "시간 지우기",
+  "calendar.taskDetail.delete": "작업 삭제",
 
   "retro.history": "History",
   "retro.archive": "회고 아카이브",
@@ -901,9 +905,9 @@ const en: Dict = {
     "Integrations, preferences, templates and sessions.",
 
   "sync.connected": "GitHub connected",
-  "sync.disconnected": "Not connected",
-  "sync.offline": "Offline",
-  "sync.synced": "Connected · {n}",
+  "sync.disconnected": "GitHub not connected",
+  "sync.offline": "GitHub not connected",
+  "sync.synced": "GitHub · {n} connected",
   "sync.status": "Connection Status",
   "sync.connectInSettings": "Connect from Settings",
   "sync.ago.m": "Connected {n}m ago",
@@ -948,6 +952,7 @@ const en: Dict = {
   "calendar.view.day": "Day",
   "calendar.view.month": "Month",
   "calendar.timeline.untimed": "No time",
+  "calendar.timeline.untimedEmpty": "Drag here to clear the time",
   "calendar.timeline.auto": "auto",
   "calendar.legend.notStart": "Todo",
   "calendar.legend.inProgress": "In progress",
@@ -990,6 +995,7 @@ const en: Dict = {
   "calendar.taskDetail.endTime": "End",
   "calendar.taskDetail.timeHint": "Optional — if empty, the day view shows a 1-hour block from when it was created.",
   "calendar.taskDetail.clearTime": "Clear time",
+  "calendar.taskDetail.delete": "Delete task",
 
   "retro.history": "History",
   "retro.archive": "Retrospective Archive",
@@ -1355,9 +1361,9 @@ const zh: Dict = {
   "subheader.settings.subtitle": "调整 GitHub 连接范围和自动回顾摘要。",
 
   "sync.connected": "GitHub 已连接",
-  "sync.disconnected": "未连接",
-  "sync.offline": "离线",
-  "sync.synced": "已连接 · {n}",
+  "sync.disconnected": "GitHub 未连接",
+  "sync.offline": "GitHub 未连接",
+  "sync.synced": "GitHub · 已连接 {n} 个",
   "sync.status": "连接状态",
   "sync.connectInSettings": "请在设置中连接",
   "sync.ago.m": "{n}分钟前连接",
@@ -1401,6 +1407,7 @@ const zh: Dict = {
   "calendar.view.week": "周",
   "calendar.view.month": "月",
   "calendar.timeline.untimed": "未设时间",
+  "calendar.timeline.untimedEmpty": "拖到这里可清除时间",
   "calendar.timeline.auto": "自动",
   "calendar.legend.notStart": "未开始",
   "calendar.legend.inProgress": "进行中",
@@ -1443,6 +1450,7 @@ const zh: Dict = {
   "calendar.taskDetail.endTime": "结束",
   "calendar.taskDetail.timeHint": "可选 — 留空时，日视图将按创建时间显示为 1 小时区块。",
   "calendar.taskDetail.clearTime": "清除时间",
+  "calendar.taskDetail.delete": "删除任务",
 
   "retro.history": "历史",
   "retro.archive": "回顾归档",
@@ -1796,9 +1804,9 @@ const ja: Dict = {
     "GitHub 連携範囲と自動振り返りサマリーを調整します。",
 
   "sync.connected": "GitHub 接続済み",
-  "sync.disconnected": "未接続",
-  "sync.offline": "オフライン",
-  "sync.synced": "接続済 · {n}",
+  "sync.disconnected": "GitHub 未接続",
+  "sync.offline": "GitHub 未接続",
+  "sync.synced": "GitHub · {n}個 接続中",
   "sync.status": "接続ステータス",
   "sync.connectInSettings": "設定から接続してください",
   "sync.ago.m": "{n}分前に接続",
@@ -1842,6 +1850,7 @@ const ja: Dict = {
   "calendar.view.week": "週",
   "calendar.view.month": "月",
   "calendar.timeline.untimed": "時間未設定",
+  "calendar.timeline.untimedEmpty": "ここにドラッグすると時間が解除されます",
   "calendar.timeline.auto": "自動",
   "calendar.legend.notStart": "未着手",
   "calendar.legend.inProgress": "進行中",
@@ -1884,6 +1893,7 @@ const ja: Dict = {
   "calendar.taskDetail.endTime": "終了",
   "calendar.taskDetail.timeHint": "任意 — 空欄の場合、日ビューでは作成時刻を基準に1時間のブロックとして表示されます。",
   "calendar.taskDetail.clearTime": "時間をクリア",
+  "calendar.taskDetail.delete": "タスクを削除",
 
   "retro.history": "履歴",
   "retro.archive": "振り返りアーカイブ",

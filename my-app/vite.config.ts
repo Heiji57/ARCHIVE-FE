@@ -33,6 +33,11 @@ export default defineConfig({
     extensions: [".mts", ".ts", ".tsx", ".mjs", ".js", ".jsx", ".json"],
   },
   server: {
+    // 백엔드 OAuth 콜백이 window.opener.postMessage 의 targetOrigin 을
+    // http://localhost:3000 으로 고정하고 있어, FE 도 같은 origin(:3000)에서
+    // 떠야 OAuth 연결 완료 메시지가 부모 창에 전달된다. (origin 불일치 시 차단)
+    port: 3000,
+    strictPort: true,
     // HttpOnly refresh 쿠키를 same-origin 으로 다루기 위해 /api 를 백엔드로 프록시.
     // 프론트는 항상 "/api/v1/..." 상대경로로 호출 → CORS 회피 + 쿠키 자동 전송.
     proxy: {

@@ -63,6 +63,7 @@ export interface ArchiveAppContextValue {
     patch: Partial<Pick<Todo, "title" | "status" | "description" | "dateKey">>,
   ) => void;
   moveTodo: (id: string, dateKey: string) => void;
+  removeTodo: (id: string) => void;
   /**
    * 할 일의 시작/종료 시각 설정 (일간 타임라인 블록·드래그 재배치용).
    * null 을 주면 해당 시각을 비운다("HH:mm" 형식).

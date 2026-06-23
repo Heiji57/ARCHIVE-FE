@@ -11,6 +11,7 @@ import type { AppRoute } from "@/app/model/types"
 import { useArchiveApp } from "@/app/providers/useArchiveApp"
 import { useTranslation } from "@/shared/lib/i18n"
 import type { TranslationKey } from "@/shared/lib/i18n"
+import { can } from "@/shared/lib/permissions"
 import { GlobalSearch } from "@/widgets/global-search"
 import { NotificationPanel } from "@/widgets/notifications"
 
@@ -67,6 +68,7 @@ export function AppShell({ route, children, onNavigate }: AppShellProps) {
 
   const isGithubConnected = state.github.status === "connected"
   const commitCount = state.github.linkedRepositories.length
+  const showGithubChip = can(state.settings.accountType, "github")
 
   const unreadCount = state.notifications.filter((n) => !n.read).length
 
@@ -143,22 +145,24 @@ export function AppShell({ route, children, onNavigate }: AppShellProps) {
           </div>
 
           <div className="gn-right">
-            <div
-              className="sync-chip"
-              title={
-                isGithubConnected
-                  ? t("sync.connected")
-                  : t("sync.disconnected")
-              }>
-              <span
-                className={`sync-dot ${isGithubConnected ? "" : "offline"}`}
-              />
-              <span>
-                {isGithubConnected
-                  ? t("sync.synced", { n: commitCount })
-                  : t("sync.offline")}
-              </span>
-            </div>
+            {showGithubChip && (
+              <div
+                className="sync-chip"
+                title={
+                  isGithubConnected
+                    ? t("sync.connected")
+                    : t("sync.disconnected")
+                }>
+                <span
+                  className={`sync-dot ${isGithubConnected ? "" : "offline"}`}
+                />
+                <span>
+                  {isGithubConnected
+                    ? t("sync.synced", { n: commitCount })
+                    : t("sync.offline")}
+                </span>
+              </div>
+            )}
 
             <GlobalSearch onNavigate={onNavigate} />
 

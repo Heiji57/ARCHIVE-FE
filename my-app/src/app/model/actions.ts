@@ -133,6 +133,8 @@ export type AppAction =
   | {
       type: "auth/updateUser";
       payload: {
-        patch: Partial<Pick<User, "country" | "region" | "timezone">>;
+        patch: Partial<
+          Pick<User, "country" | "region" | "timezone" | "accountType">
+        >;
       };
     };

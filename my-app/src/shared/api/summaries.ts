@@ -42,19 +42,29 @@ const KIND_TO_TYPE: Record<SummaryKind, "weekly" | "monthly" | "annual"> = {
   yearly: "annual",
 };
 
-/** 구조화 content → 마크다운 본문 (FE 회고는 마크다운 문자열) */
+// 기본(템플릿 미적용) 섹션 키 → 표시 제목. 템플릿 적용 시엔 섹션 헤더가 키이므로
+// 매핑에 없으면 키를 제목으로 그대로 사용한다.
+const DEFAULT_SECTION_LABELS: Record<string, string> = {
+  achievements: "성과",
+  challenges: "어려움",
+  learnings: "배운 점",
+  next_focus: "다음 집중",
+};
+
+/**
+ * 구조화 content → 마크다운 본문 (FE 회고는 마크다운 문자열).
+ * content.sections 는 동적 키 맵({ 섹션헤더: 항목[] }) — 서버가 정한 순서대로 순회한다.
+ */
 export function summaryContentToMarkdown(content: SummaryContent | null): string {
-  if (!content) return "";
-  const section = (title: string, items?: string[]) =>
-    items && items.length
-      ? `## ${title}\n${items.map((i) => `- ${i}`).join("\n")}`
-      : "";
-  return [
-    section("성과", content.achievements),
-    section("어려움", content.challenges),
-    section("배운 점", content.learnings),
-    section("다음 집중", content.next_focus),
-  ]
+  if (!content?.sections) return "";
+  return Object.entries(content.sections)
+    .map(([key, items]) =>
+      items && items.length
+        ? `## ${DEFAULT_SECTION_LABELS[key] ?? key}\n${items
+            .map((i) => `- ${i}`)
+            .join("\n")}`
+        : "",
+    )
     .filter(Boolean)
     .join("\n\n");
 }

@@ -15,7 +15,7 @@ export interface TodoBoardProps {
 }
 
 export function TodoBoard({ onNavigate }: TodoBoardProps) {
-  const { state, addTodo, updateTodo, setTodoTime, pushNotification } =
+  const { state, addTodo, updateTodo, setTodoTime, removeTodo, pushNotification } =
     useArchiveApp();
   const { t } = useTranslation();
   const { filter, setFilter, todayK, grouped } = useKanbanFilter(state.todos);
@@ -72,6 +72,10 @@ export function TodoBoard({ onNavigate }: TodoBoardProps) {
             }
             onGoToRetro={() => {
               onNavigate("retrospectives");
+              setSelectedId(null);
+            }}
+            onDelete={() => {
+              removeTodo(selectedTodo.id);
               setSelectedId(null);
             }}
           />
