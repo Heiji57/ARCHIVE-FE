@@ -1,13 +1,33 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CheckCircle2, Circle, FileText, Plus, Trash2 } from "lucide-react";
 import type { RetrospectiveType } from "@/entities/entry/model/types";
 import type { RetroTemplate } from "@/entities/template";
 import { useArchiveApp } from "@/app/providers/useArchiveApp";
+import { isApiError } from "@/shared/api/errors";
+import {
+  type SummaryTemplate,
+  apiListSummaryTemplates,
+  apiCreateSummaryTemplate,
+  apiUpdateSummaryTemplate,
+  apiDeleteSummaryTemplate,
+  apiSetActiveSummaryTemplate,
+} from "@/shared/api";
+import { COALESCE_MS, createCoalescingQueue } from "@/shared/lib/coalesce";
 import { useTranslation, type TranslateFn, type TranslationKey } from "@/shared/lib/i18n";
 import { SettingsCardHeader } from "./SettingsCardHeader";
 import { TemplateEditorPanel } from "./TemplateEditorPanel";
 
+type SummaryType = "weekly" | "monthly" | "annual";
+type AiRetroType = "weekly" | "monthly" | "yearly";
+
+const RETRO_TO_SUMMARY_TYPE: Record<AiRetroType, SummaryType> = {
+  weekly: "weekly",
+  monthly: "monthly",
+  yearly: "annual",
+};
+
 const RETRO_TYPES: RetrospectiveType[] = ["daily", "weekly", "monthly", "yearly"];
+const AI_RETRO_TYPES = new Set<RetrospectiveType>(["weekly", "monthly", "yearly"]);
 
 const TYPE_LABEL_KEY: Record<RetrospectiveType, TranslationKey> = {
   daily: "retro.filter.daily",
@@ -23,11 +43,253 @@ const DEFAULT_NAME_KEY: Record<RetrospectiveType, TranslationKey> = {
   yearly: "settings.templates.defaultName.yearly",
 };
 
-/** 기본 템플릿은 i18n 키로, 사용자 템플릿은 저장된 이름으로 표시. */
 function templateDisplayName(tpl: RetroTemplate, t: TranslateFn): string {
   if (tpl.isDefault) return t(DEFAULT_NAME_KEY[tpl.retroType]);
   return tpl.name;
 }
+
+/** SummaryTemplate → RetroTemplate 어댑터 (TemplateEditorPanel 호환용). */
+function summaryToRetro(tpl: SummaryTemplate): RetroTemplate {
+  return {
+    id: tpl.id,
+    name: tpl.name,
+    retroType: "weekly",
+    content: tpl.content,
+    isDefault: false,
+    isActive: tpl.isActive,
+    createdAt: tpl.createdAt,
+    updatedAt: tpl.updatedAt ?? tpl.createdAt,
+  };
+}
+
+// ─── AI 요약 템플릿 탭 (weekly / monthly / yearly) ───────────────────────────
+
+interface SummaryTemplateTabProps {
+  retroType: AiRetroType;
+}
+
+function SummaryTemplateTab({ retroType }: SummaryTemplateTabProps) {
+  const { t } = useTranslation();
+  const { pushNotification } = useArchiveApp();
+  const summaryType = RETRO_TO_SUMMARY_TYPE[retroType];
+  const typeLabel = t(TYPE_LABEL_KEY[retroType]);
+
+  // pushNotification은 매 렌더마다 새 참조가 생성되므로 ref로 보관해
+  // useEffect/useCallback 의존성 배열에서 제외한다.
+  const pushRef = useRef(pushNotification);
+  pushRef.current = pushNotification;
+
+  const [templates, setTemplates] = useState<SummaryTemplate[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  // CoalescingQueue — AppProvider 와 동일한 COALESCE_MS 사용
+  type UpdatePatch = { name?: string; content?: string };
+  const updateQueueRef = useRef<ReturnType<typeof createCoalescingQueue<UpdatePatch>> | null>(null);
+  if (!updateQueueRef.current) {
+    updateQueueRef.current = createCoalescingQueue<UpdatePatch>({
+      delayMs: COALESCE_MS,
+      send: (id, patch) =>
+        apiUpdateSummaryTemplate(id, patch).then((updated) => {
+          setTemplates((prev) => prev.map((tpl) => (tpl.id === id ? updated : tpl)));
+        }),
+      onError: (_id, err) => {
+        const code = isApiError(err) ? err.code : "UNKNOWN";
+        pushRef.current("warning", "템플릿 저장 실패", `오류 코드: ${code}`);
+      },
+    });
+  }
+  const updateQueue = updateQueueRef.current;
+
+  // 탭 전환·페이지 이탈 시 대기 중 변경을 즉시 전송해 유실 방지
+  useEffect(() => {
+    const flush = () => updateQueue.flushAll();
+    const onVisibility = () => { if (document.visibilityState === "hidden") flush(); };
+    window.addEventListener("beforeunload", flush);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.removeEventListener("beforeunload", flush);
+      document.removeEventListener("visibilitychange", onVisibility);
+      flush(); // 컴포넌트 언마운트(탭 전환) 시에도 즉시 전송
+    };
+  }, [updateQueue]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    void apiListSummaryTemplates(summaryType)
+      .then((list) => {
+        if (cancelled) return;
+        setTemplates(list);
+        setSelectedId(list.find((tpl) => tpl.isActive)?.id ?? list[0]?.id ?? null);
+        setLoading(false);
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        setLoading(false);
+        const code = isApiError(err) ? err.code : "UNKNOWN";
+        pushRef.current("warning", "템플릿 로드 실패", `오류 코드: ${code}`);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [summaryType]); // summaryType만 의존 — pushRef는 ref이므로 제외
+
+  const scheduleUpdate = (id: string, patch: UpdatePatch) => {
+    setTemplates((prev) =>
+      prev.map((tpl) => (tpl.id === id ? { ...tpl, ...patch } : tpl)),
+    );
+    updateQueue.enqueue(id, patch);
+  };
+
+  const handleAdd = () => {
+    if (creating) return;
+    const name = t("settings.templates.newName", { type: typeLabel });
+    setCreating(true);
+    void apiCreateSummaryTemplate(summaryType, name, " ")
+      .then((tpl) => {
+        setTemplates((prev) => [...prev, tpl]);
+        setSelectedId(tpl.id);
+      })
+      .catch((err: unknown) => {
+        const code = isApiError(err) ? err.code : "UNKNOWN";
+        if (code === "RETRO_SUMMARY_TEMPLATE_LIMIT_REACHED") {
+          pushRef.current("warning", "템플릿 한도 초과", "이 유형의 템플릿을 더 추가할 수 없습니다.");
+        } else if (code === "RETRO_SUMMARY_TEMPLATE_NAME_DUPLICATED") {
+          pushRef.current("warning", "이름 중복", "같은 이름의 템플릿이 이미 있습니다.");
+        } else {
+          pushRef.current("warning", "템플릿 생성 실패", `오류 코드: ${code}`);
+        }
+      })
+      .finally(() => setCreating(false));
+  };
+
+  const handleDelete = (id: string) => {
+    if (selectedId === id) {
+      const remaining = templates.find((tpl) => tpl.id !== id);
+      setSelectedId(remaining?.id ?? null);
+    }
+    setTemplates((prev) => prev.filter((tpl) => tpl.id !== id));
+    void apiDeleteSummaryTemplate(id).catch((err: unknown) => {
+      const code = isApiError(err) ? err.code : "UNKNOWN";
+      pushRef.current("warning", "삭제 실패", `오류 코드: ${code}`);
+      void apiListSummaryTemplates(summaryType).then(setTemplates).catch(() => {});
+    });
+  };
+
+  const handleSetActive = (id: string) => {
+    const tpl = templates.find((t) => t.id === id);
+    const newActiveId = tpl?.isActive ? null : id;
+    setTemplates((prev) =>
+      prev.map((t) => ({ ...t, isActive: t.id === id ? !tpl?.isActive : false })),
+    );
+    void apiSetActiveSummaryTemplate(summaryType, newActiveId).catch((err: unknown) => {
+      const code = isApiError(err) ? err.code : "UNKNOWN";
+      pushRef.current("warning", "설정 실패", `오류 코드: ${code}`);
+      void apiListSummaryTemplates(summaryType).then(setTemplates).catch(() => {});
+    });
+  };
+
+  const selected = templates.find((tpl) => tpl.id === selectedId) ?? null;
+
+  // 로딩 중에도 template-card-body 구조를 유지해 레이아웃 붕괴 방지
+  if (loading) {
+    return (
+      <div className="template-card-body">
+        <div className="template-list-panel">
+          <p className="template-list-caption" style={{ color: "var(--color-body-muted)" }}>
+            로딩 중…
+          </p>
+        </div>
+        <div className="template-editor-panel" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="template-card-body">
+      <div className="template-list-panel">
+        <p className="template-list-caption">
+          {t("settings.templates.aiActiveHint")}
+        </p>
+
+        {templates.map((tpl) => (
+          <div
+            key={tpl.id}
+            className="template-list-row"
+            data-active={selectedId === tpl.id}
+            data-inuse={tpl.isActive}
+          >
+            <button
+              type="button"
+              className="template-radio"
+              aria-label={t("settings.templates.use")}
+              aria-pressed={tpl.isActive}
+              onClick={() => handleSetActive(tpl.id)}
+              title={t("settings.templates.use")}
+            >
+              {tpl.isActive ? <CheckCircle2 size={17} /> : <Circle size={17} />}
+            </button>
+
+            <button
+              type="button"
+              className="template-list-name-btn"
+              onClick={() => setSelectedId(tpl.id)}
+            >
+              <span className="template-list-name">{tpl.name}</span>
+            </button>
+
+            {tpl.isActive && (
+              <span className="pill pill-blue pill-sm">
+                {t("settings.templates.inUse")}
+              </span>
+            )}
+
+            <button
+              type="button"
+              className="template-delete-btn"
+              aria-label={t("common.delete")}
+              onClick={() => handleDelete(tpl.id)}
+            >
+              <Trash2 size={13} />
+            </button>
+          </div>
+        ))}
+
+        <button
+          type="button"
+          className="template-add-btn"
+          onClick={handleAdd}
+          disabled={creating}
+        >
+          <Plus size={14} />
+          {creating ? "생성 중…" : t("settings.templates.add")}
+        </button>
+      </div>
+
+      <div className="template-editor-panel">
+        {selected ? (
+          <TemplateEditorPanel
+            key={selected.id}
+            template={summaryToRetro(selected)}
+            displayName={selected.name}
+            onUpdate={(patch) => scheduleUpdate(selected.id, patch)}
+            onReset={() => {}}
+          />
+        ) : (
+          <p className="template-editor-empty">
+            {templates.length === 0
+              ? t("settings.templates.aiEmpty")
+              : t("settings.templates.selectHint")}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── TemplatesCard ────────────────────────────────────────────────────────────
 
 export function TemplatesCard() {
   const {
@@ -45,6 +307,7 @@ export function TemplatesCard() {
     () => state.templates.find((tpl) => tpl.retroType === "daily")?.id ?? null,
   );
 
+  const isAiTab = AI_RETRO_TYPES.has(activeType);
   const templatesForType = state.templates.filter(
     (tpl) => tpl.retroType === activeType,
   );
@@ -56,9 +319,11 @@ export function TemplatesCard() {
 
   const handleTabChange = (type: RetrospectiveType) => {
     setActiveType(type);
-    setSelectedId(
-      state.templates.find((tpl) => tpl.retroType === type)?.id ?? null,
-    );
+    if (type === "daily") {
+      setSelectedId(
+        state.templates.find((tpl) => tpl.retroType === "daily")?.id ?? null,
+      );
+    }
   };
 
   const handleAdd = () => {
@@ -85,10 +350,12 @@ export function TemplatesCard() {
         title={t("settings.templates.title")}
       />
       <p className="settings-card-description">
-        {t("settings.templates.description")}
+        {isAiTab
+          ? t("settings.templates.aiDescription")
+          : t("settings.templates.description")}
       </p>
 
-      {/* Type tabs — segmented control */}
+      {/* 유형 탭 */}
       <div className="seg template-type-seg" role="tablist">
         {RETRO_TYPES.map((type) => (
           <button
@@ -105,87 +372,102 @@ export function TemplatesCard() {
         ))}
       </div>
 
-      <div className="template-card-body">
-        {/* Left: template list */}
-        <div className="template-list-panel">
-          <p className="template-list-caption">
-            {t("settings.templates.activeHint")}
-          </p>
+      {/* AI 요약 템플릿 탭 (weekly / monthly / yearly) */}
+      {isAiTab && (
+        <SummaryTemplateTab
+          key={activeType}
+          retroType={activeType as AiRetroType}
+        />
+      )}
 
-          {templatesForType.map((tpl) => {
-            const isInUse = tpl.id === inUseId;
-            return (
-              <div
-                key={tpl.id}
-                className="template-list-row"
-                data-active={selectedId === tpl.id}
-                data-inuse={isInUse}
-              >
-                <button
-                  type="button"
-                  className="template-radio"
-                  aria-label={t("settings.templates.use")}
-                  aria-pressed={isInUse}
-                  onClick={() => setActiveTemplate(activeType, tpl.id)}
-                  title={t("settings.templates.use")}
+      {/* 일간 회고 템플릿 탭 (daily only) */}
+      {!isAiTab && (
+        <div className="template-card-body">
+          <div className="template-list-panel">
+            <p className="template-list-caption">
+              {t("settings.templates.activeHint")}
+            </p>
+
+            {templatesForType.map((tpl) => {
+              const isInUse = tpl.id === inUseId;
+              return (
+                <div
+                  key={tpl.id}
+                  className="template-list-row"
+                  data-active={selectedId === tpl.id}
+                  data-inuse={isInUse}
                 >
-                  {isInUse ? (
-                    <CheckCircle2 size={17} />
-                  ) : (
-                    <Circle size={17} />
-                  )}
-                </button>
-
-                <button
-                  type="button"
-                  className="template-list-name-btn"
-                  onClick={() => setSelectedId(tpl.id)}
-                >
-                  <span className="template-list-name">{templateDisplayName(tpl, t)}</span>
-                </button>
-
-                {isInUse && (
-                  <span className="pill pill-blue pill-sm">
-                    {t("settings.templates.inUse")}
-                  </span>
-                )}
-                {!tpl.isDefault && (
                   <button
                     type="button"
-                    className="template-delete-btn"
-                    aria-label={t("common.delete")}
-                    onClick={() => handleDelete(tpl.id)}
+                    className="template-radio"
+                    aria-label={t("settings.templates.use")}
+                    aria-pressed={isInUse}
+                    onClick={() => setActiveTemplate(activeType, tpl.id)}
+                    title={t("settings.templates.use")}
                   >
-                    <Trash2 size={13} />
+                    {isInUse ? (
+                      <CheckCircle2 size={17} />
+                    ) : (
+                      <Circle size={17} />
+                    )}
                   </button>
-                )}
-              </div>
-            );
-          })}
 
-          <button type="button" className="template-add-btn" onClick={handleAdd}>
-            <Plus size={14} />
-            {t("settings.templates.add")}
-          </button>
-        </div>
+                  <button
+                    type="button"
+                    className="template-list-name-btn"
+                    onClick={() => setSelectedId(tpl.id)}
+                  >
+                    <span className="template-list-name">
+                      {templateDisplayName(tpl, t)}
+                    </span>
+                  </button>
 
-        {/* Right: editor */}
-        <div className="template-editor-panel">
-          {selected ? (
-            <TemplateEditorPanel
-              key={selected.id}
-              template={selected}
-              displayName={templateDisplayName(selected, t)}
-              onUpdate={(patch) => updateTemplate(selected.id, patch)}
-              onReset={() => resetTemplate(selected.retroType)}
-            />
-          ) : (
-            <p className="template-editor-empty">
-              {t("settings.templates.selectHint")}
-            </p>
-          )}
+                  {isInUse && (
+                    <span className="pill pill-blue pill-sm">
+                      {t("settings.templates.inUse")}
+                    </span>
+                  )}
+                  {!tpl.isDefault && (
+                    <button
+                      type="button"
+                      className="template-delete-btn"
+                      aria-label={t("common.delete")}
+                      onClick={() => handleDelete(tpl.id)}
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+
+            <button
+              type="button"
+              className="template-add-btn"
+              onClick={handleAdd}
+            >
+              <Plus size={14} />
+              {t("settings.templates.add")}
+            </button>
+          </div>
+
+          <div className="template-editor-panel">
+            {selected ? (
+              <TemplateEditorPanel
+                key={selected.id}
+                template={selected}
+                displayName={templateDisplayName(selected, t)}
+                onUpdate={(patch) => updateTemplate(selected.id, patch)}
+                onReset={() => resetTemplate(selected.retroType)}
+              />
+            ) : (
+              <p className="template-editor-empty">
+                {t("settings.templates.selectHint")}
+              </p>
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </section>
   );
 }

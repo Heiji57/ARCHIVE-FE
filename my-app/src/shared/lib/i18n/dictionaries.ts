@@ -189,6 +189,8 @@ export type TranslationKey =
   | "summary.kind.weekly"
   | "summary.kind.monthly"
   | "summary.kind.yearly"
+  | "summary.failed"
+  | "summary.rateLimited"
   // Notification panel
   | "notif.panel.title"
   | "notif.panel.subtitle"
@@ -301,6 +303,9 @@ export type TranslationKey =
   | "settings.templates.use"
   | "settings.templates.inUse"
   | "settings.templates.activeHint"
+  | "settings.templates.aiDescription"
+  | "settings.templates.aiActiveHint"
+  | "settings.templates.aiEmpty"
   | "settings.templates.newName"
   | "settings.templates.defaultName.daily"
   | "settings.templates.defaultName.weekly"
@@ -627,6 +632,8 @@ const ko: Dict = {
   "summary.kind.weekly": "주간",
   "summary.kind.monthly": "월간",
   "summary.kind.yearly": "연간",
+  "summary.failed": "AI 요약 생성에 실패했습니다.",
+  "summary.rateLimited": "AI 요약 생성 한도를 초과했습니다. 잠시 후 다시 시도해주세요.",
 
   "notif.panel.title": "알림",
   "notif.panel.subtitle": "최근 30일간의 활동",
@@ -750,6 +757,11 @@ const ko: Dict = {
   "settings.templates.inUse": "사용 중",
   "settings.templates.activeHint":
     "’사용 중’ 템플릿이 새 회고를 만들 때 자동으로 적용됩니다.",
+  "settings.templates.aiDescription":
+    "AI가 회고를 작성할 때 스타일 가이드로 참고할 템플릿을 편집합니다. / 로 블록을 삽입하세요.",
+  "settings.templates.aiActiveHint":
+    "’사용 중’ 템플릿이 AI 요약 생성 시 스타일 가이드로 사용됩니다.",
+  "settings.templates.aiEmpty": "템플릿을 추가해 AI 요약 스타일을 지정하세요.",
   "settings.templates.newName": "새 {type} 템플릿",
   "settings.templates.defaultName.daily": "기본 일간 템플릿",
   "settings.templates.defaultName.weekly": "기본 주간 템플릿",
@@ -1082,6 +1094,8 @@ const en: Dict = {
   "summary.kind.weekly": "Weekly",
   "summary.kind.monthly": "Monthly",
   "summary.kind.yearly": "Yearly",
+  "summary.failed": "Failed to generate the AI summary.",
+  "summary.rateLimited": "AI summary generation limit reached. Please try again later.",
 
   "notif.panel.title": "Notifications",
   "notif.panel.subtitle": "Activity from the last 30 days",
@@ -1206,6 +1220,11 @@ const en: Dict = {
   "settings.templates.inUse": "In use",
   "settings.templates.activeHint":
     "The 'in use' template is applied automatically when a new retrospective is created.",
+  "settings.templates.aiDescription":
+    "Edit templates that the AI uses as a style guide when writing summaries. Use / to insert blocks.",
+  "settings.templates.aiActiveHint":
+    "The 'in use' template is used as a style guide when the AI generates a summary.",
+  "settings.templates.aiEmpty": "Add a template to define the AI summary style.",
   "settings.templates.newName": "New {type} template",
   "settings.templates.defaultName.daily": "Default daily template",
   "settings.templates.defaultName.weekly": "Default weekly template",
@@ -1534,6 +1553,8 @@ const zh: Dict = {
   "summary.kind.weekly": "周",
   "summary.kind.monthly": "月",
   "summary.kind.yearly": "年",
+  "summary.failed": "AI 摘要生成失败。",
+  "summary.rateLimited": "AI 摘要生成已达上限，请稍后再试。",
 
   "notif.panel.title": "通知",
   "notif.panel.subtitle": "最近 30 天的活动",
@@ -1654,6 +1675,11 @@ const zh: Dict = {
   "settings.templates.use": "使用",
   "settings.templates.inUse": "使用中",
   "settings.templates.activeHint": "创建新回顾时会自动应用「使用中」的模板。",
+  "settings.templates.aiDescription":
+    "编辑 AI 生成总结时作为风格指南参考的模板。使用 / 插入块。",
+  "settings.templates.aiActiveHint":
+    "「使用中」的模板在 AI 生成总结时作为风格指南使用。",
+  "settings.templates.aiEmpty": "添加模板以定义 AI 总结的写作风格。",
   "settings.templates.newName": "新建{type}模板",
   "settings.templates.defaultName.daily": "默认日间模板",
   "settings.templates.defaultName.weekly": "默认周间模板",
@@ -1979,6 +2005,8 @@ const ja: Dict = {
   "summary.kind.weekly": "週次",
   "summary.kind.monthly": "月次",
   "summary.kind.yearly": "年次",
+  "summary.failed": "AI 要約の生成に失敗しました。",
+  "summary.rateLimited": "AI 要約の生成上限に達しました。しばらくして再試行してください。",
 
   "notif.panel.title": "通知",
   "notif.panel.subtitle": "過去 30 日のアクティビティ",
@@ -2102,6 +2130,11 @@ const ja: Dict = {
   "settings.templates.inUse": "使用中",
   "settings.templates.activeHint":
     "「使用中」のテンプレートが、新しい振り返りの作成時に自動で適用されます。",
+  "settings.templates.aiDescription":
+    "AI がサマリーを作成する際のスタイルガイドとして参照するテンプレートを編集します。/ でブロックを挿入できます。",
+  "settings.templates.aiActiveHint":
+    "「使用中」のテンプレートが AI サマリー生成時のスタイルガイドとして使用されます。",
+  "settings.templates.aiEmpty": "テンプレートを追加して AI サマリーのスタイルを設定してください。",
   "settings.templates.newName": "新規{type}テンプレート",
   "settings.templates.defaultName.daily": "デフォルト日次テンプレート",
   "settings.templates.defaultName.weekly": "デフォルト週次テンプレート",

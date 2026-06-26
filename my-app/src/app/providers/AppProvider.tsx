@@ -21,7 +21,6 @@ import { detectOverdueSchedules } from "@/app/lib/scheduleSummary";
 import {
   buildSummaryEntry,
   KIND_TO_TYPE,
-  TITLE_BY_KIND,
 } from "@/app/lib/summaryFactory";
 import { getInitialAppState } from "@/app/model/initialState";
 import { appReducer } from "@/app/model/reducer";
@@ -63,7 +62,7 @@ import {
   startOfYear,
   todayKeyInTz,
 } from "@/shared/lib/date";
-import { createCoalescingQueue } from "@/shared/lib/coalesce";
+import { COALESCE_MS, createCoalescingQueue } from "@/shared/lib/coalesce";
 import { createId } from "@/shared/lib/id";
 import { translate } from "@/shared/lib/i18n";
 import { ConfirmModal } from "@/shared/ui";
@@ -81,7 +80,7 @@ import {
   apiGetConnection,
   apiGetCommits,
   apiGetSettings,
-  apiGetSummary,
+  apiGetSummaryEntry,
   apiGetSummaryReadiness,
   apiLinkOAuth,
   apiLinkRepo,
@@ -96,6 +95,7 @@ import {
   apiListLinkedRepos,
   apiListNotifications,
   apiListSessions,
+  apiListSummaries,
   apiListTodos,
   apiLogin,
   apiLogout,
@@ -126,7 +126,6 @@ import {
   apiSetActiveTemplate,
   streamNotifications,
   streamSummary,
-  summaryContentToMarkdown,
 } from "@/shared/api";
 import {
   MOCK_AVAILABLE_REPOS,
@@ -333,28 +332,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const finalizeApiSummary = (
     summaryId: string,
     kind: SummaryKind,
-    targetDateKey: string,
+    _targetDateKey: string,
   ) => {
-    void apiGetSummary(summaryId)
-      .then((summary) => {
-        const entryDateKey = summary.periodEnd || targetDateKey;
-        const retroType = KIND_TO_TYPE[kind];
-        // 이미 로컬에 같은 기간·종류의 entry 가 있으면(하이드레이션/이전 요약) 그
-        // id 를 재사용해 낙관적 단계에서 중복 entry 가 생기지 않게 한다.
-        const existingLocal = state.entries.find(
-          (e) => e.retroType === retroType && e.dateKey === entryDateKey,
-        );
-        const localId = existingLocal?.id ?? createId("entry");
-        const entry: JournalEntry = {
-          id: localId,
-          dateKey: entryDateKey,
-          title: TITLE_BY_KIND[kind],
-          content: summaryContentToMarkdown(summary.content),
-          retroType,
-          githubPush: null,
-          synced: false,
-          updatedAt: new Date().toISOString(),
-        };
+    // 요약은 retro_summaries 가 진실 공급원. /entries 로 미러링하지 않고,
+    // 완성된 요약을 표시용 entry(isSummary=true)로 state 에만 upsert 한다.
+    // (서버엔 이미 저장돼 있으므로 새로고침 시 /summaries 에서 다시 로드된다.)
+    void apiGetSummaryEntry(summaryId)
+      .then((entry) => {
         dispatch({ type: "entry/upsert", payload: { entry } });
         dispatch({ type: "summary/complete" });
         const locale = state.settings.locale;
@@ -366,97 +350,32 @@ export function AppProvider({ children }: { children: ReactNode }) {
           }),
           { category: "summary" },
         );
-        // API 모드: 생성된 entry 를 서버에 영속화한다.
-        // 저장하지 않으면 새로고침 시 주간/월간/연간 회고록이 사라진다.
-        void persistSummaryEntry(
-          localId,
-          kind,
-          entryDateKey,
-          summary.periodStart,
-          summary.periodEnd || entryDateKey,
-          entry.title,
-          entry.content,
-        );
       })
       .catch(() => dispatch({ type: "summary/cancel" }));
-  };
-
-  /**
-   * 요약으로 생성된 회고록 entry 를 서버에 영속화한다.
-   *  1. POST /entries 시도 → 성공 시 서버 ID 로 로컬 임시 ID 교체.
-   *  2. 409 JOURNAL_ENTRY_ALREADY_EXISTS → 서버에 이미 존재 →
-   *     GET /entries 로 해당 기간 기존 entry 의 ID 를 찾아 PUT 으로 덮어쓴다.
-   *
-   * (덮어쓸지 여부는 생성 전 사용자 확인을 이미 거쳤다 — 여기서는 그대로 저장.)
-   */
-  const persistSummaryEntry = async (
-    localId: string,
-    kind: SummaryKind,
-    entryDateKey: string,
-    periodStart: string,
-    periodEnd: string,
-    title: string,
-    content: string,
-  ) => {
-    const retroType = KIND_TO_TYPE[kind];
-    try {
-      const serverEntry = await apiCreateEntry({
-        dateKey: entryDateKey,
-        title,
-        content,
-        retroType,
-      });
-      dispatch({ type: "entry/replaceId", payload: { localId, serverEntry } });
-    } catch (e) {
-      if (
-        !(e instanceof ApiError) ||
-        e.code !== "JOURNAL_ENTRY_ALREADY_EXISTS"
-      ) {
-        console.warn("[persistSummaryEntry] entry 생성 실패:", e);
-        return;
-      }
-      // 이미 존재 → 기존 entry 를 찾아 덮어쓴다.
-      try {
-        const existingList = await apiListEntries({
-          retroType,
-          from: periodStart,
-          to: periodEnd,
-        });
-        const existing = existingList[0];
-        if (!existing) {
-          console.warn(
-            "[persistSummaryEntry] 409 이지만 기존 entry 조회 실패 — 건너뜀",
-          );
-          return;
-        }
-        const updated = await apiUpsertEntry(existing.id, {
-          dateKey: existing.dateKey,
-          title,
-          content,
-          retroType,
-        });
-        // 로컬 임시 entry 를 서버의 기존 entry(덮어쓴 내용)로 교체한다.
-        dispatch({
-          type: "entry/replaceId",
-          payload: { localId, serverEntry: updated },
-        });
-      } catch (inner) {
-        console.warn("[persistSummaryEntry] 덮어쓰기 실패:", inner);
-      }
-    }
   };
 
   const startSummaryViaApi = (
     kind: SummaryKind,
     targetDateKey: string,
     periodStart?: string,
+    force?: boolean,
   ) => {
     dispatch({ type: "summary/start", payload: { kind, targetDateKey } });
     apiSummaryAbortRef.current?.();
     apiSummaryAbortRef.current = null;
 
-    const fail = () => dispatch({ type: "summary/cancel" });
-    void apiGenerateSummary(kind, periodStart)
+    const locale = state.settings.locale;
+    const fail = (e?: unknown) => {
+      dispatch({ type: "summary/cancel" });
+      // 한도 초과(429)는 별도 안내, 그 외 실패는 일반 안내.
+      const msg =
+        e instanceof ApiError &&
+        e.code === "RETRO_SUMMARY_RATE_LIMIT_EXCEEDED"
+          ? translate(locale, "summary.rateLimited")
+          : translate(locale, "summary.failed");
+      pushNotification("warning", msg, "", { category: "summary" });
+    };
+    void apiGenerateSummary(kind, periodStart, force)
       .then((summary) => {
         if (summary.status === "completed") {
           finalizeApiSummary(summary.id, kind, targetDateKey);
@@ -464,9 +383,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
         apiSummaryAbortRef.current = streamSummary(summary.id, {
           onCompleted: () => finalizeApiSummary(summary.id, kind, targetDateKey),
-          onFailed: fail,
-          onTimeout: fail,
-          onError: fail,
+          onFailed: () => fail(),
+          onTimeout: () => fail(),
+          onError: () => fail(),
         });
       })
       .catch(fail);
@@ -526,11 +445,33 @@ export function AppProvider({ children }: { children: ReactNode }) {
       .then((todos) => dispatch({ type: "hydrate/todos", payload: { todos } }))
       // eslint-disable-next-line no-console
       .catch((e) => console.error("[hydrate/todos] 로드 실패:", e));
-    // 백엔드 /entries 는 from/to 없으면 빈 배열을 반환하므로 전체 범위를 명시한다.
-    void apiListEntries({ from: "1970-01-01", to: "2999-12-31" })
-      .then((entries) =>
-        dispatch({ type: "hydrate/entries", payload: { entries } }),
-      )
+    // 회고 데이터는 소스가 둘로 분리된다 (이중 쓰기 제거):
+    //   - 일일 회고: GET /entries?retroType=daily (사용자 작성)
+    //   - 주/월/연 AI 요약: GET /summaries?type=... (서버 생성, retro_summaries)
+    // 둘을 병합해 state.entries 로 하이드레이션한다. 요약은 isSummary=true.
+    // (백엔드 /entries 는 from/to 없으면 빈 배열을 반환하므로 전체 범위를 명시한다.)
+    void Promise.all([
+      apiListEntries({ retroType: "daily", from: "1970-01-01", to: "2999-12-31" }),
+      apiListSummaries("weekly"),
+      apiListSummaries("monthly"),
+      apiListSummaries("annual"),
+    ])
+      .then(([daily, weekly, monthly, annual]) => {
+        // 방어 ①: 서버가 retroType 필터를 무시해도 daily 외(옛 주/월/연 미러)는 버린다.
+        //   → /summaries 로 온 요약과 옛 /entries 미러가 같은 주에 중복으로 뜨는 것 방지.
+        const dailyOnly = daily.filter((e) => e.retroType === "daily");
+        // 방어 ②: 같은 (retroType, 기간시작일) 요약이 둘 이상이면 최신(updatedAt) 1개만 유지.
+        const byPeriod = new Map<string, JournalEntry>();
+        for (const s of [...weekly, ...monthly, ...annual]) {
+          const key = `${s.retroType}:${s.dateKey}`;
+          const prev = byPeriod.get(key);
+          if (!prev || s.updatedAt > prev.updatedAt) byPeriod.set(key, s);
+        }
+        dispatch({
+          type: "hydrate/entries",
+          payload: { entries: [...dailyOnly, ...byPeriod.values()] },
+        });
+      })
       // eslint-disable-next-line no-console
       .catch((e) => console.error("[hydrate/entries] 로드 실패:", e));
     void apiGetSettings()
@@ -543,9 +484,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         dispatch({ type: "hydrate/notifications", payload: { notifications } }),
       )
       .catch(() => {});
-    void apiListTemplates()
+    void apiListTemplates("daily")
       .then((templates) => {
-        // is_active 플래그로 각 retroType의 활성 템플릿 ID 추출
         const activeIds: Record<string, string> = {};
         for (const t of templates) {
           if (t.isActive) activeIds[t.retroType] = t.id;
@@ -608,8 +548,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // ─── 디바운스 코얼레싱 큐 ────────────────────────────────────────────────────
   // 변경이 잦은 서버 쓰기(todo/회고/설정/프로필)를 idle 후 1회로 합쳐 보낸다.
   // UI 는 각 핸들러에서 즉시 낙관적 dispatch 하므로 체감 지연은 없다.
-  // 입력이 3초간 멈출 때까지 전송을 미뤄, 타이핑 중에는 요청을 보내지 않는다.
-  const COALESCE_MS = 3000;
+  // COALESCE_MS 는 shared/lib/coalesce 에서 앱 전역으로 관리.
 
   // 큐 send 클로저는 1회만 생성되므로 최신 state 를 ref 로 참조한다.
   const reportApiErrorRef = useRef<() => void>(() => {});
@@ -963,6 +902,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (patch.content !== undefined || patch.title !== undefined) {
         readinessCacheRef.current.clear();
       }
+      // AI 요약(isSummary)은 /summaries 가 진실 공급원 → /entries 로 저장하지 않는다.
+      // (PUT /entries/{summ_id} 는 404. 요약 내용 변경은 재생성으로만 반영.)
+      const isSummary = state.entries.find((e) => e.id === id)?.isSummary;
+      if (isSummary) return;
       // 디바운스 코얼레싱 — 본문 타이핑을 idle 후 1회 upsert 로 합침.
       // (synced 는 서버 githubPush 필드 기반 — base 는 send 시점 최신값 사용)
       if (USE_API) {
@@ -1291,22 +1234,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     },
     checkRetroExists: async (kind, periodStart, periodEnd) => {
       const retroType = KIND_TO_TYPE[kind];
-      if (USE_API) {
-        // 서버를 진실 공급원으로 조회. 로컬 상태에 의존하지 않는다.
-        try {
-          const existing = await apiListEntries({
-            retroType,
-            from: periodStart,
-            to: periodEnd,
-          });
-          return existing.length > 0;
-        } catch (e) {
-          // 조회 실패 시 보수적으로 "없음" 처리 → 생성 시 서버 409 로 안전망 동작.
-          console.warn("[checkRetroExists] 조회 실패:", e);
-          return false;
-        }
-      }
-      // mock 모드: 로컬 상태에서 기간 내 동일 retroType entry 존재 여부 확인.
+      // 요약은 /summaries 로부터 state.entries 에 로드돼 있다(isSummary). 로컬에서
+      // 기간 내 동일 retroType 요약 존재 여부를 확인한다 (덮어쓰기 확인용).
       return state.entries.some(
         (e) =>
           e.retroType === retroType &&
@@ -1314,8 +1243,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
           e.dateKey <= periodEnd,
       );
     },
-    startSummary: (kind, targetDateKey, periodStart) => {
-      if (USE_API) startSummaryViaApi(kind, targetDateKey, periodStart);
+    startSummary: (kind, targetDateKey, periodStart, force) => {
+      if (USE_API) startSummaryViaApi(kind, targetDateKey, periodStart, force);
       else startSummaryInternal(kind, targetDateKey);
     },
     minimizeSummary: () => dispatch({ type: "summary/minimize" }),

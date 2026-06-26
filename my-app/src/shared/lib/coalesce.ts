@@ -1,3 +1,6 @@
+/** 앱 전역 debounce 기준값 (ms). 마지막 입력 후 이 시간이 지나면 API 전송. */
+export const COALESCE_MS = 1500;
+
 /**
  * 변경이 잦은 서버 쓰기(PATCH/PUT)를 키 단위로 모아 보내는 디바운스 코얼레싱 큐.
  *

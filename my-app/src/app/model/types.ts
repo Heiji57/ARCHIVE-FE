@@ -161,6 +161,8 @@ export interface ArchiveAppContextValue {
     kind: SummaryKind,
     targetDateKey: string,
     periodStart?: string,
+    /** true 면 이미 완료된 기간도 강제 재생성 (덮어쓰기 확인 후). */
+    force?: boolean,
   ) => void;
   minimizeSummary: () => void;
   completeSummary: () => void;

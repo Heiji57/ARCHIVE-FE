@@ -102,7 +102,7 @@ export function MonthGrid({
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(7, 1fr)",
+          gridTemplateColumns: "repeat(7, minmax(0, 1fr))",
           gap: 4,
         }}
       >

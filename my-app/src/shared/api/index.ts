@@ -44,10 +44,19 @@ export {
 export {
   apiGenerateSummary,
   apiGetSummary,
+  apiGetSummaryEntry,
   apiGetSummaryReadiness,
+  apiListSummaries,
+  apiListSummaryTemplates,
+  apiCreateSummaryTemplate,
+  apiUpdateSummaryTemplate,
+  apiDeleteSummaryTemplate,
+  apiSetActiveSummaryTemplate,
   streamSummary,
   summaryContentToMarkdown,
+  toSummaryEntry,
   type MappedSummary,
+  type SummaryTemplate,
 } from "./summaries";
 export {
   apiListNotifications,

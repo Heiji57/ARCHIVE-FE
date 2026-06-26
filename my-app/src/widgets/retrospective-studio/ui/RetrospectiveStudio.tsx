@@ -38,6 +38,8 @@ export function RetrospectiveStudio() {
     target: string;
     periodStart: string;
     readiness: SummaryReadiness;
+    /** 덮어쓰기 확인을 거쳐 강제 재생성하는 경우 true. */
+    force: boolean;
   } | null>(null);
 
   // 이미 요약된 회고록 덮어쓰기 확인 다이얼로그 상태
@@ -123,10 +125,12 @@ export function RetrospectiveStudio() {
   };
 
   // 데이터 밀도 점검(monthly/yearly) 후 요약 생성. 부족하면 확인 다이얼로그.
+  // force=true 면 이미 완료된 기간도 강제 재생성(덮어쓰기 확인을 거친 경우).
   const proceedSummary = async (
     kind: SummaryKind,
     periodStart: string,
     anchorDateKey: string,
+    force = false,
   ) => {
     const readiness = await checkSummaryReadiness(kind, periodStart);
     if (readiness && readiness.recommendation === "insufficient") {
@@ -135,18 +139,19 @@ export function RetrospectiveStudio() {
         target: anchorDateKey,
         periodStart,
         readiness,
+        force,
       });
       return;
     }
-    startSummary(kind, anchorDateKey, periodStart);
+    startSummary(kind, anchorDateKey, periodStart, force);
   };
 
-  // 덮어쓰기 확인 → 요약 진행
+  // 덮어쓰기 확인 → 강제 재생성(force=true).
   const confirmOverwrite = () => {
     if (!overwriteDialog) return;
     const { kind, periodStart, anchorDateKey } = overwriteDialog;
     setOverwriteDialog(null);
-    void proceedSummary(kind, periodStart, anchorDateKey);
+    void proceedSummary(kind, periodStart, anchorDateKey, true);
   };
 
   const confirmReadinessGenerate = () => {
@@ -155,6 +160,7 @@ export function RetrospectiveStudio() {
       readinessDialog.kind,
       readinessDialog.target,
       readinessDialog.periodStart,
+      readinessDialog.force,
     );
     setReadinessDialog(null);
   };

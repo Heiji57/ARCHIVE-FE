@@ -6,9 +6,14 @@
  * ⚠️ EventSource 는 Authorization 헤더를 못 싣는다 → fetch + ReadableStream 으로 직접 파싱.
  */
 import type {
+  JournalEntry,
+  RetrospectiveType,
+} from "@/entities/entry/model/types";
+import type {
   SummaryKind,
   SummaryReadiness,
 } from "@/entities/summary/model/types";
+import { fromDateKey, getISOWeek } from "@/shared/lib/date";
 import { API_BASE_URL } from "./config";
 import { refreshAccessToken, request } from "./client";
 import { getAccessToken } from "./tokenStore";
@@ -16,6 +21,7 @@ import type { components } from "./schema";
 
 type SummaryResponse = components["schemas"]["SummaryResponse"];
 type SummaryContent = components["schemas"]["SummaryContentResponse"];
+type SummaryType = components["schemas"]["SummaryType"];
 
 export interface MappedSummary {
   id: string;
@@ -53,20 +59,98 @@ const DEFAULT_SECTION_LABELS: Record<string, string> = {
 
 /**
  * 구조화 content → 마크다운 본문 (FE 회고는 마크다운 문자열).
- * content.sections 는 동적 키 맵({ 섹션헤더: 항목[] }) — 서버가 정한 순서대로 순회한다.
+ * 신규 계약: { sections: { 섹션헤더: 항목[] } }. 단, 전환기/구버전 호환을 위해
+ * sections 래퍼가 없는 평면 형태({ achievements: [...], ... })도 그대로 처리한다.
  */
 export function summaryContentToMarkdown(content: SummaryContent | null): string {
-  if (!content?.sections) return "";
-  return Object.entries(content.sections)
-    .map(([key, items]) =>
-      items && items.length
-        ? `## ${DEFAULT_SECTION_LABELS[key] ?? key}\n${items
-            .map((i) => `- ${i}`)
-            .join("\n")}`
-        : "",
+  if (!content) return "";
+  const raw = content as unknown as Record<string, unknown>;
+  const sections = (raw.sections ?? raw) as Record<string, unknown>;
+  return Object.entries(sections)
+    .filter(([, items]) => Array.isArray(items) && items.length > 0)
+    .map(
+      ([key, items]) =>
+        `## ${DEFAULT_SECTION_LABELS[key] ?? key}\n${(items as string[])
+          .map((i) => `- ${i}`)
+          .join("\n")}`,
     )
-    .filter(Boolean)
     .join("\n\n");
+}
+
+// API SummaryType(annual) ↔ FE RetrospectiveType(yearly) 매핑
+const TYPE_TO_RETRO: Record<SummaryType, RetrospectiveType> = {
+  weekly: "weekly",
+  monthly: "monthly",
+  annual: "yearly",
+};
+
+/** 요약 응답엔 title 이 없으므로 summary_type + 기간으로 표시용 제목을 만든다. */
+function summaryTitle(api: SummaryResponse): string {
+  const start = api.period_start;
+  const [y, m] = start.split("-");
+  switch (api.summary_type) {
+    case "weekly": {
+      const w = getISOWeek(fromDateKey(start));
+      return `${y}-W${String(w).padStart(2, "0")} 주간 회고`;
+    }
+    case "monthly":
+      return `${y}년 ${Number(m)}월 월간 회고`;
+    case "annual":
+    default:
+      return `${y}년 연간 회고`;
+  }
+}
+
+/**
+ * AI 요약(SummaryResponse) → 회고 표시용 JournalEntry.
+ * 요약은 /summaries 가 진실 공급원이라 /entries 로 저장하지 않는다(isSummary=true).
+ * dateKey 는 period_start(기간 시작일) — 회고 사이드바의 연/월/주 필터와 정합.
+ */
+export function toSummaryEntry(api: SummaryResponse): JournalEntry {
+  const gp = api.githubPush;
+  const githubPush = gp
+    ? {
+        pushedAt: gp.pushedAt,
+        commitSha: gp.commitSha,
+        htmlUrl: gp.htmlUrl,
+        path: gp.path,
+        repositoryFullName: gp.repositoryFullName,
+      }
+    : null;
+  return {
+    id: api.id,
+    dateKey: api.period_start,
+    title: summaryTitle(api),
+    content: summaryContentToMarkdown(api.content ?? null),
+    retroType: TYPE_TO_RETRO[api.summary_type],
+    githubPush,
+    synced: githubPush !== null,
+    updatedAt: api.updated_at ?? api.created_at,
+    isSummary: true,
+  };
+}
+
+/** 단일 요약을 회고 표시용 entry 로 조회 (GET /summaries/{id}). */
+export async function apiGetSummaryEntry(id: string): Promise<JournalEntry> {
+  const res = await request<SummaryResponse>(`/summaries/${id}`);
+  return toSummaryEntry(res);
+}
+
+/**
+ * 요약 목록 조회 (GET /summaries?type=...).
+ * 완료(completed)된 요약만 표시용 entry 로 변환해 반환한다.
+ */
+export async function apiListSummaries(
+  type: SummaryType,
+): Promise<JournalEntry[]> {
+  const list = await request<SummaryResponse[] | null | undefined>(
+    "/summaries",
+    { query: { type } },
+  );
+  if (!Array.isArray(list)) return [];
+  return list
+    .filter((s) => s.status === "completed")
+    .map(toSummaryEntry);
 }
 
 /**
@@ -74,16 +158,22 @@ export function summaryContentToMarkdown(content: SummaryContent | null): string
  * @param periodStart 요약할 기간의 시작일(YYYY-MM-DD).
  *   - 주간: 해당 주 월요일 / 월간: 해당 달 1일 / 연간: 해당 해 1월 1일
  *   - 생략 시 서버가 직전 기간(지난 주/지난 달/작년) 자동 계산.
+ * @param force true 면 이미 completed 인 기간도 강제 재생성(rate limit 소모).
+ *   생략/false 면 서버가 기존 완료본을 그대로 반환(재생성 안 함).
  */
 export async function apiGenerateSummary(
   kind: SummaryKind,
   periodStart?: string,
+  force?: boolean,
 ): Promise<MappedSummary> {
+  const query: Record<string, string | boolean> = {
+    type: KIND_TO_TYPE[kind],
+  };
+  if (periodStart) query.periodStart = periodStart;
+  if (force) query.force = true;
   const res = await request<SummaryResponse>("/summaries/generate", {
     method: "POST",
-    query: periodStart
-      ? { type: KIND_TO_TYPE[kind], periodStart }
-      : { type: KIND_TO_TYPE[kind] },
+    query,
   });
   return toSummary(res);
 }
@@ -120,6 +210,80 @@ export async function apiGetSummaryReadiness(
     completenessRatio: res.completenessRatio,
     recommendation: res.recommendation,
   };
+}
+
+// ─── AI 요약 템플릿 ──────────────────────────────────────────────────────────
+
+type SummaryTemplateResponse = components["schemas"]["SummaryTemplateResponse"];
+
+export interface SummaryTemplate {
+  id: string;
+  summaryType: SummaryType;
+  name: string;
+  content: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string | null;
+}
+
+function toSummaryTemplate(api: SummaryTemplateResponse): SummaryTemplate {
+  return {
+    id: api.id,
+    summaryType: api.summaryType,
+    name: api.name,
+    content: api.content,
+    isActive: api.isActive,
+    createdAt: api.createdAt,
+    updatedAt: api.updatedAt ?? null,
+  };
+}
+
+export async function apiListSummaryTemplates(type: SummaryType): Promise<SummaryTemplate[]> {
+  const list = await request<SummaryTemplateResponse[] | null | undefined>(
+    "/summaries/templates",
+    { query: { type } },
+  );
+  if (!Array.isArray(list)) return [];
+  return list.map(toSummaryTemplate);
+}
+
+export async function apiCreateSummaryTemplate(
+  type: SummaryType,
+  name: string,
+  content: string,
+): Promise<SummaryTemplate> {
+  const res = await request<SummaryTemplateResponse>("/summaries/templates", {
+    method: "POST",
+    query: { type },
+    body: { name, content },
+  });
+  return toSummaryTemplate(res);
+}
+
+export async function apiUpdateSummaryTemplate(
+  id: string,
+  patch: { name?: string; content?: string },
+): Promise<SummaryTemplate> {
+  const res = await request<SummaryTemplateResponse>(`/summaries/templates/${id}`, {
+    method: "PATCH",
+    body: patch,
+  });
+  return toSummaryTemplate(res);
+}
+
+export async function apiDeleteSummaryTemplate(id: string): Promise<void> {
+  await request(`/summaries/templates/${id}`, { method: "DELETE" });
+}
+
+/** type별 활성 AI 요약 템플릿 설정 (null = 해제). */
+export async function apiSetActiveSummaryTemplate(
+  type: SummaryType,
+  templateId: string | null,
+): Promise<void> {
+  await request("/settings/auto-summary/active", {
+    method: "PUT",
+    body: { [type]: templateId },
+  });
 }
 
 // ─── SSE 스트림 ───────────────────────────────────────────────────────────────

@@ -24,4 +24,9 @@ export interface JournalEntry {
    */
   synced: boolean;
   retroType: RetrospectiveType;
+  /**
+   * true 면 이 entry 는 AI 요약(retro_summaries) 에서 온 것이다 (daily 회고와 구분).
+   * 요약은 /summaries 가 진실 공급원이라 /entries 로 저장하지 않는다(편집 미영속).
+   */
+  isSummary?: boolean;
 }
