@@ -25,7 +25,16 @@ export {
   apiCreateTodo,
   apiUpdateTodo,
   apiDeleteTodo,
+  type TodosWithEvents,
 } from "./todos";
+export {
+  apiGetCalendarConnection,
+  apiConnectCalendar,
+  apiDisconnectCalendar,
+  apiSyncCalendar,
+  apiListCalendarEvents,
+  type CalendarConnection,
+} from "./calendar";
 export {
   apiListEntries,
   apiCreateEntry,

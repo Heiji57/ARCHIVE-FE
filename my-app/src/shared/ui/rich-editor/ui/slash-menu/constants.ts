@@ -1,5 +1,6 @@
 import {
   ChevronRight,
+  Code2,
   Heading1,
   Heading2,
   Heading3,
@@ -28,6 +29,7 @@ export const ICONS: Record<string, LucideIcon> = {
   Lightbulb,
   Table: TableIcon,
   Minus,
+  Code2,
 };
 
 /** 카테고리 그룹 라벨 (다국어) */

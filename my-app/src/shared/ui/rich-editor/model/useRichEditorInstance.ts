@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
+import { Link } from "@tiptap/extension-link";
 import { Placeholder } from "@tiptap/extension-placeholder";
 import {
   Table,
@@ -44,6 +45,10 @@ export function useRichEditorInstance({ value, placeholder, onChange }: Options)
       TableRow,
       TableHeader,
       TableCell,
+      Link.configure({
+        openOnClick: false,
+        HTMLAttributes: { rel: "noopener noreferrer" },
+      }),
       Callout,
       ToggleNode,
       ToggleSummary,

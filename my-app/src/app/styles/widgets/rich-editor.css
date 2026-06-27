@@ -561,7 +561,7 @@
   justify-content: space-between;
   padding: 14px 20px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  position: sticky;
+  position: static;
   top: 0;
   background: var(--color-canvas, #0f0f10);
   border-radius: 10px 10px 0 0;
@@ -723,6 +723,9 @@
 .rich-block-handle-menu {
   cursor: grab;
 }
+.rich-block-handle-menu:active {
+  cursor: grabbing;
+}
 
 /* 블록 메뉴 (Notion 스타일) */
 .rich-block-menu {
@@ -819,6 +822,101 @@
 .rich-editor .ProseMirror table colgroup col,
 .rich-editor .ProseMirror .rich-table colgroup col {
   width: auto !important;
+}
+
+/* ============================================================
+   Bubble toolbar (텍스트 선택 시 포맷팅 툴바)
+   ============================================================ */
+.bubble-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 6px;
+  background: #1c1d1f;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 7px;
+  box-shadow:
+    rgba(15, 15, 15, 0.08) 0 0 0 1px,
+    rgba(15, 15, 15, 0.15) 0 4px 12px,
+    rgba(15, 15, 15, 0.25) 0 10px 32px;
+  z-index: 9999;
+}
+
+.bubble-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  transition:
+    background 120ms ease,
+    color 120ms ease;
+}
+
+.bubble-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.bubble-btn.is-active {
+  background: rgba(94, 106, 210, 0.25);
+  color: #a5b0ff;
+}
+
+.bubble-btn.is-active:hover {
+  background: rgba(94, 106, 210, 0.35);
+}
+
+.bubble-sep {
+  display: block;
+  width: 1px;
+  height: 18px;
+  background: rgba(255, 255, 255, 0.12);
+  margin: 0 2px;
+  flex-shrink: 0;
+}
+
+/* 링크 입력 폼 */
+.bubble-link-form {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 2px;
+}
+
+.bubble-link-input {
+  width: 220px;
+  height: 28px;
+  padding: 0 8px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 4px;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 13px;
+  outline: none;
+  transition: border-color 120ms ease;
+}
+
+.bubble-link-input::placeholder {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.bubble-link-input:focus {
+  border-color: rgba(94, 106, 210, 0.7);
+}
+
+.bubble-link-confirm {
+  width: auto;
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.92);
+  white-space: nowrap;
 }
 
 /* ============================================================

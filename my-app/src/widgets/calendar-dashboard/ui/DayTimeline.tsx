@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import type { CalendarEvent } from "@/entities/calendar/model/types";
 import type { Todo } from "@/entities/todo/model/types";
 import { StatusIcon } from "@/entities/todo/ui/StatusIcon";
 import { useTranslation } from "@/shared/lib/i18n";
+import { CalendarEventChip } from "./CalendarEventChip";
 import {
   HOUR_PX,
   MIN_BLOCK_MIN,
@@ -19,6 +21,8 @@ export interface DayTimelineProps {
   dayKey: string;
   todayKey: string;
   todos: Todo[];
+  /** 해당 날짜의 Google Calendar 이벤트(읽기 전용). */
+  events?: CalendarEvent[];
   selectedId: string | null;
   onSelect: (id: string) => void;
   onReschedule: (id: string, startTime: string, endTime: string) => void;
@@ -132,6 +136,7 @@ export function DayTimeline({
   dayKey,
   todayKey,
   todos,
+  events = [],
   selectedId,
   onSelect,
   onReschedule,
@@ -546,6 +551,18 @@ export function DayTimeline({
           )}
         </div>
       </div>
+
+      {/* Google Calendar 이벤트 (읽기 전용) — 타임라인과 분리해 상단에 노출 */}
+      {events.length > 0 ? (
+        <div className="day-events">
+          <span className="day-allday-label">Google Calendar</span>
+          <div className="day-events-items">
+            {events.map((ev) => (
+              <CalendarEventChip key={ev.id} event={ev} />
+            ))}
+          </div>
+        </div>
+      ) : null}
 
       <div className="day-timeline-scroll" ref={scrollRef}>
         <div

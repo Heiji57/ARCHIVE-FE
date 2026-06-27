@@ -78,8 +78,13 @@ import {
   apiDeleteNotification,
   apiGenerateSummary,
   apiGetConnection,
+  apiGetCalendarConnection,
+  apiConnectCalendar,
+  apiDisconnectCalendar,
+  apiSyncCalendar,
   apiGetCommits,
   apiGetSettings,
+  apiGetSummary,
   apiGetSummaryEntry,
   apiGetSummaryReadiness,
   apiLinkOAuth,
@@ -365,7 +370,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     apiSummaryAbortRef.current = null;
 
     const locale = state.settings.locale;
+    let finished = false;
+
     const fail = (e?: unknown) => {
+      if (finished) return;
+      finished = true;
       dispatch({ type: "summary/cancel" });
       // 한도 초과(429)는 별도 안내, 그 외 실패는 일반 안내.
       const msg =
@@ -375,18 +384,54 @@ export function AppProvider({ children }: { children: ReactNode }) {
           : translate(locale, "summary.failed");
       pushNotification("warning", msg, "", { category: "summary" });
     };
+
+    const complete = (summaryId: string) => {
+      if (finished) return;
+      finished = true;
+      finalizeApiSummary(summaryId, kind, targetDateKey);
+    };
+
     void apiGenerateSummary(kind, periodStart, force)
       .then((summary) => {
         if (summary.status === "completed") {
-          finalizeApiSummary(summary.id, kind, targetDateKey);
+          complete(summary.id);
           return;
         }
-        apiSummaryAbortRef.current = streamSummary(summary.id, {
-          onCompleted: () => finalizeApiSummary(summary.id, kind, targetDateKey),
+
+        // 폴링 최대 횟수: 5초 × 72 = 6분. 이 안에 완료·실패를 감지 못하면 타임아웃 처리.
+        let pollCount = 0;
+        const MAX_POLLS = 72;
+
+        // 1) 폴링 (기본): 5초마다 상태 직접 조회 — SSE 이벤트보다 안정적
+        const pollTimer = window.setInterval(() => {
+          if (finished) { window.clearInterval(pollTimer); return; }
+          if (++pollCount > MAX_POLLS) {
+            window.clearInterval(pollTimer);
+            fail();
+            return;
+          }
+          void apiGetSummary(summary.id)
+            .then((s: { status: string }) => {
+              if (s.status === "completed") { window.clearInterval(pollTimer); complete(summary.id); }
+              else if (s.status === "failed") { window.clearInterval(pollTimer); fail(); }
+            })
+            .catch(() => { /* 일시적 네트워크 오류 — 다음 폴링 때 재시도 */ });
+        }, 5000);
+
+        // 2) SSE 보조: 실시간 이벤트 도달 시 즉시 처리 (폴링보다 빠를 수 있음)
+        const stopSSE = streamSummary(summary.id, {
+          onCompleted: () => complete(summary.id),
           onFailed: () => fail(),
-          onTimeout: () => fail(),
-          onError: () => fail(),
+          // SSE 타임아웃·오류는 폴링이 계속 담당하므로 여기서는 chip 을 건드리지 않음
+          onTimeout: () => { /* polling handles */ },
+          onError: () => { /* polling handles */ },
         });
+
+        apiSummaryAbortRef.current = () => {
+          finished = true;
+          window.clearInterval(pollTimer);
+          stopSSE();
+        };
       })
       .catch(fail);
   };
@@ -442,7 +487,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     hydratedUserRef.current = uid;
 
     void apiListTodos({ from: "1970-01-01", to: "2999-12-31" })
-      .then((todos) => dispatch({ type: "hydrate/todos", payload: { todos } }))
+      .then(({ todos, events }) => {
+        dispatch({ type: "hydrate/todos", payload: { todos } });
+        // 캘린더 이벤트는 GET /todos 응답에 함께 실려 온다(읽기 전용).
+        // 미연결 사용자는 events: [] 이므로 분기 불필요.
+        dispatch({ type: "hydrate/events", payload: { events } });
+      })
       // eslint-disable-next-line no-console
       .catch((e) => console.error("[hydrate/todos] 로드 실패:", e));
     // 회고 데이터는 소스가 둘로 분리된다 (이중 쓰기 제거):
@@ -508,7 +558,39 @@ export function AppProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.currentUser?.id]);
 
+  // ─── Google Calendar 연결 프로브 ─────────────────────────────────────────────
+  const calendarProbedRef = useRef<string | null>(null);
+  useEffect(() => {
+    const uid = state.currentUser?.id ?? null;
+    if (!uid || calendarProbedRef.current === uid) return;
+    calendarProbedRef.current = uid;
+    runCalendarRefresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.currentUser?.id]);
+
   // ─── API 모드: 실시간 알림 SSE 구독 (자동 재연결) ───────────────────────────
+
+  // 이미 처리한 summary 알림 ID — 재연결 replay 또는 수동 생성 per-summary SSE 와
+  // notification SSE 가 동시에 도달할 때 중복 refetch/토스트를 방지한다.
+  const processedNotifIdsRef = useRef<Set<string>>(new Set());
+
+  // 모든 요약 타입을 재조회해 state 에 upsert — 토스트 없이 silent 갱신.
+  // 멱등: 동일 entry.id 는 덮어쓰고, 신규 entry 는 추가된다.
+  const refetchSummaries = useCallback(async () => {
+    try {
+      const [weekly, monthly, annual] = await Promise.all([
+        apiListSummaries("weekly").catch((): JournalEntry[] => []),
+        apiListSummaries("monthly").catch((): JournalEntry[] => []),
+        apiListSummaries("annual").catch((): JournalEntry[] => []),
+      ]);
+      for (const entry of [...weekly, ...monthly, ...annual]) {
+        dispatch({ type: "entry/upsert", payload: { entry } });
+      }
+    } catch {
+      /* 네트워크 오류 — 다음 재연결 시 보정 */
+    }
+  }, []);
+
   useEffect(() => {
     if (!USE_API || !state.currentUser?.id) return;
     let stopped = false;
@@ -518,11 +600,31 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const connect = () => {
       if (stopped) return;
       abort = streamNotifications(
-        (notification) =>
-          dispatch({ type: "notification/push", payload: { notification } }),
+        (notification) => {
+          dispatch({ type: "notification/push", payload: { notification } });
+          // category === "summary" 알림 = 서버 자동 요약 완료/실패 신호.
+          // notification.id 기준 dedup 후 silent refetch — 토스트는 notification
+          // 자체(알림 패널)가 담당하므로 여기선 추가 토스트를 띄우지 않는다.
+          // resource !== "summary" 인 일반 알림(sync/system)은 무시한다.
+          if (notification.category === "summary") {
+            if (!processedNotifIdsRef.current.has(notification.id)) {
+              processedNotifIdsRef.current.add(notification.id);
+              void refetchSummaries();
+            }
+          }
+        },
         () => {
-          // 5분 타임아웃/오류로 종료 → 재연결
-          if (!stopped) retryTimer = window.setTimeout(connect, 3000);
+          // SSE 종료(5분 타임아웃 등) → 재연결 + 누락 변경 보정 refetch
+          // 알림과 요약 모두 갱신해 끊긴 동안 누락된 이벤트를 보정한다.
+          if (!stopped) {
+            void refetchSummaries();
+            void apiListNotifications()
+              .then((notifications) =>
+                dispatch({ type: "hydrate/notifications", payload: { notifications } }),
+              )
+              .catch(() => {});
+            retryTimer = window.setTimeout(connect, 3000);
+          }
         },
       );
     };
@@ -533,7 +635,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (retryTimer) window.clearTimeout(retryTimer);
       abort?.();
     };
-  }, [state.currentUser?.id]);
+  }, [state.currentUser?.id, refetchSummaries]);
 
   // ─── API 모드 헬퍼 ──────────────────────────────────────────────────────────
   // 실패 시 일시적 토스트로 알린다 (네트워크 오류 메시지 재사용).
@@ -771,6 +873,54 @@ export function AppProvider({ children }: { children: ReactNode }) {
         // connection 조회 실패 → 이전 상태 유지하되 unknown 으로
         dispatch({
           type: "github/setStatus",
+          payload: { status: "not-connected" },
+        });
+      });
+  };
+
+  // GET /todos 를 재조회해 캘린더 이벤트만 silent 갱신 (todo 는 그대로 유지).
+  const refetchCalendarEvents = async () => {
+    if (!USE_API) return;
+    try {
+      const { events } = await apiListTodos({
+        from: "1970-01-01",
+        to: "2999-12-31",
+      });
+      dispatch({ type: "hydrate/events", payload: { events } });
+    } catch {
+      /* 네트워크 오류 — 다음 하이드레이션에서 보정 */
+    }
+  };
+
+  // ─── Google Calendar 연결 프로브 ─────────────────────────────────────────────
+  const runCalendarRefresh = () => {
+    // 데모/mock 모드: 연결 기능 미제공 → 미연결 유지.
+    if (isDemoMode() || !USE_API) {
+      dispatch({
+        type: "calendar/setConnection",
+        payload: { status: "not-connected", googleUserId: null, lastSyncedAt: null },
+      });
+      return;
+    }
+    void apiGetCalendarConnection()
+      .then((conn) => {
+        const status = !conn.connected
+          ? "not-connected"
+          : conn.needsReauth
+            ? "needs-reauth"
+            : "connected";
+        dispatch({
+          type: "calendar/setConnection",
+          payload: {
+            status,
+            googleUserId: conn.googleUserId,
+            lastSyncedAt: conn.lastSyncedAt,
+          },
+        });
+      })
+      .catch(() => {
+        dispatch({
+          type: "calendar/setConnection",
           payload: { status: "not-connected" },
         });
       });
@@ -1148,6 +1298,66 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const err =
           e instanceof ApiError ? e.code : "GITHUB_PUSH_FAILED";
         return { ok: false, error: err };
+      }
+    },
+    // ─── Google Calendar 연동 ──────────────────────────────────────────────────
+    refreshCalendar: () => runCalendarRefresh(),
+    connectCalendar: async () => {
+      if (requireLoginInDemo()) return { ok: false, error: "demo" };
+      if (!USE_API) return { ok: false, error: "mock" };
+      const result = await apiConnectCalendar();
+      // 콜백 메시지를 받았든 놓쳤든 서버 연결 상태를 직접 재확인해 즉시 반영.
+      // 연결 직후엔 이벤트도 GET /todos 로 함께 들어오므로 같이 갱신한다.
+      runCalendarRefresh();
+      void refetchCalendarEvents();
+      return result;
+    },
+    disconnectCalendar: async () => {
+      if (requireLoginInDemo()) return { ok: false };
+      if (!USE_API) return { ok: false };
+      try {
+        await apiDisconnectCalendar();
+        dispatch({
+          type: "calendar/setConnection",
+          payload: { status: "not-connected", googleUserId: null, lastSyncedAt: null },
+        });
+        return { ok: true };
+      } catch {
+        reportApiError();
+        return { ok: false };
+      }
+    },
+    syncCalendar: async () => {
+      if (requireLoginInDemo()) return { ok: false };
+      if (!USE_API) return { ok: false };
+      try {
+        const conn = await apiSyncCalendar();
+        const status = !conn.connected
+          ? "not-connected"
+          : conn.needsReauth
+            ? "needs-reauth"
+            : "connected";
+        dispatch({
+          type: "calendar/setConnection",
+          payload: {
+            status,
+            googleUserId: conn.googleUserId,
+            lastSyncedAt: conn.lastSyncedAt,
+          },
+        });
+        void refetchCalendarEvents();
+        return { ok: true };
+      } catch (e) {
+        // refresh_token 무효 → 재연결 유도 상태로 전환 (FE 가 재연결 배너 표시)
+        if (e instanceof ApiError && e.code === "GOOGLE_CALENDAR_REAUTH_REQUIRED") {
+          dispatch({
+            type: "calendar/setConnection",
+            payload: { status: "needs-reauth" },
+          });
+        } else {
+          reportApiError();
+        }
+        return { ok: false };
       }
     },
     pushNotification,

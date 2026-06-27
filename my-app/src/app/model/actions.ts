@@ -1,3 +1,7 @@
+import type {
+  CalendarEvent,
+  CalendarStatus,
+} from "@/entities/calendar/model/types";
 import type { JournalEntry, RetrospectiveType } from "@/entities/entry/model/types";
 import type {
   GitHubCommit,
@@ -44,6 +48,7 @@ export type AppAction =
   | { type: "todo/remove"; payload: { id: string } }
   // ── 서버 하이드레이션 (API 모드) ──
   | { type: "hydrate/todos"; payload: { todos: Todo[] } }
+  | { type: "hydrate/events"; payload: { events: CalendarEvent[] } }
   | { type: "hydrate/entries"; payload: { entries: JournalEntry[] } }
   | { type: "hydrate/notifications"; payload: { notifications: NotificationItem[] } }
   | { type: "hydrate/settings"; payload: { settings: AppSettings } }
@@ -79,6 +84,14 @@ export type AppAction =
     }
   | { type: "github/setPushTarget"; payload: { repositoryId: string | null } }
   | { type: "github/setCommits"; payload: { commits: GitHubCommit[] } }
+  | {
+      type: "calendar/setConnection";
+      payload: {
+        status: CalendarStatus;
+        googleUserId?: string | null;
+        lastSyncedAt?: string | null;
+      };
+    }
   | { type: "notification/push"; payload: { notification: NotificationItem } }
   | { type: "notification/dismiss"; payload: { id: string } }
   | { type: "notification/markRead"; payload: { id: string } }

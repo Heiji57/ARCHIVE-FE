@@ -1,3 +1,4 @@
+import type { CalendarState } from "@/entities/calendar/model/types";
 import type { JournalEntry, RetrospectiveType } from "@/entities/entry/model/types";
 import type {
   AvailableRepository,
@@ -38,6 +39,8 @@ export interface PersistedAppState {
 export interface AppState extends PersistedAppState {
   /** GitHub 연동은 서버 소스(또는 세션) 기반이라 영속화하지 않는다. */
   github: GitHubState;
+  /** Google Calendar 연동도 서버 소스 기반이라 영속화하지 않는다. */
+  calendar: CalendarState;
 }
 
 export interface PushNotificationOptions {
@@ -115,6 +118,15 @@ export interface ArchiveAppContextValue {
     dateKey: string,
     contentMarkdown: string,
   ) => Promise<PushRetrospectiveResult>;
+  // ─── Google Calendar 연동 ──────────────────────────────────────────────────
+  /** 캘린더 연결 상태를 (재)조회해 상태에 반영. */
+  refreshCalendar: () => void;
+  /** Google Calendar 연결 시작 (팝업 동의 → 상태 갱신). */
+  connectCalendar: () => Promise<{ ok: boolean; error?: string }>;
+  /** Google Calendar 연결 해제 (연결 + 이벤트 삭제). */
+  disconnectCalendar: () => Promise<{ ok: boolean }>;
+  /** Google Calendar 수동 동기화. */
+  syncCalendar: () => Promise<{ ok: boolean }>;
   pushNotification: (
     type: NoticeType,
     title: string,

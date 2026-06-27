@@ -149,7 +149,10 @@ export function streamSSE(
   const controller = new AbortController();
 
   const open = async (retried: boolean): Promise<void> => {
-    const headers: Record<string, string> = {};
+    const headers: Record<string, string> = {
+      // gzip 압축 요청 제거 → SSE 청크가 버퍼링 없이 실시간으로 전달됨
+      "Accept-Encoding": "identity",
+    };
     const token = getAccessToken();
     if (token) headers["Authorization"] = `Bearer ${token}`;
 

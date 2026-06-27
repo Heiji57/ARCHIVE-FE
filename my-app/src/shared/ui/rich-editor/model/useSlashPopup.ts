@@ -29,6 +29,16 @@ export function useSlashPopup(editor: Editor | null) {
         setPopup((prev) => (prev.open ? EMPTY_POPUP : prev));
         return;
       }
+      if (result.query === "--") {
+        editor
+          .chain()
+          .focus()
+          .deleteRange({ from: result.from, to: result.to })
+          .setHorizontalRule()
+          .run();
+        setPopup(EMPTY_POPUP);
+        return;
+      }
       const coords = editor.view.coordsAtPos(result.from);
       setPopup((prev) => {
         // 같은 슬래시 시작 위치면 rect 유지 + query/to만 갱신

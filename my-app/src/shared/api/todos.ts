@@ -1,4 +1,5 @@
 /** Todo 도메인 API. 반환은 FE 도메인 타입(camelCase)으로 매핑해 돌려준다. */
+import type { CalendarEvent } from "@/entities/calendar/model/types";
 import type { TaskStatus, Todo } from "@/entities/todo/model/types";
 import { request } from "./client";
 import { toTodo } from "./mappers";
@@ -6,14 +7,40 @@ import type { components } from "./schema";
 
 type TodoResponse = components["schemas"]["TodoResponse"];
 
-/** 기간 범위(from~to) 또는 단일 날짜의 할 일 조회 */
+/** GET /todos 응답: todos + Google Calendar 이벤트(읽기 전용)를 함께 반환. */
+export interface TodosWithEvents {
+  todos: Todo[];
+  events: CalendarEvent[];
+}
+
+/**
+ * 기간 범위(from~to) 또는 단일 날짜의 할 일 + 캘린더 이벤트 조회.
+ *
+ * 응답 data 형식이 배열 → `{ todos, events }` 객체로 변경됨(Google Calendar 연동).
+ * 캘린더 미연결 사용자는 events: [] 가 항상 온다.
+ * (구 배열 형식도 방어적으로 처리해 호환성을 유지한다.)
+ */
 export async function apiListTodos(params: {
   from?: string;
   to?: string;
   dateKey?: string;
-}): Promise<Todo[]> {
-  const list = await request<TodoResponse[]>("/todos", { query: params });
-  return list.map(toTodo);
+}): Promise<TodosWithEvents> {
+  const data = await request<
+    | TodoResponse[]
+    | components["schemas"]["TodosWithEventsResponse"]
+    | null
+    | undefined
+  >("/todos", { query: params });
+
+  // 구 형식: data 가 TodoResponse 배열
+  if (Array.isArray(data)) {
+    return { todos: data.map(toTodo), events: [] };
+  }
+  // 신 형식: { todos, events } — events 응답은 이미 camelCase(CalendarEvent 와 동일)
+  return {
+    todos: (data?.todos ?? []).map(toTodo),
+    events: (data?.events ?? []) as CalendarEvent[],
+  };
 }
 
 export async function apiCreateTodo(input: {

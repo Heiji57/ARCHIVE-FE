@@ -1,9 +1,11 @@
 import { memo, useRef, useState } from "react";
+import type { CalendarEvent } from "@/entities/calendar/model/types";
 import type { Todo } from "@/entities/todo/model/types";
 import { useDraggable } from "@/shared/lib/dnd";
 import { addDays, startOfISOWeek, toDateKey } from "@/shared/lib/date";
 import { useTranslation } from "@/shared/lib/i18n";
 import { DAY_ABBR_KEYS, TODO_DRAG_KIND } from "../model/constants";
+import { CalendarEventChip } from "./CalendarEventChip";
 import { DayCell } from "./DayCell";
 
 interface WeekChipProps {
@@ -34,6 +36,7 @@ const WeekChip = memo(function WeekChipImpl({ todo, onSelect }: WeekChipProps) {
 export interface WeekGridProps {
   cursor: Date;
   byDate: Record<string, Todo[]>;
+  eventsByDate?: Record<string, CalendarEvent[]>;
   todayKey: string;
   selectedId: string | null;
   onSelect: (id: string) => void;
@@ -44,6 +47,7 @@ export interface WeekGridProps {
 export function WeekGrid({
   cursor,
   byDate,
+  eventsByDate,
   todayKey,
   onSelect,
   onDropTodo,
@@ -102,6 +106,7 @@ export function WeekGrid({
         const k = toDateKey(d);
         const todayCell = k === todayKey;
         const items = byDate[k] ?? [];
+        const events = eventsByDate?.[k] ?? [];
         const isAdding = addingDate === k;
 
         return (
@@ -172,27 +177,39 @@ export function WeekGrid({
               ) : null}
             </div>
 
+            {/* Google Calendar 이벤트 (읽기 전용) — todo 위에 표시 */}
+            {events.length > 0 && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                {events.map((ev) => (
+                  <CalendarEventChip key={ev.id} event={ev} />
+                ))}
+              </div>
+            )}
+
             {/* Task chips */}
+            {items.length > 0 && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                {items.map((item) => (
+                  <WeekChip
+                    key={item.id}
+                    todo={item}
+                    onSelect={() => onSelect(item.id)}
+                  />
+                ))}
+              </div>
+            )}
+
+            {/* 추가 영역 — 항상 최소 높이를 확보해 할 일이 많아도 클릭 가능 */}
             <div
               style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: 5,
                 flex: 1,
+                minHeight: 40,
                 cursor: isAdding ? "default" : "text",
               }}
-              onClick={(e) => {
-                if (e.target === e.currentTarget && !isAdding) startAdding(k);
+              onClick={() => {
+                if (!isAdding) startAdding(k);
               }}
             >
-              {items.map((item) => (
-                <WeekChip
-                  key={item.id}
-                  todo={item}
-                  onSelect={() => onSelect(item.id)}
-                />
-              ))}
-
               {isAdding ? (
                 <input
                   // eslint-disable-next-line jsx-a11y/no-autofocus

@@ -316,6 +316,30 @@ export type TranslationKey =
   | "settings.group.integrations.hint"
   | "settings.group.preferences.hint"
   | "settings.group.templates.hint"
+  // Google Calendar
+  | "settings.section.calendar"
+  | "settings.calendar.connected"
+  | "settings.calendar.notConnected"
+  | "settings.calendar.checking"
+  | "settings.calendar.needsReauth"
+  | "settings.calendar.connect"
+  | "settings.calendar.connecting"
+  | "settings.calendar.reconnect"
+  | "settings.calendar.disconnect"
+  | "settings.calendar.sync"
+  | "settings.calendar.syncing"
+  | "settings.calendar.connectHint"
+  | "settings.calendar.connectedAs"
+  | "settings.calendar.lastSynced"
+  | "settings.calendar.lastSyncedNever"
+  | "settings.calendar.reauthBanner"
+  | "settings.calendar.reauthBannerMsg"
+  | "settings.calendar.connectFailed"
+  | "settings.calendar.disconnected"
+  | "settings.calendar.synced"
+  | "calendar.event.allDay"
+  | "calendar.event.openInGoogle"
+  | "calendar.event.readonly"
   // Generic
   | "common.cancel"
   | "common.confirm"
@@ -773,6 +797,32 @@ const ko: Dict = {
   "settings.group.preferences.hint": "언어, 자동 요약, 알림 동작을 조정합니다.",
   "settings.group.templates.hint":
     "회고 유형별 기본 구조를 정의하고, 사용할 템플릿을 선택합니다.",
+
+  "settings.section.calendar": "캘린더",
+  "settings.calendar.connected": "연결됨",
+  "settings.calendar.notConnected": "연결 안 됨",
+  "settings.calendar.checking": "확인 중…",
+  "settings.calendar.needsReauth": "재연결 필요",
+  "settings.calendar.connect": "Google Calendar 연결",
+  "settings.calendar.connecting": "연결 중…",
+  "settings.calendar.reconnect": "재연결",
+  "settings.calendar.disconnect": "연결 해제",
+  "settings.calendar.sync": "동기화",
+  "settings.calendar.syncing": "동기화 중…",
+  "settings.calendar.connectHint":
+    "연결하면 Google Calendar 일정이 캘린더에 함께 표시됩니다.",
+  "settings.calendar.connectedAs": "{account} 으로 연결됨",
+  "settings.calendar.lastSynced": "마지막 동기화",
+  "settings.calendar.lastSyncedNever": "동기화 기록 없음",
+  "settings.calendar.reauthBanner": "재연결이 필요합니다",
+  "settings.calendar.reauthBannerMsg":
+    "토큰이 만료되어 일정을 불러올 수 없습니다. 다시 연결해주세요.",
+  "settings.calendar.connectFailed": "연결에 실패했어요. 다시 시도해주세요.",
+  "settings.calendar.disconnected": "캘린더 연결을 해제했습니다.",
+  "settings.calendar.synced": "캘린더를 동기화했습니다.",
+  "calendar.event.allDay": "종일",
+  "calendar.event.openInGoogle": "Google Calendar에서 열기",
+  "calendar.event.readonly": "읽기 전용",
 
   "common.cancel": "취소",
   "common.confirm": "확인",
@@ -1238,6 +1288,32 @@ const en: Dict = {
   "settings.group.templates.hint":
     "Define the default structure per retrospective type and pick which to use.",
 
+  "settings.section.calendar": "Calendar",
+  "settings.calendar.connected": "Connected",
+  "settings.calendar.notConnected": "Not connected",
+  "settings.calendar.checking": "Checking…",
+  "settings.calendar.needsReauth": "Reconnect needed",
+  "settings.calendar.connect": "Connect Google Calendar",
+  "settings.calendar.connecting": "Connecting…",
+  "settings.calendar.reconnect": "Reconnect",
+  "settings.calendar.disconnect": "Disconnect",
+  "settings.calendar.sync": "Sync",
+  "settings.calendar.syncing": "Syncing…",
+  "settings.calendar.connectHint":
+    "Once connected, your Google Calendar events appear alongside the calendar.",
+  "settings.calendar.connectedAs": "Connected as {account}",
+  "settings.calendar.lastSynced": "Last synced",
+  "settings.calendar.lastSyncedNever": "Never synced",
+  "settings.calendar.reauthBanner": "Reconnection required",
+  "settings.calendar.reauthBannerMsg":
+    "The token expired and events can't be loaded. Please reconnect.",
+  "settings.calendar.connectFailed": "Connection failed. Please try again.",
+  "settings.calendar.disconnected": "Calendar disconnected.",
+  "settings.calendar.synced": "Calendar synced.",
+  "calendar.event.allDay": "All day",
+  "calendar.event.openInGoogle": "Open in Google Calendar",
+  "calendar.event.readonly": "Read-only",
+
   "common.cancel": "Cancel",
   "common.confirm": "Confirm",
   "common.save": "Save",
@@ -1690,6 +1766,30 @@ const zh: Dict = {
   "settings.group.integrations.hint": "管理与外部服务的连接。",
   "settings.group.preferences.hint": "调整语言、自动摘要和通知行为。",
   "settings.group.templates.hint": "定义每种回顾类型的默认结构，并选择要使用的模板。",
+
+  "settings.section.calendar": "日历",
+  "settings.calendar.connected": "已连接",
+  "settings.calendar.notConnected": "未连接",
+  "settings.calendar.checking": "检查中…",
+  "settings.calendar.needsReauth": "需要重新连接",
+  "settings.calendar.connect": "连接 Google 日历",
+  "settings.calendar.connecting": "连接中…",
+  "settings.calendar.reconnect": "重新连接",
+  "settings.calendar.disconnect": "断开连接",
+  "settings.calendar.sync": "同步",
+  "settings.calendar.syncing": "同步中…",
+  "settings.calendar.connectHint": "连接后，Google 日历的日程会一并显示在日历中。",
+  "settings.calendar.connectedAs": "已以 {account} 连接",
+  "settings.calendar.lastSynced": "最近同步",
+  "settings.calendar.lastSyncedNever": "尚未同步",
+  "settings.calendar.reauthBanner": "需要重新连接",
+  "settings.calendar.reauthBannerMsg": "令牌已过期，无法加载日程。请重新连接。",
+  "settings.calendar.connectFailed": "连接失败。请重试。",
+  "settings.calendar.disconnected": "已断开日历连接。",
+  "settings.calendar.synced": "已同步日历。",
+  "calendar.event.allDay": "全天",
+  "calendar.event.openInGoogle": "在 Google 日历中打开",
+  "calendar.event.readonly": "只读",
 
   "common.cancel": "取消",
   "common.confirm": "确认",
@@ -2146,6 +2246,32 @@ const ja: Dict = {
   "settings.group.preferences.hint": "言語・自動サマリー・通知の動作を調整します。",
   "settings.group.templates.hint":
     "振り返りタイプごとの初期構造を定義し、使用するテンプレートを選択します。",
+
+  "settings.section.calendar": "カレンダー",
+  "settings.calendar.connected": "接続済み",
+  "settings.calendar.notConnected": "未接続",
+  "settings.calendar.checking": "確認中…",
+  "settings.calendar.needsReauth": "再接続が必要",
+  "settings.calendar.connect": "Google カレンダーを接続",
+  "settings.calendar.connecting": "接続中…",
+  "settings.calendar.reconnect": "再接続",
+  "settings.calendar.disconnect": "接続解除",
+  "settings.calendar.sync": "同期",
+  "settings.calendar.syncing": "同期中…",
+  "settings.calendar.connectHint":
+    "接続すると、Google カレンダーの予定がカレンダーに一緒に表示されます。",
+  "settings.calendar.connectedAs": "{account} で接続中",
+  "settings.calendar.lastSynced": "最終同期",
+  "settings.calendar.lastSyncedNever": "同期履歴なし",
+  "settings.calendar.reauthBanner": "再接続が必要です",
+  "settings.calendar.reauthBannerMsg":
+    "トークンの有効期限が切れて予定を読み込めません。再接続してください。",
+  "settings.calendar.connectFailed": "接続に失敗しました。もう一度お試しください。",
+  "settings.calendar.disconnected": "カレンダーの接続を解除しました。",
+  "settings.calendar.synced": "カレンダーを同期しました。",
+  "calendar.event.allDay": "終日",
+  "calendar.event.openInGoogle": "Google カレンダーで開く",
+  "calendar.event.readonly": "読み取り専用",
 
   "common.cancel": "キャンセル",
   "common.confirm": "確認",

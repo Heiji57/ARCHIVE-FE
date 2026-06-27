@@ -48,32 +48,17 @@ const KIND_TO_TYPE: Record<SummaryKind, "weekly" | "monthly" | "annual"> = {
   yearly: "annual",
 };
 
-// 기본(템플릿 미적용) 섹션 키 → 표시 제목. 템플릿 적용 시엔 섹션 헤더가 키이므로
-// 매핑에 없으면 키를 제목으로 그대로 사용한다.
-const DEFAULT_SECTION_LABELS: Record<string, string> = {
-  achievements: "성과",
-  challenges: "어려움",
-  learnings: "배운 점",
-  next_focus: "다음 집중",
-};
-
 /**
  * 구조화 content → 마크다운 본문 (FE 회고는 마크다운 문자열).
- * 신규 계약: { sections: { 섹션헤더: 항목[] } }. 단, 전환기/구버전 호환을 위해
- * sections 래퍼가 없는 평면 형태({ achievements: [...], ... })도 그대로 처리한다.
+ *
+ * content.sections 은 배열 형식: [{ key, items }]
+ * 배열 순서 = 서버가 보장하는 섹션 순서이므로 별도 정렬 없이 순회한다.
  */
 export function summaryContentToMarkdown(content: SummaryContent | null): string {
   if (!content) return "";
-  const raw = content as unknown as Record<string, unknown>;
-  const sections = (raw.sections ?? raw) as Record<string, unknown>;
-  return Object.entries(sections)
-    .filter(([, items]) => Array.isArray(items) && items.length > 0)
-    .map(
-      ([key, items]) =>
-        `## ${DEFAULT_SECTION_LABELS[key] ?? key}\n${(items as string[])
-          .map((i) => `- ${i}`)
-          .join("\n")}`,
-    )
+  return content.sections
+    .filter(({ items }) => items.length > 0)
+    .map(({ key, items }) => `## ${key}\n${items.map((i) => `- ${i}`).join("\n")}`)
     .join("\n\n");
 }
 
@@ -308,8 +293,12 @@ export function streamSummary(
   handlers: SummaryStreamHandlers,
 ): () => void {
   const controller = new AbortController();
+  // 서버가 terminal 이벤트(completed/failed/timeout)를 보냈는지 추적.
+  // 스트림이 이벤트 없이 닫히면(서버 타임아웃·네트워크 끊김) onTimeout 을 폴백으로 호출한다.
+  let terminalDispatched = false;
 
   const dispatchEvent = (evt: StreamEvent) => {
+    terminalDispatched = true;
     switch (evt.status) {
       case "completed":
         handlers.onCompleted();
@@ -326,7 +315,10 @@ export function streamSummary(
   };
 
   const open = async (retried: boolean): Promise<void> => {
-    const headers: Record<string, string> = {};
+    const headers: Record<string, string> = {
+      // 프록시·백엔드의 gzip 압축을 막아 SSE 청크가 실시간으로 전달되게 한다.
+      "Accept-Encoding": "identity",
+    };
     const token = getAccessToken();
     if (token) headers["Authorization"] = `Bearer ${token}`;
 
@@ -368,9 +360,18 @@ export function streamSummary(
     }
   };
 
-  void open(false).catch(() => {
-    if (!controller.signal.aborted) handlers.onError?.();
-  });
+  void open(false)
+    .then(() => {
+      // 스트림이 정상 종료됐지만 terminal 이벤트 미수신 → 서버 타임아웃으로 간주
+      if (!controller.signal.aborted && !terminalDispatched) {
+        handlers.onTimeout?.();
+      }
+    })
+    .catch(() => {
+      if (!controller.signal.aborted && !terminalDispatched) {
+        handlers.onError?.();
+      }
+    });
 
   return () => controller.abort();
 }

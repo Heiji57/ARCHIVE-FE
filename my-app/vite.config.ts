@@ -45,6 +45,14 @@ export default defineConfig({
         target: API_PROXY_TARGET,
         changeOrigin: true,
         secure: false,
+        configure: (proxy) => {
+          // 백엔드로 가는 요청에서 Accept-Encoding 을 제거한다.
+          // Accept-Encoding 이 있으면 백엔드가 gzip 으로 응답할 수 있고,
+          // gzip 은 블록 단위로 디코딩되므로 SSE 청크가 스트림 종료까지 버퍼링된다.
+          proxy.on("proxyReq", (proxyReq) => {
+            proxyReq.removeHeader("Accept-Encoding");
+          });
+        },
       },
     },
   },

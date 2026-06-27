@@ -66,6 +66,12 @@ export function appReducer(state: AppState, action: AppAction): AppState {
     case "hydrate/todos":
       return { ...state, todos: action.payload.todos };
 
+    case "hydrate/events":
+      return {
+        ...state,
+        calendar: { ...state.calendar, events: action.payload.events },
+      };
+
     case "hydrate/entries":
       return { ...state, entries: action.payload.entries };
 
@@ -200,6 +206,25 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       return {
         ...state,
         github: { ...state.github, commits: action.payload.commits },
+      };
+
+    case "calendar/setConnection":
+      return {
+        ...state,
+        calendar: {
+          ...state.calendar,
+          status: action.payload.status,
+          ...(action.payload.googleUserId !== undefined
+            ? { googleUserId: action.payload.googleUserId }
+            : {}),
+          ...(action.payload.lastSyncedAt !== undefined
+            ? { lastSyncedAt: action.payload.lastSyncedAt }
+            : {}),
+          // 미연결/재인증 상태로 바뀌면 캐시된 이벤트를 비운다.
+          ...(action.payload.status === "not-connected"
+            ? { events: [] }
+            : {}),
+        },
       };
 
     case "notification/push":

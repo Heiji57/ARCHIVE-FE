@@ -3313,6 +3313,61 @@ export interface components {
         ApiResponseTodoList: components["schemas"]["ApiResponseEmpty"] & {
             data?: components["schemas"]["TodoResponse"][];
         };
+        TodosWithEventsResponse: {
+            todos: components["schemas"]["TodoResponse"][];
+            /** @description Google Calendar 이벤트. 미연결 사용자는 항상 빈 배열. */
+            events: components["schemas"]["CalendarEventResponse"][];
+        };
+        ApiResponseTodosWithEvents: components["schemas"]["ApiResponseEmpty"] & {
+            data?: components["schemas"]["TodosWithEventsResponse"];
+        };
+        /** @description Google Calendar 이벤트(read-only). 시간 지정 이벤트는 startAt/endAt(UTC) + timezone(IANA)으로 로컬 복원, 종일 이벤트는 allDay=true 이고 dateKey 만 의미가 있다. */
+        CalendarEventResponse: {
+            id: string;
+            title: string;
+            description?: string | null;
+            location?: string | null;
+            /**
+             * Format: date-time
+             * @description UTC datetime or null(종일)
+             */
+            startAt?: string | null;
+            /** Format: date-time */
+            endAt?: string | null;
+            allDay: boolean;
+            /** @description YYYY-MM-DD (이벤트 날짜) */
+            dateKey: string;
+            /** @description IANA timezone or null(종일) */
+            timezone?: string | null;
+            /** @description confirmed | tentative */
+            status: string;
+            /** @description Google Calendar 원본 링크 */
+            htmlLink?: string | null;
+            /** @enum {string} */
+            source: "google_calendar";
+        };
+        CalendarConnectionResponse: {
+            /** @description Google Calendar 연결 존재 여부 */
+            connected: boolean;
+            /** @description true 면 refresh_token 무효(만료/revoke) → FE 가 재연결 유도 */
+            needsReauth: boolean;
+            googleUserId?: string | null;
+            /** Format: date-time */
+            lastSyncedAt?: string | null;
+        };
+        ApiResponseCalendarConnection: components["schemas"]["ApiResponseEmpty"] & {
+            data?: components["schemas"]["CalendarConnectionResponse"];
+        };
+        CalendarConnectInitResponse: {
+            /** @description FE 가 popup 으로 여는 Google 동의 URL */
+            authorizeUrl: string;
+        };
+        ApiResponseCalendarConnectInit: components["schemas"]["ApiResponseEmpty"] & {
+            data?: components["schemas"]["CalendarConnectInitResponse"];
+        };
+        ApiResponseCalendarEventList: components["schemas"]["ApiResponseEmpty"] & {
+            data?: components["schemas"]["CalendarEventResponse"][];
+        };
         EntryCreateRequest: {
             date_key: string;
             title: string;
@@ -3364,8 +3419,9 @@ export interface components {
          */
         SummaryContentResponse: {
             sections: {
-                [key: string]: string[];
-            };
+                key: string;
+                items: string[];
+            }[];
         };
         SummaryResponse: {
             id: string;

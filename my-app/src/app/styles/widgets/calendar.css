@@ -453,6 +453,69 @@
 .day-add-block * {
   pointer-events: auto;
 }
+
+/* ---------- Google Calendar 이벤트 칩 (읽기 전용) ---------- */
+/* todo 칩과 구분: 점선 테두리 + 캘린더 액센트(보라), 드래그/체크 불가 표현. */
+.cal-event-chip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  width: 100%;
+  text-align: left;
+  padding: 4px 8px;
+  border-radius: 5px;
+  border: 1px dashed var(--color-divider);
+  border-left: 3px solid #8b5cf6;
+  background: rgba(139, 92, 246, 0.08);
+  color: var(--color-ink);
+  text-decoration: none;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition: background 100ms ease;
+}
+.cal-event-chip:hover {
+  background: rgba(139, 92, 246, 0.16);
+}
+.cal-event-chip--static {
+  cursor: default;
+}
+.cal-event-chip-time {
+  flex: 0 0 auto;
+  font-size: 10px;
+  color: var(--color-body-muted);
+  font-variant-numeric: tabular-nums;
+}
+.cal-event-chip-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  font-weight: 500;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.cal-event-chip-ext {
+  flex: 0 0 auto;
+  color: #8b5cf6;
+  opacity: 0.7;
+}
+
+/* DayTimeline 상단 Google Calendar 이벤트 행 */
+.day-events {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--color-divider-soft);
+  background: var(--color-tile-2);
+}
+.day-events-items {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
 .day-add-input {
   display: block;
   width: 100%;

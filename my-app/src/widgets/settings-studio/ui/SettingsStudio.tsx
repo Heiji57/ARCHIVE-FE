@@ -6,6 +6,7 @@ import { useArchiveApp } from "@/app/providers/useArchiveApp";
 import { can } from "@/shared/lib/permissions";
 import { AccountTypeCard } from "./AccountTypeCard";
 import { AutoSummaryCard } from "./AutoSummaryCard";
+import { CalendarCard } from "./CalendarCard";
 import { GithubCard } from "./GithubCard";
 import { LanguageCard } from "./LanguageCard";
 import { NotificationsCard } from "./NotificationsCard";
@@ -40,16 +41,15 @@ export function SettingsStudio() {
 
   return (
     <div className="page settings-page">
-      {showGithub && (
-        <SettingsSection
-          label="settings.section.integrations"
-          hint="settings.group.integrations.hint"
-        >
-          <div className="settings-grid">
-            <GithubCard />
-          </div>
-        </SettingsSection>
-      )}
+      <SettingsSection
+        label="settings.section.integrations"
+        hint="settings.group.integrations.hint"
+      >
+        <div className="settings-grid">
+          {showGithub && <GithubCard />}
+          <CalendarCard />
+        </div>
+      </SettingsSection>
 
       <SettingsSection
         label="settings.section.preferences"

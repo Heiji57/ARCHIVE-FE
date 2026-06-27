@@ -104,21 +104,21 @@
   transition: background 100ms ease, box-shadow 120ms ease, transform 120ms ease, border-color 100ms ease;
 }
 /* 시작 전(not-start) hover — 중립 밝아짐 */
-.kanban-card:hover:not([data-dragging="true"]) {
+.kanban-card:hover:not([data-dragging="true"]):not([data-popover-open="true"]) {
   background: var(--color-tile-3);
   border-color: var(--color-divider);
   box-shadow: 0 4px 18px rgba(0, 0, 0, 0.38);
   transform: translateY(-1px);
 }
 /* 진행 중(in-progress) hover — 파란 틴트 */
-.kanban-card[data-status="in-progress"]:hover:not([data-dragging="true"]) {
+.kanban-card[data-status="in-progress"]:hover:not([data-dragging="true"]):not([data-popover-open="true"]) {
   background: rgba(94, 106, 210, 0.22);
   border-color: var(--color-primary);
   box-shadow: 0 4px 18px rgba(94, 106, 210, 0.32);
   transform: translateY(-1px);
 }
 /* 완료(done) hover — 초록 틴트 */
-.kanban-card[data-status="done"]:hover:not([data-dragging="true"]) {
+.kanban-card[data-status="done"]:hover:not([data-dragging="true"]):not([data-popover-open="true"]) {
   background: rgba(39, 166, 68, 0.18);
   border-color: var(--color-status-done);
   box-shadow: 0 4px 18px rgba(39, 166, 68, 0.24);

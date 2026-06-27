@@ -41,6 +41,7 @@ function KanbanCardImpl({ todo, isDone, onUpdate, onSelect }: KanbanCardProps) {
       data-status={todo.status}
       data-draggable="true"
       data-dragging={isDragging ? "true" : undefined}
+      data-popover-open={dateOpen ? "true" : undefined}
       {...dragHandlers}
     >
       <button

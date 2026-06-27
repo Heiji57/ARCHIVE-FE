@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import type { AppRoute } from "@/app/model/types";
 import { useArchiveApp } from "@/app/providers/useArchiveApp";
 import { useTodayKey } from "@/app/providers/useToday";
+import type { CalendarEvent } from "@/entities/calendar/model/types";
 import { findTodoById } from "@/entities/todo/lib/selectors";
 import type { Todo } from "@/entities/todo/model/types";
 import { fromDateKey } from "@/shared/lib/date";
@@ -42,6 +43,16 @@ export function CalendarDashboard({ onNavigate }: CalendarDashboardProps) {
     return m;
   }, [state.todos]);
 
+  // Google Calendar 이벤트(읽기 전용)를 날짜별로 묶는다.
+  const eventsByDate = useMemo(() => {
+    const m: Record<string, CalendarEvent[]> = {};
+    for (const ev of state.calendar.events) {
+      if (!m[ev.dateKey]) m[ev.dateKey] = [];
+      m[ev.dateKey].push(ev);
+    }
+    return m;
+  }, [state.calendar.events]);
+
   const handleDropTodo = (todoId: string, dateKey: string) => {
     moveTodo(todoId, dateKey);
   };
@@ -63,6 +74,7 @@ export function CalendarDashboard({ onNavigate }: CalendarDashboardProps) {
             dayKey={toDateKey(cursor)}
             todayKey={todayCellKey}
             todos={state.todos}
+            events={eventsByDate[toDateKey(cursor)] ?? []}
             selectedId={selectedId}
             onSelect={setSelectedId}
             onReschedule={(id, startTime, endTime) =>
@@ -80,6 +92,7 @@ export function CalendarDashboard({ onNavigate }: CalendarDashboardProps) {
           <WeekGrid
             cursor={cursor}
             byDate={byDate}
+            eventsByDate={eventsByDate}
             todayKey={todayCellKey}
             selectedId={selectedId}
             onSelect={setSelectedId}
@@ -92,6 +105,7 @@ export function CalendarDashboard({ onNavigate }: CalendarDashboardProps) {
           <MonthGrid
             cursor={cursor}
             byDate={byDate}
+            eventsByDate={eventsByDate}
             todayKey={todayCellKey}
             onSelect={setSelectedId}
             onDropTodo={handleDropTodo}

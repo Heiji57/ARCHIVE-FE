@@ -3,6 +3,7 @@ import { EditorContent } from "@tiptap/react";
 import { useRichEditorInstance } from "../model/useRichEditorInstance";
 import { useSlashPopup } from "../model/useSlashPopup";
 import { BlockHandle } from "./block-handle/BlockHandle";
+import { BubbleToolbar } from "./BubbleToolbar";
 import { CalloutTypePicker } from "./CalloutTypePicker";
 import { DragSelectOverlay, useDragSelect } from "./drag-select";
 import { SlashMenuPortal } from "./SlashMenuPortal";
@@ -33,6 +34,7 @@ export default function RichEditor({
   return (
     <div className="rich-editor" ref={containerRef}>
       <EditorContent editor={editor} className="rich-editor-content" />
+      <BubbleToolbar editor={editor} />
       <BlockHandle editor={editor} />
       <TableControls editor={editor} />
       <CalloutTypePicker editor={editor} />
