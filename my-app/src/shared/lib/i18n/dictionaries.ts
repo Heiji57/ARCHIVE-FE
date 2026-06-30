@@ -314,6 +314,8 @@ export type TranslationKey =
   | "settings.section.integrations"
   | "settings.section.preferences"
   | "settings.group.integrations.hint"
+  | "settings.group.github.hint"
+  | "settings.group.calendar.hint"
   | "settings.group.preferences.hint"
   | "settings.group.templates.hint"
   // Google Calendar
@@ -633,8 +635,8 @@ const ko: Dict = {
   "retro.filter.allMonths": "전체 월",
   "retro.filter.allWeeks": "전체 주",
   "retro.badge.today": "Today",
-  "retro.badge.draft": "Draft",
-  "retro.badge.synced": "Synced",
+  "retro.badge.draft": "연결 안 됨",
+  "retro.badge.synced": "연결됨",
   "retro.github.notConnected": "GitHub 미연결 — 커밋과 동기화 비활성화됨",
   "retro.github.connectFromSettings": "Settings에서 GitHub 계정을 연결하세요.",
   "retro.github.noCommitsEmailHint":
@@ -794,6 +796,8 @@ const ko: Dict = {
   "settings.section.integrations": "연동",
   "settings.section.preferences": "환경설정",
   "settings.group.integrations.hint": "외부 서비스 연결을 관리합니다.",
+  "settings.group.github.hint": "GitHub 저장소 연결과 회고 푸시를 관리합니다.",
+  "settings.group.calendar.hint": "Google Calendar 연결과 일정 동기화를 관리합니다.",
   "settings.group.preferences.hint": "언어, 자동 요약, 알림 동작을 조정합니다.",
   "settings.group.templates.hint":
     "회고 유형별 기본 구조를 정의하고, 사용할 템플릿을 선택합니다.",
@@ -1121,8 +1125,8 @@ const en: Dict = {
   "retro.filter.allMonths": "All months",
   "retro.filter.allWeeks": "All weeks",
   "retro.badge.today": "Today",
-  "retro.badge.draft": "Draft",
-  "retro.badge.synced": "Synced",
+  "retro.badge.draft": "Not connected",
+  "retro.badge.synced": "Connected",
   "retro.github.notConnected": "GitHub not connected — commits & sync disabled",
   "retro.github.connectFromSettings": "Connect a GitHub account from Settings.",
   "retro.github.noCommitsEmailHint":
@@ -1283,6 +1287,8 @@ const en: Dict = {
   "settings.section.integrations": "Integrations",
   "settings.section.preferences": "Preferences",
   "settings.group.integrations.hint": "Manage connections to external services.",
+  "settings.group.github.hint": "Manage GitHub repository connections and retrospective pushes.",
+  "settings.group.calendar.hint": "Manage your Google Calendar connection and event sync.",
   "settings.group.preferences.hint":
     "Adjust language, auto-summary, and notification behavior.",
   "settings.group.templates.hint":
@@ -1607,8 +1613,8 @@ const zh: Dict = {
   "retro.filter.allMonths": "全部月份",
   "retro.filter.allWeeks": "全部周",
   "retro.badge.today": "Today",
-  "retro.badge.draft": "草稿",
-  "retro.badge.synced": "已同步",
+  "retro.badge.draft": "未连接",
+  "retro.badge.synced": "已连接",
   "retro.github.notConnected": "GitHub 未连接 — 提交与同步已停用",
   "retro.github.connectFromSettings": "请在设置中连接 GitHub 账户。",
   "retro.github.noCommitsEmailHint":
@@ -1764,6 +1770,8 @@ const zh: Dict = {
   "settings.section.integrations": "集成",
   "settings.section.preferences": "偏好设置",
   "settings.group.integrations.hint": "管理与外部服务的连接。",
+  "settings.group.github.hint": "管理 GitHub 仓库连接和回顾推送。",
+  "settings.group.calendar.hint": "管理 Google 日历连接和日程同步。",
   "settings.group.preferences.hint": "调整语言、自动摘要和通知行为。",
   "settings.group.templates.hint": "定义每种回顾类型的默认结构，并选择要使用的模板。",
 
@@ -2082,8 +2090,8 @@ const ja: Dict = {
   "retro.filter.allMonths": "全ての月",
   "retro.filter.allWeeks": "全ての週",
   "retro.badge.today": "Today",
-  "retro.badge.draft": "下書き",
-  "retro.badge.synced": "同期済",
+  "retro.badge.draft": "未接続",
+  "retro.badge.synced": "接続済み",
   "retro.github.notConnected": "GitHub 未接続 — コミットと同期は無効です",
   "retro.github.connectFromSettings":
     "設定から GitHub アカウントを接続してください。",
@@ -2243,6 +2251,8 @@ const ja: Dict = {
   "settings.section.integrations": "連携",
   "settings.section.preferences": "環境設定",
   "settings.group.integrations.hint": "外部サービスとの連携を管理します。",
+  "settings.group.github.hint": "GitHub リポジトリの連携と振り返りのプッシュを管理します。",
+  "settings.group.calendar.hint": "Google カレンダーの連携と予定の同期を管理します。",
   "settings.group.preferences.hint": "言語・自動サマリー・通知の動作を調整します。",
   "settings.group.templates.hint":
     "振り返りタイプごとの初期構造を定義し、使用するテンプレートを選択します。",

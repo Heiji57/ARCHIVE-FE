@@ -14,6 +14,8 @@ export interface RetroSidebarProps {
   onSelect: (id: string) => void
   onSummarize: (kind: SummaryKind) => void
   onNewDaily: () => void
+  /** GitHub 동기화 상태 배지(연결됨/연결 안 됨) 표시 여부 — 개발자 계정만 true. */
+  showSyncBadge: boolean
 }
 
 export function RetroSidebar({
@@ -22,6 +24,7 @@ export function RetroSidebar({
   onSelect,
   onSummarize,
   onNewDaily,
+  showSyncBadge,
 }: RetroSidebarProps) {
   const todayDateKey = useTodayKey()
   const { t } = useTranslation()
@@ -209,6 +212,7 @@ export function RetroSidebar({
               isActive={e.id === active?.id}
               isToday={e.dateKey === todayDateKey}
               onSelect={onSelect}
+              showSyncBadge={showSyncBadge}
             />
           ))
         )}

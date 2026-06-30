@@ -540,7 +540,7 @@
 /* 확장 카드 */
 .retro-expand-card {
   width: 100%;
-  max-width: 900px;
+  max-width: 1200px;
   min-height: calc(100vh - 64px);
   background: var(--color-canvas, #0f0f10);
   border: 1px solid rgba(255, 255, 255, 0.1);

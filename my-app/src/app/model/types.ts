@@ -125,8 +125,17 @@ export interface ArchiveAppContextValue {
   connectCalendar: () => Promise<{ ok: boolean; error?: string }>;
   /** Google Calendar 연결 해제 (연결 + 이벤트 삭제). */
   disconnectCalendar: () => Promise<{ ok: boolean }>;
-  /** Google Calendar 수동 동기화. */
-  syncCalendar: () => Promise<{ ok: boolean }>;
+  /**
+   * Google Calendar 수동 동기화 (POST /calendar/sync?from=&to=).
+   * from/to 는 현재 보고 있는 뷰의 날짜 범위(최대 62일). 초과 시 422.
+   * 응답으로 받은 CalendarEvent[] 를 state 에 반영한다.
+   */
+  syncCalendar: (from: string, to: string) => Promise<{ ok: boolean }>;
+  /**
+   * 현재 뷰 날짜 범위의 할 일 + 캘린더 이벤트를 재조회해 state 를 교체한다.
+   * CalendarDashboard 가 view/cursor 전환 시 호출한다.
+   */
+  loadTodosForView: (from: string, to: string) => Promise<void>;
   pushNotification: (
     type: NoticeType,
     title: string,

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { CalendarDays, Link2, Link2Off, RefreshCw } from "lucide-react";
 import { useArchiveApp } from "@/app/providers/useArchiveApp";
+import { endOfMonth, startOfMonth, toDateKey } from "@/shared/lib/date";
 import { DisconnectBanner } from "@/shared/ui/disconnect-banner/DisconnectBanner";
 import { Pill } from "@/shared/ui/pill/Pill";
 import { useTranslation } from "@/shared/lib/i18n";
@@ -10,7 +11,7 @@ export function CalendarCard() {
   const { state, connectCalendar, disconnectCalendar, syncCalendar, pushNotification } =
     useArchiveApp();
   const { t, locale } = useTranslation();
-  const { status, googleUserId, lastSyncedAt } = state.calendar;
+  const { status, lastSyncedAt } = state.calendar;
 
   const [connecting, setConnecting] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -33,7 +34,12 @@ export function CalendarCard() {
   const handleSync = async () => {
     if (busy) return;
     setBusy(true);
-    const result = await syncCalendar();
+    // 설정 화면에서는 현재 월을 기본 범위로 동기화한다(최대 62일 제한 준수).
+    const now = new Date();
+    const result = await syncCalendar(
+      toDateKey(startOfMonth(now)),
+      toDateKey(endOfMonth(now)),
+    );
     setBusy(false);
     if (result.ok) {
       pushNotification(
@@ -89,18 +95,7 @@ export function CalendarCard() {
         <p className="github-empty">{t("settings.calendar.checking")}</p>
       ) : status === "connected" || status === "needs-reauth" ? (
         <>
-          {/* 연결된 계정 표시 */}
-          {googleUserId ? (
-            <p
-              style={{
-                margin: "0 0 4px",
-                fontSize: 12,
-                color: "var(--color-body-muted)",
-              }}
-            >
-              {t("settings.calendar.connectedAs", { account: googleUserId })}
-            </p>
-          ) : null}
+          {/* 연결 상태는 헤더 Pill 로 표시. 내부 Google 계정 식별자는 노출하지 않는다. */}
           <p
             style={{
               margin: "0 0 14px",

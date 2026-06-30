@@ -49,17 +49,22 @@ export async function apiDisconnectCalendar(): Promise<void> {
   await request("/calendar/connection", { method: "DELETE" });
 }
 
-/** 수동 강제 동기화 (POST /calendar/sync) → 갱신된 연결 상태 반환. */
-export async function apiSyncCalendar(): Promise<CalendarConnection> {
-  const res = await request<CalendarConnectionResponse>("/calendar/sync", {
-    method: "POST",
-  });
-  return {
-    connected: res?.connected ?? false,
-    needsReauth: res?.needsReauth ?? false,
-    googleUserId: res?.googleUserId ?? null,
-    lastSyncedAt: res?.lastSyncedAt ?? null,
-  };
+/**
+ * 수동 강제 동기화 (POST /calendar/sync?from=&to=) → 해당 범위 이벤트 목록 반환.
+ *
+ * Breaking change: 이전에는 연결 상태({ connected, ... })를 반환했으나,
+ * 이제 CalendarEvent[] 를 반환한다. 연결 상태 갱신은 별도 GET /calendar/connection.
+ * 최대 범위 62일. 초과 시 422.
+ */
+export async function apiSyncCalendar(
+  from: string,
+  to: string,
+): Promise<CalendarEvent[]> {
+  const list = await request<CalendarEvent[] | null | undefined>(
+    "/calendar/sync",
+    { method: "POST", query: { from, to } },
+  );
+  return Array.isArray(list) ? list : [];
 }
 
 /**

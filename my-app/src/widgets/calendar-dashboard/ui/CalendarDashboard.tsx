@@ -1,12 +1,18 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { AppRoute } from "@/app/model/types";
 import { useArchiveApp } from "@/app/providers/useArchiveApp";
 import { useTodayKey } from "@/app/providers/useToday";
 import type { CalendarEvent } from "@/entities/calendar/model/types";
 import { findTodoById } from "@/entities/todo/lib/selectors";
 import type { Todo } from "@/entities/todo/model/types";
-import { fromDateKey } from "@/shared/lib/date";
-import { toDateKey } from "@/shared/lib/date";
+import {
+  endOfMonth,
+  endOfWeek,
+  fromDateKey,
+  startOfMonth,
+  startOfWeek,
+  toDateKey,
+} from "@/shared/lib/date";
 import { useCalendarNav } from "../model/useCalendarNav";
 import { CalendarToolbar } from "./CalendarToolbar";
 import { DayTimeline } from "./DayTimeline";
@@ -19,7 +25,7 @@ export interface CalendarDashboardProps {
 }
 
 export function CalendarDashboard({ onNavigate }: CalendarDashboardProps) {
-  const { state, addTodo, updateTodo, moveTodo, setTodoTime, removeTodo } =
+  const { state, addTodo, updateTodo, moveTodo, setTodoTime, removeTodo, loadTodosForView } =
     useArchiveApp();
   // "오늘" = user.timezone 기준 (데모는 앵커 날짜). useTodayKey 가 분기 처리.
   const todayCellKey = useTodayKey();
@@ -29,6 +35,26 @@ export function CalendarDashboard({ onNavigate }: CalendarDashboardProps) {
   );
   const { view, setView, cursor, navigate, goToday } = useCalendarNav(anchorDate);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  // view 또는 cursor 가 바뀌면 해당 범위의 할 일 + 캘린더 이벤트를 재조회한다.
+  // 서버 62일 제한에 맞게 뷰 단위로 요청한다.
+  useEffect(() => {
+    let from: string;
+    let to: string;
+    if (view === "day") {
+      from = toDateKey(cursor);
+      to = from;
+    } else if (view === "week") {
+      from = toDateKey(startOfWeek(cursor));
+      to = toDateKey(endOfWeek(cursor));
+    } else {
+      from = toDateKey(startOfMonth(cursor));
+      to = toDateKey(endOfMonth(cursor));
+    }
+    void loadTodosForView(from, to);
+    // loadTodosForView 는 useCallback([]) 으로 안정화되어 있으므로 deps 에서 제외한다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view, cursor]);
 
   const selectedTodo = selectedId
     ? findTodoById(state.todos, selectedId)

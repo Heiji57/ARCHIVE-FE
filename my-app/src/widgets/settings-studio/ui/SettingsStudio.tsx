@@ -42,16 +42,6 @@ export function SettingsStudio() {
   return (
     <div className="page settings-page">
       <SettingsSection
-        label="settings.section.integrations"
-        hint="settings.group.integrations.hint"
-      >
-        <div className="settings-grid">
-          {showGithub && <GithubCard />}
-          <CalendarCard />
-        </div>
-      </SettingsSection>
-
-      <SettingsSection
         label="settings.section.preferences"
         hint="settings.group.preferences.hint"
       >
@@ -70,6 +60,23 @@ export function SettingsStudio() {
         <div className="settings-card settings-list">
           <AutoSummaryCard />
         </div>
+      </SettingsSection>
+
+      {/* 외부 서비스 연동 — 각 서비스를 독립 섹션으로 분리(풀 width). */}
+      {showGithub && (
+        <SettingsSection
+          label="settings.section.github"
+          hint="settings.group.github.hint"
+        >
+          <GithubCard />
+        </SettingsSection>
+      )}
+
+      <SettingsSection
+        label="settings.section.calendar"
+        hint="settings.group.calendar.hint"
+      >
+        <CalendarCard />
       </SettingsSection>
 
       <SettingsSection

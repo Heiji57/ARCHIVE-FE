@@ -21,10 +21,17 @@ export const CalendarEventChip = memo(function CalendarEventChipImpl({
 }: CalendarEventChipProps) {
   const { t } = useTranslation();
 
+  const tz = event.timezone ?? undefined;
+  // 시작·끝 시간을 모두 표시한다(끝이 있으면 "시작 – 끝", 없으면 시작만).
   const timeLabel = event.allDay
     ? t("calendar.event.allDay")
     : event.startAt
-      ? utcISOToLocalTime(event.startAt, event.timezone ?? undefined)
+      ? event.endAt
+        ? `${utcISOToLocalTime(event.startAt, tz)} – ${utcISOToLocalTime(
+            event.endAt,
+            tz,
+          )}`
+        : utcISOToLocalTime(event.startAt, tz)
       : "";
 
   const body = (

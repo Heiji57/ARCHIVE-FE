@@ -61,6 +61,7 @@ import {
   startOfWeek,
   startOfYear,
   todayKeyInTz,
+  toDateKey,
 } from "@/shared/lib/date";
 import { COALESCE_MS, createCoalescingQueue } from "@/shared/lib/coalesce";
 import { createId } from "@/shared/lib/id";
@@ -486,11 +487,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!uid || hydratedUserRef.current === uid) return;
     hydratedUserRef.current = uid;
 
-    void apiListTodos({ from: "1970-01-01", to: "2999-12-31" })
+    // 초기 하이드레이션은 현재 월 범위만 로드한다(서버 최대 62일 제한).
+    // CalendarDashboard 가 마운트·뷰 전환 시 loadTodosForView 로 재조회한다.
+    const _now = new Date();
+    const _initFrom = toDateKey(startOfMonth(_now));
+    const _initTo = toDateKey(endOfMonth(_now));
+    void apiListTodos({ from: _initFrom, to: _initTo })
       .then(({ todos, events }) => {
         dispatch({ type: "hydrate/todos", payload: { todos } });
-        // 캘린더 이벤트는 GET /todos 응답에 함께 실려 온다(읽기 전용).
-        // 미연결 사용자는 events: [] 이므로 분기 불필요.
         dispatch({ type: "hydrate/events", payload: { events } });
       })
       // eslint-disable-next-line no-console
@@ -878,19 +882,32 @@ export function AppProvider({ children }: { children: ReactNode }) {
       });
   };
 
-  // GET /todos 를 재조회해 캘린더 이벤트만 silent 갱신 (todo 는 그대로 유지).
-  const refetchCalendarEvents = async () => {
+  // GET /todos 를 재조회해 todos + 캘린더 이벤트를 silent 갱신한다.
+  // 서버 62일 제한이 있으므로 호출 시 반드시 범위를 지정한다.
+  const refetchCalendarEvents = async (from: string, to: string) => {
     if (!USE_API) return;
     try {
-      const { events } = await apiListTodos({
-        from: "1970-01-01",
-        to: "2999-12-31",
-      });
+      const { todos, events } = await apiListTodos({ from, to });
+      dispatch({ type: "hydrate/todos", payload: { todos } });
       dispatch({ type: "hydrate/events", payload: { events } });
     } catch {
       /* 네트워크 오류 — 다음 하이드레이션에서 보정 */
     }
   };
+
+  // 뷰 단위 할 일 + 이벤트 로드 — CalendarDashboard 가 view/cursor 전환 시 호출한다.
+  // dispatch 가 안정적이므로 useCallback 의존성 배열을 비워 함수를 안정화한다.
+  const loadTodosForView = useCallback(async (from: string, to: string) => {
+    if (!USE_API) return;
+    try {
+      const { todos, events } = await apiListTodos({ from, to });
+      dispatch({ type: "hydrate/todos", payload: { todos } });
+      dispatch({ type: "hydrate/events", payload: { events } });
+    } catch {
+      /* transient network error — 다음 재시도에서 보정 */
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ─── Google Calendar 연결 프로브 ─────────────────────────────────────────────
   const runCalendarRefresh = () => {
@@ -1307,9 +1324,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (!USE_API) return { ok: false, error: "mock" };
       const result = await apiConnectCalendar();
       // 콜백 메시지를 받았든 놓쳤든 서버 연결 상태를 직접 재확인해 즉시 반영.
-      // 연결 직후엔 이벤트도 GET /todos 로 함께 들어오므로 같이 갱신한다.
       runCalendarRefresh();
-      void refetchCalendarEvents();
+      // 설정 화면에서 연결 직후이므로 현재 월 범위의 이벤트를 로드한다.
+      const _cNow = new Date();
+      void refetchCalendarEvents(
+        toDateKey(startOfMonth(_cNow)),
+        toDateKey(endOfMonth(_cNow)),
+      );
       return result;
     },
     disconnectCalendar: async () => {
@@ -1327,28 +1348,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return { ok: false };
       }
     },
-    syncCalendar: async () => {
+    syncCalendar: async (from: string, to: string) => {
       if (requireLoginInDemo()) return { ok: false };
       if (!USE_API) return { ok: false };
       try {
-        const conn = await apiSyncCalendar();
-        const status = !conn.connected
-          ? "not-connected"
-          : conn.needsReauth
-            ? "needs-reauth"
-            : "connected";
-        dispatch({
-          type: "calendar/setConnection",
-          payload: {
-            status,
-            googleUserId: conn.googleUserId,
-            lastSyncedAt: conn.lastSyncedAt,
-          },
-        });
-        void refetchCalendarEvents();
+        // POST /calendar/sync?from=&to= → CalendarEvent[] (응답 변경)
+        // 연결 상태는 이 응답에 포함되지 않으므로 별도 GET /calendar/connection 불필요
+        // (연결이 끊겼으면 예외가 throw 된다).
+        const events = await apiSyncCalendar(from, to);
+        dispatch({ type: "hydrate/events", payload: { events } });
         return { ok: true };
       } catch (e) {
-        // refresh_token 무효 → 재연결 유도 상태로 전환 (FE 가 재연결 배너 표시)
         if (e instanceof ApiError && e.code === "GOOGLE_CALENDAR_REAUTH_REQUIRED") {
           dispatch({
             type: "calendar/setConnection",
@@ -1360,6 +1370,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return { ok: false };
       }
     },
+    loadTodosForView,
     pushNotification,
     markNotificationRead: (id) => {
       dispatch({ type: "notification/markRead", payload: { id } });

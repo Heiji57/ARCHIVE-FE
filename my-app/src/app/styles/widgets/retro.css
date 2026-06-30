@@ -65,5 +65,6 @@
 .retro-list-item-badges {
   display: flex;
   gap: 4px;
+  min-height: 15px;
   flex-wrap: wrap;
 }

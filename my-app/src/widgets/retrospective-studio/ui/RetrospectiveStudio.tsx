@@ -6,6 +6,7 @@ import type {
   SummaryReadiness,
 } from "@/entities/summary/model/types";
 import { fromDateKey } from "@/shared/lib/date";
+import { can } from "@/shared/lib/permissions";
 import { ConfirmModal } from "@/shared/ui/confirm-modal/ConfirmModal";
 import { EmptyState } from "@/shared/ui/empty-state/EmptyState";
 import { useTranslation } from "@/shared/lib/i18n";
@@ -190,6 +191,7 @@ export function RetrospectiveStudio() {
         onSelect={setSelectedId}
         onSummarize={handleSummarize}
         onNewDaily={handleNewDaily}
+        showSyncBadge={can(state.settings.accountType, "github")}
       />
 
       <main>
