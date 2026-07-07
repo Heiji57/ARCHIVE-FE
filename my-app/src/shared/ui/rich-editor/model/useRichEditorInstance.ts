@@ -22,14 +22,16 @@ import { htmlToMarkdown, markdownToHtml } from "./markdown";
 interface Options {
   value: string;
   placeholder?: string;
-  onChange: (markdown: string) => void;
+  onChange?: (markdown: string) => void;
+  /** false 면 읽기 전용 모드 (슬래시 메뉴·드래그 선택 비활성화). 기본 true. */
+  editable?: boolean;
 }
 
 /**
  * TipTap 에디터 인스턴스 생성 + 외부 value 동기화.
  * (확장 등록·콘텐츠 변환 등 에디터 설정 로직을 컴포넌트에서 분리)
  */
-export function useRichEditorInstance({ value, placeholder, onChange }: Options) {
+export function useRichEditorInstance({ value, placeholder, onChange, editable = true }: Options) {
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -53,16 +55,16 @@ export function useRichEditorInstance({ value, placeholder, onChange }: Options)
       ToggleNode,
       ToggleSummary,
       ToggleBody,
-      SlashCommandExtension,
-      DragSelect,
+      ...(editable ? [SlashCommandExtension, DragSelect] : []),
     ],
     content: markdownToHtml(value),
+    editable,
     autofocus: false,
     // React 19 + lazy 마운트 시 ProseMirror 뷰가 렌더 도중 생성되어
     // 레이아웃 확정 전에 측정/페인트되는 레이스를 피한다(뷰를 effect에서 생성).
     immediatelyRender: false,
     onUpdate: ({ editor: ed }) => {
-      onChange(htmlToMarkdown(ed.getHTML()));
+      onChange?.(htmlToMarkdown(ed.getHTML()));
     },
   });
 

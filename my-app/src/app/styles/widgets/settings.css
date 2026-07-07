@@ -246,6 +246,41 @@
   color: var(--color-body-muted);
 }
 
+/* Todo range — drag slider */
+.todo-range-box {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+.todo-range-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.todo-range-slider {
+  flex: 1;
+  min-width: 0;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}
+.todo-range-value {
+  flex-shrink: 0;
+  min-width: 52px;
+  text-align: right;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-ink);
+  font-variant-numeric: tabular-nums;
+}
+.todo-range-scale {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--color-body-muted);
+  font-variant-numeric: tabular-nums;
+}
+
 /* GitHub card — info table */
 .github-info-box {
   background: var(--color-tile-3);

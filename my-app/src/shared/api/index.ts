@@ -25,23 +25,24 @@ export {
   apiCreateTodo,
   apiUpdateTodo,
   apiDeleteTodo,
-  type TodosWithEvents,
+  apiLinkCalendarTodo,
+  apiUnlinkCalendarTodo,
 } from "./todos";
 export {
   apiGetCalendarConnection,
   apiConnectCalendar,
   apiDisconnectCalendar,
-  apiSyncCalendar,
-  apiListCalendarEvents,
   type CalendarConnection,
 } from "./calendar";
 export {
   apiListEntries,
+  apiListEntriesPaginated,
   apiCreateEntry,
   apiGetEntry,
   apiUpsertEntry,
   apiDeleteEntry,
 } from "./entries";
+export type { EntryPage } from "./entries";
 export {
   apiGetSettings,
   apiUpdateSettings,
@@ -62,7 +63,6 @@ export {
   apiDeleteSummaryTemplate,
   apiSetActiveSummaryTemplate,
   streamSummary,
-  summaryContentToMarkdown,
   toSummaryEntry,
   type MappedSummary,
   type SummaryTemplate,
@@ -74,6 +74,7 @@ export {
   apiDeleteNotification,
   apiClearNotifications,
   streamNotifications,
+  type CalendarSyncSSEEvent,
 } from "./notifications";
 export {
   apiListSessions,

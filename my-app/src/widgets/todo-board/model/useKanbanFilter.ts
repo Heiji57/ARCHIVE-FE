@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { getVisibleBoardTodos } from "@/entities/todo/lib/selectors";
 import type { TaskStatus, Todo } from "@/entities/todo/model/types";
 import {
+  addDays,
   endOfWeek,
   fromDateKey,
   startOfWeek,
@@ -12,10 +13,12 @@ import type { DateFilter } from "./constants";
 /**
  * Manages the Todo board's date filter + grouped (status) view of todos.
  *
+ * `rangeDays` 는 "전체" 필터에서 오늘 기준 앞뒤로 나눠 표시할 기간(일)이다.
+ *
  * Also ticks once a minute so the 24h-after-done auto-hide updates
  * without requiring a manual refresh.
  */
-export function useKanbanFilter(todos: Todo[]) {
+export function useKanbanFilter(todos: Todo[], rangeDays: number) {
   const [filter, setFilter] = useState<DateFilter>({ kind: "all" });
 
   const [, forceTick] = useState(0);
@@ -29,7 +32,17 @@ export function useKanbanFilter(todos: Todo[]) {
 
   const filteredTodos = useMemo(() => {
     const visible = getVisibleBoardTodos(todos);
-    if (filter.kind === "all") return visible;
+    if (filter.kind === "all") {
+      // 오늘 기준 앞뒤로 rangeDays 를 나눈 윈도우 안의 할 일만 표시한다.
+      const back = Math.floor(rangeDays / 2);
+      const fwd = rangeDays - back;
+      const lo = addDays(today, -back).getTime();
+      const hi = addDays(today, fwd).getTime();
+      return visible.filter((t) => {
+        const x = fromDateKey(t.dateKey).getTime();
+        return x >= lo && x <= hi;
+      });
+    }
     if (filter.kind === "today")
       return visible.filter((t) => t.dateKey === todayK);
     if (filter.kind === "week") {
@@ -41,7 +54,7 @@ export function useKanbanFilter(todos: Todo[]) {
       });
     }
     return visible.filter((t) => t.dateKey === filter.dateKey);
-  }, [todos, filter, todayK, today]);
+  }, [todos, filter, todayK, today, rangeDays]);
 
   const grouped = useMemo(() => {
     const g: Record<TaskStatus, Todo[]> = {

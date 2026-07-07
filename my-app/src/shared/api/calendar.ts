@@ -3,13 +3,11 @@
  *
  * - GET    /calendar/connection      연결 상태 조회
  * - POST   /calendar/connect/init    연결 시작 (authorizeUrl 발급 → 팝업)
- * - POST   /calendar/sync            수동 강제 동기화 후 연결 상태 반환
  * - DELETE /calendar/connection      연결 + 이벤트 전체 삭제
  *
  * 연결 플로우는 GitHub 계정 연결(apiLinkOAuth)과 동일한 팝업 + postMessage 패턴.
  * 콜백(/calendar/callback)은 `{ type: "calendar_connected" }` / `{ type: "calendar_error", error }`.
  */
-import type { CalendarEvent } from "@/entities/calendar/model/types";
 import { request } from "./client";
 import type { components } from "./schema";
 
@@ -49,23 +47,6 @@ export async function apiDisconnectCalendar(): Promise<void> {
   await request("/calendar/connection", { method: "DELETE" });
 }
 
-/**
- * 수동 강제 동기화 (POST /calendar/sync?from=&to=) → 해당 범위 이벤트 목록 반환.
- *
- * Breaking change: 이전에는 연결 상태({ connected, ... })를 반환했으나,
- * 이제 CalendarEvent[] 를 반환한다. 연결 상태 갱신은 별도 GET /calendar/connection.
- * 최대 범위 62일. 초과 시 422.
- */
-export async function apiSyncCalendar(
-  from: string,
-  to: string,
-): Promise<CalendarEvent[]> {
-  const list = await request<CalendarEvent[] | null | undefined>(
-    "/calendar/sync",
-    { method: "POST", query: { from, to } },
-  );
-  return Array.isArray(list) ? list : [];
-}
 
 /**
  * 캘린더 연결 시작 (POST init → 팝업 → postMessage).
@@ -145,16 +126,3 @@ export async function apiConnectCalendar(): Promise<{
   });
 }
 
-// ── Events (선택: 캘린더 전용 화면용. todo 화면은 GET /todos 로 충분) ───────────
-
-/** 기간 범위의 이벤트만 조회 (GET /calendar/events). */
-export async function apiListCalendarEvents(
-  from: string,
-  to: string,
-): Promise<CalendarEvent[]> {
-  const list = await request<CalendarEvent[] | null | undefined>(
-    "/calendar/events",
-    { query: { from, to } },
-  );
-  return Array.isArray(list) ? list : [];
-}

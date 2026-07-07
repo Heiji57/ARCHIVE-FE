@@ -445,14 +445,16 @@ export function RetroEditor({
             </section>
           ) : null}
 
-          {/* 오늘 배운 것 (에디터) */}
+          {/* 회고 본문 — AI 요약(isSummary)은 읽기 전용, 일반 회고는 편집 가능 */}
           <section className="section-card">
-            <div className="section-card-head">
-              <div className="avatar avatar-sm avatar-tile">
-                <BookOpen size={14} />
+            {!entry.isSummary && (
+              <div className="section-card-head">
+                <div className="avatar avatar-sm avatar-tile">
+                  <BookOpen size={14} />
+                </div>
+                <p className="section-card-title">{t("retro.editor.learned")}</p>
               </div>
-              <p className="section-card-title">{t("retro.editor.learned")}</p>
-            </div>
+            )}
             <EditorErrorBoundary
               fallback={(error) => (
                 <div
@@ -482,12 +484,20 @@ export function RetroEditor({
                     에디터 로딩 중...
                   </div>
                 }>
-                <RichEditor
-                  key={entry.id}
-                  value={entry.content}
-                  placeholder={t("retro.editor.learnedPlaceholder")}
-                  onChange={(md) => onUpdate({ content: md })}
-                />
+                {entry.isSummary ? (
+                  <RichEditor
+                    key={entry.id}
+                    value={entry.content}
+                    editable={false}
+                  />
+                ) : (
+                  <RichEditor
+                    key={entry.id}
+                    value={entry.content}
+                    placeholder={t("retro.editor.learnedPlaceholder")}
+                    onChange={(md) => onUpdate({ content: md })}
+                  />
+                )}
               </Suspense>
             </EditorErrorBoundary>
           </section>
@@ -553,11 +563,18 @@ export function RetroEditor({
                         에디터 로딩 중...
                       </div>
                     }>
-                    <RichEditor
-                      value={entry.content}
-                      placeholder={t("retro.editor.learnedPlaceholder")}
-                      onChange={(md) => onUpdate({ content: md })}
-                    />
+                    {entry.isSummary ? (
+                      <RichEditor
+                        value={entry.content}
+                        editable={false}
+                      />
+                    ) : (
+                      <RichEditor
+                        value={entry.content}
+                        placeholder={t("retro.editor.learnedPlaceholder")}
+                        onChange={(md) => onUpdate({ content: md })}
+                      />
+                    )}
                   </Suspense>
                 </EditorErrorBoundary>
               </div>

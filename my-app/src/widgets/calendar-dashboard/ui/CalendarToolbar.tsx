@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Maximize2, Minimize2 } from "lucide-react";
 import { useTranslation } from "@/shared/lib/i18n";
 import { formatFullDate, formatMonthLabel } from "@/shared/lib/date";
 import type { CalendarView } from "../model/useCalendarNav";
@@ -11,6 +11,10 @@ export interface CalendarToolbarProps {
   onPrev: () => void;
   onToday: () => void;
   onNext: () => void;
+  /** 확대(전체화면) 모드 여부. */
+  expanded: boolean;
+  /** 확대 모드 토글. */
+  onToggleExpand: () => void;
 }
 
 /** Top toolbar of the calendar: view toggle + ‹ Today › nav + period label + legend. */
@@ -21,6 +25,8 @@ export function CalendarToolbar({
   onPrev,
   onToday,
   onNext,
+  expanded,
+  onToggleExpand,
 }: CalendarToolbarProps) {
   const { t, locale } = useTranslation();
 
@@ -82,7 +88,18 @@ export function CalendarToolbar({
         <h2 className="t-display-md calendar-toolbar-title">{title}</h2>
       </div>
 
-      <CalendarLegend />
+      <div className="calendar-toolbar-right">
+        <CalendarLegend />
+        <button
+          type="button"
+          className="calendar-expand-btn"
+          onClick={onToggleExpand}
+          aria-label={expanded ? t("calendar.collapse") : t("calendar.expand")}
+          title={`${expanded ? t("calendar.collapse") : t("calendar.expand")} (Ctrl+Shift+F)`}
+        >
+          {expanded ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
+        </button>
+      </div>
     </div>
   );
 }

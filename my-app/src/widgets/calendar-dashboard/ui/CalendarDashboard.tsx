@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import type { AppRoute } from "@/app/model/types";
 import { useArchiveApp } from "@/app/providers/useArchiveApp";
 import { useTodayKey } from "@/app/providers/useToday";
-import type { CalendarEvent } from "@/entities/calendar/model/types";
 import { findTodoById } from "@/entities/todo/lib/selectors";
 import type { Todo } from "@/entities/todo/model/types";
 import {
@@ -25,7 +24,7 @@ export interface CalendarDashboardProps {
 }
 
 export function CalendarDashboard({ onNavigate }: CalendarDashboardProps) {
-  const { state, addTodo, updateTodo, moveTodo, setTodoTime, removeTodo, loadTodosForView } =
+  const { state, addTodo, updateTodo, moveTodo, setTodoTime, removeTodo, loadTodosForView, toggleTodoCalendarLink, focusTarget, clearFocus } =
     useArchiveApp();
   // "오늘" = user.timezone 기준 (데모는 앵커 날짜). useTodayKey 가 분기 처리.
   const todayCellKey = useTodayKey();
@@ -33,8 +32,45 @@ export function CalendarDashboard({ onNavigate }: CalendarDashboardProps) {
     () => fromDateKey(todayCellKey),
     [todayCellKey],
   );
-  const { view, setView, cursor, navigate, goToday } = useCalendarNav(anchorDate);
+  const { view, setView, cursor, setCursor, navigate, goToday } = useCalendarNav(anchorDate);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  // 확대(전체화면) 모드 — 버튼 또는 Ctrl+Shift+F 로 토글.
+  const [expanded, setExpanded] = useState(false);
+
+  // 전역 검색에서 특정 할 일로 이동 요청 → 일간 뷰로 해당 날짜를 열고 상세 패널을 표시.
+  useEffect(() => {
+    if (focusTarget?.kind !== "todo") return;
+    setView("day");
+    setCursor(fromDateKey(focusTarget.dateKey));
+    setSelectedId(focusTarget.todoId);
+    clearFocus();
+    // setView/setCursor 는 안정적이므로 focusTarget 만 관찰한다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusTarget]);
+
+  // Ctrl/Cmd+Shift+F → 확대 토글, Esc → 확대 닫기.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === "f") {
+        e.preventDefault();
+        setExpanded((v) => !v);
+        return;
+      }
+      if (e.key === "Escape") setExpanded((v) => (v ? false : v));
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, []);
+
+  // 확대 중에는 배경 스크롤 잠금.
+  useEffect(() => {
+    if (!expanded) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [expanded]);
 
   // view 또는 cursor 가 바뀌면 해당 범위의 할 일 + 캘린더 이벤트를 재조회한다.
   // 서버 62일 제한에 맞게 뷰 단위로 요청한다.
@@ -69,22 +105,12 @@ export function CalendarDashboard({ onNavigate }: CalendarDashboardProps) {
     return m;
   }, [state.todos]);
 
-  // Google Calendar 이벤트(읽기 전용)를 날짜별로 묶는다.
-  const eventsByDate = useMemo(() => {
-    const m: Record<string, CalendarEvent[]> = {};
-    for (const ev of state.calendar.events) {
-      if (!m[ev.dateKey]) m[ev.dateKey] = [];
-      m[ev.dateKey].push(ev);
-    }
-    return m;
-  }, [state.calendar.events]);
-
   const handleDropTodo = (todoId: string, dateKey: string) => {
     moveTodo(todoId, dateKey);
   };
 
   return (
-    <div>
+    <div className={`calendar-shell${expanded ? " calendar-shell-expanded" : ""}`}>
       <div className="page calendar-page">
         <CalendarToolbar
           view={view}
@@ -93,6 +119,8 @@ export function CalendarDashboard({ onNavigate }: CalendarDashboardProps) {
           onPrev={() => navigate(-1)}
           onToday={goToday}
           onNext={() => navigate(1)}
+          expanded={expanded}
+          onToggleExpand={() => setExpanded((v) => !v)}
         />
 
         {view === "day" ? (
@@ -100,7 +128,6 @@ export function CalendarDashboard({ onNavigate }: CalendarDashboardProps) {
             dayKey={toDateKey(cursor)}
             todayKey={todayCellKey}
             todos={state.todos}
-            events={eventsByDate[toDateKey(cursor)] ?? []}
             selectedId={selectedId}
             onSelect={setSelectedId}
             onReschedule={(id, startTime, endTime) =>
@@ -118,7 +145,6 @@ export function CalendarDashboard({ onNavigate }: CalendarDashboardProps) {
           <WeekGrid
             cursor={cursor}
             byDate={byDate}
-            eventsByDate={eventsByDate}
             todayKey={todayCellKey}
             selectedId={selectedId}
             onSelect={setSelectedId}
@@ -131,7 +157,6 @@ export function CalendarDashboard({ onNavigate }: CalendarDashboardProps) {
           <MonthGrid
             cursor={cursor}
             byDate={byDate}
-            eventsByDate={eventsByDate}
             todayKey={todayCellKey}
             onSelect={setSelectedId}
             onDropTodo={handleDropTodo}
@@ -168,6 +193,12 @@ export function CalendarDashboard({ onNavigate }: CalendarDashboardProps) {
               removeTodo(selectedTodo.id);
               setSelectedId(null);
             }}
+            onToggleCalendarLink={
+              state.calendar.status === "connected" || state.calendar.status === "needs-reauth"
+                ? () => toggleTodoCalendarLink(selectedTodo.id)
+                : undefined
+            }
+            calendarNeedsReauth={state.calendar.status === "needs-reauth"}
           />
         ) : null}
       </aside>

@@ -3,7 +3,7 @@ import { Minimize2 } from "lucide-react";
 import { useArchiveApp } from "@/app/providers/useArchiveApp";
 import { useTranslation } from "@/shared/lib/i18n";
 
-const MINIMIZE_DELAY_MS = 2000;
+const MINIMIZE_DELAY_MS = 1000;
 
 export function SummaryOverlay() {
   const { state, minimizeSummary } = useArchiveApp();
@@ -16,7 +16,7 @@ export function SummaryOverlay() {
       setCanMinimize(false);
       return;
     }
-    // Minimize button appears 2s after the overlay shows.
+    // Minimize button appears 1s after the overlay shows.
     setCanMinimize(false);
     const id = window.setTimeout(
       () => setCanMinimize(true),

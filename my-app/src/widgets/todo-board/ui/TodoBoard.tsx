@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { AppRoute } from "@/app/model/types";
 import { useArchiveApp } from "@/app/providers/useArchiveApp";
 import { findTodoById } from "@/entities/todo/lib/selectors";
@@ -15,18 +15,26 @@ export interface TodoBoardProps {
 }
 
 export function TodoBoard({ onNavigate }: TodoBoardProps) {
-  const { state, addTodo, updateTodo, setTodoTime, removeTodo, pushNotification } =
+  const { state, addTodo, updateTodo, setTodoTime, removeTodo, toggleTodoCalendarLink, loadTodosForRange, pushNotification } =
     useArchiveApp();
   const { t } = useTranslation();
-  const { filter, setFilter, todayK, grouped } = useKanbanFilter(state.todos);
+  const rangeDays = state.settings.todoBoardRangeDays;
+  const { filter, setFilter, todayK, grouped } = useKanbanFilter(state.todos, rangeDays);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  // 보드 진입 시 + 기간 설정 변경 시 "전체" 보기 범위의 할 일을 로드한다.
+  // (loadTodosForRange 는 useCallback([]) 으로 안정화되어 있어 deps 에서 제외한다.)
+  useEffect(() => {
+    void loadTodosForRange(rangeDays);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rangeDays]);
 
   const selectedTodo = selectedId
     ? findTodoById(state.todos, selectedId)
     : null;
 
-  const handleSubmit = (text: string, dateKey: string) => {
-    addTodo(text, dateKey, { status: "not-start" }, setSelectedId);
+  const handleSubmit = (text: string, dateKey: string, pushToCalendar: boolean | null) => {
+    addTodo(text, dateKey, { status: "not-start", pushToCalendar }, setSelectedId);
     pushNotification(
       "success",
       t("todo.notif.added.title"),
@@ -36,7 +44,11 @@ export function TodoBoard({ onNavigate }: TodoBoardProps) {
 
   return (
     <div className="page todo-page">
-      <QuickCapture onSubmit={handleSubmit} />
+      <QuickCapture
+        onSubmit={handleSubmit}
+        calendarConnected={state.calendar.status === "connected"}
+        calendarAutoPushTodo={state.settings.calendarAutoPushTodo}
+      />
 
       <TodoFilterRow filter={filter} onChange={setFilter} todayKey={todayK} />
 
@@ -78,6 +90,12 @@ export function TodoBoard({ onNavigate }: TodoBoardProps) {
               removeTodo(selectedTodo.id);
               setSelectedId(null);
             }}
+            onToggleCalendarLink={
+              state.calendar.status === "connected" || state.calendar.status === "needs-reauth"
+                ? () => toggleTodoCalendarLink(selectedTodo.id)
+                : undefined
+            }
+            calendarNeedsReauth={state.calendar.status === "needs-reauth"}
           />
         ) : null}
       </aside>

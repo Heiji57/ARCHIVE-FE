@@ -1,5 +1,4 @@
 /** Todo 도메인 API. 반환은 FE 도메인 타입(camelCase)으로 매핑해 돌려준다. */
-import type { CalendarEvent } from "@/entities/calendar/model/types";
 import type { TaskStatus, Todo } from "@/entities/todo/model/types";
 import { request } from "./client";
 import { toTodo } from "./mappers";
@@ -7,40 +6,16 @@ import type { components } from "./schema";
 
 type TodoResponse = components["schemas"]["TodoResponse"];
 
-/** GET /todos 응답: todos + Google Calendar 이벤트(읽기 전용)를 함께 반환. */
-export interface TodosWithEvents {
-  todos: Todo[];
-  events: CalendarEvent[];
-}
-
-/**
- * 기간 범위(from~to) 또는 단일 날짜의 할 일 + 캘린더 이벤트 조회.
- *
- * 응답 data 형식이 배열 → `{ todos, events }` 객체로 변경됨(Google Calendar 연동).
- * 캘린더 미연결 사용자는 events: [] 가 항상 온다.
- * (구 배열 형식도 방어적으로 처리해 호환성을 유지한다.)
- */
+/** 기간 범위(from~to) 또는 단일 날짜의 할 일 조회. GET /todos → Todo[] */
 export async function apiListTodos(params: {
   from?: string;
   to?: string;
   dateKey?: string;
-}): Promise<TodosWithEvents> {
-  const data = await request<
-    | TodoResponse[]
-    | components["schemas"]["TodosWithEventsResponse"]
-    | null
-    | undefined
-  >("/todos", { query: params });
-
-  // 구 형식: data 가 TodoResponse 배열
-  if (Array.isArray(data)) {
-    return { todos: data.map(toTodo), events: [] };
-  }
-  // 신 형식: { todos, events } — events 응답은 이미 camelCase(CalendarEvent 와 동일)
-  return {
-    todos: (data?.todos ?? []).map(toTodo),
-    events: (data?.events ?? []) as CalendarEvent[],
-  };
+}): Promise<Todo[]> {
+  const data = await request<TodoResponse[] | null | undefined>("/todos", {
+    query: params,
+  });
+  return (Array.isArray(data) ? data : []).map(toTodo);
 }
 
 export async function apiCreateTodo(input: {
@@ -53,6 +28,11 @@ export async function apiCreateTodo(input: {
   endTimeUtc?: string | null;
   /** start_time/end_time 중 하나라도 있으면 필수 (api.yaml TodoCreateRequest) */
   timezone?: string | null;
+  /**
+   * null/생략 = 사용자 설정(calendarAutoPushTodo) 기본값 적용.
+   * true/false = 이 할 일에 한해 개별 지정.
+   */
+  pushToCalendar?: boolean | null;
 }): Promise<Todo> {
   const hasTime = input.startTimeUtc != null || input.endTimeUtc != null;
   const res = await request<TodoResponse>("/todos", {
@@ -65,6 +45,8 @@ export async function apiCreateTodo(input: {
       ...(input.startTimeUtc !== undefined && { start_time: input.startTimeUtc }),
       ...(input.endTimeUtc !== undefined && { end_time: input.endTimeUtc }),
       ...(hasTime && { timezone: input.timezone ?? null }),
+      // null/undefined 는 필드 생략 → 서버가 calendarAutoPushTodo 설정으로 처리
+      ...(input.pushToCalendar != null && { push_to_calendar: input.pushToCalendar }),
     },
   });
   return toTodo(res);
@@ -103,4 +85,14 @@ export async function apiUpdateTodo(
 
 export async function apiDeleteTodo(id: string): Promise<void> {
   await request(`/todos/${id}`, { method: "DELETE" });
+}
+
+/** POST /todos/{id}/calendar-link — 캘린더 연동 추가(비동기 반영). */
+export async function apiLinkCalendarTodo(id: string): Promise<void> {
+  await request(`/todos/${id}/calendar-link`, { method: "POST" });
+}
+
+/** DELETE /todos/{id}/calendar-link — 캘린더 연동 해제(비동기 반영). */
+export async function apiUnlinkCalendarTodo(id: string): Promise<void> {
+  await request(`/todos/${id}/calendar-link`, { method: "DELETE" });
 }

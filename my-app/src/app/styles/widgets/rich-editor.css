@@ -325,30 +325,35 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
   color: rgba(255, 255, 255, 0.92);
 }
-.rich-editor .ProseMirror .rich-callout::before {
+/* 아이콘은 NodeView 내부 버튼이 담당 — ::before 제거 */
+.rich-editor .ProseMirror .rich-callout > p {
+  margin: 0;
+}
+.rich-editor .ProseMirror .rich-callout-content > p {
+  margin: 0;
+}
+/* 콜아웃 내부 아이콘 버튼 */
+.rich-callout-icon-btn {
   position: absolute;
   left: 14px;
   top: 12px;
-  font-size: 18px;
+  width: 26px;
+  height: 26px;
+  border-radius: 4px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
   line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  z-index: 1;
+  transition: background 0.1s;
 }
-.rich-editor .ProseMirror .rich-callout[data-callout-type="NOTE"]::before {
-  content: "💡";
-}
-.rich-editor .ProseMirror .rich-callout[data-callout-type="TIP"]::before {
-  content: "✨";
-}
-.rich-editor .ProseMirror .rich-callout[data-callout-type="IMPORTANT"]::before {
-  content: "❗";
-}
-.rich-editor .ProseMirror .rich-callout[data-callout-type="WARNING"]::before {
-  content: "⚠️";
-}
-.rich-editor .ProseMirror .rich-callout[data-callout-type="CAUTION"]::before {
-  content: "🛑";
-}
-.rich-editor .ProseMirror .rich-callout > p {
-  margin: 0;
+.rich-callout-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
 }
 
 /* ---------- Link ---------- */
@@ -920,22 +925,12 @@
 }
 
 /* ============================================================
-   Callout type picker
+   Callout type picker (NodeView 내부 absolute 드롭다운)
    ============================================================ */
-.rich-callout-picker-btn {
-  width: 26px;
-  height: 26px;
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.13);
-  cursor: pointer;
-  font-size: 14px;
-  z-index: 50;
-}
-.rich-callout-picker-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-}
 .rich-callout-picker {
+  position: absolute;
+  left: 14px;
+  top: 46px;
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -964,4 +959,14 @@
 .rich-callout-picker-item:hover,
 .rich-callout-picker-item[data-active="true"] {
   background: rgba(255, 255, 255, 0.055);
+}
+
+/* 읽기 전용 모드 — AI 요약 등 editable={false} 렌더링 */
+.rich-editor--readonly {
+  cursor: default;
+  user-select: text;
+}
+.rich-editor--readonly .rich-editor-content .ProseMirror {
+  outline: none;
+  caret-color: transparent;
 }

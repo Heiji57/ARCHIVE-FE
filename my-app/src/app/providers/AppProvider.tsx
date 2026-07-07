@@ -26,6 +26,7 @@ import { getInitialAppState } from "@/app/model/initialState";
 import { appReducer } from "@/app/model/reducer";
 import type { AppSettings, Locale } from "@/app/model/settings";
 import type {
+  AppFocusTarget,
   ArchiveAppContextValue,
   PushNotificationOptions,
   SignupInput,
@@ -33,7 +34,7 @@ import type {
 import { AppContext } from "@/app/providers/context";
 import { usePersistAppState } from "@/app/providers/usePersistAppState";
 import { findEntryByDateKeyAndType } from "@/entities/entry/lib/selectors";
-import type { JournalEntry } from "@/entities/entry/model/types";
+import type { JournalEntry, RetrospectiveType } from "@/entities/entry/model/types";
 import type {
   NoticeCategory,
   NoticeType,
@@ -51,6 +52,7 @@ import { getTodosInRange, sortTodos } from "@/entities/todo/lib/selectors";
 import { getEntriesInRange } from "@/entities/entry/lib/selectors";
 import { DEMO_ANCHOR_DATE_KEY, isDemoMode } from "@/app/config/demo";
 import {
+  addDays,
   computeAutoTodoTime,
   endOfMonth,
   endOfWeek,
@@ -64,6 +66,7 @@ import {
   toDateKey,
 } from "@/shared/lib/date";
 import { COALESCE_MS, createCoalescingQueue } from "@/shared/lib/coalesce";
+import { writeTodoBoardRange } from "@/shared/lib/todoRangePrefs";
 import { createId } from "@/shared/lib/id";
 import { translate } from "@/shared/lib/i18n";
 import { ConfirmModal } from "@/shared/ui";
@@ -76,13 +79,14 @@ import {
   apiCreateEntry,
   apiCreateTodo,
   apiDeleteTodo,
+  apiLinkCalendarTodo,
+  apiUnlinkCalendarTodo,
   apiDeleteNotification,
   apiGenerateSummary,
   apiGetConnection,
   apiGetCalendarConnection,
   apiConnectCalendar,
   apiDisconnectCalendar,
-  apiSyncCalendar,
   apiGetCommits,
   apiGetSettings,
   apiGetSummary,
@@ -98,6 +102,7 @@ import {
   apiListAvailableRepos,
   apiGetEntry,
   apiListEntries,
+  apiListEntriesPaginated,
   apiListLinkedRepos,
   apiListNotifications,
   apiListSessions,
@@ -168,6 +173,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // 탈취 감지(refresh token 재사용) → 강제 로그아웃 + 보안 경고 모달 플래그
   const [securityLogout, setSecurityLogout] = useState(false);
+
+  // 전역 검색 → 특정 할 일/회고로 이동+포커스 요청 (transient·비영속).
+  const [focusTarget, setFocusTarget] = useState<AppFocusTarget | null>(null);
 
   // client 레이어가 AUTH_REFRESH_TOKEN_REUSE_DETECTED 를 받으면 여기로 통지된다.
   // 자동 refresh 재시도 없이 즉시 로그아웃 + 보안 모달을 띄운다.
@@ -466,7 +474,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // API 모드: 앱 시작 시 refresh 쿠키로 세션 복원 (access token 은 메모리라 새로고침 시 소실됨).
   const sessionRestoredRef = useRef(false);
   useEffect(() => {
-    if (!USE_API || sessionRestoredRef.current) return;
+    // 데모(게스트) 모드는 서버 세션이 없다. refresh 쿠키로 세션 복원을 시도하면
+    // (1) 데모인데도 /auth/token/refresh 네트워크 호출이 나가고, (2) 실사용자가
+    // ?demo=true 로 들어온 경우 실제 세션이 복원돼 진짜 데이터가 로드되고 이후
+    // 변경이 "비영속" 배너와 달리 실계정에 저장되는 문제가 생긴다. → 데모는 건너뛴다.
+    if (!USE_API || isDemoMode() || sessionRestoredRef.current) return;
     sessionRestoredRef.current = true;
     void apiRestoreSession().then((user) => {
       if (user) {
@@ -493,9 +505,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const _initFrom = toDateKey(startOfMonth(_now));
     const _initTo = toDateKey(endOfMonth(_now));
     void apiListTodos({ from: _initFrom, to: _initTo })
-      .then(({ todos, events }) => {
+      .then((todos) => {
         dispatch({ type: "hydrate/todos", payload: { todos } });
-        dispatch({ type: "hydrate/events", payload: { events } });
       })
       // eslint-disable-next-line no-console
       .catch((e) => console.error("[hydrate/todos] 로드 실패:", e));
@@ -503,9 +514,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     //   - 일일 회고: GET /entries?retroType=daily (사용자 작성)
     //   - 주/월/연 AI 요약: GET /summaries?type=... (서버 생성, retro_summaries)
     // 둘을 병합해 state.entries 로 하이드레이션한다. 요약은 isSummary=true.
-    // (백엔드 /entries 는 from/to 없으면 빈 배열을 반환하므로 전체 범위를 명시한다.)
+    // 주의: GET /entries 는 retroType 만 주면 이제 "오늘 기준 최근 30일"만 반환한다
+    //   (예전의 무제한 전체 이력 아님 — 넓은 from/to 는 최대 366일 제한으로 422).
+    //   과거 전체 이력은 회고록 목록에서 GET /entries/paginated 로 페이지 조회한다.
     void Promise.all([
-      apiListEntries({ retroType: "daily", from: "1970-01-01", to: "2999-12-31" }),
+      apiListEntries({ retroType: "daily" }),
       apiListSummaries("weekly"),
       apiListSummaries("monthly"),
       apiListSummaries("annual"),
@@ -630,6 +643,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
             retryTimer = window.setTimeout(connect, 3000);
           }
         },
+        ({ todoId, calendarLinked, calendarPushStatus }) => {
+          dispatch({ type: "todo/set-calendar", payload: { id: todoId, calendarLinked, calendarPushStatus } });
+        },
       );
     };
     connect();
@@ -640,6 +656,48 @@ export function AppProvider({ children }: { children: ReactNode }) {
       abort?.();
     };
   }, [state.currentUser?.id, refetchSummaries]);
+
+  // ─── 캘린더 동기화 폴링 폴백 ─────────────────────────────────────────────────
+  // SSE 이벤트가 유실될 경우를 대비해 "pending/syncing" 상태 할 일을 주기적으로 재조회한다.
+  // hydrate/todos 전체 교체 대신 해당 할 일의 calendarPushStatus 만 갱신해 다른 상태를 보호.
+  const pollingIdsRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    // 데모는 서버 동기화가 없으므로 폴링하지 않는다(방어적 — 데모엔 연동 할 일도 없음).
+    if (!USE_API || isDemoMode()) return;
+    for (const todo of state.todos) {
+      if (
+        (todo.calendarPushStatus === "pending" || todo.calendarPushStatus === "syncing") &&
+        !pollingIdsRef.current.has(todo.id)
+      ) {
+        pollingIdsRef.current.add(todo.id);
+        const todoId = todo.id;
+        const dateKey = todo.dateKey;
+        let attempts = 0;
+        const poll = () => {
+          if (++attempts > 12) { pollingIdsRef.current.delete(todoId); return; }
+          void apiListTodos({ from: dateKey, to: dateKey })
+            .then((fetched) => {
+              const updated = fetched.find((t) => t.id === todoId);
+              if (!updated) { pollingIdsRef.current.delete(todoId); return; }
+              if (updated.calendarPushStatus !== "pending" && updated.calendarPushStatus !== "syncing") {
+                dispatch({ type: "todo/set-calendar", payload: {
+                  id: todoId,
+                  calendarLinked: updated.calendarLinked,
+                  calendarPushStatus: updated.calendarPushStatus,
+                }});
+                pollingIdsRef.current.delete(todoId);
+              } else {
+                window.setTimeout(poll, 5000);
+              }
+            })
+            .catch(() => { window.setTimeout(poll, 5000); });
+        };
+        window.setTimeout(poll, 5000);
+      }
+    }
+  // state.todos 가 바뀔 때만 새 pending 항목을 감지하면 충분 — pollingIdsRef 로 중복 방지
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.todos]);
 
   // ─── API 모드 헬퍼 ──────────────────────────────────────────────────────────
   // 실패 시 일시적 토스트로 알린다 (네트워크 오류 메시지 재사용).
@@ -753,8 +811,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const templateQueue = templateQueueRef.current;
 
   // 페이지 이탈/탭 숨김 시 대기 중 변경을 즉시 전송해 유실 창을 최소화.
+  // 데모는 서버 큐에 아무것도 쌓이지 않으므로(모든 변경이 로컬 전용) 리스너를 걸지 않는다.
   useEffect(() => {
-    if (!USE_API) return;
+    if (!USE_API || isDemoMode()) return;
     const flushAll = () => {
       todoQueue.flushAll();
       entryQueue.flushAll();
@@ -882,32 +941,71 @@ export function AppProvider({ children }: { children: ReactNode }) {
       });
   };
 
-  // GET /todos 를 재조회해 todos + 캘린더 이벤트를 silent 갱신한다.
-  // 서버 62일 제한이 있으므로 호출 시 반드시 범위를 지정한다.
-  const refetchCalendarEvents = async (from: string, to: string) => {
-    if (!USE_API) return;
-    try {
-      const { todos, events } = await apiListTodos({ from, to });
-      dispatch({ type: "hydrate/todos", payload: { todos } });
-      dispatch({ type: "hydrate/events", payload: { events } });
-    } catch {
-      /* 네트워크 오류 — 다음 하이드레이션에서 보정 */
-    }
-  };
-
-  // 뷰 단위 할 일 + 이벤트 로드 — CalendarDashboard 가 view/cursor 전환 시 호출한다.
+  // 뷰 단위 할 일 로드 — CalendarDashboard 가 view/cursor 전환 시 호출한다.
   // dispatch 가 안정적이므로 useCallback 의존성 배열을 비워 함수를 안정화한다.
   const loadTodosForView = useCallback(async (from: string, to: string) => {
-    if (!USE_API) return;
+    // 데모(게스트) 모드는 시드 데이터만 사용 → 서버 호출 금지 (401 반복/불필요 트래픽 방지).
+    if (!USE_API || isDemoMode()) return;
     try {
-      const { todos, events } = await apiListTodos({ from, to });
+      const todos = await apiListTodos({ from, to });
       dispatch({ type: "hydrate/todos", payload: { todos } });
-      dispatch({ type: "hydrate/events", payload: { events } });
     } catch {
       /* transient network error — 다음 재시도에서 보정 */
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // 할 일 보드 "전체" 보기 로드 — 오늘 기준 앞뒤로 rangeDays 를 나눈 구간을 조회한다.
+  // 서버가 한 번에 최대 62일까지만 허용하므로(초과 시 422) 62일 이하 청크로 나눠
+  // 병렬 조회한 뒤 id 기준으로 병합해 한 번에 hydrate 한다.
+  const loadTodosForRange = useCallback(async (rangeDays: number) => {
+    // 데모(게스트) 모드는 시드 데이터만 사용 → 서버 호출 금지.
+    if (!USE_API || isDemoMode()) return;
+    const today = new Date();
+    const back = Math.floor(rangeDays / 2);
+    const fwd = rangeDays - back;
+    const start = addDays(today, -back);
+    const end = addDays(today, fwd);
+
+    const chunks: Array<{ from: string; to: string }> = [];
+    let cursor = start;
+    while (cursor.getTime() <= end.getTime()) {
+      // cursor..cursor+61 = 62일(포함) 윈도우 → 서버 제한 이내
+      const chunkEndMs = Math.min(addDays(cursor, 61).getTime(), end.getTime());
+      const chunkEnd = new Date(chunkEndMs);
+      chunks.push({ from: toDateKey(cursor), to: toDateKey(chunkEnd) });
+      cursor = addDays(chunkEnd, 1);
+    }
+
+    try {
+      const results = await Promise.all(chunks.map((c) => apiListTodos(c)));
+      const merged = new Map<string, Todo>();
+      for (const arr of results) {
+        for (const todo of arr) merged.set(todo.id, todo);
+      }
+      dispatch({ type: "hydrate/todos", payload: { todos: [...merged.values()] } });
+    } catch {
+      /* transient network error — 다음 재시도에서 보정 */
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // 회고록 목록 페이지 조회 (GET /entries/paginated). 받은 항목을 state.entries 에
+  // 병합하고 페이지 정보를 반환한다. useCallback([]) 으로 안정화 — 소비 훅
+  // (useDailyEntriesPage)이 이 함수를 effect 의존성에 넣어도 재조회 루프가 없다.
+  // 데모/mock 은 null 을 반환(호출부가 클라이언트 목록으로 폴백). 서버 오류는 전파한다.
+  const loadEntriesPage = useCallback(
+    async (params: { retroType?: RetrospectiveType; page: number; size: number }) => {
+      if (!USE_API || isDemoMode()) return null;
+      const res = await apiListEntriesPaginated(params);
+      if (res.items.length > 0) {
+        dispatch({ type: "entries/merge", payload: { entries: res.items } });
+      }
+      return res;
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
 
   // ─── Google Calendar 연결 프로브 ─────────────────────────────────────────────
   const runCalendarRefresh = () => {
@@ -962,6 +1060,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return true;
   };
 
+  // 데이터·설정 CRUD 의 서버 반영 여부. 데모(게스트)는 서버 세션이 없는 로컬 전용
+  // 샌드박스이므로, 낙관적 로컬 dispatch 는 그대로 두되 서버 호출만 건너뛴다
+  // (mock 모드와 동일 취급). 실사용자(isDemo=false)에겐 apiActive === USE_API 이므로
+  // 동작이 완전히 동일하다 — 즉 이 플래그 치환은 프로덕션 경로에 영향이 없다.
+  const apiActive = USE_API && !isDemo;
+
   // ─── Context value ────────────────────────────────────────────────────────
   const sortedTodos = useMemo(() => sortTodos(state.todos), [state.todos]);
   const sortedState = useMemo(
@@ -971,6 +1075,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const value: ArchiveAppContextValue = {
     state: sortedState,
     isDemo,
+    focusTarget,
+    requestFocus: setFocusTarget,
+    clearFocus: () => setFocusTarget(null),
     addTodo: (title, dateKey, options, onCreated) => {
       // 기본 날짜("오늘")는 user.timezone 기준 (데모는 앵커 날짜)
       const resolvedDateKey =
@@ -980,7 +1087,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           : todayKeyInTz(state.currentUser?.timezone ?? undefined));
       // 현재 시각 기준으로 다음 30분 경계를 시작 시간으로 자동 설정
       const { startTime, endTime } = computeAutoTodoTime();
-      if (USE_API) {
+      if (apiActive) {
         const tz = state.currentUser?.timezone ?? undefined;
         // 서버가 id 를 발급하므로 생성은 await 후 dispatch
         void apiCreateTodo({
@@ -991,6 +1098,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           startTimeUtc: localTimeToUtcISO(resolvedDateKey, startTime, tz),
           endTimeUtc: localTimeToUtcISO(resolvedDateKey, endTime, tz),
           timezone: tz ?? null,
+          pushToCalendar: options?.pushToCalendar,
         })
           .then((todo) => {
             dispatch({ type: "todo/upsert", payload: { todo } });
@@ -1017,21 +1125,49 @@ export function AppProvider({ children }: { children: ReactNode }) {
     updateTodo: (id, patch) => {
       dispatch({ type: "todo/update", payload: { id, patch } }); // 낙관적
       // 디바운스 코얼레싱 — 빠른 연속 수정(제목/설명 등)을 idle 후 1회 PATCH 로 합침.
-      if (USE_API) todoQueue.enqueue(id, patch);
+      if (apiActive) todoQueue.enqueue(id, patch);
     },
     moveTodo: (id, dateKey) => {
       dispatch({ type: "todo/move", payload: { id, dateKey } }); // 낙관적
       // updateTodo 와 같은 id 큐를 공유 → 수정+이동이 1회 PATCH 로 머지됨.
-      if (USE_API) todoQueue.enqueue(id, { dateKey });
+      if (apiActive) todoQueue.enqueue(id, { dateKey });
     },
     removeTodo: (id) => {
-      if (requireLoginInDemo()) return;
+      // 데모는 로컬에서만 삭제한다(다른 할 일 CRUD 와 동일하게 비영속 로컬 처리).
       dispatch({ type: "todo/remove", payload: { id } }); // 낙관적
-      if (USE_API) {
+      if (apiActive) {
         // 대기 중 수정 큐를 취소하고 삭제 요청.
+        // 연동된 Google Calendar 이벤트는 백엔드가 비동기(best-effort)로 자동 삭제한다.
         todoQueue.cancel(id);
         void apiDeleteTodo(id).catch(() => reportApiError());
       }
+    },
+    toggleTodoCalendarLink: (id) => {
+      const todo = state.todos.find((t) => t.id === id);
+      if (!todo || !apiActive) return;
+      const willLink = !todo.calendarLinked;
+      // 낙관적 UI — 즉시 상태 반전
+      dispatch({
+        type: "todo/set-calendar",
+        payload: {
+          id,
+          calendarLinked: willLink,
+          calendarPushStatus: willLink ? "pending" : "pending_delete",
+        },
+      });
+      const apiCall = willLink ? apiLinkCalendarTodo : apiUnlinkCalendarTodo;
+      void apiCall(id).catch(() => {
+        // 실패 시 원래 상태로 복원
+        dispatch({
+          type: "todo/set-calendar",
+          payload: {
+            id,
+            calendarLinked: todo.calendarLinked,
+            calendarPushStatus: todo.calendarPushStatus,
+          },
+        });
+        reportApiError();
+      });
     },
     setTodoTime: (id, startTime, endTime) => {
       // 시작만 지정되고 끝이 비어 있으면 끝을 시작+60분으로 자동 보정한다.
@@ -1050,7 +1186,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         type: "todo/update",
         payload: { id, patch: { startTime, endTime } },
       }); // 낙관적 (로컬 "HH:mm")
-      if (!USE_API) return;
+      if (!apiActive) return;
       // 서버는 UTC ISO + timezone 으로 보관 → 할 일 날짜·사용자 timezone 으로 환산.
       const todo = state.todos.find((t) => t.id === id);
       const dateKey = todo?.dateKey;
@@ -1075,7 +1211,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (isSummary) return;
       // 디바운스 코얼레싱 — 본문 타이핑을 idle 후 1회 upsert 로 합침.
       // (synced 는 서버 githubPush 필드 기반 — base 는 send 시점 최신값 사용)
-      if (USE_API) {
+      if (apiActive) {
         entryQueue.enqueue(id, {
           title: patch.title,
           content: patch.content,
@@ -1108,7 +1244,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       dispatch({ type: "entry/upsert", payload: { entry } });
       // 새 entry 추가 → readiness 캐시 무효화
       readinessCacheRef.current.clear();
-      if (USE_API) {
+      if (apiActive) {
         // POST 응답의 서버 ID 로 낙관적 로컬 ID 를 즉시 교체한다.
         // 이후 updateEntry 가 올바른 서버 ID 로 PUT 을 호출하게 된다.
         void apiCreateEntry({
@@ -1325,9 +1461,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const result = await apiConnectCalendar();
       // 콜백 메시지를 받았든 놓쳤든 서버 연결 상태를 직접 재확인해 즉시 반영.
       runCalendarRefresh();
-      // 설정 화면에서 연결 직후이므로 현재 월 범위의 이벤트를 로드한다.
+      // 설정 화면에서 연결 직후이므로 현재 월 범위의 할 일을 재로드한다.
       const _cNow = new Date();
-      void refetchCalendarEvents(
+      void loadTodosForView(
         toDateKey(startOfMonth(_cNow)),
         toDateKey(endOfMonth(_cNow)),
       );
@@ -1352,11 +1488,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (requireLoginInDemo()) return { ok: false };
       if (!USE_API) return { ok: false };
       try {
-        // POST /calendar/sync?from=&to= → CalendarEvent[] (응답 변경)
-        // 연결 상태는 이 응답에 포함되지 않으므로 별도 GET /calendar/connection 불필요
-        // (연결이 끊겼으면 예외가 throw 된다).
-        const events = await apiSyncCalendar(from, to);
-        dispatch({ type: "hydrate/events", payload: { events } });
+        const todos = await apiListTodos({ from, to });
+        dispatch({ type: "hydrate/todos", payload: { todos } });
         return { ok: true };
       } catch (e) {
         if (e instanceof ApiError && e.code === "GOOGLE_CALENDAR_REAUTH_REQUIRED") {
@@ -1371,43 +1504,58 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
     },
     loadTodosForView,
+    loadTodosForRange,
+    loadEntriesPage,
     pushNotification,
     markNotificationRead: (id) => {
       dispatch({ type: "notification/markRead", payload: { id } });
-      if (USE_API) void apiMarkNotificationRead(id).catch(() => reportApiError());
+      if (apiActive) void apiMarkNotificationRead(id).catch(() => reportApiError());
     },
     markAllNotificationsRead: () => {
       dispatch({ type: "notification/markAllRead" });
-      if (USE_API)
+      if (apiActive)
         void apiMarkAllNotificationsRead().catch(() => reportApiError());
     },
     clearNotification: (id) => {
       dispatch({ type: "notification/clear", payload: { id } });
-      if (USE_API) void apiDeleteNotification(id).catch(() => reportApiError());
+      if (apiActive) void apiDeleteNotification(id).catch(() => reportApiError());
     },
     clearReadNotifications: () => {
       dispatch({ type: "notification/clearRead" });
-      if (USE_API) void apiClearNotifications(true).catch(() => reportApiError());
+      if (apiActive) void apiClearNotifications(true).catch(() => reportApiError());
     },
     clearAllNotifications: () => {
       dispatch({ type: "notification/clearAll" });
-      if (USE_API) void apiClearNotifications(false).catch(() => reportApiError());
+      if (apiActive) void apiClearNotifications(false).catch(() => reportApiError());
     },
     dismissNotification,
     setLocale: (locale: Locale) => {
       dispatch({ type: "settings/locale", payload: { locale } });
-      if (USE_API) void syncSettings({ locale });
+      if (apiActive) void syncSettings({ locale });
     },
     setAutoSummary: (patch: Partial<AppSettings["autoSummary"]>) => {
       dispatch({ type: "settings/autoSummary", payload: { patch } });
-      if (USE_API)
+      if (apiActive)
         void syncSettings({
           autoSummary: { ...state.settings.autoSummary, ...patch },
         });
     },
+    setCalendarAutoPushTodo: (value) => {
+      dispatch({ type: "settings/calendarAutoPushTodo", payload: { value } });
+      if (apiActive) void syncSettings({ calendarAutoPushTodo: value });
+    },
+    setCalendarAutoDeleteTodo: (value) => {
+      dispatch({ type: "settings/calendarAutoDeleteTodo", payload: { value } });
+      if (apiActive) void syncSettings({ calendarAutoDeleteTodo: value });
+    },
     setNotificationRetention: (days) => {
       dispatch({ type: "settings/retention", payload: { days } });
-      if (USE_API) void syncSettings({ notificationRetentionDays: days });
+      if (apiActive) void syncSettings({ notificationRetentionDays: days });
+    },
+    setTodoBoardRange: (days) => {
+      // FE 전용 선호도 — 서버(/settings)로 동기화하지 않고 localStorage 에만 저장한다.
+      dispatch({ type: "settings/todoBoardRange", payload: { days } });
+      writeTodoBoardRange(days);
     },
     setAccountType: (accountType) => {
       dispatch({ type: "settings/accountType", payload: { accountType } });
@@ -1415,7 +1563,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       // 다음 하이드레이션/복원 전까지 로컬 일관성을 유지한다.
       dispatch({ type: "auth/updateUser", payload: { patch: { accountType } } });
       // 서버 영속화. 실패 시 조용히 넘기지 않고 토스트로 알린다 (DB 미반영 진단).
-      if (USE_API) {
+      if (apiActive) {
         void apiUpdateProfile({ accountType })
           .then(() => {
             // 프로필 PATCH 가 새 access token(developer 클레임)을 교체한 뒤에야
@@ -1502,7 +1650,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         updatedAt: new Date().toISOString(),
       };
       dispatch({ type: "template/add", payload: { template } });
-      if (USE_API) {
+      if (apiActive) {
         void apiCreateTemplate({ retroType, name, content })
           .then((serverTemplate) => {
             // 로컬 낙관적 ID → 서버 ID 교체
@@ -1517,7 +1665,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     },
     updateTemplate: (id, patch) => {
       dispatch({ type: "template/update", payload: { id, patch } });
-      if (USE_API) {
+      if (apiActive) {
         templateQueue.enqueue(id, {
           name: patch.name,
           content: patch.content,
@@ -1526,13 +1674,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     },
     deleteTemplate: (id) => {
       dispatch({ type: "template/delete", payload: { id } });
-      if (USE_API) {
+      if (apiActive) {
         void apiDeleteTemplate(id).catch(() => reportApiError());
       }
     },
     resetTemplate: (retroType) => {
       dispatch({ type: "template/resetDefault", payload: { retroType } });
-      if (USE_API) {
+      if (apiActive) {
         const defaultTpl = state.templates.find(
           (t) => t.retroType === retroType && t.isDefault,
         );
@@ -1553,7 +1701,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     },
     setActiveTemplate: (retroType, id) => {
       dispatch({ type: "template/setActive", payload: { retroType, id } });
-      if (USE_API) {
+      if (apiActive) {
         void apiSetActiveTemplate(retroType, id).catch(() => reportApiError());
       }
     },
@@ -1637,7 +1785,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     updateProfile: (patch: Partial<Pick<User, "displayName" | "avatarUrl">>) => {
       dispatch({ type: "auth/updateProfile", payload: { patch } }); // 낙관적
       // 디바운스 코얼레싱 — displayName 타이핑을 idle 후 1회 PATCH 로 합침.
-      if (USE_API) profileQueue.enqueue("profile", patch);
+      if (apiActive) profileQueue.enqueue("profile", patch);
     },
     // ─── 지역/시간대 ────────────────────────────────────────────────────────
     /**
@@ -1645,7 +1793,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
      * mock 모드: COUNTRY_PRIMARY_TZ 를 단일 요소로, MULTI_TZ_COUNTRIES 로 multi 판단.
      */
     loadCountryTimezones: async (code) => {
-      if (!USE_API) {
+      if (!apiActive) {
         const tz = countryDefaultTimezone(code);
         const multi = MULTI_TZ_COUNTRIES.includes(code as MultiTzCountry);
         const tzList = tz ? [tz] : supportedTimeZones().slice(0, 20);
@@ -1751,7 +1899,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       return result;
     },
     // ─── 세션 관리 ───────────────────────────────────────────────────────────
-    listSessions: () => (USE_API ? apiListSessions() : mockListSessions()),
+    listSessions: () => (apiActive ? apiListSessions() : mockListSessions()),
     revokeSession: async (sessionId: string) => {
       if (requireLoginInDemo()) return { ok: false };
       try {

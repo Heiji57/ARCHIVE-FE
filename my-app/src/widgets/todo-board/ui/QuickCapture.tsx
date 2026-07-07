@@ -5,18 +5,24 @@ import { useTranslation } from "@/shared/lib/i18n";
 import { DatePickerPopover } from "./DatePickerPopover";
 
 export interface QuickCaptureProps {
-  onSubmit: (text: string, dateKey: string) => void;
+  onSubmit: (text: string, dateKey: string, pushToCalendar: boolean | null) => void;
+  /** 캘린더가 연결된 상태일 때만 체크박스를 표시한다. */
+  calendarConnected?: boolean;
+  /** 초기 체크 상태 (사용자가 명시적으로 바꾸기 전까지만 사용). */
+  calendarAutoPushTodo?: boolean;
 }
 
 /**
  * Top "Quick Capture" form on the Todo board. Text field +
  * date chip + Enter button.
  */
-export function QuickCapture({ onSubmit }: QuickCaptureProps) {
+export function QuickCapture({ onSubmit, calendarConnected, calendarAutoPushTodo }: QuickCaptureProps) {
   const { t } = useTranslation();
   const [input, setInput] = useState("");
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickedDate, setPickedDate] = useState(todayKey);
+  // null = 사용자가 명시적으로 바꾸지 않음 → 서버에 null 전송
+  const [pushToCalendar, setPushToCalendar] = useState<boolean | null>(null);
 
   const today = new Date();
   const todayK = toDateKey(today);
@@ -32,8 +38,9 @@ export function QuickCapture({ onSubmit }: QuickCaptureProps) {
   const submit = (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!input.trim()) return;
-    onSubmit(input.trim(), pickedDate);
+    onSubmit(input.trim(), pickedDate, pushToCalendar);
     setInput("");
+    setPushToCalendar(null);
   };
 
   return (
@@ -79,6 +86,17 @@ export function QuickCapture({ onSubmit }: QuickCaptureProps) {
           {t("todo.quickCapture.enter")} <ArrowRight size={14} />
         </button>
       </form>
+
+      {calendarConnected ? (
+        <label className="quick-capture-calendar-check">
+          <input
+            type="checkbox"
+            checked={pushToCalendar ?? calendarAutoPushTodo ?? false}
+            onChange={(e) => setPushToCalendar(e.target.checked)}
+          />
+          {t("todo.create.pushToCalendar")}
+        </label>
+      ) : null}
 
       <p className="quick-capture-hint">
         {t("todo.quickCapture.hint")}

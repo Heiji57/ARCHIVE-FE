@@ -1,6 +1,5 @@
 import { useRef, useState } from "react";
 import { Plus, X } from "lucide-react";
-import type { CalendarEvent } from "@/entities/calendar/model/types";
 import type { Todo } from "@/entities/todo/model/types";
 import { StatusIcon } from "@/entities/todo/ui/StatusIcon";
 import {
@@ -12,14 +11,12 @@ import {
 } from "@/shared/lib/date";
 import { useTranslation } from "@/shared/lib/i18n";
 import { MONTH_HEADER_KEYS } from "../model/constants";
-import { CalendarEventChip } from "./CalendarEventChip";
 import { DayCell } from "./DayCell";
 import { DraggableMonthChip } from "./DraggableMonthChip";
 
 export interface MonthGridProps {
   cursor: Date;
   byDate: Record<string, Todo[]>;
-  eventsByDate?: Record<string, CalendarEvent[]>;
   todayKey: string;
   onSelect: (id: string) => void;
   onDropTodo: (todoId: string, dateKey: string) => void;
@@ -29,7 +26,6 @@ export interface MonthGridProps {
 export function MonthGrid({
   cursor,
   byDate,
-  eventsByDate,
   todayKey,
   onSelect,
   onDropTodo,
@@ -48,7 +44,6 @@ export function MonthGrid({
   const cellInputRef = useRef<HTMLInputElement | null>(null);
   const modalInputRef = useRef<HTMLInputElement | null>(null);
   const modalTodos = modalDate ? (byDate[modalDate] ?? []) : [];
-  const modalEvents = modalDate ? (eventsByDate?.[modalDate] ?? []) : [];
 
   const startCellAdd = (dateKey: string) => {
     setAddingDate(dateKey);
@@ -116,12 +111,8 @@ export function MonthGrid({
           const todayCell = k === anchorKey;
           const inMonth = isSameMonth(d, cursor);
           const items = byDate[k] ?? [];
-          const events = eventsByDate?.[k] ?? [];
-          // 이벤트는 칸당 최대 2개까지만 노출, 나머지는 todo "더 보기" 모달로.
-          const visibleEvents = events.slice(0, 2);
           const visible = items.slice(0, 3);
-          const more =
-            items.length - visible.length + (events.length - visibleEvents.length);
+          const more = items.length - visible.length;
           const isHovered = hoverDate === k;
           const isAdding = addingDate === k;
 
@@ -209,9 +200,6 @@ export function MonthGrid({
 
               {/* 칩 목록 */}
               <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-                {visibleEvents.map((ev) => (
-                  <CalendarEventChip key={ev.id} event={ev} showTime={false} />
-                ))}
                 {visible.map((item) => (
                   <DraggableMonthChip
                     key={item.id}
@@ -339,10 +327,6 @@ export function MonthGrid({
                 flex: 1,
               }}
             >
-              {/* Google Calendar 이벤트 (읽기 전용) */}
-              {modalEvents.map((ev) => (
-                <CalendarEventChip key={ev.id} event={ev} />
-              ))}
               {modalTodos.map((todo) => (
                 <button
                   key={todo.id}

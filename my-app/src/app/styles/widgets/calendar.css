@@ -25,6 +25,76 @@
   gap: 8px;
 }
 
+/* Toolbar right cluster — legend + expand control */
+.calendar-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+/* 확대(전체화면) 토글 버튼 */
+.calendar-expand-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: var(--r-sm, 8px);
+  border: 1px solid var(--color-hairline, rgba(0, 0, 0, 0.1));
+  background: var(--color-tile-2);
+  color: var(--color-body-muted);
+  cursor: pointer;
+  transition: background-color 120ms, color 120ms;
+}
+.calendar-expand-btn:hover {
+  background: var(--color-tile-3);
+  color: var(--color-ink);
+}
+
+/* 확대 모드 — 앱 사이드바 포함 전체 화면을 덮는다.
+   일간 뷰는 높이가 고정(내부 스크롤)이고, 주간 뷰는 할 일이 많아질수록 셀 높이가
+   늘어나 콘텐츠가 길어질 수 있다. 그래서 부모에 align-items:center 를 쓰지 않고
+   자식(.calendar-page)에 margin:auto 를 준다 — 콘텐츠가 뷰포트보다 작으면
+   수직 중앙 정렬되고, 뷰포트보다 커지면 margin 이 0 으로 줄어들며 위쪽부터 자연스럽게
+   쌓여 스크롤로 처음부터 끝까지 온전히 닿을 수 있다(align-items:center 는 넘칠 때
+   위쪽이 스크롤로 닿지 않는 문제가 있어 사용하지 않는다). */
+.calendar-shell-expanded {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  background: var(--color-canvas);
+  overflow-y: auto;
+  padding: 20px clamp(20px, 4vw, 56px) 48px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: calendarExpandFadeIn 160ms ease-out;
+}
+.calendar-shell-expanded .calendar-page {
+  padding-top: 8px;
+  /* 화면(뷰포트)의 80% 를 차지 — %는 이미 패딩이 빠진 셸의 콘텐츠 박스 기준이라
+     좁은 화면에서도 가로 스크롤 없이 안전하다. */
+  width: 80%;
+  margin-top: auto;
+  margin-bottom: auto;
+}
+/* 일간 뷰는 내부 스크롤 박스(.day-timeline-scroll)가 고정 max-height 를 가지므로
+   확대 모드에서 별도로 키워 전체 카드(툴바 포함)가 화면 높이의 약 80% 를 차지하게
+   맞춘다(140px 은 툴바+셸 패딩 대략치). 주간/월간 뷰는 콘텐츠 높이가 자연스럽게
+   늘어나므로 별도 처리가 필요 없다. */
+.calendar-shell-expanded .day-timeline-scroll {
+  max-height: max(320px, calc(80vh - 140px));
+}
+@keyframes calendarExpandFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 /* Status legend — sits at the toolbar's right edge (Linear design) */
 .calendar-legend {
   display: flex;

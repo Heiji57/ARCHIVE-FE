@@ -1,4 +1,6 @@
 import { mergeAttributes, Node } from "@tiptap/core";
+import { ReactNodeViewRenderer } from "@tiptap/react";
+import { CalloutView } from "./CalloutView";
 import type { CalloutType } from "../types";
 
 declare module "@tiptap/core" {
@@ -43,6 +45,10 @@ export const Callout = Node.create({
       }),
       0,
     ];
+  },
+
+  addNodeView() {
+    return ReactNodeViewRenderer(CalloutView);
   },
 
   addCommands() {

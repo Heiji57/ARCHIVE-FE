@@ -4,6 +4,13 @@ import { request, streamSSE } from "./client";
 import { toNotification } from "./mappers";
 import type { components } from "./schema";
 
+/** resource==="todo" SSE 이벤트 — DB 미저장 ephemeral. FE todo 상태 갱신 전용. */
+export interface CalendarSyncSSEEvent {
+  todoId: string;
+  calendarLinked: boolean;
+  calendarPushStatus: "synced" | "failed" | "pending_delete" | null;
+}
+
 type NotificationResponse = components["schemas"]["NotificationResponse"];
 
 export async function apiListNotifications(
@@ -40,13 +47,24 @@ export async function apiClearNotifications(readOnly = false): Promise<void> {
 export function streamNotifications(
   onNotification: (n: NotificationItem) => void,
   onClose?: () => void,
+  onCalendarSync?: (e: CalendarSyncSSEEvent) => void,
 ): () => void {
   return streamSSE(
     "/notifications/stream",
     (data) => {
-      // {type:"timeout"} 같은 제어 이벤트는 id 가 없으므로 건너뛴다.
-      const payload = data as Partial<NotificationResponse>;
+      const payload = data as Record<string, unknown>;
       if (!payload || typeof payload.id !== "string") return;
+
+      // resource==="todo" : ephemeral 이벤트 — 알림 패널에 저장하지 않고 todo 상태만 갱신
+      if (payload.resource === "todo" && typeof payload.todo_id === "string") {
+        onCalendarSync?.({
+          todoId: payload.todo_id,
+          calendarLinked: payload.calendar_linked as boolean,
+          calendarPushStatus: payload.calendar_push_status as CalendarSyncSSEEvent["calendarPushStatus"],
+        });
+        return;
+      }
+
       onNotification(toNotification(payload as NotificationResponse));
     },
     onClose,

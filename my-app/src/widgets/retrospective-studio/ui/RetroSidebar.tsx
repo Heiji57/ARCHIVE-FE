@@ -16,6 +16,19 @@ export interface RetroSidebarProps {
   onNewDaily: () => void
   /** GitHub 동기화 상태 배지(연결됨/연결 안 됨) 표시 여부 — 개발자 계정만 true. */
   showSyncBadge: boolean
+  /** 렌더할 목록(일간=서버 페이지, 그 외=클라이언트). 상위에서 결정해 주입. */
+  listEntries: JournalEntry[]
+  /** 현재 페이지(1-based). */
+  currentPage: number
+  totalPages: number
+  onPrevPage: () => void
+  onNextPage: () => void
+  /** 서버 목록 로딩 중. */
+  loading?: boolean
+  /** 서버 목록 로드 실패. */
+  loadError?: boolean
+  /** 연/월/주·검색 필터 비활성 여부(서버 파라미터 미지원 → 백엔드 추가 대기). */
+  filtersDisabled: boolean
 }
 
 export function RetroSidebar({
@@ -25,6 +38,14 @@ export function RetroSidebar({
   onSummarize,
   onNewDaily,
   showSyncBadge,
+  listEntries,
+  currentPage,
+  totalPages,
+  onPrevPage,
+  onNextPage,
+  loading = false,
+  loadError = false,
+  filtersDisabled,
 }: RetroSidebarProps) {
   const todayDateKey = useTodayKey()
   const { t } = useTranslation()
@@ -39,10 +60,6 @@ export function RetroSidebar({
     setMonthFilter,
     weekFilter,
     setWeekFilter,
-    page,
-    setPage,
-    totalPages,
-    pageEntries,
     years,
     weeks,
   } = filterState
@@ -133,11 +150,13 @@ export function RetroSidebar({
           gridTemplateColumns: "1fr 1fr 1fr",
           gap: 6,
           marginBottom: 12,
+          opacity: filtersDisabled ? 0.5 : 1,
         }}>
         <select
           className="select"
           value={yearFilter}
           onChange={(e) => setYearFilter(e.target.value)}
+          disabled={filtersDisabled}
           title={t("retro.filter.year")}>
           <option value="all">{t("retro.filter.allYears")}</option>
           {years.map((y) => (
@@ -150,6 +169,7 @@ export function RetroSidebar({
           className="select"
           value={monthFilter}
           onChange={(e) => setMonthFilter(e.target.value)}
+          disabled={filtersDisabled}
           title={t("retro.filter.month")}>
           <option value="all">{t("retro.filter.allMonths")}</option>
           {MONTHS.map((m) => (
@@ -162,6 +182,7 @@ export function RetroSidebar({
           className="select"
           value={weekFilter}
           onChange={(e) => setWeekFilter(e.target.value)}
+          disabled={filtersDisabled}
           title={t("retro.filter.week")}>
           <option value="all">{t("retro.filter.allWeeks")}</option>
           {weeks.map((w) => (
@@ -182,16 +203,31 @@ export function RetroSidebar({
           background: "var(--color-tile-3)",
           borderRadius: "var(--r-pill)",
           border: "1px solid var(--color-divider-soft)",
-          marginBottom: 14,
+          marginBottom: filtersDisabled ? 6 : 14,
+          opacity: filtersDisabled ? 0.5 : 1,
         }}>
         <Search size={14} style={{ color: "var(--color-body-muted)" }} />
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
+          disabled={filtersDisabled}
           placeholder={t("retro.search")}
           style={{ flex: 1, fontSize: 13, minWidth: 0 }}
         />
       </div>
+
+      {/* 필터 비활성 안내 — /paginated 가 검색·기간 파라미터를 아직 지원하지 않음 */}
+      {filtersDisabled ? (
+        <p
+          style={{
+            margin: "0 0 12px",
+            fontSize: 11,
+            color: "var(--color-body-muted)",
+            lineHeight: 1.4,
+          }}>
+          {t("retro.filter.pendingHint")}
+        </p>
+      ) : null}
 
       {/* Entry list */}
       <div
@@ -202,10 +238,14 @@ export function RetroSidebar({
           maxHeight: 420,
           overflow: "auto",
         }}>
-        {pageEntries.length === 0 ? (
+        {loadError ? (
+          <EmptyState message={t("retro.list.loadError")} />
+        ) : loading && listEntries.length === 0 ? (
+          <EmptyState message={t("retro.list.loading")} />
+        ) : listEntries.length === 0 ? (
           <EmptyState message={t("retro.empty")} />
         ) : (
-          pageEntries.map((e) => (
+          listEntries.map((e) => (
             <RetroListItem
               key={e.id}
               entry={e}
@@ -218,27 +258,27 @@ export function RetroSidebar({
         )}
       </div>
 
-      {/* Pager */}
+      {/* Pager (currentPage 는 1-based) */}
       {totalPages > 1 ? (
         <div className="pager">
           <button
             type="button"
             className="pager-btn"
-            disabled={page === 0}
-            onClick={() => setPage((p) => Math.max(0, p - 1))}>
+            disabled={currentPage <= 1 || loading}
+            onClick={onPrevPage}>
             <ChevronLeft size={12} /> {t("retro.pager.prev")}
           </button>
           <span>
             {t("retro.pager.page", {
-              current: page + 1,
+              current: currentPage,
               total: totalPages,
             })}
           </span>
           <button
             type="button"
             className="pager-btn"
-            disabled={page >= totalPages - 1}
-            onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}>
+            disabled={currentPage >= totalPages || loading}
+            onClick={onNextPage}>
             {t("retro.pager.next")} <ChevronRight size={12} />
           </button>
         </div>

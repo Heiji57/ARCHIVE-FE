@@ -23,6 +23,16 @@ import type { AppSettings, Locale } from "@/app/model/settings";
 
 export type AppRoute = "calendar" | "todos" | "retrospectives" | "settings";
 
+/**
+ * 전역 검색 등에서 특정 대상으로 "이동 + 포커스"를 요청하는 일회성 인텐트.
+ * - todo: 캘린더로 이동해 해당 날짜로 커서를 옮기고 상세 패널을 연다.
+ * - entry: 회고록으로 이동해 해당 회고를 선택한다.
+ * 소비 측 위젯이 처리 후 clearFocus() 로 비운다(비영속·transient).
+ */
+export type AppFocusTarget =
+  | { kind: "todo"; todoId: string; dateKey: string }
+  | { kind: "entry"; entryId: string };
+
 export interface PersistedAppState {
   todos: Todo[];
   entries: JournalEntry[];
@@ -55,12 +65,29 @@ export interface ArchiveAppContextValue {
   state: AppState;
   /** 게스트 데모 모드 여부 (?demo=true). 데모에서는 할 일 외 변경이 차단된다. */
   isDemo: boolean;
+  /**
+   * 전역 검색 등에서 요청한 이동/포커스 인텐트 (없으면 null).
+   * 소비 측 위젯(CalendarDashboard/RetrospectiveStudio)이 마운트 후 처리하고
+   * clearFocus() 로 비운다.
+   */
+  focusTarget: AppFocusTarget | null;
+  /** 이동/포커스 인텐트를 설정한다(라우팅과 함께 호출). */
+  requestFocus: (target: AppFocusTarget) => void;
+  /** 처리 완료 후 인텐트를 비운다. */
+  clearFocus: () => void;
   addTodo: (
     title: string,
     dateKey?: string,
-    options?: { status?: TaskStatus; description?: string },
+    options?: { status?: TaskStatus; description?: string; pushToCalendar?: boolean | null },
     onCreated?: (id: string) => void,
   ) => void;
+  /**
+   * 할 일의 Google Calendar 연동을 토글한다.
+   * calendarLinked=true 면 해제(DELETE /calendar-link), false 면 추가(POST /calendar-link).
+   * 낙관적 UI: 즉시 pending/pending_delete 로 상태를 바꾸고, API 실패 시 복원.
+   * needsReauth 상태에서는 호출하지 말 것(CalendarCard 재연결 후 사용 가능).
+   */
+  toggleTodoCalendarLink: (id: string) => void;
   updateTodo: (
     id: string,
     patch: Partial<Pick<Todo, "title" | "status" | "description" | "dateKey">>,
@@ -126,9 +153,8 @@ export interface ArchiveAppContextValue {
   /** Google Calendar 연결 해제 (연결 + 이벤트 삭제). */
   disconnectCalendar: () => Promise<{ ok: boolean }>;
   /**
-   * Google Calendar 수동 동기화 (POST /calendar/sync?from=&to=).
-   * from/to 는 현재 보고 있는 뷰의 날짜 범위(최대 62일). 초과 시 422.
-   * 응답으로 받은 CalendarEvent[] 를 state 에 반영한다.
+   * Google Calendar 수동 동기화 — GET /todos?from=&to= 로 할 일 목록을 재조회해
+   * state 를 교체한다 (POST /calendar/sync 는 deprecated).
    */
   syncCalendar: (from: string, to: string) => Promise<{ ok: boolean }>;
   /**
@@ -136,6 +162,23 @@ export interface ArchiveAppContextValue {
    * CalendarDashboard 가 view/cursor 전환 시 호출한다.
    */
   loadTodosForView: (from: string, to: string) => Promise<void>;
+  /**
+   * 할 일 보드 "전체" 보기 로드 — 오늘 기준 앞뒤로 rangeDays 를 나눈 구간의
+   * 할 일을 (필요 시 62일 청크로 나눠) 조회해 state.todos 를 교체한다.
+   */
+  loadTodosForRange: (rangeDays: number) => Promise<void>;
+  /**
+   * 회고록 목록 페이지 조회 (GET /entries/paginated). 과거 전체 이력을 최신순으로
+   * 페이지 단위 조회하고, 받은 항목을 state.entries 에 병합한다(entries/merge).
+   * - 데모/mock 모드에서는 서버가 없으므로 null 을 반환한다 → 호출부는 클라이언트
+   *   목록(state.entries)으로 폴백한다.
+   * - 서버 오류는 삼키지 않고 예외로 전파한다(호출부가 목록 로드 실패를 표시하도록).
+   */
+  loadEntriesPage: (params: {
+    retroType?: RetrospectiveType;
+    page: number;
+    size: number;
+  }) => Promise<import("@/shared/api").EntryPage | null>;
   pushNotification: (
     type: NoticeType,
     title: string,
@@ -150,7 +193,11 @@ export interface ArchiveAppContextValue {
   dismissNotification: (id: string) => void;
   setLocale: (locale: Locale) => void;
   setAutoSummary: (patch: Partial<AppSettings["autoSummary"]>) => void;
+  setCalendarAutoPushTodo: (value: boolean) => void;
+  setCalendarAutoDeleteTodo: (value: boolean) => void;
   setNotificationRetention: (days: number) => void;
+  /** 할 일 보드 "전체" 보기 기간(일). FE 전용 — localStorage 에만 저장. */
+  setTodoBoardRange: (days: number) => void;
   setAccountType: (accountType: import("@/app/model/settings").AccountType) => void;
   /**
    * monthly/annual 요약 생성 전 데이터 밀도 점검.

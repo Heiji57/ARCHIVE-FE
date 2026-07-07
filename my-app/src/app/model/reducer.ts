@@ -63,17 +63,32 @@ export function appReducer(state: AppState, action: AppAction): AppState {
         todos: state.todos.filter((t) => t.id !== action.payload.id),
       };
 
+    case "todo/set-calendar": {
+      const { id, calendarLinked, calendarPushStatus } = action.payload;
+      return {
+        ...state,
+        todos: state.todos.map((t) =>
+          t.id === id ? { ...t, calendarLinked, calendarPushStatus } : t,
+        ),
+      };
+    }
+
     case "hydrate/todos":
       return { ...state, todos: action.payload.todos };
 
-    case "hydrate/events":
-      return {
-        ...state,
-        calendar: { ...state.calendar, events: action.payload.events },
-      };
-
     case "hydrate/entries":
       return { ...state, entries: action.payload.entries };
+
+    case "entries/merge": {
+      // id 기준 upsert-many. 기존 항목은 서버 값으로 교체(updatedAt 은 항목 자체 값 유지),
+      // 없던 항목은 추가한다. 요약(isSummary) 등 다른 소스로 들어온 항목은 건드리지 않는다.
+      const byId = new Map(state.entries.map((e) => [e.id, e]));
+      for (const entry of action.payload.entries) {
+        const prev = byId.get(entry.id);
+        byId.set(entry.id, prev ? { ...prev, ...entry } : entry);
+      }
+      return { ...state, entries: [...byId.values()] };
+    }
 
     case "hydrate/notifications":
       return { ...state, notifications: action.payload.notifications };
@@ -311,6 +326,33 @@ export function appReducer(state: AppState, action: AppAction): AppState {
         },
       };
 
+    case "settings/todoBoardRange":
+      return {
+        ...state,
+        settings: {
+          ...state.settings,
+          todoBoardRangeDays: action.payload.days,
+        },
+      };
+
+    case "settings/calendarAutoPushTodo":
+      return {
+        ...state,
+        settings: {
+          ...state.settings,
+          calendarAutoPushTodo: action.payload.value,
+        },
+      };
+
+    case "settings/calendarAutoDeleteTodo":
+      return {
+        ...state,
+        settings: {
+          ...state.settings,
+          calendarAutoDeleteTodo: action.payload.value,
+        },
+      };
+
     case "settings/scheduleCheck":
       return {
         ...state,
@@ -488,6 +530,8 @@ function createTodo(
     description,
     startTime: startTime ?? null,
     endTime: endTime ?? null,
+    calendarLinked: false,
+    calendarPushStatus: null,
   };
 }
 
@@ -530,11 +574,17 @@ export function ensureSettings(
     notificationRetentionDays:
       partial.notificationRetentionDays ??
       DEFAULT_SETTINGS.notificationRetentionDays,
+    todoBoardRangeDays:
+      partial.todoBoardRangeDays ?? DEFAULT_SETTINGS.todoBoardRangeDays,
     lastScheduleCheckAt:
       partial.lastScheduleCheckAt ?? DEFAULT_SETTINGS.lastScheduleCheckAt,
     accountType: partial.accountType ?? DEFAULT_SETTINGS.accountType,
     accountTypeDetermined:
       partial.accountTypeDetermined ?? DEFAULT_SETTINGS.accountTypeDetermined,
+    calendarAutoPushTodo:
+      partial.calendarAutoPushTodo ?? DEFAULT_SETTINGS.calendarAutoPushTodo,
+    calendarAutoDeleteTodo:
+      partial.calendarAutoDeleteTodo ?? DEFAULT_SETTINGS.calendarAutoDeleteTodo,
   };
 }
 

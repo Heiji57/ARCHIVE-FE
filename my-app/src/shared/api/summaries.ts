@@ -48,20 +48,6 @@ const KIND_TO_TYPE: Record<SummaryKind, "weekly" | "monthly" | "annual"> = {
   yearly: "annual",
 };
 
-/**
- * 구조화 content → 마크다운 본문 (FE 회고는 마크다운 문자열).
- *
- * content.sections 은 배열 형식: [{ key, items }]
- * 배열 순서 = 서버가 보장하는 섹션 순서이므로 별도 정렬 없이 순회한다.
- */
-export function summaryContentToMarkdown(content: SummaryContent | null): string {
-  if (!content) return "";
-  return content.sections
-    .filter(({ items }) => items.length > 0)
-    .map(({ key, items }) => `## ${key}\n${items.map((i) => `- ${i}`).join("\n")}`)
-    .join("\n\n");
-}
-
 // API SummaryType(annual) ↔ FE RetrospectiveType(yearly) 매핑
 const TYPE_TO_RETRO: Record<SummaryType, RetrospectiveType> = {
   weekly: "weekly",
@@ -106,7 +92,7 @@ export function toSummaryEntry(api: SummaryResponse): JournalEntry {
     id: api.id,
     dateKey: api.period_start,
     title: summaryTitle(api),
-    content: summaryContentToMarkdown(api.content ?? null),
+    content: api.content?.markdown ?? "",
     retroType: TYPE_TO_RETRO[api.summary_type],
     githubPush,
     synced: githubPush !== null,

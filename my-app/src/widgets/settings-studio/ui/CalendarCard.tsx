@@ -4,17 +4,21 @@ import { useArchiveApp } from "@/app/providers/useArchiveApp";
 import { endOfMonth, startOfMonth, toDateKey } from "@/shared/lib/date";
 import { DisconnectBanner } from "@/shared/ui/disconnect-banner/DisconnectBanner";
 import { Pill } from "@/shared/ui/pill/Pill";
+import { ConfirmModal } from "@/shared/ui";
 import { useTranslation } from "@/shared/lib/i18n";
 import { SettingsCardHeader } from "./SettingsCardHeader";
 
 export function CalendarCard() {
-  const { state, connectCalendar, disconnectCalendar, syncCalendar, pushNotification } =
+  const { state, connectCalendar, disconnectCalendar, syncCalendar, pushNotification, setCalendarAutoPushTodo, setCalendarAutoDeleteTodo } =
     useArchiveApp();
   const { t, locale } = useTranslation();
   const { status, lastSyncedAt } = state.calendar;
+  const calendarAutoPushTodo = state.settings.calendarAutoPushTodo;
+  const calendarAutoDeleteTodo = state.settings.calendarAutoDeleteTodo;
 
   const [connecting, setConnecting] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [autoDeleteConfirmOpen, setAutoDeleteConfirmOpen] = useState(false);
 
   const handleConnect = async () => {
     if (connecting) return;
@@ -156,6 +160,78 @@ export function CalendarCard() {
               </div>
             </div>
           ) : null}
+
+          {/* 신규 할 일 자동 push 설정 */}
+          <label
+            style={{
+              display: "flex",
+              alignItems: "flex-start",
+              gap: 12,
+              padding: "12px 0",
+              cursor: "pointer",
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={calendarAutoPushTodo}
+              onChange={(e) => setCalendarAutoPushTodo(e.target.checked)}
+              style={{ marginTop: 2, accentColor: "var(--color-primary)" }}
+            />
+            <div>
+              <p style={{ margin: 0, fontSize: 13, fontWeight: 500 }}>
+                {t("settings.calendar.autoPushTodo")}
+              </p>
+              <p style={{ margin: "2px 0 0", fontSize: 11, color: "var(--color-body-muted)", lineHeight: 1.5 }}>
+                {t("settings.calendar.autoPushTodoDesc")}
+              </p>
+            </div>
+          </label>
+
+          {/* Google Calendar 삭제 시 할 일 함께 삭제 설정 */}
+          <label
+            style={{
+              display: "flex",
+              alignItems: "flex-start",
+              gap: 12,
+              padding: "12px 0",
+              cursor: "pointer",
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={calendarAutoDeleteTodo}
+              onChange={(e) => {
+                if (e.target.checked) {
+                  setAutoDeleteConfirmOpen(true);
+                } else {
+                  setCalendarAutoDeleteTodo(false);
+                }
+              }}
+              style={{ marginTop: 2, accentColor: "var(--color-primary)" }}
+            />
+            <div>
+              <p style={{ margin: 0, fontSize: 13, fontWeight: 500 }}>
+                {t("settings.calendar.autoDeleteTodo")}
+              </p>
+              <p style={{ margin: "2px 0 0", fontSize: 11, color: "var(--color-body-muted)", lineHeight: 1.5 }}>
+                {t("settings.calendar.autoDeleteTodoDesc")}
+              </p>
+            </div>
+          </label>
+
+          <ConfirmModal
+            open={autoDeleteConfirmOpen}
+            title={t("settings.calendar.autoDeleteTodoConfirmTitle")}
+            message={t("settings.calendar.autoDeleteTodoConfirmMsg")}
+            confirmLabel={t("settings.calendar.autoDeleteTodoConfirmOk")}
+            cancelLabel={t("settings.calendar.autoDeleteTodoConfirmCancel")}
+            onConfirm={() => {
+              setCalendarAutoDeleteTodo(true);
+              setAutoDeleteConfirmOpen(false);
+            }}
+            onCancel={() => setAutoDeleteConfirmOpen(false)}
+            onDismiss={() => setAutoDeleteConfirmOpen(false)}
+          />
 
           {/* 액션 버튼 */}
           <div className="github-actions">

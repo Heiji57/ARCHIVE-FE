@@ -1,6 +1,7 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useArchiveApp } from "@/app/providers/useArchiveApp";
 import { useTodayKey } from "@/app/providers/useToday";
+import type { JournalEntry } from "@/entities/entry/model/types";
 import type {
   SummaryKind,
   SummaryReadiness,
@@ -10,6 +11,7 @@ import { can } from "@/shared/lib/permissions";
 import { ConfirmModal } from "@/shared/ui/confirm-modal/ConfirmModal";
 import { EmptyState } from "@/shared/ui/empty-state/EmptyState";
 import { useTranslation } from "@/shared/lib/i18n";
+import { useDailyEntriesPage } from "../model/useDailyEntriesPage";
 import { useRetroFilter } from "../model/useRetroFilter";
 import { PeriodPickerModal } from "./PeriodPickerModal";
 import { RetroEditor } from "./RetroEditor";
@@ -25,6 +27,8 @@ export function RetrospectiveStudio() {
     checkSummaryReadiness,
     checkRetroExists,
     isDemo,
+    focusTarget,
+    clearFocus,
   } = useArchiveApp();
   const { t } = useTranslation();
   const todayDateKey = useTodayKey();
@@ -63,14 +67,59 @@ export function RetrospectiveStudio() {
   const filterState = useRetroFilter(state.entries);
   const { filteredEntries } = filterState;
 
+  // 일간 회고 목록은 서버 페이지네이션(GET /entries/paginated)으로 조회한다.
+  // 주/월/연 요약은 소스(/summaries)가 달라 편집 불가·개수도 적으므로 기존
+  // 클라이언트 목록(useRetroFilter)을 그대로 유지한다.
+  const isDailyTab = filterState.retroFilter === "daily";
+  const dailyPage = useDailyEntriesPage(isDailyTab);
+  // 데모/mock 은 서버가 없어 serverMode=false → 클라이언트 목록으로 폴백.
+  const useServerList = isDailyTab && dailyPage.serverMode;
+
+  // 서버 페이지 항목(id 순서)을 state.entries 에서 실제 엔트리로 해석한다
+  // (편집이 state.entries 를 갱신하면 목록도 즉시 반영된다).
+  const dailyPageEntries = useMemo(
+    () =>
+      dailyPage.ids
+        .map((id) => state.entries.find((e) => e.id === id))
+        .filter((e): e is JournalEntry => Boolean(e)),
+    [dailyPage.ids, state.entries],
+  );
+
+  // 사이드바 목록 + 페이저 소스 (일간=서버, 그 외/폴백=클라이언트).
+  const listEntries = useServerList ? dailyPageEntries : filterState.pageEntries;
+  const currentPage = useServerList ? dailyPage.page : filterState.page + 1;
+  const totalPages = useServerList ? dailyPage.totalPages : filterState.totalPages;
+  const goPrevPage = () => {
+    if (useServerList) dailyPage.setPage(dailyPage.page - 1);
+    else filterState.setPage((p) => Math.max(0, p - 1));
+  };
+  const goNextPage = () => {
+    if (useServerList) dailyPage.setPage(dailyPage.page + 1);
+    else filterState.setPage((p) => Math.min(filterState.totalPages - 1, p + 1));
+  };
+
   const [selectedId, setSelectedId] = useState<string | null>(
     () => filteredEntries[0]?.id ?? null,
   );
 
   const active =
     state.entries.find((e) => e.id === selectedId) ??
+    listEntries[0] ??
     filteredEntries[0] ??
     null;
+
+  // 전역 검색에서 특정 회고로 이동 요청 → 해당 회고 종류로 필터를 맞추고 선택.
+  const { setRetroFilter } = filterState;
+  useEffect(() => {
+    if (focusTarget?.kind !== "entry") return;
+    const target = state.entries.find((e) => e.id === focusTarget.entryId);
+    if (target) {
+      setRetroFilter(target.retroType);
+      setSelectedId(target.id);
+    }
+    clearFocus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusTarget, state.entries]);
 
   const completedTodos = useMemo(
     () =>
@@ -170,9 +219,13 @@ export function RetrospectiveStudio() {
     const dateKey = todayDateKey;
     const { entry, existed } = createDailyEntry(
       dateKey,
-      // POST 응답의 서버 ID 로 교체되면 selectedId 를 즉시 갱신한다.
-      // (로컬 ID 가 stale 되어 에디터가 빈 화면을 보이지 않게 함)
-      (serverEntry) => setSelectedId(serverEntry.id),
+      // POST 응답의 서버 ID 로 교체되면 selectedId 를 갱신하고, 최신 회고가 목록
+      // 1페이지 최상단에 나타나도록 서버 목록을 다시 조회한다.
+      (serverEntry) => {
+        setSelectedId(serverEntry.id);
+        dailyPage.setPage(1);
+        dailyPage.refetch();
+      },
     );
     if (existed) {
       pushNotification("info", t("retro.newDaily.duplicate"), dateKey);
@@ -192,6 +245,16 @@ export function RetrospectiveStudio() {
         onSummarize={handleSummarize}
         onNewDaily={handleNewDaily}
         showSyncBadge={can(state.settings.accountType, "github")}
+        listEntries={listEntries}
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPrevPage={goPrevPage}
+        onNextPage={goNextPage}
+        loading={useServerList && dailyPage.loading}
+        loadError={useServerList && dailyPage.error}
+        // 연/월/주·검색 필터는 /paginated 가 파라미터를 지원하지 않아 일간(서버) 탭에서
+        // 비활성화한다. 백엔드가 필터 파라미터를 추가하면 활성화 예정.
+        filtersDisabled={useServerList}
       />
 
       <main>

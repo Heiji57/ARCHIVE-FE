@@ -1,7 +1,13 @@
 import { type CSSProperties, useEffect, useState } from "react";
 import {
+  AlertTriangle,
   ArrowRight,
+  CalendarDays,
+  CalendarMinus,
+  CalendarPlus,
+  CheckCircle2,
   ChevronDown,
+  Loader,
   Sparkles,
   Trash2,
   X,
@@ -24,6 +30,13 @@ export interface TaskDetailPanelProps {
   onGoToRetro: () => void;
   /** 작업 삭제 (휴지통 버튼 / Delete 키). */
   onDelete: () => void;
+  /**
+   * Google Calendar 연동 토글 콜백.
+   * undefined 이면 섹션을 숨긴다(캘린더 미연결 등).
+   */
+  onToggleCalendarLink?: () => void;
+  /** needsReauth=true 이면 토글을 비활성화하고 재연결 안내를 보인다. */
+  calendarNeedsReauth?: boolean;
 }
 
 const STATUS_ORDER: TaskStatus[] = ["not-start", "in-progress", "done"];
@@ -46,6 +59,8 @@ export function TaskDetailPanel({
   onSetTime,
   onGoToRetro,
   onDelete,
+  onToggleCalendarLink,
+  calendarNeedsReauth = false,
 }: TaskDetailPanelProps) {
   const [statusOpen, setStatusOpen] = useState(false);
   const { t, locale } = useTranslation();
@@ -352,6 +367,71 @@ export function TaskDetailPanel({
             placeholder={t("calendar.taskDetail.descPlaceholder")}
           />
         </div>
+
+        {/* Google Calendar 연동 섹션 */}
+        {onToggleCalendarLink !== undefined && (
+          <div>
+            <p
+              className="t-eyebrow"
+              style={{ margin: "0 0 8px", color: "var(--color-body-muted)" }}
+            >
+              Google Calendar
+            </p>
+            {calendarNeedsReauth ? (
+              <div
+                style={{
+                  padding: "10px 14px",
+                  background: "var(--color-warn-subtle, rgba(234,179,8,.1))",
+                  border: "1px solid var(--color-warn, #ca8a04)",
+                  borderRadius: "var(--r-sm)",
+                  fontSize: 12,
+                  color: "var(--color-body-muted)",
+                }}
+              >
+                {t("calendar.taskDetail.calendarReauth")}
+              </div>
+            ) : (
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <button
+                  type="button"
+                  onClick={onToggleCalendarLink}
+                  className="btn btn-utility"
+                  style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13 }}
+                >
+                  {todo.calendarLinked ? (
+                    <CalendarMinus size={14} />
+                  ) : (
+                    <CalendarPlus size={14} />
+                  )}
+                  {todo.calendarLinked
+                    ? t("calendar.taskDetail.calendarLinkRemove")
+                    : t("calendar.taskDetail.calendarLinkAdd")}
+                </button>
+                {todo.calendarPushStatus === "pending" || todo.calendarPushStatus === "syncing" ? (
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--color-body-muted)" }}>
+                    <Loader size={11} style={{ animation: "summary-spin 900ms linear infinite" }} />
+                    {t(`calendar.taskDetail.calendarStatus.${todo.calendarPushStatus}`)}
+                  </span>
+                ) : todo.calendarPushStatus === "synced" ? (
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--color-status-done, #22c55e)" }}>
+                    <CheckCircle2 size={11} />
+                    {t("calendar.taskDetail.calendarStatus.synced")}
+                  </span>
+                ) : todo.calendarPushStatus === "failed" ? (
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--color-warn, #ca8a04)" }}>
+                    <AlertTriangle size={11} />
+                    {t("calendar.taskDetail.calendarStatus.failed")}
+                  </span>
+                ) : todo.calendarPushStatus === "pending_delete" ? (
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--color-body-muted)" }}>
+                    <CalendarDays size={11} />
+                    {t("calendar.taskDetail.calendarStatus.pending_delete")}
+                  </span>
+                ) : null}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* AI auto-retro card */}
         <div

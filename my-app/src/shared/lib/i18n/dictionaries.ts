@@ -81,6 +81,8 @@ export type TranslationKey =
   | "calendar.nav.prev"
   | "calendar.nav.today"
   | "calendar.nav.next"
+  | "calendar.expand"
+  | "calendar.collapse"
   | "calendar.addCard"
   | "calendar.addCard.placeholder"
   | "calendar.moreItems"
@@ -112,6 +114,15 @@ export type TranslationKey =
   | "calendar.taskDetail.timeHint"
   | "calendar.taskDetail.clearTime"
   | "calendar.taskDetail.delete"
+  | "calendar.taskDetail.calendarLinkAdd"
+  | "calendar.taskDetail.calendarLinkRemove"
+  | "calendar.taskDetail.calendarReauth"
+  | "calendar.taskDetail.deleteCalendarNote"
+  | "calendar.taskDetail.calendarStatus.pending"
+  | "calendar.taskDetail.calendarStatus.syncing"
+  | "calendar.taskDetail.calendarStatus.synced"
+  | "calendar.taskDetail.calendarStatus.failed"
+  | "calendar.taskDetail.calendarStatus.pending_delete"
   // Retrospective
   | "retro.history"
   | "retro.archive"
@@ -162,6 +173,9 @@ export type TranslationKey =
   | "retro.pager.prev"
   | "retro.pager.next"
   | "retro.pager.page"
+  | "retro.list.loading"
+  | "retro.list.loadError"
+  | "retro.filter.pendingHint"
   | "retro.filter.year"
   | "retro.filter.month"
   | "retro.filter.week"
@@ -290,6 +304,11 @@ export type TranslationKey =
   | "settings.notifications.retention.label"
   | "settings.notifications.retention.unit"
   | "settings.notifications.retention.hint"
+  | "settings.todoRange.label"
+  | "settings.todoRange.hint"
+  | "settings.todoRange.unit.week"
+  | "settings.todoRange.unit.month"
+  | "settings.todoRange.unit.year"
   // Settings — Templates
   | "settings.section.templates"
   | "settings.templates.title"
@@ -339,6 +358,15 @@ export type TranslationKey =
   | "settings.calendar.connectFailed"
   | "settings.calendar.disconnected"
   | "settings.calendar.synced"
+  | "settings.calendar.autoPushTodo"
+  | "settings.calendar.autoPushTodoDesc"
+  | "settings.calendar.autoDeleteTodo"
+  | "settings.calendar.autoDeleteTodoDesc"
+  | "settings.calendar.autoDeleteTodoConfirmTitle"
+  | "settings.calendar.autoDeleteTodoConfirmMsg"
+  | "settings.calendar.autoDeleteTodoConfirmOk"
+  | "settings.calendar.autoDeleteTodoConfirmCancel"
+  | "todo.create.pushToCalendar"
   | "calendar.event.allDay"
   | "calendar.event.openInGoogle"
   | "calendar.event.readonly"
@@ -540,6 +568,8 @@ const ko: Dict = {
   "calendar.taskDetail.close": "닫기",
   "calendar.empty.day": "—",
   "calendar.dropHint": "여기로 놓기",
+  "calendar.expand": "캘린더 확대",
+  "calendar.collapse": "확대 닫기",
   "calendar.nav.prev": "← 이전",
   "calendar.nav.today": "오늘로",
   "calendar.nav.next": "다음 →",
@@ -574,6 +604,15 @@ const ko: Dict = {
   "calendar.taskDetail.timeHint": "선택 사항 — 비우면 일간 뷰에서 생성 시각 기준 1시간 블록으로 표시됩니다.",
   "calendar.taskDetail.clearTime": "시간 지우기",
   "calendar.taskDetail.delete": "작업 삭제",
+  "calendar.taskDetail.calendarLinkAdd": "Google 캘린더에 추가",
+  "calendar.taskDetail.calendarLinkRemove": "캘린더에서 빼기",
+  "calendar.taskDetail.calendarReauth": "캘린더를 다시 연결해주세요",
+  "calendar.taskDetail.deleteCalendarNote": "연동된 캘린더 일정도 함께 삭제됩니다.",
+  "calendar.taskDetail.calendarStatus.pending": "동기화 대기",
+  "calendar.taskDetail.calendarStatus.syncing": "동기화 중",
+  "calendar.taskDetail.calendarStatus.synced": "동기화 완료",
+  "calendar.taskDetail.calendarStatus.failed": "동기화 실패",
+  "calendar.taskDetail.calendarStatus.pending_delete": "삭제 대기",
 
   "retro.history": "History",
   "retro.archive": "회고 아카이브",
@@ -627,6 +666,9 @@ const ko: Dict = {
   "retro.overwrite.cancel": "취소",
   "retro.pager.prev": "이전",
   "retro.pager.next": "다음",
+  "retro.list.loading": "목록을 불러오는 중…",
+  "retro.list.loadError": "목록을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.",
+  "retro.filter.pendingHint": "검색·기간 필터는 곧 지원될 예정이에요.",
   "retro.pager.page": "{current} / {total}",
   "retro.filter.year": "연도",
   "retro.filter.month": "월",
@@ -768,6 +810,11 @@ const ko: Dict = {
   "settings.notifications.retention.label": "알림 보관 기간",
   "settings.notifications.retention.unit": "일",
   "settings.notifications.retention.hint": "오래된 알림을 자동으로 삭제합니다.",
+  "settings.todoRange.label": "전체 보기 기간",
+  "settings.todoRange.hint": "할 일 보드의 ‘전체’ 필터에서 오늘 기준 앞뒤로 이 기간 안의 할 일을 표시합니다.",
+  "settings.todoRange.unit.week": "{n}주",
+  "settings.todoRange.unit.month": "{n}개월",
+  "settings.todoRange.unit.year": "{n}년",
   "settings.section.templates": "회고록 템플릿",
   "settings.templates.title": "Retro Templates",
   "settings.templates.description":
@@ -824,6 +871,15 @@ const ko: Dict = {
   "settings.calendar.connectFailed": "연결에 실패했어요. 다시 시도해주세요.",
   "settings.calendar.disconnected": "캘린더 연결을 해제했습니다.",
   "settings.calendar.synced": "캘린더를 동기화했습니다.",
+  "settings.calendar.autoPushTodo": "새 할 일 자동 추가",
+  "settings.calendar.autoPushTodoDesc": "새 할 일을 만들 때 기본으로 Google Calendar에 추가합니다. 이미 만들어진 할 일에는 소급 적용되지 않습니다.",
+  "settings.calendar.autoDeleteTodo": "Google Calendar 삭제 시 함께 삭제",
+  "settings.calendar.autoDeleteTodoDesc": "Google Calendar에서 일정을 삭제하면 연동된 할 일도 함께 삭제됩니다. 해제하면 연동만 끊고 할 일은 유지합니다.",
+  "settings.calendar.autoDeleteTodoConfirmTitle": "함께 삭제 설정",
+  "settings.calendar.autoDeleteTodoConfirmMsg": "이 설정을 켜면 Google Calendar에서 일정을 삭제할 때 연동된 할 일이 되돌릴 수 없이 함께 삭제됩니다. 계속하시겠습니까?",
+  "settings.calendar.autoDeleteTodoConfirmOk": "설정 켜기",
+  "settings.calendar.autoDeleteTodoConfirmCancel": "취소",
+  "todo.create.pushToCalendar": "Google 캘린더에 추가",
   "calendar.event.allDay": "종일",
   "calendar.event.openInGoogle": "Google Calendar에서 열기",
   "calendar.event.readonly": "읽기 전용",
@@ -1028,6 +1084,8 @@ const en: Dict = {
   "calendar.taskDetail.close": "Close",
   "calendar.empty.day": "—",
   "calendar.dropHint": "Drop here",
+  "calendar.expand": "Expand calendar",
+  "calendar.collapse": "Exit fullscreen",
   "calendar.nav.prev": "Prev",
   "calendar.nav.today": "Today",
   "calendar.nav.next": "Next",
@@ -1062,6 +1120,15 @@ const en: Dict = {
   "calendar.taskDetail.timeHint": "Optional — if empty, the day view shows a 1-hour block from when it was created.",
   "calendar.taskDetail.clearTime": "Clear time",
   "calendar.taskDetail.delete": "Delete task",
+  "calendar.taskDetail.calendarLinkAdd": "Add to Google Calendar",
+  "calendar.taskDetail.calendarLinkRemove": "Remove from Calendar",
+  "calendar.taskDetail.calendarReauth": "Please reconnect your calendar",
+  "calendar.taskDetail.deleteCalendarNote": "The linked calendar event will also be deleted.",
+  "calendar.taskDetail.calendarStatus.pending": "Sync pending",
+  "calendar.taskDetail.calendarStatus.syncing": "Syncing",
+  "calendar.taskDetail.calendarStatus.synced": "Synced",
+  "calendar.taskDetail.calendarStatus.failed": "Sync failed",
+  "calendar.taskDetail.calendarStatus.pending_delete": "Removing",
 
   "retro.history": "History",
   "retro.archive": "Retrospective Archive",
@@ -1117,6 +1184,9 @@ const en: Dict = {
   "retro.overwrite.cancel": "Cancel",
   "retro.pager.prev": "Prev",
   "retro.pager.next": "Next",
+  "retro.list.loading": "Loading list…",
+  "retro.list.loadError": "Couldn't load the list. Please try again shortly.",
+  "retro.filter.pendingHint": "Search & date filters are coming soon.",
   "retro.pager.page": "{current} / {total}",
   "retro.filter.year": "Year",
   "retro.filter.month": "Month",
@@ -1259,6 +1329,11 @@ const en: Dict = {
   "settings.notifications.retention.label": "Notification retention",
   "settings.notifications.retention.unit": "days",
   "settings.notifications.retention.hint": "Old notifications are deleted automatically.",
+  "settings.todoRange.label": "All-view range",
+  "settings.todoRange.hint": "The 'All' filter on the todo board shows tasks within this span before and after today.",
+  "settings.todoRange.unit.week": "{n}w",
+  "settings.todoRange.unit.month": "{n}mo",
+  "settings.todoRange.unit.year": "{n}y",
   "settings.section.templates": "Retro Templates",
   "settings.templates.title": "Retro Templates",
   "settings.templates.description":
@@ -1316,6 +1391,15 @@ const en: Dict = {
   "settings.calendar.connectFailed": "Connection failed. Please try again.",
   "settings.calendar.disconnected": "Calendar disconnected.",
   "settings.calendar.synced": "Calendar synced.",
+  "settings.calendar.autoPushTodo": "Auto-add new tasks",
+  "settings.calendar.autoPushTodoDesc": "Automatically add new tasks to Google Calendar. Does not apply retroactively to existing tasks.",
+  "settings.calendar.autoDeleteTodo": "Delete task when Google Calendar event is deleted",
+  "settings.calendar.autoDeleteTodoDesc": "When a Google Calendar event is deleted, the linked task is also deleted. If off, only the link is removed and the task is kept.",
+  "settings.calendar.autoDeleteTodoConfirmTitle": "Enable co-deletion",
+  "settings.calendar.autoDeleteTodoConfirmMsg": "When this setting is on, deleting an event in Google Calendar will permanently delete the linked task. This cannot be undone. Continue?",
+  "settings.calendar.autoDeleteTodoConfirmOk": "Enable",
+  "settings.calendar.autoDeleteTodoConfirmCancel": "Cancel",
+  "todo.create.pushToCalendar": "Add to Google Calendar",
   "calendar.event.allDay": "All day",
   "calendar.event.openInGoogle": "Open in Google Calendar",
   "calendar.event.readonly": "Read-only",
@@ -1518,6 +1602,8 @@ const zh: Dict = {
   "calendar.taskDetail.close": "关闭",
   "calendar.empty.day": "—",
   "calendar.dropHint": "放至此处",
+  "calendar.expand": "放大日历",
+  "calendar.collapse": "退出全屏",
   "calendar.nav.prev": "← 上一",
   "calendar.nav.today": "今天",
   "calendar.nav.next": "下一 →",
@@ -1552,6 +1638,15 @@ const zh: Dict = {
   "calendar.taskDetail.timeHint": "可选 — 留空时，日视图将按创建时间显示为 1 小时区块。",
   "calendar.taskDetail.clearTime": "清除时间",
   "calendar.taskDetail.delete": "删除任务",
+  "calendar.taskDetail.calendarLinkAdd": "添加到 Google 日历",
+  "calendar.taskDetail.calendarLinkRemove": "从日历中移除",
+  "calendar.taskDetail.calendarReauth": "请重新连接日历",
+  "calendar.taskDetail.deleteCalendarNote": "关联的日历事件也将一并删除。",
+  "calendar.taskDetail.calendarStatus.pending": "同步待处理",
+  "calendar.taskDetail.calendarStatus.syncing": "同步中",
+  "calendar.taskDetail.calendarStatus.synced": "已同步",
+  "calendar.taskDetail.calendarStatus.failed": "同步失败",
+  "calendar.taskDetail.calendarStatus.pending_delete": "删除中",
 
   "retro.history": "历史",
   "retro.archive": "回顾归档",
@@ -1605,6 +1700,9 @@ const zh: Dict = {
   "retro.overwrite.cancel": "取消",
   "retro.pager.prev": "上一页",
   "retro.pager.next": "下一页",
+  "retro.list.loading": "正在加载列表…",
+  "retro.list.loadError": "无法加载列表，请稍后重试。",
+  "retro.filter.pendingHint": "搜索和日期筛选即将支持。",
   "retro.pager.page": "{current} / {total}",
   "retro.filter.year": "年",
   "retro.filter.month": "月",
@@ -1743,6 +1841,11 @@ const zh: Dict = {
   "settings.notifications.retention.label": "通知保留时长",
   "settings.notifications.retention.unit": "天",
   "settings.notifications.retention.hint": "自动删除旧通知。",
+  "settings.todoRange.label": "全部视图时段",
+  "settings.todoRange.hint": "待办看板的“全部”筛选会显示以今天为中心、前后该时段内的任务。",
+  "settings.todoRange.unit.week": "{n}周",
+  "settings.todoRange.unit.month": "{n}个月",
+  "settings.todoRange.unit.year": "{n}年",
   "settings.section.templates": "回顾模板",
   "settings.templates.title": "Retro Templates",
   "settings.templates.description":
@@ -1795,6 +1898,15 @@ const zh: Dict = {
   "settings.calendar.connectFailed": "连接失败。请重试。",
   "settings.calendar.disconnected": "已断开日历连接。",
   "settings.calendar.synced": "已同步日历。",
+  "settings.calendar.autoPushTodo": "自动添加新任务",
+  "settings.calendar.autoPushTodoDesc": "创建新任务时默认添加到 Google 日历。不适用于已有任务。",
+  "settings.calendar.autoDeleteTodo": "Google 日历删除时同步删除任务",
+  "settings.calendar.autoDeleteTodoDesc": "在 Google 日历中删除事件时，关联的任务也会一并删除。关闭后仅解除关联，保留任务。",
+  "settings.calendar.autoDeleteTodoConfirmTitle": "启用同步删除",
+  "settings.calendar.autoDeleteTodoConfirmMsg": "开启此设置后，在 Google 日历中删除事件时，关联的任务将被永久删除且无法恢复。是否继续？",
+  "settings.calendar.autoDeleteTodoConfirmOk": "开启",
+  "settings.calendar.autoDeleteTodoConfirmCancel": "取消",
+  "todo.create.pushToCalendar": "添加到 Google 日历",
   "calendar.event.allDay": "全天",
   "calendar.event.openInGoogle": "在 Google 日历中打开",
   "calendar.event.readonly": "只读",
@@ -1994,6 +2106,8 @@ const ja: Dict = {
   "calendar.taskDetail.close": "閉じる",
   "calendar.empty.day": "—",
   "calendar.dropHint": "ここにドロップ",
+  "calendar.expand": "カレンダーを拡大",
+  "calendar.collapse": "全画面を閉じる",
   "calendar.nav.prev": "← 前へ",
   "calendar.nav.today": "今日へ",
   "calendar.nav.next": "次へ →",
@@ -2028,6 +2142,15 @@ const ja: Dict = {
   "calendar.taskDetail.timeHint": "任意 — 空欄の場合、日ビューでは作成時刻を基準に1時間のブロックとして表示されます。",
   "calendar.taskDetail.clearTime": "時間をクリア",
   "calendar.taskDetail.delete": "タスクを削除",
+  "calendar.taskDetail.calendarLinkAdd": "Google カレンダーに追加",
+  "calendar.taskDetail.calendarLinkRemove": "カレンダーから削除",
+  "calendar.taskDetail.calendarReauth": "カレンダーを再接続してください",
+  "calendar.taskDetail.deleteCalendarNote": "連携したカレンダー予定も一緒に削除されます。",
+  "calendar.taskDetail.calendarStatus.pending": "同期待ち",
+  "calendar.taskDetail.calendarStatus.syncing": "同期中",
+  "calendar.taskDetail.calendarStatus.synced": "同期済み",
+  "calendar.taskDetail.calendarStatus.failed": "同期失敗",
+  "calendar.taskDetail.calendarStatus.pending_delete": "削除待ち",
 
   "retro.history": "履歴",
   "retro.archive": "振り返りアーカイブ",
@@ -2082,6 +2205,9 @@ const ja: Dict = {
   "retro.overwrite.cancel": "キャンセル",
   "retro.pager.prev": "前へ",
   "retro.pager.next": "次へ",
+  "retro.list.loading": "一覧を読み込み中…",
+  "retro.list.loadError": "一覧を読み込めませんでした。しばらくして再試行してください。",
+  "retro.filter.pendingHint": "検索・期間フィルターは近日対応予定です。",
   "retro.pager.page": "{current} / {total}",
   "retro.filter.year": "年",
   "retro.filter.month": "月",
@@ -2223,6 +2349,11 @@ const ja: Dict = {
   "settings.notifications.retention.label": "通知保持期間",
   "settings.notifications.retention.unit": "日",
   "settings.notifications.retention.hint": "古い通知を自動的に削除します。",
+  "settings.todoRange.label": "全体表示の期間",
+  "settings.todoRange.hint": "ToDo ボードの「すべて」フィルターで、今日を基準に前後この期間内のタスクを表示します。",
+  "settings.todoRange.unit.week": "{n}週",
+  "settings.todoRange.unit.month": "{n}か月",
+  "settings.todoRange.unit.year": "{n}年",
   "settings.section.templates": "振り返りテンプレート",
   "settings.templates.title": "Retro Templates",
   "settings.templates.description":
@@ -2279,6 +2410,15 @@ const ja: Dict = {
   "settings.calendar.connectFailed": "接続に失敗しました。もう一度お試しください。",
   "settings.calendar.disconnected": "カレンダーの接続を解除しました。",
   "settings.calendar.synced": "カレンダーを同期しました。",
+  "settings.calendar.autoPushTodo": "新しいタスクを自動追加",
+  "settings.calendar.autoPushTodoDesc": "新しいタスク作成時にデフォルトで Google カレンダーに追加します。既存のタスクには適用されません。",
+  "settings.calendar.autoDeleteTodo": "Google カレンダー削除時にタスクも削除",
+  "settings.calendar.autoDeleteTodoDesc": "Google カレンダーで予定を削除すると、連携中のタスクも一緒に削除されます。オフにすると連携のみ解除され、タスクは保持されます。",
+  "settings.calendar.autoDeleteTodoConfirmTitle": "一緒に削除を有効にする",
+  "settings.calendar.autoDeleteTodoConfirmMsg": "この設定をオンにすると、Google カレンダーで予定を削除した際に連携しているタスクが元に戻せない形で削除されます。続けますか？",
+  "settings.calendar.autoDeleteTodoConfirmOk": "有効にする",
+  "settings.calendar.autoDeleteTodoConfirmCancel": "キャンセル",
+  "todo.create.pushToCalendar": "Google カレンダーに追加",
   "calendar.event.allDay": "終日",
   "calendar.event.openInGoogle": "Google カレンダーで開く",
   "calendar.event.readonly": "読み取り専用",

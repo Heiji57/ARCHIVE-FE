@@ -208,8 +208,22 @@
 .quick-capture-submit {
   padding: 12px 24px;
 }
+.quick-capture-calendar-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--color-body-muted);
+  cursor: pointer;
+  user-select: none;
+}
+.quick-capture-calendar-check input[type="checkbox"] {
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}
 .quick-capture-hint {
-  margin: 14px 0 0;
+  margin: 10px 0 0;
   font-size: 13px;
   color: var(--color-body-muted);
 }

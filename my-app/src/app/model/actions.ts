@@ -1,7 +1,4 @@
-import type {
-  CalendarEvent,
-  CalendarStatus,
-} from "@/entities/calendar/model/types";
+import type { CalendarStatus } from "@/entities/calendar/model/types";
 import type { JournalEntry, RetrospectiveType } from "@/entities/entry/model/types";
 import type {
   GitHubCommit,
@@ -46,10 +43,20 @@ export type AppAction =
   | { type: "todo/move"; payload: { id: string; dateKey: string } }
   | { type: "todo/upsert"; payload: { todo: Todo } }
   | { type: "todo/remove"; payload: { id: string } }
+  | {
+      type: "todo/set-calendar";
+      payload: {
+        id: string;
+        calendarLinked: boolean;
+        calendarPushStatus: Todo["calendarPushStatus"];
+      };
+    }
   // ── 서버 하이드레이션 (API 모드) ──
   | { type: "hydrate/todos"; payload: { todos: Todo[] } }
-  | { type: "hydrate/events"; payload: { events: CalendarEvent[] } }
   | { type: "hydrate/entries"; payload: { entries: JournalEntry[] } }
+  // 페이지네이션 조회 결과를 state.entries 에 병합(id upsert). hydrate/entries 와 달리
+  // 기존 항목(요약 등)을 유지하며, 각 항목의 서버 updatedAt 을 그대로 보존한다.
+  | { type: "entries/merge"; payload: { entries: JournalEntry[] } }
   | { type: "hydrate/notifications"; payload: { notifications: NotificationItem[] } }
   | { type: "hydrate/settings"; payload: { settings: AppSettings } }
   | { type: "hydrate/templates"; payload: { templates: RetroTemplate[]; activeTemplateIds: Record<string, string> } }
@@ -106,6 +113,9 @@ export type AppAction =
       payload: { patch: Partial<AppSettings["autoSummary"]> };
     }
   | { type: "settings/retention"; payload: { days: number } }
+  | { type: "settings/todoBoardRange"; payload: { days: number } }
+  | { type: "settings/calendarAutoPushTodo"; payload: { value: boolean } }
+  | { type: "settings/calendarAutoDeleteTodo"; payload: { value: boolean } }
   | { type: "settings/scheduleCheck"; payload: { timestamp: string } }
   | { type: "settings/accountType"; payload: { accountType: AccountType } }
   | {

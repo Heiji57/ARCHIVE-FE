@@ -13,6 +13,7 @@ import { NotificationsCard } from "./NotificationsCard";
 import { RegionTimezoneCard } from "./RegionTimezoneCard";
 import { SessionsCard } from "./SessionsCard";
 import { TemplatesCard } from "./TemplatesCard";
+import { TodoRangeCard } from "./TodoRangeCard";
 
 function SettingsSection({
   label,
@@ -49,6 +50,7 @@ export function SettingsStudio() {
           <LanguageCard />
           <RegionTimezoneCard />
           <AccountTypeCard />
+          <TodoRangeCard />
           <NotificationsCard />
         </div>
       </SettingsSection>

@@ -14,8 +14,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * ??? ?? ?? ??
-         * @description ???? ? ??? ?? ??? 6?? ??? ????. ??? ??? 60?.
+         * 이메일 인증 코드 발송
+         * @description 회원가입 전 이메일 소유 확인용 6자리 코드를 발송한다. 재발송 쿨다운 60초.
          */
         post: {
             parameters: {
@@ -35,7 +35,7 @@ export interface paths {
                 };
             };
             responses: {
-                /** @description ?? ?? ?? */
+                /** @description 코드 발송 성공 */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -63,8 +63,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * ??? ?? ?? ??
-         * @description ??? 6?? ??? ???? 30?? "?? ??" ??? ????.
+         * 이메일 인증 코드 확인
+         * @description 발송된 6자리 코드를 검증하고 30분간 "인증 완료" 상태를 유지한다.
          */
         post: {
             parameters: {
@@ -85,7 +85,7 @@ export interface paths {
                 };
             };
             responses: {
-                /** @description ?? ?? */
+                /** @description 인증 성공 */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -114,23 +114,23 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * ???? ??? ?? (??? ??)
-         * @description ???? ???? ??? ??? ????.
+         * 비밀번호 재설정 요청 (이메일 발송)
+         * @description 이메일로 비밀번호 재설정 링크를 발송한다.
          *
-         *     ### ?? ??
-         *     - **??? enumeration ??**: ?? ??? ???? ?? `200 OK`? ????.
-         *       (???? "? ???? ???? ???"? ? ? ?? ?)
-         *     - ?? ?? (???? ?????? ???? ??):
-         *       - ???? DB? ?? ? silent skip
-         *       - OAuth ?? ??(???? ??) ? silent skip
-         *       - 60? ?? ??? ? silent skip
-         *     - ?? TTL: 30?, 1??
+         *     ### 보안 정책
+         *     - **이메일 enumeration 방지**: 등록 여부와 무관하게 항상 `200 OK`를 반환한다.
+         *       (응답으로 "이 이메일이 가입되어 있는가"를 알 수 없게 함)
+         *     - 내부 분기 (실패해도 클라이언트에 노출되지 않음):
+         *       - 이메일이 DB에 없음 → silent skip
+         *       - OAuth 전용 계정(비밀번호 없음) → silent skip
+         *       - 60초 이내 재요청 → silent skip
+         *     - 토큰 TTL: 30분, 1회용
          *
-         *     ### ??
-         *     1. ??? POST `/auth/password/reset/request` { email }
-         *     2. ?? ??, ?? ?? ?? ? FE? `/reset-password?token=...` ???
-         *     3. ???? ? ???? ?? ? POST `/auth/password/reset/confirm`
-         *     4. ?? ?? ?? ?? (?? ?? ?? ????)
+         *     ### 흐름
+         *     1. 사용자 POST `/auth/password/reset/request` { email }
+         *     2. 메일 수신, 본문 링크 클릭 → FE의 `/reset-password?token=...` 페이지
+         *     3. 사용자가 새 비밀번호 입력 → POST `/auth/password/reset/confirm`
+         *     4. 모든 활성 세션 폐기 (모든 기기 강제 로그아웃)
          */
         post: {
             parameters: {
@@ -150,7 +150,7 @@ export interface paths {
                 };
             };
             responses: {
-                /** @description ?? ?? ?? (?? ?? ??? ??) */
+                /** @description 항상 성공 응답 (실제 발송 여부와 무관) */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -178,11 +178,11 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * ???? ??? ??
-         * @description ???? ?? ?? + ? ????? ????.
+         * 비밀번호 재설정 확정
+         * @description 이메일로 받은 토큰 + 새 비밀번호로 갱신한다.
          *
-         *     ?? ? ?? ???? **?? refresh token? ??**?? ?? ????? ?? ??????.
-         *     ?????? ? ????? ?? ????? ??.
+         *     성공 시 해당 사용자의 **모든 refresh token이 폐기**되어 다른 기기에서도 강제 로그아웃된다.
+         *     클라이언트는 새 비밀번호로 다시 로그인해야 한다.
          */
         post: {
             parameters: {
@@ -204,7 +204,7 @@ export interface paths {
                 };
             };
             responses: {
-                /** @description ??? ?? */
+                /** @description 재설정 성공 */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -235,9 +235,9 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * ????
-         * @description ??? ?? ?? ????? ?? ??.
-         *     ?? ? access token? body, refresh token? HttpOnly Cookie? ????.
+         * 회원가입
+         * @description 이메일 인증 완료 상태에서만 호출 가능.
+         *     성공 시 access token은 body, refresh token은 HttpOnly Cookie로 발급된다.
          */
         post: {
             parameters: {
@@ -252,7 +252,7 @@ export interface paths {
                 };
             };
             responses: {
-                /** @description ?? ?? */
+                /** @description 가입 성공 */
                 201: {
                     headers: {
                         /** @description `refresh_token` HttpOnly cookie (7d) */
@@ -283,7 +283,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** ??? + ???? ??? */
+        /** 이메일 + 비밀번호 로그인 */
         post: {
             parameters: {
                 query?: never;
@@ -303,7 +303,7 @@ export interface paths {
                 };
             };
             responses: {
-                /** @description ??? ?? */
+                /** @description 로그인 성공 */
                 200: {
                     headers: {
                         /** @description `refresh_token` HttpOnly cookie (7d) */
@@ -334,9 +334,9 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Access Token ???
-         * @description `refresh_token` Cookie? ??? ? access token + ? refresh token? ????.
-         *     rotation ???? ?? refresh token? ?? ????.
+         * Access Token 재발급
+         * @description `refresh_token` Cookie를 사용해 새 access token + 새 refresh token을 발급한다.
+         *     rotation 방식으로 이전 refresh token은 즉시 폐기된다.
          */
         post: {
             parameters: {
@@ -347,10 +347,10 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description ??? ?? */
+                /** @description 재발급 성공 */
                 200: {
                     headers: {
-                        /** @description ??? ? `refresh_token` Cookie */
+                        /** @description 회전된 새 `refresh_token` Cookie */
                         "Set-Cookie"?: string;
                         [name: string]: unknown;
                     };
@@ -375,12 +375,12 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * ?? ?? ?? ??
-         * @description ?? ???? ?? ?? ??(???? ??) ??? ????.
-         *     `isCurrent` ? true ? ??? ? ??? ?? ????.
+         * 활성 세션 목록 조회
+         * @description 현재 사용자의 모든 활성 세션(로그인된 기기) 목록을 반환한다.
+         *     `isCurrent` 가 true 인 항목이 이 요청을 보낸 세션이다.
          *
-         *     ??? server-side trust anchor ??? ?? Redis ?? ????? ?? ????.
-         *     ? ??? device ?????? ?? ?? User-Agent ?? ??? ???.
+         *     통신은 server-side trust anchor 정책에 따라 Redis 세션 레코드에서 직접 조회된다.
+         *     각 세션의 device 메타데이터는 발급 시점 User-Agent 에서 파싱된 값이다.
          */
         get: {
             parameters: {
@@ -391,7 +391,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description ?? ?? ?? */
+                /** @description 활성 세션 목록 */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -406,9 +406,9 @@ export interface paths {
         put?: never;
         post?: never;
         /**
-         * ?? ?? ? ?? ?? ?? (?? ?? ?? ????)
-         * @description ?? ??? ?? ??? ???? ?? ?? ??? ?? ????.
-         *     ?? ????? ?? refresh ?? ? 401.
+         * 현재 세션 외 모든 세션 폐기 (다른 기기 전부 로그아웃)
+         * @description 현재 요청을 보낸 세션은 유지하고 다른 모든 세션을 즉시 폐기한다.
+         *     다른 기기에서는 다음 refresh 시도 시 401.
          */
         delete: {
             parameters: {
@@ -419,7 +419,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description ?? ?? */
+                /** @description 폐기 완료 */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -447,9 +447,9 @@ export interface paths {
         put?: never;
         post?: never;
         /**
-         * ?? ?? ??
-         * @description ?? ?? ??? ??. ??? ??? ??? ?? ?? (?? ???? sessionId ? 404).
-         *     ?? ??? ???? ?? ???? 401.
+         * 단일 세션 폐기
+         * @description 특정 세션 하나만 폐기. 자신이 소유한 세션만 폐기 가능 (다른 사용자의 sessionId 는 404).
+         *     현재 세션을 폐기하면 다음 요청부터 401.
          */
         delete: {
             parameters: {
@@ -462,7 +462,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description ?? ?? */
+                /** @description 폐기 완료 */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -490,8 +490,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * ????
-         * @description refresh token? ???? ??? ????.
+         * 로그아웃
+         * @description refresh token을 폐기하고 쿠키를 삭제한다.
          */
         post: {
             parameters: {
@@ -502,7 +502,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description ???? ?? */
+                /** @description 로그아웃 성공 */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -527,7 +527,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** ? ?? ?? */
+        /** 내 정보 조회 */
         get: {
             parameters: {
                 query?: never;
@@ -537,7 +537,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description ?? ?? */
+                /** @description 조회 성공 */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -555,7 +555,7 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** ??? ?? */
+        /** 프로필 수정 */
         patch: {
             parameters: {
                 query?: never;
@@ -567,14 +567,14 @@ export interface paths {
                 content: {
                     /**
                      * @example {
-                     *       "display_name": "??? ??"
+                     *       "display_name": "변경된 이름"
                      *     }
                      */
                     "application/json": components["schemas"]["UpdateProfileRequest"];
                 };
             };
             responses: {
-                /** @description ?? ?? */
+                /** @description 수정 성공 */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -597,12 +597,12 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * OAuth ?? ?? (???? ?????)
-         * @description ?? provider? OAuth ?? ???? **302 Redirect**??.
-         *     ????? ? URL? ? ?/???? ?? ????.
+         * OAuth 인증 시작 (로그인용 리다이렉트)
+         * @description 해당 provider의 OAuth 인증 페이지로 **302 Redirect**한다.
+         *     프론트에서 이 URL을 새 창/팝업으로 열어 사용한다.
          *
-         *     **????**: ????? ?? ???? ??. callback? ?? ???/?? ??? ??.
-         *     ?? ???? ???? ?? ??? ????? `POST /auth/oauth/{provider}/link/init`? ??.
+         *     **로그인용**: 로그인되지 않은 사용자가 호출. callback은 신규 사용자/기존 사용자 분기.
+         *     이미 로그인된 사용자가 계정 연결만 추가하려면 `POST /auth/oauth/{provider}/link/init`를 사용.
          */
         get: {
             parameters: {
@@ -615,10 +615,10 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description OAuth provider? ????? */
+                /** @description OAuth provider로 리다이렉트 */
                 302: {
                     headers: {
-                        /** @description provider? authorize URL */
+                        /** @description provider의 authorize URL */
                         Location?: string;
                         [name: string]: unknown;
                     };
@@ -644,30 +644,30 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * OAuth ?? ?? ?? (Bearer ?? ??) ? POST init ??
-         * @description **?? ???? ???**? ?? provider ??? ??? ??? ?? ??? ?
-         *     ??. ??? `authorizeUrl`? ????? popup?? ?? ??.
+         * OAuth 계정 연결 시작 (Bearer 인증 필수) — POST init 패턴
+         * @description **이미 로그인된 사용자**가 해당 provider 계정을 자신의 계정에 추가 연결할 때
+         *     사용. 응답의 `authorizeUrl`을 프론트에서 popup으로 직접 연다.
          *
-         *     ### ? POST init ??
-         *     - popup?? GET ?? ? `Authorization` ??? ?? ? ?? ?? GET
-         *       `link/authorize` ??? ??? ??? ?????.
-         *     - POST ? ??? ??? ?????? state? ?? ?? ? ? state? ???
-         *       authorize URL? popup?? ?? ??? ?? ? ?? ??? ?? ???.
+         *     ### 왜 POST init 인가
+         *     - popup으로 GET 요청 시 `Authorization` 헤더를 실을 수 없어 기존 GET
+         *       `link/authorize` 방식은 사용자 식별이 불가능했다.
+         *     - POST 한 번으로 인증된 컨텍스트에서 state를 사전 발급 → 그 state가 포함된
+         *       authorize URL을 popup으로 열면 보안과 식별 두 마리 토끼를 모두 잡는다.
          *
-         *     ### ??
-         *     1. FE ? `POST /auth/oauth/{provider}/link/init` (Bearer)
-         *     2. BE: state ?? + `link_user_id=current_user.id` ??? ? authorize URL ??
-         *     3. FE: `window.open(authorizeUrl)` ? provider ?? ??
-         *     4. provider ? ?? callback URL (`/auth/oauth/{provider}/callback`) ? redirect
-         *     5. callback? state ????? `link_user_id` ? link ?? ?? ??
+         *     ### 흐름
+         *     1. FE → `POST /auth/oauth/{provider}/link/init` (Bearer)
+         *     2. BE: state 생성 + `link_user_id=current_user.id` 바인딩 → authorize URL 반환
+         *     3. FE: `window.open(authorizeUrl)` → provider 동의 화면
+         *     4. provider → 기존 callback URL (`/auth/oauth/{provider}/callback`) 로 redirect
+         *     5. callback이 state 페이로드의 `link_user_id` 로 link 분기 자동 결정
          *
-         *     ### ??
-         *     - ? ???? ?? provider 1? ??? ??
-         *     - ?? provider ??? ?? ???? ?? ???? ??? `AUTH_OAUTH_ACCOUNT_ALREADY_LINKED` (409)
-         *     - ?? ???? ?? provider? ?? ?? ?? ???? ??? `AUTH_OAUTH_PROVIDER_ALREADY_LINKED` (409)
-         *     - ?? provider account ??? ? ?? ?? (access_token? ??)
+         *     ### 정책
+         *     - 한 사용자당 같은 provider 1개 연결만 허용
+         *     - 같은 provider 계정이 다른 사용자에 이미 연결되어 있으면 `AUTH_OAUTH_ACCOUNT_ALREADY_LINKED` (409)
+         *     - 같은 사용자가 같은 provider에 이미 다른 계정 연결되어 있으면 `AUTH_OAUTH_PROVIDER_ALREADY_LINKED` (409)
+         *     - 동일 provider account 재요청 시 멱등 처리 (access_token만 갱신)
          *
-         *     ### ?? postMessage
+         *     ### 콜백 postMessage
          *     ```js
          *     { type: "oauth_linked", provider: "github" }
          *     ```
@@ -683,7 +683,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description authorize URL ?? */
+                /** @description authorize URL 반환 */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -709,36 +709,36 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * OAuth ?? (provider ? ???)
-         * @description OAuth provider? redirect? ???? ??. **?????? ?? ???? ???.**
+         * OAuth 콜백 (provider → 백엔드)
+         * @description OAuth provider가 redirect로 호출하는 콜백. **클라이언트가 직접 호출하지 않는다.**
          *
-         *     ??? HTML?? ?? ??? `window.opener.postMessage()`? ?? ?? ??? ????.
+         *     응답은 HTML이며 팝업 창에서 `window.opener.postMessage()`로 부모 창에 결과를 전달한다.
          *
-         *     ### ?? ? state? ??? ??? ?? ??
-         *     - **?? ??? ???** ? `oauth_success` + access token + `refresh_token` HttpOnly Cookie
-         *     - **?? ???** (OAuth ? ??) ? `oauth_onboarding_required` + `onboarding_token` HttpOnly Cookie (TTL 30?).
-         *       FE? `/onboarding` ???? ??? `POST /auth/oauth/onboarding`?? ?? ??? ?? ??? ??? ????.
-         *     - **?? ??(link)** (state? `link_user_id` ??) ? `oauth_linked` (? ?? ?? ??). FE? settings ???? ??.
+         *     ### 분기 — state에 저장된 정보로 자동 결정
+         *     - **기존 사용자 로그인** → `oauth_success` + access token + `refresh_token` HttpOnly Cookie
+         *     - **신규 사용자** (OAuth 첫 사용) → `oauth_onboarding_required` + `onboarding_token` HttpOnly Cookie (TTL 30분).
+         *       FE는 `/onboarding` 페이지로 이동해 `POST /auth/oauth/onboarding`에서 국가 정보를 추가 입력해 가입을 완료한다.
+         *     - **계정 연결(link)** (state에 `link_user_id` 포함) → `oauth_linked` (새 토큰 발급 없음). FE는 settings 페이지로 복귀.
          *
          *     ```js
-         *     // ?? ??? ???
+         *     // 기존 사용자 로그인
          *     { type: "oauth_success", access_token: "..." }
-         *     // ?? ???
+         *     // 신규 사용자
          *     { type: "oauth_onboarding_required" }
-         *     // ?? ?? ??
+         *     // 계정 연결 완료
          *     { type: "oauth_linked", provider: "github" }
-         *     // ??
+         *     // 실패
          *     { type: "oauth_error", error: "<ERROR_CODE>" }
          *     ```
          */
         get: {
             parameters: {
                 query?: {
-                    /** @description provider? ??? ?? ?? */
+                    /** @description provider가 발급한 인가 코드 */
                     code?: string;
-                    /** @description CSRF ??? state (initiate ? ??? ?) */
+                    /** @description CSRF 방지용 state (initiate 시 발급된 값) */
                     state?: string;
-                    /** @description provider? ??? ??? ??? ?? */
+                    /** @description provider가 에러를 반환한 경우의 코드 */
                     error?: string;
                 };
                 header?: never;
@@ -749,12 +749,12 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description HTML ?? (postMessage ???? ??) */
+                /** @description HTML 응답 (postMessage 스크립트 포함) */
                 200: {
                     headers: {
                         /**
-                         * @description ?? ??? ? `refresh_token` HttpOnly Cookie (7d)
-                         *     ?? ??? ? `onboarding_token` HttpOnly Cookie (30min)
+                         * @description 기존 사용자 → `refresh_token` HttpOnly Cookie (7d)
+                         *     신규 사용자 → `onboarding_token` HttpOnly Cookie (30min)
                          */
                         "Set-Cookie"?: string;
                         [name: string]: unknown;
@@ -783,14 +783,14 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * OAuth ?? ??? ??? ??
-         * @description OAuth ?? ???? `onboarding_token` HttpOnly Cookie? ?? ?? ???? ?? ???
-         *     ?? ??? ??? ????.
+         * OAuth 신규 사용자 온보딩 완료
+         * @description OAuth 콜백 단계에서 `onboarding_token` HttpOnly Cookie를 받은 신규 사용자가 국가 정보를
+         *     추가 입력해 가입을 완료한다.
          *
-         *     - **?? tz ??** (?: KR, JP, FR): `timezone` ?? ?? ? BE ? ?? ??
-         *     - **?? tz ??** (?: US, RU, BR, AU, CA): `timezone` ?? (IANA tz ???)
-         *     - ??? ?? ??? timezone ??? `GET /settings/countries/{code}/timezones` ? ??
-         *     - ?? ? `onboarding_token` Cookie ?? + `refresh_token` Cookie + access token body
+         *     - **단일 tz 국가** (예: KR, JP, FR): `timezone` 생략 가능 — BE 가 자동 결정
+         *     - **다중 tz 국가** (예: US, RU, BR, AU, CA): `timezone` 필수 (IANA tz 문자열)
+         *     - 국가별 사용 가능한 timezone 목록은 `GET /settings/countries/{code}/timezones` 로 조회
+         *     - 성공 시 `onboarding_token` Cookie 삭제 + `refresh_token` Cookie + access token body
          */
         post: {
             parameters: {
@@ -805,10 +805,10 @@ export interface paths {
                 };
             };
             responses: {
-                /** @description ?? ?? */
+                /** @description 가입 완료 */
                 201: {
                     headers: {
-                        /** @description `refresh_token` HttpOnly cookie (7d) + `onboarding_token` ?? */
+                        /** @description `refresh_token` HttpOnly cookie (7d) + `onboarding_token` 삭제 */
                         "Set-Cookie"?: string;
                         [name: string]: unknown;
                     };
@@ -835,11 +835,21 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * ? ? ?? ??
-         * @description ?? ????? ?? ??? ????:
-         *     - `dateKey` ?? ? ?? ??? ? ?
-         *     - `from` + `to` ? ?? ?? ??
-         *     - ? ? ??? ? ?? ??
+         * 할 일 목록 조회
+         * @description 쿼리 파라미터에 따라 모드가 결정된다:
+         *     - `dateKey` 단독 → 해당 일자의 할 일
+         *     - `from` + `to` → 기간 범위 조회 (최대 62일, 초과 시 422)
+         *     - 둘 다 없으면 빈 배열 반환
+         *
+         *     Google Calendar 를 연결한 사용자의 경우, Google 에서 직접 만든 이벤트도
+         *     pull-sync 시 수정 가능한 Todo 로 승격되어(`calendarLinked: true`) 이 목록에
+         *     함께 포함된다 — 더 이상 별도 `events` 리스트가 없다(과거 `{ todos, events }`
+         *     형태였던 `TodosWithEventsResponse` 는 폐기, `GET /calendar/events` 도 deprecated).
+         *     마지막 동기화가 stale 하면 이 조회 시점에 Google 과 온디맨드 증분 동기화가
+         *     일어날 수 있다(약간의 추가 지연).
+         *
+         *     **뷰 단위 조회 권장**: 일 뷰(`dateKey`), 주 뷰(`from`+7일), 월 뷰(`from`+31일)
+         *     단위로 요청해야 응답 크기가 일정하게 유지된다.
          */
         get: {
             parameters: {
@@ -855,7 +865,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description ?? ?? */
+                /** @description 조회 성공 */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -865,10 +875,11 @@ export interface paths {
                     };
                 };
                 401: components["responses"]["Unauthorized_401"];
+                422: components["responses"]["ValidationError_422"];
             };
         };
         put?: never;
-        /** ? ? ?? */
+        /** 할 일 생성 */
         post: {
             parameters: {
                 query?: never;
@@ -880,9 +891,9 @@ export interface paths {
                 content: {
                     /**
                      * @example {
-                     *       "title": "?? ?? ??",
+                     *       "title": "회의 자료 준비",
                      *       "date_key": "2026-05-31",
-                     *       "description": "?? ???? ??",
+                     *       "description": "회의 슬라이드 작성",
                      *       "status": "not-start"
                      *     }
                      */
@@ -890,7 +901,7 @@ export interface paths {
                 };
             };
             responses: {
-                /** @description ?? ?? */
+                /** @description 생성 성공 */
                 201: {
                     headers: {
                         [name: string]: unknown;
@@ -922,7 +933,10 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** ? ? ?? */
+        /**
+         * 할 일 삭제
+         * @description 연동돼 있던 Google Calendar 이벤트가 있으면 best-effort 로 함께 삭제된다 (백그라운드 task, 응답을 지연시키지 않음).
+         */
         delete: {
             parameters: {
                 query?: never;
@@ -935,7 +949,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description ?? ?? */
+                /** @description 삭제 성공 */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -950,7 +964,7 @@ export interface paths {
         };
         options?: never;
         head?: never;
-        /** ? ? ?? (??) */
+        /** 할 일 수정 (부분) */
         patch: {
             parameters: {
                 query?: never;
@@ -972,7 +986,7 @@ export interface paths {
                 };
             };
             responses: {
-                /** @description ?? ?? */
+                /** @description 수정 성공 */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -989,6 +1003,81 @@ export interface paths {
         };
         trace?: never;
     };
+    "/todos/{todo_id}/calendar-link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @example todo_01HXYZ... */
+                todo_id: components["parameters"]["TodoIdPath"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 할 일을 Google Calendar 에 연동 (사이드바 '캘린더에 추가')
+         * @description 기존 할 일을 Google Calendar 에 push 예약한다(비동기 반영). 이미 연동돼 있어도 멱등(재-push=update). 캘린더 미연결 사용자는 백그라운드에서 no-op.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @example todo_01HXYZ... */
+                    todo_id: components["parameters"]["TodoIdPath"];
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description 연동 예약 성공 */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiResponseEmpty"];
+                    };
+                };
+                401: components["responses"]["Unauthorized_401"];
+                404: components["responses"]["NotFound_404"];
+            };
+        };
+        /**
+         * Google Calendar 연동만 해제 (사이드바 '캘린더에서 빼기')
+         * @description 할 일은 유지한 채 연동된 Google Calendar 이벤트만 삭제 예약한다(비동기). 미연동 할 일이면 no-op 으로 성공 반환.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @example todo_01HXYZ... */
+                    todo_id: components["parameters"]["TodoIdPath"];
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description 연동 해제 예약 성공 */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiResponseEmpty"];
+                    };
+                };
+                401: components["responses"]["Unauthorized_401"];
+                404: components["responses"]["NotFound_404"];
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/entries": {
         parameters: {
             query?: never;
@@ -997,8 +1086,15 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * ?? ??? ?? ??
-         * @description ?? ??�?? ??? ????.
+         * 회고 엔트리 목록 조회
+         * @description 회고 종류·기간 필터로 조회한다.
+         *
+         *     - `retroType` 만 지정(`from`/`to` 없음) → **오늘 기준 최근 30일만** 반환한다
+         *       (초기 하이드레이션용 기본 범위 — 예전엔 무제한 전체 이력을 반환했음).
+         *       그 이전 이력이 필요하면 `from`+`to` 를 명시하거나 `GET /entries/paginated` 사용.
+         *     - `from`+`to` 지정 → 해당 기간 전체 반환. 최대 366일, 초과 시 422.
+         *     - 날짜 포맷이 `YYYY-MM-DD` 가 아니면 422.
+         *     - 둘 다 없으면 빈 배열.
          */
         get: {
             parameters: {
@@ -1013,7 +1109,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description ?? ?? */
+                /** @description 조회 성공 */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -1023,10 +1119,11 @@ export interface paths {
                     };
                 };
                 401: components["responses"]["Unauthorized_401"];
+                422: components["responses"]["ValidationError_422"];
             };
         };
         put?: never;
-        /** ?? ??? ?? */
+        /** 회고 엔트리 생성 */
         post: {
             parameters: {
                 query?: never;
@@ -1039,8 +1136,8 @@ export interface paths {
                     /**
                      * @example {
                      *       "date_key": "2026-05-31",
-                     *       "title": "5? 31? ??",
-                     *       "content": "??? ...",
+                     *       "title": "5월 31일 회고",
+                     *       "content": "오늘은 ...",
                      *       "retro_type": "daily"
                      *     }
                      */
@@ -1048,7 +1145,7 @@ export interface paths {
                 };
             };
             responses: {
-                /** @description ?? ?? */
+                /** @description 생성 성공 */
                 201: {
                     headers: {
                         [name: string]: unknown;
@@ -1068,6 +1165,53 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/entries/paginated": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 회고록 목록 페이지 (페이지네이션)
+         * @description 전체 이력을 최신순(`date_key` desc)으로 페이지네이션 조회한다. `GET /entries`
+         *     (초기 하이드레이션용, 최근 30일 기본)와 달리 과거 전체 이력을 훑어보는
+         *     회고록 목록 페이지용 — `retroType` 미지정 시 전체 타입 대상.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    retroType?: components["schemas"]["RetroType"];
+                    page?: number;
+                    size?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description 조회 성공 */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiResponseEntryPage"];
+                    };
+                };
+                401: components["responses"]["Unauthorized_401"];
+                422: components["responses"]["ValidationError_422"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/entries/{entry_id}": {
         parameters: {
             query?: never;
@@ -1078,7 +1222,7 @@ export interface paths {
             };
             cookie?: never;
         };
-        /** ?? ??? ?? */
+        /** 단일 엔트리 조회 */
         get: {
             parameters: {
                 query?: never;
@@ -1091,7 +1235,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description ?? ?? */
+                /** @description 조회 성공 */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -1105,8 +1249,8 @@ export interface paths {
             };
         };
         /**
-         * ??? Upsert
-         * @description ???? ??, ??? ???? (idempotent).
+         * 엔트리 Upsert
+         * @description 존재하면 수정, 없으면 생성한다 (idempotent).
          */
         put: {
             parameters: {
@@ -1124,7 +1268,7 @@ export interface paths {
                 };
             };
             responses: {
-                /** @description Upsert ?? */
+                /** @description Upsert 성공 */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -1138,7 +1282,7 @@ export interface paths {
             };
         };
         post?: never;
-        /** ??? ?? */
+        /** 엔트리 삭제 */
         delete: {
             parameters: {
                 query?: never;
@@ -1151,7 +1295,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description ?? ?? */
+                /** @description 삭제 성공 */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -1179,62 +1323,62 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * AI ?? ?? ?? (???)
-         * @description Celery worker(`ai_tasks` ?, priority=9)? ?? ??? enqueue?? **?? 202? ??**??.
+         * AI 요약 생성 요청 (비동기)
+         * @description Celery worker(`ai_tasks` 큐, priority=9)로 요약 작업을 enqueue하고 **즉시 202를 반환**한다.
          *
-         *     - ?? ??? PENDING/IN_PROGRESS ??? ??? `409 RETRO_SUMMARY_ALREADY_IN_PROGRESS` ??
-         *     - COMPLETED ??? ??? ??? ?? (????? ??). `force=true` ? ?? ???.
-         *     - FAILED ??? ???? PENDING ?? ? ???
-         *     - Gemini ??? rate_limit `60/min` ??
+         *     - 같은 기간에 PENDING/IN_PROGRESS 요약이 있으면 `409 RETRO_SUMMARY_ALREADY_IN_PROGRESS` 반환
+         *     - COMPLETED 요약이 있으면 그대로 반환 (재실행하지 않음). `force=true` 면 강제 재생성.
+         *     - FAILED 요약은 자동으로 PENDING 리셋 후 재실행
+         *     - Gemini 호출은 rate_limit `60/min` 적용
          *
-         *     ### ???? ?? ?? (7? sliding window)
-         *     ??? AI ??? enqueue ?? ??(?? / FAILED ??? / force ???)?? ???.
-         *     COMPLETED ??? ?? / 409 ??? ????? ???.
+         *     ### 사용자별 호출 한도 (7일 sliding window)
+         *     실제로 AI 호출이 enqueue 되는 경로(신규 / FAILED 재시도 / force 재생성)에만 카운트.
+         *     COMPLETED 그대로 반환 / 409 충돌은 카운트하지 않는다.
          *
-         *     | type | ?? / 7? |
+         *     | type | 한도 / 7일 |
          *     |---|---|
          *     | weekly  | 10 |
          *     | monthly |  3 |
          *     | annual  |  1 |
          *
-         *     ?? ?? ? `429 RETRO_SUMMARY_RATE_LIMIT_EXCEEDED` ??. ?? `details[0]` ?
-         *     `{ summaryType, limit, windowSeconds, retryAfterSeconds }` ??.
-         *     FE ? ??? ?? ??? ?? ??? `GET /summaries/usage` ??.
+         *     한도 초과 시 `429 RETRO_SUMMARY_RATE_LIMIT_EXCEEDED` 반환. 응답 `details[0]` 에
+         *     `{ summaryType, limit, windowSeconds, retryAfterSeconds }` 포함.
+         *     FE 가 사전에 잔여 한도를 알고 싶으면 `GET /summaries/usage` 호출.
          *
-         *     ### ??? ?? ?? (??�?? ??)
-         *     - **weekly** : "? ?? ?? ??(JournalEntry) + ? ?? **`in-progress` / `done` ?? todo** ?? ??."
-         *       `not-start` todo ? ??.
-         *     - **monthly**: **?????** ? ??? weekly ?? ??? ?? ??,
-         *       ??? ? ? entries ??. weekly ??? ???? ?? ?? ??? entry ?
-         *       ??? ??(?? B) ? ??? ?? 0.
-         *     - **annual** : **2?? ?????** ? ??? monthly ?? ??? ??,
-         *       ??? ? ?? weekly ???? ??. ? ? ??? ?? ? ??.
+         *     ### 데이터 소스 정책 (수동·자동 동일)
+         *     - **weekly** : 그 주의 일일 회고(JournalEntry) + 그 주의 **`in-progress` / `done` 상태 todo** 직접 사용.
+         *       `not-start` todo 는 제외.
+         *     - **monthly**: **하이브리드** — 주마다 weekly 요약 있으면 그것 사용,
+         *       없으면 그 주 entries 첨부. weekly 요약이 있더라도 갱신 이후 추가된 entry 가
+         *       있으면 보강(방식 B) — 데이터 손실 0.
+         *     - **annual** : **2단계 하이브리드** — 월마다 monthly 요약 있으면 그것,
+         *       없으면 그 달의 weekly 요약들로 보강. 둘 다 없으면 해당 월 스킵.
          *
-         *     ### ???? / ?? ?? ??
-         *     - ??? ???? **??**? ?? ? LLM ??? ??.
-         *     - ?? ??? ??? ??? `locale` (PUT /settings) ?? (`ko` ? ???, `en` ? ??, ? ? best-effort).
-         *     - JSON ?? ?? ?? (`achievements`, `challenges`, `learnings`, `next_focus`). Gemini `response_schema` ? ?? ??.
-         *     - ??? ???(`autoSummaryTemplates.{weekly|monthly|annual}`)? ??? ????? ????
-         *       `<USER_TEMPLATE>` ??? ??. JSON ??? / ?? ??? ??? ????? ?? ?? (??? ???? ?? ??).
+         *     ### 프롬프트 / 출력 언어 정책
+         *     - 시스템 지시문은 **영어**로 작성 — LLM 안정성 확보.
+         *     - 출력 콘텐츠 언어는 사용자 `locale` (PUT /settings) 기준 (`ko` → 한국어, `en` → 영어, 그 외 best-effort).
+         *     - JSON 키는 항상 영어 (`achievements`, `challenges`, `learnings`, `next_focus`). Gemini `response_schema` 로 형태 강제.
+         *     - 사용자 템플릿(`autoSummaryTemplates.{weekly|monthly|annual}`)은 스타일 가이드로만 적용되며
+         *       `<USER_TEMPLATE>` 태그로 격리. JSON 스키마 / 언어 규칙은 사용자 템플릿으로 변경 불가 (시스템 메시지가 명시 거부).
          *
-         *     ### ?? ?? ??
-         *     monthly/annual ?? ?? `GET /summaries/readiness` ?? ?? ? ????
-         *     ??(`recommendation: insufficient`)?? ????? ?????? ??
-         *     ?? ??.
+         *     ### 사전 점검 권장
+         *     monthly/annual 생성 전에 `GET /summaries/readiness` 호출 권장 — 데이터가
+         *     부족(`recommendation: insufficient`)하면 사용자에게 다이얼로그를 띄워
+         *     확인 받기.
          */
         post: {
             parameters: {
                 query: {
                     type: components["schemas"]["SummaryType"];
                     /**
-                     * @description ?? ? ?? ?? ?? ?? (?? ? ?~? / ?? ? / ??).
-                     *     ?? ? ?? ??? ??? (???/1?/1?1?).
+                     * @description 생략 시 직전 기간 자동 계산 (지난 주 월~일 / 지난 달 / 작년).
+                     *     지정 시 해당 기간의 시작일 (월요일/1일/1월1일).
                      */
                     periodStart?: string;
                     /**
-                     * @description `true` ? ?? ??? COMPLETED ??? ??? ??? ????? (status ?? ? enqueue).
-                     *     ??? `false` ? COMPLETED ? ?? ??? ??? ??.
-                     *     rate limit ??? ??.
+                     * @description `true` 면 같은 기간의 COMPLETED 요약이 있어도 강제로 재생성한다 (status 리셋 후 enqueue).
+                     *     기본값 `false` — COMPLETED 면 기존 요약을 그대로 반환.
+                     *     rate limit 카운트 대상.
                      */
                     force?: boolean;
                 };
@@ -1244,7 +1388,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description ?? ?? (?? ?? / FAILED ??? / force ???) */
+                /** @description 요청 접수 (신규 생성 / FAILED 재시도 / force 재생성) */
                 202: {
                     headers: {
                         [name: string]: unknown;
@@ -1272,14 +1416,14 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * ???? AI ?? ?? ??? ??
-         * @description `POST /summaries/generate` ? 7? sliding window ???? summary_type ?? ??.
+         * 사용자별 AI 요약 생성 사용량 조회
+         * @description `POST /summaries/generate` 의 7일 sliding window 사용량을 summary_type 별로 반환.
          *
-         *     FE ? [?? ??] ??? ??/???, ?? ?? ??, ?? ?? ?? ?? ?? ??.
+         *     FE 가 [회고 생성] 버튼의 활성/비활성, 잔여 횟수 표시, 다음 가능 시각 안내 등에 사용.
          *
-         *     ??? 0 ? type ? ??? ???? (`used == limit`). `retryAfterSeconds` ?
-         *     ??? ?? ??? `0`, ?? ??? ?? ??? ???? ????? ??? ????
-         *     ?? ?.
+         *     한도가 0 인 type 도 응답에 포함된다 (`used == limit`). `retryAfterSeconds` 는
+         *     한도가 남아 있으면 `0`, 초과 상태면 가장 오래된 사용량이 윈도우에서 빠지는 시각까지
+         *     남은 초.
          */
         get: {
             parameters: {
@@ -1290,7 +1434,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description ??? */
+                /** @description 사용량 */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -1318,10 +1462,10 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * ??? AI ?? ??? ??
-         * @description ?? summary_type ? ??? ??? ??? created_at ?????? ??.
-         *     ? ??? `isActive` ? `user_settings.active_summary_template_ids[type]` ?
-         *     ID ? ???? ? 1?? true.
+         * 사용자 AI 요약 템플릿 목록
+         * @description 지정 summary_type 의 사용자 템플릿 목록을 created_at 오름차순으로 반환.
+         *     각 항목의 `isActive` 는 `user_settings.active_summary_template_ids[type]` 과
+         *     ID 가 일치하는 단 1개만 true.
          */
         get: {
             parameters: {
@@ -1334,7 +1478,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description ?? */
+                /** @description 목록 */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -1348,13 +1492,13 @@ export interface paths {
         };
         put?: never;
         /**
-         * ??? AI ?? ??? ??
-         * @description ?? summary_type ? ? ??? ??. ?? ?? ??:
-         *     - **?? ?? ??** (?? `user_id` + `summary_type` ??? unique). ?? ? `409 RETRO_SUMMARY_TEMPLATE_NAME_DUPLICATED`.
-         *     - **?? ??**: "? (user, type) ? N ? (?? 5, env `SUMMARY_TEMPLATE_MAX_PER_TYPE`)."
-         *       ?? ? `409 RETRO_SUMMARY_TEMPLATE_LIMIT_REACHED`. ?? `details[0]` ?
+         * 사용자 AI 요약 템플릿 생성
+         * @description 지정 summary_type 에 새 템플릿 생성. 다음 정책 적용:
+         *     - **이름 중복 금지** (같은 `user_id` + `summary_type` 안에서 unique). 위반 시 `409 RETRO_SUMMARY_TEMPLATE_NAME_DUPLICATED`.
+         *     - **개수 한도**: 한 (user, type) 당 N 개 (기본 5, env `SUMMARY_TEMPLATE_MAX_PER_TYPE`).
+         *       초과 시 `409 RETRO_SUMMARY_TEMPLATE_LIMIT_REACHED`. 응답 `details[0]` 에
          *       `{ summaryType, limit }`.
-         *     - ??? ???? ????? ???. ?????? `PUT /settings/auto-summary/active`.
+         *     - 생성된 템플릿은 기본적으로 비활성. 활성화하려면 `PUT /settings/auto-summary/active`.
          */
         post: {
             parameters: {
@@ -1371,7 +1515,7 @@ export interface paths {
                 };
             };
             responses: {
-                /** @description ??? */
+                /** @description 생성됨 */
                 201: {
                     headers: {
                         [name: string]: unknown;
@@ -1397,7 +1541,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** ?? ??? ?? */
+        /** 단일 템플릿 조회 */
         get: {
             parameters: {
                 query?: never;
@@ -1425,9 +1569,9 @@ export interface paths {
         put?: never;
         post?: never;
         /**
-         * ??? ??
-         * @description **?? ???? ??? ???? ??? ? ??** ? ???? ? ?????
-         *     ?? ???? ???? ???? ?. ?? ?? ?? ? `409 RETRO_SUMMARY_TEMPLATE_IN_USE`.
+         * 템플릿 삭제
+         * @description **현재 활성으로 지정된 템플릿은 삭제할 수 없다** — 비활성화 후 삭제하거나
+         *     다른 템플릿을 활성으로 바꾸어야 함. 활성 보호 위반 시 `409 RETRO_SUMMARY_TEMPLATE_IN_USE`.
          */
         delete: {
             parameters: {
@@ -1440,7 +1584,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description ??? */
+                /** @description 삭제됨 */
                 204: {
                     headers: {
                         [name: string]: unknown;
@@ -1455,9 +1599,9 @@ export interface paths {
         options?: never;
         head?: never;
         /**
-         * ??? ?? (??�??)
-         * @description - ?? ?? ? ?? (user, summary_type) ??? ?? ??.
-         *     - summary_type ?? ?? ? ????? ? ??? ?? ? ?? ??.
+         * 템플릿 수정 (이름·내용)
+         * @description - 이름 변경 시 같은 (user, summary_type) 안에서 중복 금지.
+         *     - summary_type 변경 불가 — 변경하려면 새 템플릿 생성 후 기존 삭제.
          */
         patch: {
             parameters: {
@@ -1499,13 +1643,13 @@ export interface paths {
         };
         get?: never;
         /**
-         * summary_type ? ?? ??? ??
-         * @description Body ? ??? ??? ?? ? ??? ??? ?? ??. ? ??? ??:
-         *     - ??? ? ?? type ? ?? ID ? ??. ?? / ?? ?? ?? ? ??.
-         *     - ??? `null` ? ?? type ???? ? ??? ?? ??? ??.
+         * summary_type 별 활성 템플릿 설정
+         * @description Body 에 명시된 필드만 갱신 — 미전송 필드는 변경 없음. 각 필드의 의미:
+         *     - 문자열 → 해당 type 의 활성 ID 로 설정. 소유 / 타입 일치 검증 후 적용.
+         *     - 명시적 `null` → 해당 type 비활성화 → 시스템 기본 템플릿 사용.
          *
-         *     ?? ID ? ???? ???? ???? (race ?) AI ?? ?? ?? ???
-         *     ??? ???? ?? fallback.
+         *     활성 ID 가 가리키는 템플릿이 사라지면 (race 등) AI 자동 요약 생성 시점에
+         *     시스템 기본으로 자동 fallback.
          */
         put: {
             parameters: {
@@ -1526,7 +1670,7 @@ export interface paths {
                 };
             };
             responses: {
-                /** @description ok ? ??? SettingsResponse */
+                /** @description ok — 갱신된 SettingsResponse */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -1554,29 +1698,29 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * ?? ?? ?? ?? (entry ?? ??)
-         * @description monthly/annual ??? ???? ?? ???? ?? **?? ??? ??**?
-         *     ??? FE ? "??? ??" ?????? ??? ???? ??.
+         * 요약 생성 사전 점검 (entry 밀도 기반)
+         * @description monthly/annual 요약을 생성하기 전에 사용자의 회고 **원천 데이터 밀도**를
+         *     측정해 FE 가 "데이터 부족" 다이얼로그를 띄울지 결정하게 한다.
          *
-         *     - **?? ??**: child summary ?? ?? ?? ? **entry ??** ??
-         *       - monthly: `expectedUnits` = ? ?? ??, `coveredUnits` = entry ? ?? unique ?? ?
-         *       - annual : `expectedUnits` = 12, `coveredUnits` = entry ? ?? ? ?
-         *     - **???**: `completenessRatio < 0.7` ?? `recommendation: "insufficient"`,
-         *       ???? `"ok"`.
-         *     - **weekly ? ?? ? ?** ? ?? ? `422 RETRO_SUMMARY_READINESS_UNSUPPORTED`
+         *     - **측정 지표**: child summary 존재 여부 아님 — **entry 밀도** 기반
+         *       - monthly: `expectedUnits` = 그 달의 일수, `coveredUnits` = entry 가 있는 unique 날짜 수
+         *       - annual : `expectedUnits` = 12, `coveredUnits` = entry 가 있는 월 수
+         *     - **임계값**: `completenessRatio < 0.7` 이면 `recommendation: "insufficient"`,
+         *       이상이면 `"ok"`.
+         *     - **weekly 는 지원 안 함** — 호출 시 `422 RETRO_SUMMARY_READINESS_UNSUPPORTED`
          *
-         *     ### ?? FE ??
-         *     1. ???? [?? ??] ?? ? ? API ??
-         *     2. `recommendation == "insufficient"` ? ????? ???
-         *        ("entry ? X?/30? ???. ??? ?????????")
-         *     3. ???? "??" ? `POST /summaries/generate`
+         *     ### 권장 FE 흐름
+         *     1. 사용자가 [회고 생성] 클릭 → 이 API 호출
+         *     2. `recommendation == "insufficient"` → 다이얼로그 띄우기
+         *        ("entry 가 X일/30일 작성됨. 그대로 진행하시겠습니까?")
+         *     3. 사용자가 "진행" → `POST /summaries/generate`
          */
         get: {
             parameters: {
                 query: {
-                    /** @description weekly ? 422 ??. */
+                    /** @description weekly 는 422 반환. */
                     type: "monthly" | "annual";
-                    /** @description ?? ? ?? ??(?? ? / ??). */
+                    /** @description 생략 시 직전 기간(지난 달 / 작년). */
                     periodStart?: string;
                 };
                 header?: never;
@@ -1585,7 +1729,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description ?? ?? */
+                /** @description 점검 성공 */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -1613,7 +1757,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** ?? ?? ?? (???) */
+        /** 요약 목록 조회 (타입별) */
         get: {
             parameters: {
                 query: {
@@ -1625,7 +1769,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description ?? ?? */
+                /** @description 조회 성공 */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -1655,7 +1799,7 @@ export interface paths {
             };
             cookie?: never;
         };
-        /** ?? ?? ?? */
+        /** 단일 요약 조회 */
         get: {
             parameters: {
                 query?: never;
@@ -1668,7 +1812,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description ?? ?? */
+                /** @description 조회 성공 */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -1686,7 +1830,43 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * 요약 편집 (마크다운 오버라이드 저장/해제)
+         * @description AI 가 생성한 요약을 사용자가 편집한 마크다운으로 덮어쓴다.
+         *     AI 원본(content.sections)은 보존되며, `contentMarkdown` 을 null 로 보내면
+         *     편집을 해제해 AI 원본으로 복귀한다(AI 재호출/rate limit 없음).
+         *     status 제약은 없다 — 호출 시점의 요약을 그대로 저장한다.
+         */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @example summ_01HXYZ... */
+                    summary_id: components["parameters"]["SummaryIdPath"];
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["SummaryEditRequest"];
+                };
+            };
+            responses: {
+                /** @description 편집 저장 성공 */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiResponseSummary"];
+                    };
+                };
+                401: components["responses"]["Unauthorized_401"];
+                404: components["responses"]["NotFound_404"];
+                422: components["responses"]["ValidationError_422"];
+            };
+        };
         trace?: never;
     };
     "/summaries/{summary_id}/stream": {
@@ -1700,13 +1880,13 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * ?? ?? SSE ???
-         * @description Celery worker? ?? ??? ??? ??? ????, ?? ? ?? SSE ???? ???? ????.
+         * 요약 완료 SSE 스트림
+         * @description Celery worker가 요약 처리를 완료할 때까지 대기하며, 완료 시 단일 SSE 이벤트를 전송하고 종료한다.
          *
-         *     - **????**: 5? (?? `{"status": "timeout"}` ??)
-         *     - ?? ??/?? ??? ?? ??? ?? ? ??
+         *     - **타임아웃**: 5분 (이후 `{"status": "timeout"}` 전송)
+         *     - 이미 완료/실패 상태면 즉시 이벤트 전송 후 종료
          *
-         *     ### ??? ????
+         *     ### 이벤트 페이로드
          *     ```
          *     data: {"status": "completed", "summary_id": "summ_..."}
          *     data: {"status": "failed",    "summary_id": "summ_..."}
@@ -1726,7 +1906,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description SSE ??? */
+                /** @description SSE 스트림 */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -1754,11 +1934,27 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * ?? ??? SSE ???
-         * @description Redis pub/sub ?? `notifications:{user_id}`? ???? ? ??? ??? ????.
+         * 알림 실시간 SSE 스트림
+         * @description Redis pub/sub 채널 `notifications:{user_id}`를 구독하여 새 알림을 실시간 푸시한다.
          *
-         *     - **????**: 5? (?? `{"type": "timeout"}` ??)
-         *     - ????? `NotificationResponse`? ?? + (`type`/`category` ??)
+         *     - **타임아웃**: 5분 (이후 `{"type": "timeout"}` 전송)
+         *     - 페이로드는 `NotificationResponse`와 동일 + (`type`/`category` 포함)
+         *     - **`category=="summary"` 알림(AI 요약 완료/실패)에 한해** 어떤 회고가
+         *       갱신됐는지 식별할 수 있는 추가 필드가 포함된다. FE 는 이 이벤트로 해당
+         *       회고를 타깃 refetch/patch 할 수 있다 (수동 생성은 `summaryId` 를 이미
+         *       알고 있으므로 `/summaries/{id}/stream` 사용, 자동 생성은 이 채널이 유일):
+         *       - `resource`: `"summary"` (요약 관련 이벤트 식별자)
+         *       - `summaryId`: 갱신된 요약 ID
+         *       - `summaryType`: `weekly` | `monthly` | `annual`
+         *       - `summaryStatus`: `completed` | `failed`
+         *       - `periodStart`, `periodEnd`: 요약 기간 (ISO date, 실패 시 일부 생략 가능)
+         *     - **`resource=="todo"` 이벤트**: Celery worker가 todo의 Google Calendar
+         *       push/연동해제 완료 시 전송하는 ephemeral 이벤트. **DB에 저장되지 않으며**
+         *       FE가 알림 패널에 쌓지 않고 todo 상태 갱신에만 사용한다. 추가 필드:
+         *       - `resource`: `"todo"`
+         *       - `todo_id`: 대상 todo ID
+         *       - `calendar_linked`: boolean
+         *       - `calendar_push_status`: `"synced"` | `"failed"` | `null` (`null`은 연동 해제 완료)
          */
         get: {
             parameters: {
@@ -1769,7 +1965,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description SSE ??? */
+                /** @description SSE 스트림 */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -1796,7 +1992,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** ?? ?? ?? */
+        /** 알림 목록 조회 */
         get: {
             parameters: {
                 query?: {
@@ -1808,7 +2004,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description ?? ?? */
+                /** @description 조회 성공 */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -1822,11 +2018,11 @@ export interface paths {
         };
         put?: never;
         post?: never;
-        /** ?? ?? ?? */
+        /** 알림 일괄 삭제 */
         delete: {
             parameters: {
                 query?: {
-                    /** @description true? ?? ??? ??, false? ?? ?? */
+                    /** @description true면 읽은 알림만 삭제, false면 전체 삭제 */
                     readOnly?: boolean;
                 };
                 header?: never;
@@ -1835,7 +2031,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description ?? ?? */
+                /** @description 삭제 성공 */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -1865,7 +2061,7 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** ?? ?? ?? ?? */
+        /** 모든 알림 읽음 처리 */
         patch: {
             parameters: {
                 query?: never;
@@ -1875,7 +2071,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description ?? */
+                /** @description 성공 */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -1905,7 +2101,7 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** ?? ?? ?? ?? */
+        /** 단일 알림 읽음 처리 */
         patch: {
             parameters: {
                 query?: never;
@@ -1918,7 +2114,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description ?? */
+                /** @description 성공 */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -1946,7 +2142,7 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** ?? ?? ?? */
+        /** 단일 알림 삭제 */
         delete: {
             parameters: {
                 query?: never;
@@ -1959,7 +2155,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description ?? ?? */
+                /** @description 삭제 성공 */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -1984,7 +2180,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** ?? ?? ?? */
+        /** 유저 설정 조회 */
         get: {
             parameters: {
                 query?: never;
@@ -1994,7 +2190,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description ?? ?? */
+                /** @description 조회 성공 */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -2006,7 +2202,7 @@ export interface paths {
                 401: components["responses"]["Unauthorized_401"];
             };
         };
-        /** ?? ?? ?? (?? ??) */
+        /** 유저 설정 수정 (전체 교체) */
         put: {
             parameters: {
                 query?: never;
@@ -2029,7 +2225,7 @@ export interface paths {
                 };
             };
             responses: {
-                /** @description ?? ?? */
+                /** @description 수정 성공 */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -2063,20 +2259,20 @@ export interface paths {
         options?: never;
         head?: never;
         /**
-         * ?? ?? ? timezone ?? ?? (?? tz) / IANA tz ?? (?? tz)
-         * @description ??? ??? ???? backend ? country / timezone ???? IANA tz ? ??? ?? ????.
-         *     AI ?? ?? ??? ??(?? 1am)? ? timezone ???? ?? ????.
+         * 국가 변경 — timezone 자동 결정 (단일 tz) / IANA tz 명시 (다중 tz)
+         * @description 사용자 국가를 변경하면 backend 가 country / timezone 조합으로 IANA tz 를 결정해 같이 저장한다.
+         *     AI 자동 요약 트리거 시간(현지 1am)도 새 timezone 기준으로 자동 갱신된다.
          *
-         *     ### ?? ??
-         *     - **?? tz ??** (?: KR, JP, FR ? pytz country_timezones ?? 1?): `timezone` ?? ??
-         *     - **?? tz ??** (?: US, RU, BR, AU, CA): `timezone` ?? (IANA tz ???)
-         *     - ??? ??? `GET /settings/countries/{code}/timezones` ? ??
-         *     - country ? ??? ???? ? tz ? ??? (region ??? ?? ?? ??)
-         *     - ?? timezone ? ?? ????? `PATCH /settings/timezone` ??
+         *     ### 입력 규칙
+         *     - **단일 tz 국가** (예: KR, JP, FR — pytz country_timezones 옵션 1개): `timezone` 생략 가능
+         *     - **다중 tz 국가** (예: US, RU, BR, AU, CA): `timezone` 필수 (IANA tz 문자열)
+         *     - 국가별 옵션은 `GET /settings/countries/{code}/timezones` 로 조회
+         *     - country 만 바꿔도 자동으로 새 tz 가 저장됨 (region 이라는 별도 입력 없음)
+         *     - 단순 timezone 만 단독 변경하려면 `PATCH /settings/timezone` 사용
          *
-         *     ### ??? ??
-         *     - ?? ??: `pycountry` (ISO 3166-1 alpha-2, 249?)
-         *     - ?? ? tz ??: `pytz.country_timezones` (CLDR-derived)
+         *     ### 데이터 소스
+         *     - 국가 목록: `pycountry` (ISO 3166-1 alpha-2, 249개)
+         *     - 국가 → tz 매핑: `pytz.country_timezones` (CLDR-derived)
          */
         patch: {
             parameters: {
@@ -2091,7 +2287,7 @@ export interface paths {
                 };
             };
             responses: {
-                /** @description ?? ?? (timezone ??? user ??) */
+                /** @description 수정 성공 (timezone 포함된 user 응답) */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -2115,27 +2311,27 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * ??? ?? ??? IANA timezone ?? ??
-         * @description FE ? ?? ?? ? ??? timezone ????? ???.
+         * 국가의 사용 가능한 IANA timezone 목록 조회
+         * @description FE 가 국가 선택 시 호출해 timezone 드롭다운을 채운다.
          *
-         *     - `multi: false` ? ?? tz ?? (timezones ?? 1). FE ? timezone ?? ?? ??? ?
-         *     - `multi: true`  ? ?? tz ??. ???? timezone ? ?? ???? ?
+         *     - `multi: false` → 단일 tz 국가 (timezones 길이 1). FE 가 timezone 입력 받지 않아도 됨
+         *     - `multi: true`  → 다중 tz 국가. 사용자가 timezone 을 직접 선택해야 함
          *
-         *     ??? ??: `pytz.country_timezones` (CLDR-derived). OS tzdata ???? ? ?? ??.
+         *     데이터 소스: `pytz.country_timezones` (CLDR-derived). OS tzdata 업데이트 시 자동 반영.
          */
         get: {
             parameters: {
                 query?: never;
                 header?: never;
                 path: {
-                    /** @description ISO 3166-1 alpha-2 ?? ?? (???? ??) */
+                    /** @description ISO 3166-1 alpha-2 국가 코드 (대소문자 무관) */
                     code: string;
                 };
                 cookie?: never;
             };
             requestBody?: never;
             responses: {
-                /** @description ??? timezone ?? */
+                /** @description 국가의 timezone 옵션 */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -2170,9 +2366,9 @@ export interface paths {
         options?: never;
         head?: never;
         /**
-         * Timezone ?? ?? (country? ??)
-         * @description country? ??? ?? timezone? ??? override??. ?? ??/?? ?? ?? ????.
-         *     IANA ???(`Asia/Seoul`, `America/Los_Angeles` ?) ????? ??.
+         * Timezone 단독 변경 (country는 유지)
+         * @description country를 바꾸지 않고 timezone만 별도로 override한다. 해외 출장/임시 거주 등의 케이스용.
+         *     IANA 식별자(`Asia/Seoul`, `America/Los_Angeles` 등) 형식이어야 한다.
          */
         patch: {
             parameters: {
@@ -2192,7 +2388,7 @@ export interface paths {
                 };
             };
             responses: {
-                /** @description ?? ?? */
+                /** @description 수정 성공 */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -2216,8 +2412,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * ? ?? ??? ?? ??
-         * @description retro_type ?? ????? ??? ??. ??? ? ?? ??. ? ??? `isActive` ? `user_settings.active_retro_template_ids[retro_type]` ? ??? ??.
+         * 내 회고 템플릿 목록 조회
+         * @description retro_type 쿼리 파라미터로 필터링 가능. 미지정 시 전체 반환. 각 항목의 `isActive` 는 `user_settings.active_retro_template_ids[retro_type]` 과 비교해 결정.
          */
         get: {
             parameters: {
@@ -2230,7 +2426,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description ?? ?? */
+                /** @description 조회 성공 */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -2243,7 +2439,7 @@ export interface paths {
             };
         };
         put?: never;
-        /** ??? ?? ??? ?? */
+        /** 커스텀 회고 템플릿 생성 */
         post: {
             parameters: {
                 query: {
@@ -2259,7 +2455,7 @@ export interface paths {
                 };
             };
             responses: {
-                /** @description ?? ?? */
+                /** @description 생성 성공 */
                 201: {
                     headers: {
                         [name: string]: unknown;
@@ -2269,7 +2465,7 @@ export interface paths {
                     };
                 };
                 401: components["responses"]["Unauthorized_401"];
-                /** @description ?? retro_type ? ?? ?? */
+                /** @description 같은 retro_type 내 이름 중복 */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -2295,8 +2491,8 @@ export interface paths {
         };
         get?: never;
         /**
-         * ?? ?? ??? ??
-         * @description retro_type ?? ?? ???? ???? ???? ??.
+         * 활성 회고 템플릿 변경
+         * @description retro_type 별로 어떤 템플릿을 활성으로 사용할지 지정.
          */
         put: {
             parameters: {
@@ -2311,7 +2507,7 @@ export interface paths {
                 };
             };
             responses: {
-                /** @description ?? ?? ? ?? ??? ? ??? ?? */
+                /** @description 변경 성공 — 새로 활성이 된 템플릿 반환 */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -2321,7 +2517,7 @@ export interface paths {
                     };
                 };
                 401: components["responses"]["Unauthorized_401"];
-                /** @description ??? ?? */
+                /** @description 템플릿 없음 */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -2330,7 +2526,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description retro_type ??? */
+                /** @description retro_type 불일치 */
                 422: {
                     headers: {
                         [name: string]: unknown;
@@ -2362,8 +2558,8 @@ export interface paths {
         put?: never;
         post?: never;
         /**
-         * ??? ?? ??? ??
-         * @description `is_default=true` ??? ?? ?? ? 400. ?? ??? ?? ? ?? retro_type? ?? ????? ?? ?? ? ??.
+         * 커스텀 회고 템플릿 삭제
+         * @description `is_default=true` 템플릿 삭제 시도 시 400. 활성 템플릿 삭제 시 해당 retro_type의 기본 템플릿으로 자동 폴백 후 삭제.
          */
         delete: {
             parameters: {
@@ -2377,14 +2573,14 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description ?? ?? */
+                /** @description 삭제 성공 */
                 204: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content?: never;
                 };
-                /** @description ?? ??? ?? ?? */
+                /** @description 기본 템플릿 삭제 불가 */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -2394,7 +2590,7 @@ export interface paths {
                     };
                 };
                 401: components["responses"]["Unauthorized_401"];
-                /** @description ??? ?? */
+                /** @description 템플릿 없음 */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -2407,7 +2603,7 @@ export interface paths {
         };
         options?: never;
         head?: never;
-        /** ?? ??? ?? (?? ??? ??) */
+        /** 회고 템플릿 수정 (기본 템플릿 포함) */
         patch: {
             parameters: {
                 query?: never;
@@ -2424,7 +2620,7 @@ export interface paths {
                 };
             };
             responses: {
-                /** @description ?? ?? */
+                /** @description 수정 성공 */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -2434,7 +2630,7 @@ export interface paths {
                     };
                 };
                 401: components["responses"]["Unauthorized_401"];
-                /** @description ??? ?? */
+                /** @description 템플릿 없음 */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -2443,7 +2639,7 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorResponse"];
                     };
                 };
-                /** @description ?? ?? */
+                /** @description 이름 중복 */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -2468,8 +2664,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * ?? ??? ??? ????? ??
-         * @description `is_default=true` ????? ??. ??? ???? ?? ? 400(`TEMPLATE_DEFAULT_NOT_DELETABLE`).
+         * 기본 템플릿 본문을 표준값으로 복원
+         * @description `is_default=true` 템플릿에만 허용. 커스텀 템플릿에 호출 시 400(`TEMPLATE_DEFAULT_NOT_DELETABLE`).
          */
         post: {
             parameters: {
@@ -2482,7 +2678,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description ?? ?? */
+                /** @description 복원 성공 */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -2491,7 +2687,7 @@ export interface paths {
                         "application/json": components["schemas"]["ApiResponseRetroTemplate"];
                     };
                 };
-                /** @description ??? ????? reset ?? */
+                /** @description 커스텀 템플릿에는 reset 불가 */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -2501,7 +2697,7 @@ export interface paths {
                     };
                 };
                 401: components["responses"]["Unauthorized_401"];
-                /** @description ??? ?? */
+                /** @description 템플릿 없음 */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -2526,14 +2722,14 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * GitHub ?? ?? + push target + verified emails ?? ?? ??
-         * @description FE? GitHub ?? ?? ? ? ?? ??? ??? ? ??? ?? ????.
+         * GitHub 연결 상태 + push target + verified emails 보유 통합 조회
+         * @description FE가 GitHub 화면 진입 시 한 번에 상태를 파악할 수 있도록 묶어 반환한다.
          *
-         *     - `connected`: GitHub OAuth ?? + ?? ??? ?? ??
-         *     - `login`: GitHub username (connected=true? ??)
-         *     - `pushTargetRepositoryId`: ?? push ?? ??? id (??? null)
-         *     - `hasVerifiedEmails`: verified emails ?? ?? ?? ? false ? FE ? ?????
-         *       ??? ?? GitHub email ?? ?? (commit author ?? ??? ??)
+         *     - `connected`: GitHub OAuth 연결 + 토큰 유효성 검증 결과
+         *     - `login`: GitHub username (connected=true일 때만)
+         *     - `pushTargetRepositoryId`: 회고 push 대상 저장소 id (없으면 null)
+         *     - `hasVerifiedEmails`: verified emails 캐시 보유 여부 — false 면 FE 가 사용자에게
+         *       재연결 또는 GitHub email 등록 안내 (commit author 매칭 정확도 신호)
          */
         get: {
             parameters: {
@@ -2544,7 +2740,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description ?? ?? */
+                /** @description 조회 성공 */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -2554,6 +2750,7 @@ export interface paths {
                     };
                 };
                 401: components["responses"]["Unauthorized_401"];
+                403: components["responses"]["Forbidden_403"];
             };
         };
         put?: never;
@@ -2572,11 +2769,11 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * GitHub?? ??? ??? ?? ??
-         * @description OAuth? ??? GitHub ??? ?? **public** ??? ??? GitHub API?? ?? ????.
-         *     DB ??? ?? ?? (?? ?? ?? ??).
-         *     - `public_repo` scope ??
-         *     - ?????? ?? ?? (?? 2000?)
+         * GitHub에서 사용자 저장소 목록 조회
+         * @description OAuth로 연결된 GitHub 계정의 모든 **public** 저장소 목록을 GitHub API에서 직접 가져온다.
+         *     DB 저장은 하지 않음 (연결 후보 표시 용도).
+         *     - `public_repo` scope 기준
+         *     - 페이지네이션 자동 처리 (최대 2000개)
          */
         get: {
             parameters: {
@@ -2587,7 +2784,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description ?? ?? */
+                /** @description 조회 성공 */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -2598,6 +2795,7 @@ export interface paths {
                 };
                 400: components["responses"]["BadRequest_400"];
                 401: components["responses"]["Unauthorized_401"];
+                403: components["responses"]["Forbidden_403"];
                 429: components["responses"]["RateLimited_429"];
                 503: components["responses"]["ServiceUnavailable_503"];
             };
@@ -2618,8 +2816,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * ??? ??? ?? ??
-         * @description DB? ???, ?? ???? ??? GitHub ??? ??.
+         * 연결된 저장소 목록 조회
+         * @description DB에 저장된, 현재 사용자가 연결한 GitHub 저장소 목록.
          */
         get: {
             parameters: {
@@ -2630,7 +2828,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description ?? ?? */
+                /** @description 조회 성공 */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -2640,13 +2838,14 @@ export interface paths {
                     };
                 };
                 401: components["responses"]["Unauthorized_401"];
+                403: components["responses"]["Forbidden_403"];
             };
         };
         put?: never;
         /**
-         * ?? ??? 1? ??
-         * @description `githubRepoId`? ???? ???? ??? ??? ????.
-         *     ???? GitHub API?? ?? ??? ?????? ?? ??? ?? (?�?? ??).
+         * 특정 저장소 1개 연결
+         * @description `githubRepoId`로 식별되는 저장소를 사용자 계정에 연결한다.
+         *     백엔드가 GitHub API에서 해당 저장소 메타데이터를 직접 조회해 저장 (위·변조 방지).
          */
         post: {
             parameters: {
@@ -2666,7 +2865,7 @@ export interface paths {
                 };
             };
             responses: {
-                /** @description ?? ?? */
+                /** @description 연결 성공 */
                 201: {
                     headers: {
                         [name: string]: unknown;
@@ -2677,6 +2876,7 @@ export interface paths {
                 };
                 400: components["responses"]["BadRequest_400"];
                 401: components["responses"]["Unauthorized_401"];
+                403: components["responses"]["Forbidden_403"];
                 404: components["responses"]["NotFound_404"];
                 409: components["responses"]["Conflict_409"];
                 422: components["responses"]["ValidationError_422"];
@@ -2684,8 +2884,8 @@ export interface paths {
             };
         };
         /**
-         * ?? ??? ?? ??
-         * @description ?? ???? ?? GitHub ??? ??? ?? ??.
+         * 모든 저장소 연결 해제
+         * @description 현재 사용자의 모든 GitHub 저장소 연결을 일괄 삭제.
          */
         delete: {
             parameters: {
@@ -2696,7 +2896,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description ?? ?? */
+                /** @description 삭제 성공 */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -2706,6 +2906,7 @@ export interface paths {
                     };
                 };
                 401: components["responses"]["Unauthorized_401"];
+                403: components["responses"]["Forbidden_403"];
             };
         };
         options?: never;
@@ -2723,10 +2924,10 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * GitHub ??? ?? ?? ?? (1? sync)
-         * @description ?? ??? GitHub ??? ??? ?? ??? ?? ???? (idempotent upsert).
-         *     ?? ?? ?? repo? ???? ?? ???? ??? (?? ?? ??).
-         *     ?? ??? ???? ????, ?????? ????? ????.
+         * GitHub 저장소 전체 일괄 연결 (1회 sync)
+         * @description 호출 시점의 GitHub 저장소 목록을 모두 가져와 일괄 연결한다 (idempotent upsert).
+         *     이후 새로 생긴 repo는 사용자가 다시 호출해야 추가됨 (자동 갱신 없음).
+         *     이미 연결된 저장소는 유지되며, 메타데이터가 바뀌었다면 갱신된다.
          */
         post: {
             parameters: {
@@ -2737,7 +2938,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description sync ??. ???? ?? ??? ??? ?? ??? ??? ???. */
+                /** @description sync 성공. 응답에는 현재 시점에 연결된 모든 저장소 목록이 담긴다. */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -2748,6 +2949,7 @@ export interface paths {
                 };
                 400: components["responses"]["BadRequest_400"];
                 401: components["responses"]["Unauthorized_401"];
+                403: components["responses"]["Forbidden_403"];
                 429: components["responses"]["RateLimited_429"];
                 503: components["responses"]["ServiceUnavailable_503"];
             };
@@ -2771,7 +2973,7 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** ?? ??? ?? ?? */
+        /** 단일 저장소 연결 해제 */
         delete: {
             parameters: {
                 query?: never;
@@ -2784,7 +2986,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description ?? ?? */
+                /** @description 해제 성공 */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -2794,16 +2996,17 @@ export interface paths {
                     };
                 };
                 401: components["responses"]["Unauthorized_401"];
+                403: components["responses"]["Forbidden_403"];
                 404: components["responses"]["NotFound_404"];
             };
         };
         options?: never;
         head?: never;
         /**
-         * ??? ?? ?? (commit ?? on/off)
-         * @description ?? ???? ?? ??? "??? ??" ?? ???? ???? ????.
-         *     `commitReadEnabled=false`?? `GET /github/commits` ???? ????.
-         *     Push ?? ??? ?? ? `commitReadEnabled=false`? ???? push ??? ? ? ??.
+         * 저장소 역할 설정 (commit 읽기 on/off)
+         * @description 해당 저장소를 회고 화면의 "오늘의 커밋" 집계 대상으로 포함할지 토글한다.
+         *     `commitReadEnabled=false`이면 `GET /github/commits` 응답에서 제외된다.
+         *     Push 대상 지정은 별개 — `commitReadEnabled=false`인 저장소도 push 대상이 될 수 있다.
          */
         patch: {
             parameters: {
@@ -2826,7 +3029,7 @@ export interface paths {
                 };
             };
             responses: {
-                /** @description ?? ?? */
+                /** @description 수정 성공 */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -2836,6 +3039,7 @@ export interface paths {
                     };
                 };
                 401: components["responses"]["Unauthorized_401"];
+                403: components["responses"]["Forbidden_403"];
                 404: components["responses"]["NotFound_404"];
                 422: components["responses"]["ValidationError_422"];
             };
@@ -2850,55 +3054,55 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * ?? ??(??=??)? ?? ??
-         * @description ???? `commitReadEnabled=true` ?????? ?? ??? ??? ??
-         *     ?? ?????? ????.
+         * 지정 날짜(기본=오늘)의 커밋 모음
+         * @description 사용자의 `commitReadEnabled=true` 저장소들에서 지정 날짜의 커밋을 모아
+         *     시간 내림차순으로 반환한다.
          *
-         *     ### ??
-         *     - **???**: ?? `user.timezone` ??. ?? `tz` ?? ????? ?? ???.
-         *     - **?? branch ??**: ??? GitHub ? default branch only ? default ????
-         *       feature/topic branch ? commit ? ????. ???? repo ?? `list_branches`
-         *       ? ?? branch ? ??? branch ? commit ? ?? fetch ? commit SHA ? dedup.
-         *       IDE ? feature branch ? push ? commit ? ??.
-         *     - **?? commit ??**: GitHub `?author=` ?? ??? ? ? repo ? ??
-         *       commit ? ?? ? ????? OR ??? ?? commit ? ??.
-         *       ?? ?? (???? true ? ??):
+         *     ### 규칙
+         *     - **타임존**: 항상 `user.timezone` 기준. 별도 `tz` 쿼리 파라미터를 받지 않는다.
+         *     - **모든 branch 조회**: 이전엔 GitHub 의 default branch only 가 default 동작이라
+         *       feature/topic branch 의 commit 이 누락됐다. 신정책은 repo 마다 `list_branches`
+         *       로 모든 branch 를 가져와 branch 별 commit 을 병렬 fetch → commit SHA 로 dedup.
+         *       IDE 가 feature branch 로 push 한 commit 도 잡힘.
+         *     - **본인 commit 매칭**: GitHub `?author=` 필터 미사용 — 그 repo 의 모든
+         *       commit 을 받은 뒤 서버사이드 OR 필터로 본인 commit 만 추림.
+         *       매칭 조건 (하나라도 true 면 본인):
          *       - `commit.author.login == user.github_login`
          *       - `commit.committer.login == user.github_login`
-         *       - `commit.author.email ? verified_emails`
-         *       - `commit.committer.email ? verified_emails`
+         *       - `commit.author.email ∈ verified_emails`
+         *       - `commit.committer.email ∈ verified_emails`
          *
-         *       `verified_emails` ? GitHub `/user/emails` ? verified=true ? ??
-         *       (`oauth_connections.provider_verified_emails`, lazy backfill). ????
-         *       gitbash ? `git config user.email` ? GitHub Settings ? Emails ? verified ?
-         *       ??? ??? ?? commit ?? ?? ??.
-         *     - **scope ??**: OAuth scope = `user:email,public_repo`. **public repo only**
-         *       (private repo ? `repositories/available` ? ??, ???? GitHub 404 ?
-         *       `failedRepositories` ? ??).
-         *     - **`date` ?? ?**: `user.timezone` ?? ??
-         *     - **??**: `[date 00:00, date+1 00:00)` ??? tz ? UTC ?? ? `since`/`until`
-         *       (GitHub commits API ? commit ? **committer.date** ?? ??? ? push ?? ??)
+         *       `verified_emails` 는 GitHub `/user/emails` 의 verified=true 만 캐시
+         *       (`oauth_connections.provider_verified_emails`, lazy backfill). 사용자가
+         *       gitbash 의 `git config user.email` 을 GitHub Settings → Emails 에 verified 로
+         *       추가만 해두면 본인 commit 으로 자동 매칭.
+         *     - **scope 정책**: OAuth scope = `user:email,public_repo`. **public repo only**
+         *       (private repo 는 `repositories/available` 에 없고, 등록돼도 GitHub 404 →
+         *       `failedRepositories` 에 포함).
+         *     - **`date` 생략 시**: `user.timezone` 기준 오늘
+         *     - **범위**: `[date 00:00, date+1 00:00)` 사용자 tz → UTC 변환 후 `since`/`until`
+         *       (GitHub commits API 는 commit 의 **committer.date** 기준 필터링 — push 일시 아님)
          *
-         *     ### ?? ??
-         *     | ?? | ?? |
+         *     ### 에러 분류
+         *     | 상황 | 동작 |
          *     |---|---|
-         *     | GitHub ??? / ? ?? | `GITHUB_CONNECTION_NOT_FOUND` (?? 400) |
-         *     | OAuth ?? ??/?? | `GITHUB_TOKEN_INVALID` (?? 401) |
-         *     | Rate limit | `GITHUB_RATE_LIMITED` (?? 429) |
-         *     | GitHub 5xx | `GITHUB_API_UNAVAILABLE` (?? 503) |
-         *     | ?? ??? 404 (??/private+scope??) | ?? repo ? skip ? `failedRepositories[reason="not_found"]` |
-         *     | ?? ??? ?? ?? | ?? repo ? skip ? `failedRepositories[reason="unknown"]`. ??? logger ? warning |
+         *     | GitHub 미연결 / 빈 토큰 | `GITHUB_CONNECTION_NOT_FOUND` (전체 400) |
+         *     | OAuth 토큰 만료/폐기 | `GITHUB_TOKEN_INVALID` (전체 401) |
+         *     | Rate limit | `GITHUB_RATE_LIMITED` (전체 429) |
+         *     | GitHub 5xx | `GITHUB_API_UNAVAILABLE` (전체 503) |
+         *     | 단일 저장소 404 (삭제/private+scope부족) | 해당 repo 만 skip → `failedRepositories[reason="not_found"]` |
+         *     | 단일 저장소 기타 예외 | 해당 repo 만 skip → `failedRepositories[reason="unknown"]`. 백엔드 logger 에 warning |
          *
-         *     ### ??
-         *     - `commits`: ?? ????. ?? ??? 200.
-         *     - `failedRepositories`: ?? ??? ??? ??. FE ? ????? "X? repo ??
-         *       ??? ???? ??" ??? ?? ??.
+         *     ### 응답
+         *     - `commits`: 시간 내림차순. 비어 있어도 200.
+         *     - `failedRepositories`: 부분 실패한 저장소 목록. FE 는 사용자에게 "X개 repo 에서
+         *       커밋을 가져오지 못함" 식으로 표시 권장.
          */
         get: {
             parameters: {
                 query?: {
                     /**
-                     * @description ?? ? user.timezone ?? ??
+                     * @description 생략 시 user.timezone 기준 오늘
                      * @example 2026-06-12
                      */
                     date?: string;
@@ -2909,7 +3113,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description ?? ?? */
+                /** @description 조회 성공 */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -2920,6 +3124,7 @@ export interface paths {
                 };
                 400: components["responses"]["BadRequest_400"];
                 401: components["responses"]["Unauthorized_401"];
+                403: components["responses"]["Forbidden_403"];
                 422: components["responses"]["ValidationError_422"];
                 429: components["responses"]["RateLimited_429"];
                 503: components["responses"]["ServiceUnavailable_503"];
@@ -2943,32 +3148,32 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * ?? ????? push target ???? commit/push
-         * @description ???? ??? ?? ???? ??? push target ???? ??? ??? commit??.
+         * 회고 마크다운을 push target 저장소에 commit/push
+         * @description 사용자가 작성한 회고 마크다운 본문을 push target 저장소의 정해진 경로에 commit한다.
          *
-         *     ### ?? ?? ?? (??? settings.locale ?? i18n)
-         *     | periodType | ?? (ko/en) | ??? (ko/en) |
+         *     ### 파일 경로 규칙 (사용자 settings.locale 기반 i18n)
+         *     | periodType | 폴더 (ko/en) | 파일명 (ko/en) |
          *     |---|---|---|
-         *     | DAILY  | `??/` / `daily/` | `2026-06-12 ???.md` / `2026-06-12 retrospective.md` |
-         *     | WEEKLY | `??/` / `weekly/` | `2026-06 2?? ???.md` / `2026-06 week 2 retrospective.md` |
-         *     | MONTHLY | `??/` / `monthly/` | `2026-06 ???.md` / `2026-06 retrospective.md` |
-         *     | ANNUAL | `??/` / `annual/` | `2026 ???.md` / `2026 retrospective.md` |
+         *     | DAILY  | `일간/` / `daily/` | `2026-06-12 회고록.md` / `2026-06-12 retrospective.md` |
+         *     | WEEKLY | `주간/` / `weekly/` | `2026-06 2주차 회고록.md` / `2026-06 week 2 retrospective.md` |
+         *     | MONTHLY | `월간/` / `monthly/` | `2026-06 회고록.md` / `2026-06 retrospective.md` |
+         *     | ANNUAL | `년간/` / `annual/` | `2026 회고록.md` / `2026 retrospective.md` |
          *
-         *     ### periodKey ??
-         *     - DAILY: `YYYY-MM-DD` (?: `2026-06-12`)
-         *     - WEEKLY: `YYYY-MM-Wn` (n=1~6, majority-day ??)
+         *     ### periodKey 형식
+         *     - DAILY: `YYYY-MM-DD` (예: `2026-06-12`)
+         *     - WEEKLY: `YYYY-MM-Wn` (n=1~6, majority-day 방식)
          *     - MONTHLY: `YYYY-MM`
          *     - ANNUAL: `YYYY`
          *
-         *     ### ??
-         *     - ?? ?? ??? ??? **????**(update). ??? **??**(create).
-         *     - GitHub commit history? ?? ?? ?? ?? ? ???? ?? ??
-         *     - ?? ???? ???? `defaultBranch` ??
-         *     - ?? ???? ??? locale? ?? ?? (prefix `docs(retro):` ?? ??)
-         *     - ?? ? ???? `retrospective_pushes` ???? (user_id, period_type, period_key)
-         *       ??? push ???? upsert. ?? `GET /entries`, `GET /entries/{id}`,
-         *       `GET /summaries`, `GET /summaries/{id}` ??? `githubPush` ??? ???.
-         *     - `periodType` 'YEARLY' (entry ? ??) ? ???? BE ? 'annual' ? ???? ??.
+         *     ### 동작
+         *     - 같은 경로 파일이 있으면 **덮어쓰기**(update). 없으면 **생성**(create).
+         *     - GitHub commit history가 자체 버전 관리 역할 — 덮어써도 이력 유지
+         *     - 푸시 브랜치는 저장소의 `defaultBranch` 사용
+         *     - 커밋 메시지는 사용자 locale로 자동 생성 (prefix `docs(retro):` 영문 고정)
+         *     - 성공 시 백엔드가 `retrospective_pushes` 테이블에 (user_id, period_type, period_key)
+         *       단위로 push 레코드를 upsert. 이후 `GET /entries`, `GET /entries/{id}`,
+         *       `GET /summaries`, `GET /summaries/{id}` 응답에 `githubPush` 필드로 노출됨.
+         *     - `periodType` 'YEARLY' (entry 측 표기) 가 들어오면 BE 가 'annual' 로 정규화해 저장.
          */
         post: {
             parameters: {
@@ -2983,7 +3188,7 @@ export interface paths {
                 };
             };
             responses: {
-                /** @description push ?? */
+                /** @description push 성공 */
                 201: {
                     headers: {
                         [name: string]: unknown;
@@ -2994,11 +3199,269 @@ export interface paths {
                 };
                 400: components["responses"]["BadRequest_400"];
                 401: components["responses"]["Unauthorized_401"];
+                403: components["responses"]["Forbidden_403"];
                 422: components["responses"]["ValidationError_422"];
                 502: components["responses"]["BadGateway_502"];
                 503: components["responses"]["ServiceUnavailable_503"];
             };
         };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/calendar/connection": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Google Calendar 연결 상태 조회
+         * @description `connected=true` 이고 `needsReauth=true` 면 토큰이 무효해진 상태 →
+         *     FE 가 재연결을 유도한다.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description 조회 성공 */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiResponseCalendarConnection"];
+                    };
+                };
+                401: components["responses"]["Unauthorized_401"];
+            };
+        };
+        put?: never;
+        post?: never;
+        /**
+         * Google Calendar 연결 해제
+         * @description 연결 정보와 저장된 모든 이벤트를 삭제한다.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description 해제 성공 */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiResponseEmpty"];
+                    };
+                };
+                401: components["responses"]["Unauthorized_401"];
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/calendar/connect/init": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Google Calendar 연결 시작
+         * @description 인증된 사용자가 호출. 응답의 `authorizeUrl` 을 FE 가 popup 으로 직접 연다.
+         *     동의 완료 시 `/calendar/callback` 으로 돌아오며, callback HTML 의
+         *     `window.opener.postMessage({ type: "calendar_connected" }, <frontend_origin>)`
+         *     가 FE 로 전달된다. 실패 시 `{ type: "calendar_error", error }`.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description authorize URL 발급 */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiResponseCalendarConnectInit"];
+                    };
+                };
+                401: components["responses"]["Unauthorized_401"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/calendar/callback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Google OAuth callback (HTML postMessage)
+         * @description Google 이 리다이렉트하는 콜백. Bearer 인증 없음(state 로 사용자 식별).
+         *     결과를 `window.opener.postMessage` 로 FE 에 전달하는 HTML 을 반환한다.
+         *     FE 가 직접 호출하지 않는다.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    code?: string;
+                    state?: string;
+                    error?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description postMessage HTML */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/html": string;
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/calendar/sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 캘린더 수동 동기화 (이벤트 전용 반환)
+         * @deprecated
+         * @description **Deprecated**: Google Calendar 원본 이벤트는 이제 pull-sync 시 read-only
+         *     CalendarEvent 가 아니라 수정 가능한 Todo 로 승격된다(`GET /todos` 참고).
+         *     이 엔드포인트는 더 이상 새 이벤트를 반환하지 않으며(항상 빈 배열로 수렴),
+         *     FE 는 `GET /todos` 로 이전해야 한다. 하위호환을 위해 당분간 유지.
+         *
+         *     staleness 무시하고 Google 과 즉시 증분 동기화 후, 지정 범위의 캘린더 이벤트만 반환.
+         *     from/to 는 현재 뷰의 날짜 범위를 넘긴다. 최대 62일 범위 허용.
+         */
+        post: {
+            parameters: {
+                query: {
+                    /** @description 조회 시작일 (YYYY-MM-DD) */
+                    from: string;
+                    /** @description 조회 종료일 (YYYY-MM-DD, 최대 from+62일) */
+                    to: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description 동기화 완료 — 해당 범위 캘린더 이벤트 목록 */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiResponseCalendarEventList"];
+                    };
+                };
+                401: components["responses"]["Unauthorized_401"];
+                422: components["responses"]["ValidationError_422"];
+                503: components["responses"]["ServiceUnavailable_503"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/calendar/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 캘린더 이벤트 조회 (날짜 범위)
+         * @deprecated
+         * @description **Deprecated**: Google Calendar 원본 이벤트는 이제 pull-sync 시 read-only
+         *     CalendarEvent 가 아니라 수정 가능한 Todo 로 승격된다. 이 엔드포인트는 더 이상
+         *     새 이벤트를 반환하지 않으며(항상 빈 배열로 수렴), FE 는 `GET /todos` 로
+         *     이전해야 한다. 하위호환을 위해 당분간 유지.
+         *
+         *     `from`~`to` 범위의 Google Calendar 이벤트. 미연결 사용자는 빈 배열.
+         *     stale 시 온디맨드 증분 동기화가 일어날 수 있다.
+         */
+        get: {
+            parameters: {
+                query: {
+                    from: string;
+                    to: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description 조회 성공 */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiResponseCalendarEventList"];
+                    };
+                };
+                401: components["responses"]["Unauthorized_401"];
+            };
+        };
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -3019,7 +3482,7 @@ export interface components {
         ErrorResponse: {
             /** @enum {string} */
             status: "error";
-            /** @description ??? ?? ?? (? `AUTH_TOKEN_EXPIRED`, `TODO_NOT_FOUND`, `VALIDATION_ERROR`) */
+            /** @description 도메인 에러 코드 (예 `AUTH_TOKEN_EXPIRED`, `TODO_NOT_FOUND`, `VALIDATION_ERROR`) */
             code: string;
             data: null;
             details?: {
@@ -3030,12 +3493,12 @@ export interface components {
         /** @enum {string} */
         OAuthProvider: "github" | "google";
         /**
-         * @description ?? ??? ??
+         * @description 회고 엔트리 종류
          * @enum {string}
          */
         RetroType: "daily" | "weekly" | "monthly" | "yearly";
         /**
-         * @description AI ?? ??
+         * @description AI 요약 주기
          * @enum {string}
          */
         SummaryType: "weekly" | "monthly" | "annual";
@@ -3054,7 +3517,7 @@ export interface components {
         VerifyCodeRequest: {
             /** Format: email */
             email: string;
-            /** @description ?? ??? ?? ?? 6?? (???? strip + upper ??? ? ??) */
+            /** @description 영문 대문자 또는 숫자 6자리 (서버에서 strip + upper 정규화 후 검증) */
             code: string;
         };
         RegisterRequest: {
@@ -3063,14 +3526,14 @@ export interface components {
             password: string;
             passwordConfirm: string;
             /**
-             * @description ISO 3166-1 alpha-2 ?? ?? (? 249?? ??, pycountry ??).
-             *     ?: `KR`, `US`, `JP`. ????/??? BE ? ???.
+             * @description ISO 3166-1 alpha-2 국가 코드 (전 249개국 지원, pycountry 기반).
+             *     예: `KR`, `US`, `JP`. 대소문자/공백은 BE 가 정규화.
              */
             country: string;
             /**
-             * @description IANA timezone identifier (?: `Asia/Seoul`, `America/Los_Angeles`).
-             *     ?? tz ??(?: KR, JP, FR)? ?? ?? ? BE ? ?? ??.
-             *     ?? tz ??(?: US, RU, BR)? ??. ?? ??: `GET /settings/countries/{code}/timezones`.
+             * @description IANA timezone identifier (예: `Asia/Seoul`, `America/Los_Angeles`).
+             *     단일 tz 국가(예: KR, JP, FR)는 생략 가능 — BE 가 자동 결정.
+             *     다중 tz 국가(예: US, RU, BR)는 필수. 옵션 조회: `GET /settings/countries/{code}/timezones`.
              */
             timezone?: string | null;
         };
@@ -3081,24 +3544,27 @@ export interface components {
         };
         UpdateProfileRequest: {
             display_name?: string | null;
-            /** @enum {string} */
+            /**
+             * @description 계정 유형 변경 (생략 시 기존 값 유지)
+             * @enum {string}
+             */
             accountType?: "developer" | "user";
         };
         OnboardingCompleteRequest: {
-            /** @description ISO 3166-1 alpha-2 ?? ?? (? 249?? ??) */
+            /** @description ISO 3166-1 alpha-2 국가 코드 (전 249개국 지원) */
             country: string;
             /**
              * @description IANA timezone identifier.
-             *     ?? tz ??? ?? ??, ?? tz ??? ??.
+             *     단일 tz 국가는 생략 가능, 다중 tz 국가는 필수.
              */
             timezone?: string | null;
         };
         UpdateCountryRequest: {
-            /** @description ISO 3166-1 alpha-2 ?? ?? (? 249?? ??) */
+            /** @description ISO 3166-1 alpha-2 국가 코드 (전 249개국 지원) */
             country: string;
             /**
              * @description IANA timezone identifier.
-             *     ?? tz ??? ?? ?? (?? ??), ?? tz ??? ??.
+             *     단일 tz 국가는 생략 가능 (자동 결정), 다중 tz 국가는 필수.
              */
             timezone?: string | null;
         };
@@ -3111,9 +3577,9 @@ export interface components {
         };
         CountryTimezonesResponse: {
             country: string;
-            /** @description ?? ??? IANA tz ?? (CLDR-derived, pytz) */
+            /** @description 해당 국가의 IANA tz 옵션 (CLDR-derived, pytz) */
             timezones: string[];
-            /** @description ?? tz ?? ??. true ? ???? timezone ? ?? ???? ?. */
+            /** @description 다중 tz 국가 여부. true 면 사용자가 timezone 을 직접 선택해야 함. */
             multi: boolean;
         };
         ApiResponseCountryTimezones: components["schemas"]["ApiResponseEmpty"] & {
@@ -3124,7 +3590,7 @@ export interface components {
             email: string;
         };
         ResetPasswordRequest: {
-            /** @description ???? ?? 1?? reset token (URL `?token=...` ??? ??) */
+            /** @description 이메일로 받은 1회용 reset token (URL `?token=...` 그대로 사용) */
             token: string;
             newPassword: string;
             newPasswordConfirm: string;
@@ -3141,11 +3607,16 @@ export interface components {
             /** @example null */
             region?: string | null;
             /**
-             * @description IANA timezone identifier ? AI ?? ??? ? tz ?? "?? ?? 1?"? ????
+             * @description IANA timezone identifier — AI 자동 요약은 이 tz 기준 "현지 새벽 1시"에 트리거됨
              * @example Asia/Seoul
              */
             timezone: string;
-            /** @enum {string} */
+            /**
+             * @description 계정 유형. developer = GitHub 커밋 기록·회고 연동 등 개발자 기능 활성화.
+             *     user = 캘린더·할일·회고 중심의 기본 경험.
+             * @default user
+             * @enum {string}
+             */
             accountType: "developer" | "user";
         };
         ApiResponseToken: components["schemas"]["ApiResponseEmpty"] & {
@@ -3169,8 +3640,8 @@ export interface components {
         OAuthLinkInitResponse: {
             /**
              * Format: uri
-             * @description FE ? `window.open` ?? ?? ??? ?? provider authorize URL.
-             *     URL ?? link ???? ???? state ? ?? ???? ??.
+             * @description FE 가 `window.open` 으로 직접 열어야 하는 provider authorize URL.
+             *     URL 에는 link 흐름임을 표시하는 state 가 사전 발급되어 있다.
              */
             authorizeUrl: string;
         };
@@ -3179,19 +3650,19 @@ export interface components {
         };
         SessionResponse: {
             sessionId: string;
-            /** @description User-Agent ?? ?? (?: 'Chrome on Windows') */
+            /** @description User-Agent 파싱 결과 (예: 'Chrome on Windows') */
             deviceLabel?: string | null;
-            /** @description User-Agent ?? */
+            /** @description User-Agent 원문 */
             deviceInfo?: string | null;
-            /** @description IPv4 /24 ?? IPv6 /48 prefix. ???. */
+            /** @description IPv4 /24 또는 IPv6 /48 prefix. 통계용. */
             ipPrefix?: string | null;
             /** Format: date-time */
             issuedAt: string;
             /** Format: date-time */
             lastUsedAt: string;
-            /** @description ? ???? ??? refresh ?? */
+            /** @description 이 세션에서 발생한 refresh 횟수 */
             rotationCounter: number;
-            /** @description ? ??? ?? ?? ?? */
+            /** @description 이 요청을 보낸 세션 여부 */
             isCurrent: boolean;
         };
         SessionListResponse: {
@@ -3226,9 +3697,9 @@ export interface components {
             retro_type: components["schemas"]["RetroType"];
             name: string;
             content: string;
-            /** @description true = ?? ??? (?? ??, reset ??) */
+            /** @description true = 기본 템플릿 (삭제 불가, reset 가능) */
             is_default: boolean;
-            /** @description true = ?? ?? retro_type? ?? ??? */
+            /** @description true = 현재 해당 retro_type의 활성 템플릿 */
             is_active: boolean;
             /** Format: date-time */
             created_at: string;
@@ -3260,6 +3731,8 @@ export interface components {
             end_time?: string | null;
             /** @description IANA timezone string (e.g. "Asia/Seoul"). Required when start_time or end_time is set. */
             timezone?: string | null;
+            /** @description null(생략) = user_settings.calendarAutoPushTodo 기본값 적용, true/false = 개별 지정(생성 시 Google Calendar push 여부). */
+            push_to_calendar?: boolean | null;
         };
         TodoUpdateRequest: {
             title?: string | null;
@@ -3306,6 +3779,13 @@ export interface components {
             updated_at?: string | null;
             /** Format: date-time */
             completed_at?: string | null;
+            /** @description Google Calendar 에 연동됨(push 완료/대기/진행 중). FE 사이드바 버튼 상태. */
+            calendar_linked: boolean;
+            /**
+             * @description 연동 세부 상태. null 이면 미연동.
+             * @enum {string|null}
+             */
+            calendar_push_status?: "pending" | "syncing" | "synced" | "failed" | "pending_delete" | null;
         };
         ApiResponseTodo: components["schemas"]["ApiResponseEmpty"] & {
             data?: components["schemas"]["TodoResponse"];
@@ -3313,15 +3793,11 @@ export interface components {
         ApiResponseTodoList: components["schemas"]["ApiResponseEmpty"] & {
             data?: components["schemas"]["TodoResponse"][];
         };
-        TodosWithEventsResponse: {
-            todos: components["schemas"]["TodoResponse"][];
-            /** @description Google Calendar 이벤트. 미연결 사용자는 항상 빈 배열. */
-            events: components["schemas"]["CalendarEventResponse"][];
-        };
-        ApiResponseTodosWithEvents: components["schemas"]["ApiResponseEmpty"] & {
-            data?: components["schemas"]["TodosWithEventsResponse"];
-        };
-        /** @description Google Calendar 이벤트(read-only). 시간 지정 이벤트는 startAt/endAt(UTC) + timezone(IANA)으로 로컬 복원, 종일 이벤트는 allDay=true 이고 dateKey 만 의미가 있다. */
+        /**
+         * @description Google Calendar 이벤트(read-only). 시간 표현은 todo 와 동일 정책 —
+         *     시간 지정 이벤트는 `startAt`/`endAt`(UTC) + `timezone`(IANA) 으로 로컬 복원,
+         *     종일 이벤트는 `allDay=true` 이고 시간 필드는 null, `dateKey` 만 의미가 있다.
+         */
         CalendarEventResponse: {
             id: string;
             title: string;
@@ -3343,13 +3819,16 @@ export interface components {
             status: string;
             /** @description Google Calendar 원본 링크 */
             htmlLink?: string | null;
-            /** @enum {string} */
+            /**
+             * @description todo 와 구분용 상수
+             * @enum {string}
+             */
             source: "google_calendar";
         };
         CalendarConnectionResponse: {
             /** @description Google Calendar 연결 존재 여부 */
             connected: boolean;
-            /** @description true 면 refresh_token 무효(만료/revoke) → FE 가 재연결 유도 */
+            /** @description true 면 refresh_token 무효(만료/revoke) — FE 가 재연결 유도 */
             needsReauth: boolean;
             googleUserId?: string | null;
             /** Format: date-time */
@@ -3378,9 +3857,9 @@ export interface components {
         };
         EntryUpsertRequest: components["schemas"]["EntryCreateRequest"];
         /**
-         * @description ?? ???? GitHub ? push ?? ??? ??. push ??? (period_type, period_key)
-         *     ? ?? period ? entry/summary ? ?? ??? ? ? ??? push ???? ????.
-         *     (GitHub ? ??? ????? ??? ??.)
+         * @description 해당 회고록이 GitHub 에 push 되어 있다는 신호. push 단위는 (period_type, period_key)
+         *     — 같은 period 에 entry/summary 가 같이 있으면 둘 다 동일한 push 레코드를 가리킨다.
+         *     (GitHub 측 파일이 단일이므로 의도된 동작.)
          */
         GithubPushResponse: {
             /** Format: date-time */
@@ -3388,7 +3867,7 @@ export interface components {
             commitSha: string;
             /** Format: uri */
             htmlUrl: string;
-            /** @description ??? ? ?? ?? (? 'daily/2026-06-08.md') */
+            /** @description 저장소 내 파일 경로 (예 'daily/2026-06-08.md') */
             path: string;
             /** @example owner/archive */
             repositoryFullName: string;
@@ -3400,7 +3879,7 @@ export interface components {
             title: string;
             content: string;
             retro_type: components["schemas"]["RetroType"];
-            /** @description ?? (retro_type, date_key) ?? period ? push ? ?? ??? null */
+            /** @description 해당 (retro_type, date_key) 기반 period 에 push 된 적이 없으면 null */
             githubPush?: components["schemas"]["GithubPushResponse"] | null;
             /** Format: date-time */
             created_at: string;
@@ -3413,15 +3892,20 @@ export interface components {
         ApiResponseEntryList: components["schemas"]["ApiResponseEmpty"] & {
             data?: components["schemas"]["EntryResponse"][];
         };
-        /**
-         * @description 템플릿이 적용되면 템플릿 섹션 헤더가 키가 된다.
-         *     템플릿이 없으면 기본 4개 키(achievements/challenges/learnings/next_focus)가 사용된다.
-         */
+        EntryPageResponse: {
+            items: components["schemas"]["EntryResponse"][];
+            /** @description 전체 매칭 건수(페이지 무관) */
+            total: number;
+            page: number;
+            size: number;
+        };
+        ApiResponseEntryPage: components["schemas"]["ApiResponseEmpty"] & {
+            data?: components["schemas"]["EntryPageResponse"];
+        };
+        /** @description AI 생성 요약 마크다운 문자열. 사용자 템플릿이 있으면 그 블록 구조(헤딩/불릿/번호목록/체크박스/인용구 등)를 그대로 따른다. 템플릿이 없으면 기본 4-섹션 마크다운(## 헤딩 + 불릿 리스트)이 생성된다. FE 는 Tiptap 마크다운 확장으로 렌더링한다. */
         SummaryContentResponse: {
-            sections: {
-                key: string;
-                items: string[];
-            }[];
+            /** @description AI 생성 마크다운 원문 */
+            markdown: string;
         };
         SummaryResponse: {
             id: string;
@@ -3433,12 +3917,18 @@ export interface components {
             period_end: string;
             status: components["schemas"]["SummaryStatus"];
             content?: components["schemas"]["SummaryContentResponse"];
-            /** @description ?? summary ? (summary_type, period_start) ?? period ? push ? ?? ??? null */
+            /** @description 사용자 편집 마크다운 오버라이드. 있으면 FE 는 이 마크다운을 우선 렌더하고, null 이면 content.markdown 을 Tiptap 으로 렌더한다. AI 원본(content)은 비파괴 보존되며, 재생성(force/FAILED/auto) 시 자동으로 null 로 초기화된다. */
+            editedContent?: string | null;
+            /** @description 해당 summary 의 (summary_type, period_start) 기반 period 에 push 된 적이 없으면 null */
             githubPush?: components["schemas"]["GithubPushResponse"] | null;
             /** Format: date-time */
             created_at: string;
             /** Format: date-time */
             updated_at?: string | null;
+        };
+        SummaryEditRequest: {
+            /** @description 편집 마크다운. null 이면 편집 해제 → AI 원본(content.markdown)으로 복귀(AI 재호출/rate limit 없음). */
+            contentMarkdown: string | null;
         };
         ApiResponseSummary: components["schemas"]["ApiResponseEmpty"] & {
             data?: components["schemas"]["SummaryResponse"];
@@ -3453,19 +3943,19 @@ export interface components {
             periodStart: string;
             /** Format: date */
             periodEnd: string;
-            /** @description monthly = ? ?? ??, annual = 12 */
+            /** @description monthly = 그 달의 일수, annual = 12 */
             expectedUnits: number;
-            /** @description monthly = entry ?? unique ?? ?, annual = entry ?? ? ? */
+            /** @description monthly = entry 있는 unique 날짜 수, annual = entry 있는 월 수 */
             coveredUnits: number;
-            /** @description ?? ? ? entry ? (???, ???? ?? ?? ??) */
+            /** @description 기간 내 총 entry 수 (참고용, 임계값에 직접 영향 없음) */
             entryCount: number;
             /**
              * Format: float
-             * @description coveredUnits / expectedUnits, ?? 4?? ???
+             * @description coveredUnits / expectedUnits, 소수 4자리 반올림
              */
             completenessRatio: number;
             /**
-             * @description completenessRatio >= 0.7 ?? ok, ???? insufficient
+             * @description completenessRatio >= 0.7 이면 ok, 미만이면 insufficient
              * @enum {string}
              */
             recommendation: "ok" | "insufficient";
@@ -3474,9 +3964,9 @@ export interface components {
             data?: components["schemas"]["SummaryReadinessResponse"];
         };
         CreateSummaryTemplateRequest: {
-            /** @description ??? ??? ??. ?? (user, summary_type) ??? unique. */
+            /** @description 사용자 식별용 이름. 같은 (user, summary_type) 안에서 unique. */
             name: string;
-            /** @description markdown ??. AI ????? `<USER_TEMPLATE>` ??? ??? ????. */
+            /** @description markdown 본문. AI 프롬프트의 `<USER_TEMPLATE>` 블록에 그대로 들어간다. */
             content: string;
         };
         UpdateSummaryTemplateRequest: {
@@ -3484,8 +3974,8 @@ export interface components {
             content: string;
         };
         /**
-         * @description summary_type ? ?? ID ?? ??. ??? ??? ?? ??.
-         *     ??? null ? ?? type ???? (??? ?? ??).
+         * @description summary_type 별 활성 ID 부분 갱신. 미전송 필드는 변경 없음.
+         *     명시적 null 은 해당 type 비활성화 (시스템 기본 사용).
          */
         SetActiveSummaryTemplatesRequest: {
             weekly?: string | null;
@@ -3499,8 +3989,8 @@ export interface components {
             name: string;
             content: string;
             /**
-             * @description true ?? ? ???? user_settings.active_summary_template_ids[type] ?? ????
-             *     AI ?? ?? ?? ? ????. ? (user, type) ? ?? 1?.
+             * @description true 이면 이 템플릿이 user_settings.active_summary_template_ids[type] 으로 지정되어
+             *     AI 자동 요약 생성 시 사용된다. 한 (user, type) 당 최대 1개.
              */
             isActive: boolean;
             /** Format: date-time */
@@ -3516,15 +4006,15 @@ export interface components {
         };
         UsageStateResponse: {
             summaryType: components["schemas"]["SummaryType"];
-            /** @description ?? 7? ??? ?? ?? ?? */
+            /** @description 현재 7일 윈도우 안의 사용 횟수 */
             used: number;
-            /** @description ??. weekly=10, monthly=3, annual=1 */
+            /** @description 한도. weekly=10, monthly=3, annual=1 */
             limit: number;
-            /** @description rolling window ??(?). ?? 7? = 604800 */
+            /** @description rolling window 길이(초). 현재 7일 = 604800 */
             windowSeconds: number;
             /**
-             * @description ?? ?? ??? 0. ?? ??? ?? ??? ???? ?????
-             *     ??? ????? ?? ?.
+             * @description 남은 한도 있으면 0. 초과 상태면 가장 오래된 사용량이 윈도우에서
+             *     빠지는 시각까지의 남은 초.
              */
             retryAfterSeconds: number;
         };
@@ -3550,21 +4040,21 @@ export interface components {
             data?: components["schemas"]["NotificationResponse"][];
         };
         /**
-         * @description Settings ? GitHub ?? ??? ?? ??????.
-         *     top-level ??? ?? ?? ??? ?? ? ?? GitHub ?? ??? ??? ??? top-level ?? ??.
+         * @description Settings 내 GitHub 관련 사용자 설정 네임스페이스.
+         *     top-level 평탄화 대신 중첩 형태로 운용 — 향후 GitHub 관련 사용자 설정이 늘어도 top-level 오염 없음.
          */
         GitHubSettingsBlock: {
             /**
-             * @description ?? push ?? ??? id. ???? ??? ??? ? ???? ?.
-             *     ?? ? ? id ?? ? `GITHUB_REPOSITORY_NOT_LINKED` (400).
-             *     null? ???? push target ??.
+             * @description 회고 push 대상 저장소 id. 사용자가 연결한 저장소 중 하나여야 함.
+             *     연결 안 된 id 지정 시 `GITHUB_REPOSITORY_NOT_LINKED` (400).
+             *     null로 명시하면 push target 해제.
              * @example ghrepo_01HXYZ...
              */
             pushTargetRepositoryId?: string | null;
         };
         /**
-         * @description summary_type ? ?? ??? ID. null ?? ??? ?? ??.
-         *     ??? `PUT /settings/auto-summary/active` ?? ?? (?? / ?? ???).
+         * @description summary_type 별 활성 템플릿 ID. null 이면 시스템 기본 사용.
+         *     변경은 `PUT /settings/auto-summary/active` 로만 가능 (보안 / 검증 일원화).
          */
         ActiveSummaryTemplateIdsBlock: {
             weekly?: string | null;
@@ -3573,8 +4063,8 @@ export interface components {
         };
         UpdateSettingsRequest: {
             /**
-             * @description BCP 47 prefix (ko, en, ja ?). AI ?? ?? ?? ??? ????.
-             *     ?? ?? ??? best-effort ? SDK ? ??.
+             * @description BCP 47 prefix (ko, en, ja 등). AI 자동 요약 출력 언어를 결정한다.
+             *     매핑 없는 코드는 best-effort 로 SDK 에 전달.
              * @default ko
              */
             locale: string;
@@ -3588,6 +4078,19 @@ export interface components {
             notificationRetentionDays: number;
             /** Format: date-time */
             lastScheduleCheckAt?: string | null;
+            /**
+             * @description 신규 할 일 생성 시 기본으로 Google Calendar 에 push 할지(생성 기본값 전용, 소급 적용 안 함).
+             * @default false
+             */
+            calendarAutoPushTodo: boolean;
+            /**
+             * @description **주의**: true 로 설정하면 Google Calendar 에서 이벤트를 삭제(cancel)할 때
+             *     연동된 ARCHIVE 할 일도 함께 영구 삭제됩니다. 캘린더에서 일정을 정리하거나
+             *     대량 삭제하면 대응하는 할 일도 되돌릴 수 없이 삭제되니 주의해서 켜세요.
+             *     기본값(false)은 연동만 해제하고 할 일은 유지합니다.
+             * @default false
+             */
+            calendarAutoDeleteTodo: boolean;
             github?: components["schemas"]["GitHubSettingsBlock"];
         };
         SettingsResponse: {
@@ -3598,6 +4101,13 @@ export interface components {
             notificationRetentionDays: number;
             /** Format: date-time */
             lastScheduleCheckAt?: string | null;
+            /** @description 신규 할 일 생성 시 기본 Google Calendar push 여부. */
+            calendarAutoPushTodo: boolean;
+            /**
+             * @description true 면 Google Calendar 에서 이벤트 삭제 시 연동된 할 일도 함께 영구 삭제.
+             *     false(기본) 면 연동만 해제하고 할 일은 유지.
+             */
+            calendarAutoDeleteTodo: boolean;
             github: components["schemas"]["GitHubSettingsBlock"];
             activeSummaryTemplateIds: components["schemas"]["ActiveSummaryTemplateIdsBlock"];
         };
@@ -3607,12 +4117,12 @@ export interface components {
         LinkRepositoryRequest: {
             /**
              * Format: int64
-             * @description GitHub? numeric repository ID
+             * @description GitHub의 numeric repository ID
              */
             githubRepoId: number;
         };
         RepositoryResponse: {
-            /** @description ????? ??? ?? ID (`ghrepo_...`) */
+            /** @description 백엔드에서 발급한 연결 ID (`ghrepo_...`) */
             id: string;
             /** Format: int64 */
             githubRepoId: number;
@@ -3626,7 +4136,7 @@ export interface components {
             /** Format: uri */
             htmlUrl: string;
             /**
-             * @description ?? ?? "??? ??" ?? ?? ?? (PATCH? ??)
+             * @description 회고 화면 "오늘의 커밋" 집계 대상 여부 (PATCH로 토글)
              * @default true
              */
             commitReadEnabled: boolean;
@@ -3659,24 +4169,24 @@ export interface components {
             data?: components["schemas"]["AvailableRepositoryResponse"][];
         };
         ConnectionStatusResponse: {
-            /** @description GitHub OAuth ?? + ?? ??? ?? ?? */
+            /** @description GitHub OAuth 연결 + 토큰 유효성 검증 결과 */
             connected: boolean;
             /**
-             * @description connected=true? ?? ? ??
+             * @description connected=true일 때만 값 존재
              * @example octocat
              */
             login?: string | null;
             /**
-             * @description ?? push ?? ??? id. ??? ? null.
+             * @description 회고 push 대상 저장소 id. 미설정 시 null.
              * @example ghrepo_01HXYZ...
              */
             pushTargetRepositoryId?: string | null;
             /**
-             * @description GitHub ??? verified emails ? 1? ?? ??? ??? (`provider_verified_emails`).
-             *     **false** ? `GET /github/commits` ? author ??? login ??? ?? ? ????
-             *     gitbash ? ?? `git config user.email` ? push ? commit ? ?? ? ? ? ??.
-             *     FE ? false ?? "GitHub ???" ?? "GitHub Settings ? Emails ? commit email ??"
-             *     ?? ??.
+             * @description GitHub 계정의 verified emails 가 1개 이상 캐시돼 있는지 (`provider_verified_emails`).
+             *     **false** 면 `GET /github/commits` 의 author 매칭이 login 으로만 동작 → 사용자가
+             *     gitbash 등 로컬 `git config user.email` 로 push 한 commit 이 표시 안 될 수 있음.
+             *     FE 는 false 이면 "GitHub 재연결" 또는 "GitHub Settings → Emails 에 commit email 추가"
+             *     안내 권장.
              */
             hasVerifiedEmails: boolean;
         };
@@ -3684,29 +4194,29 @@ export interface components {
             data?: components["schemas"]["ConnectionStatusResponse"];
         };
         CommitResponse: {
-            /** @description ??? ??? ?? ID */
+            /** @description 백엔드 저장소 연결 ID */
             repositoryId: string;
             /** @example octocat/Hello-World */
             fullName: string;
             /** @example 8f23c41 */
             sha: string;
-            /** @description ?? ??? ? ?? (???? 200? ??) */
+            /** @description 커밋 메시지 첫 줄만 (서버에서 200자 자름) */
             message: string;
             /** Format: uri */
             htmlUrl: string;
-            /** @description ??? GitHub login */
+            /** @description 작성자 GitHub login */
             author: string;
             /** Format: date-time */
             committedAt: string;
         };
         FailedRepositoryResponse: {
-            /** @description ??? ??? ?? ID */
+            /** @description 백엔드 저장소 연결 ID */
             repositoryId: string;
             /** @example octocat/Hello-World */
             fullName: string;
             /**
-             * @description - `not_found`: GitHub ? 404 ??. ??? ??, ?? private+scope ??.
-             *     - `unknown`: ??? ?? ??. ??? logger ? `github.commits.unknown_error` ??.
+             * @description - `not_found`: GitHub 가 404 응답. 저장소 삭제, 또는 private+scope 부족.
+             *     - `unknown`: 예기치 못한 예외. 백엔드 logger 의 `github.commits.unknown_error` 참조.
              * @enum {string}
              */
             reason: "not_found" | "unknown";
@@ -3722,14 +4232,14 @@ export interface components {
             /** @enum {string} */
             periodType: "DAILY" | "WEEKLY" | "MONTHLY" | "ANNUAL";
             /**
-             * @description periodType? ?? (?? ?? ???):
-             *     - DAILY:  `^\d{4}-\d{2}-\d{2}$` (?: `2026-06-12`)
-             *     - WEEKLY: `^\d{4}-\d{2}-W[1-6]$` (?: `2026-06-W2`, majority-day ??)
-             *     - MONTHLY: `^\d{4}-\d{2}$` (?: `2026-06`)
-             *     - ANNUAL: `^\d{4}$` (?: `2026`)
+             * @description periodType별 형식 (서버 검증 정규식):
+             *     - DAILY:  `^\d{4}-\d{2}-\d{2}$` (예: `2026-06-12`)
+             *     - WEEKLY: `^\d{4}-\d{2}-W[1-6]$` (예: `2026-06-W2`, majority-day 방식)
+             *     - MONTHLY: `^\d{4}-\d{2}$` (예: `2026-06`)
+             *     - ANNUAL: `^\d{4}$` (예: `2026`)
              */
             periodKey: string;
-            /** @description ?? ?? (????). ??? ?? ???? ???. */
+            /** @description 회고 본문 (마크다운). 그대로 파일 내용으로 저장됨. */
             contentMarkdown: string;
         };
         PushResultResponse: {
@@ -3737,10 +4247,10 @@ export interface components {
             commitSha: string;
             /**
              * Format: uri
-             * @description GitHub ? ?? ?? ?? ??
+             * @description GitHub 상 파일 또는 커밋 링크
              */
             htmlUrl: string;
-            /** @example ??/2026-06-12 ???.md */
+            /** @example 일간/2026-06-12 회고록.md */
             path: string;
         };
         ApiResponsePushResult: components["schemas"]["ApiResponseEmpty"] & {
@@ -3749,14 +4259,16 @@ export interface components {
     };
     responses: {
         /**
-         * @description ??? ??. ??? ??? ??:
-         *     - `RETRO_SUMMARY_INVALID_STATE` ? ??? ??? ??
-         *     - `AUTH_EMAIL_NOT_VERIFIED` ? ??? ??? ???? register ??
-         *     - `AUTH_OAUTH_STATE_INVALID` ? OAuth state ???
-         *     - `GITHUB_CONNECTION_NOT_FOUND` ? GitHub ???
-         *     - `GITHUB_PUSH_TARGET_NOT_SET` ? push ?? ???
-         *     - `GITHUB_REPOSITORY_NOT_LINKED` ? push ??? ???? ?? ???
-         *     - `AUTH_PASSWORD_RESET_NOT_ALLOWED` ? OAuth ?? ??? ???? ??? ??
+         * @description 잘못된 요청. 가능한 도메인 코드:
+         *     - `RETRO_SUMMARY_INVALID_STATE` — 요약이 잘못된 상태
+         *     - `AUTH_EMAIL_NOT_VERIFIED` — 이메일 미인증 상태에서 register 시도
+         *     - `AUTH_OAUTH_STATE_INVALID` — OAuth state 불일치
+         *     - `GITHUB_CONNECTION_NOT_FOUND` — GitHub 미연결
+         *     - `GITHUB_PUSH_TARGET_NOT_SET` — push 대상 미설정
+         *     - `GITHUB_REPOSITORY_NOT_LINKED` — push 대상이 연결되지 않은 저장소
+         *     - `AUTH_PASSWORD_RESET_NOT_ALLOWED` — OAuth 전용 계정은 비밀번호 재설정 불가
+         *     - `GOOGLE_CALENDAR_NOT_CONNECTED` — Google Calendar 미연결
+         *     - `GOOGLE_CALENDAR_STATE_INVALID` — 캘린더 연결 OAuth state 검증 실패
          */
         BadRequest_400: {
             headers: {
@@ -3775,18 +4287,19 @@ export interface components {
             };
         };
         /**
-         * @description ?? ??. ??? ??:
-         *     - `AUTH_TOKEN_EXPIRED` ? access token ?? (**FE ?? refresh ???**)
-         *     - `AUTH_TOKEN_INVALID` ? ?? ?? / ?? ?? / ?? ??? / type mismatch
-         *     - `AUTH_INVALID_CREDENTIALS` ? ???/???? ???
-         *     - `AUTH_REFRESH_TOKEN_INVALID` / `AUTH_REFRESH_TOKEN_REVOKED` ? refresh ??
-         *     - `AUTH_REFRESH_TOKEN_REUSE_DETECTED` ? ??? refresh token ??? ??(?? ??). ?? ???? ?? ??? ?? ???. ????? ?? ?? ?? ? ???? ??.
-         *     - `AUTH_OAUTH_STATE_INVALID` ? OAuth state ?? ??
-         *     - `AUTH_ONBOARDING_TOKEN_INVALID` ? onboarding cookie ??
-         *     - `AUTH_ONBOARDING_TOKEN_EXPIRED` ? onboarding TTL(30?) ??
-         *     - `AUTH_PASSWORD_RESET_TOKEN_INVALID` ? ?? ??/?? ??
-         *     - `AUTH_PASSWORD_RESET_TOKEN_EXPIRED` ? ?? TTL(30?) ?? ?? ?? ???
-         *     - `GITHUB_TOKEN_INVALID` ? GitHub OAuth ?? ??/?? (FE? GitHub OAuth ??? ??)
+         * @description 인증 실패. 가능한 코드:
+         *     - `AUTH_TOKEN_EXPIRED` — access token 만료 (**FE 자동 refresh 트리거**)
+         *     - `AUTH_TOKEN_INVALID` — 토큰 누락 / 형식 오류 / 서명 불일치 / type mismatch
+         *     - `AUTH_INVALID_CREDENTIALS` — 이메일/비밀번호 불일치
+         *     - `AUTH_REFRESH_TOKEN_INVALID` / `AUTH_REFRESH_TOKEN_REVOKED` — refresh 실패
+         *     - `AUTH_REFRESH_TOKEN_REUSE_DETECTED` — 폐기된 refresh token 재사용 감지(탈취 의심). 해당 사용자의 모든 세션이 즉시 폐기됨. 사용자에게 보안 알림 권장 후 재로그인 유도.
+         *     - `AUTH_OAUTH_STATE_INVALID` — OAuth state 검증 실패
+         *     - `AUTH_ONBOARDING_TOKEN_INVALID` — onboarding cookie 누락
+         *     - `AUTH_ONBOARDING_TOKEN_EXPIRED` — onboarding TTL(30분) 만료
+         *     - `AUTH_PASSWORD_RESET_TOKEN_INVALID` — 토큰 누락/형식 오류
+         *     - `AUTH_PASSWORD_RESET_TOKEN_EXPIRED` — 토큰 TTL(30분) 만료 또는 이미 사용됨
+         *     - `GITHUB_TOKEN_INVALID` — GitHub OAuth 토큰 만료/폐기 (FE는 GitHub OAuth 재인증 유도)
+         *     - `GOOGLE_CALENDAR_REAUTH_REQUIRED` — Google Calendar refresh_token 무효 (FE는 캘린더 재연결 유도)
          */
         Unauthorized_401: {
             headers: {
@@ -3805,10 +4318,30 @@ export interface components {
             };
         };
         /**
-         * @description ???? ?? ? ??. ??? ??:
-         *     - ???? NOT_FOUND (`TODO_NOT_FOUND`, `JOURNAL_ENTRY_NOT_FOUND`, `RETRO_SUMMARY_NOT_FOUND`, `NOTIFICATION_NOT_FOUND`, `USER_NOT_FOUND`, `GITHUB_REPOSITORY_NOT_FOUND`)
-         *     - `AUTH_SESSION_NOT_FOUND` ? ?? ?? sessionId ? ?? ??? ???? ?? ???
-         *     - `RETRO_SUMMARY_TEMPLATE_NOT_FOUND` ? ???? ???? ??? ?? ??? ???? ?? ??? ?? summary_type ? ???
+         * @description 권한 없음. 가능한 코드:
+         *     - `DEVELOPER_ACCOUNT_REQUIRED` — GitHub 기능은 developer 계정 전용. `PATCH /auth/me`로 계정 유형 변경 필요.
+         */
+        Forbidden_403: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "status": "error",
+                 *       "code": "DEVELOPER_ACCOUNT_REQUIRED",
+                 *       "data": null,
+                 *       "details": []
+                 *     }
+                 */
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
+        /**
+         * @description 리소스를 찾을 수 없음. 가능한 코드:
+         *     - 도메인별 NOT_FOUND (`TODO_NOT_FOUND`, `JOURNAL_ENTRY_NOT_FOUND`, `RETRO_SUMMARY_NOT_FOUND`, `NOTIFICATION_NOT_FOUND`, `USER_NOT_FOUND`, `GITHUB_REPOSITORY_NOT_FOUND`)
+         *     - `AUTH_SESSION_NOT_FOUND` — 폐기 대상 sessionId 가 본인 소유가 아니거나 이미 만료됨
+         *     - `RETRO_SUMMARY_TEMPLATE_NOT_FOUND` — 템플릿이 존재하지 않거나 본인 소유가 아니거나 활성 설정의 키와 summary_type 이 불일치
          */
         NotFound_404: {
             headers: {
@@ -3827,17 +4360,17 @@ export interface components {
             };
         };
         /**
-         * @description ?? ?? (??�?? ?? ? ?). ??? ??:
-         *     - `USER_EMAIL_DUPLICATED` ? ??? ?? ??
+         * @description 상태 충돌 (중복·이미 진행 중 등). 가능한 코드:
+         *     - `USER_EMAIL_DUPLICATED` — 이메일 중복 가입
          *     - `TODO_ALREADY_COMPLETED` / `TODO_ALREADY_IN_PROGRESS`
          *     - `JOURNAL_ENTRY_ALREADY_EXISTS`
          *     - `RETRO_SUMMARY_ALREADY_IN_PROGRESS`
          *     - `GITHUB_REPOSITORY_ALREADY_LINKED`
-         *     - `AUTH_OAUTH_ACCOUNT_ALREADY_LINKED` ? link ??? OAuth ??? ?? ???? ?? ???
-         *     - `AUTH_OAUTH_PROVIDER_ALREADY_LINKED` ? ?? ???? ?? provider? ?? ???? ?? ???
-         *     - `RETRO_SUMMARY_TEMPLATE_NAME_DUPLICATED` ? ?? (user, summary_type) ??? ?? ??
-         *     - `RETRO_SUMMARY_TEMPLATE_LIMIT_REACHED` ? (user, summary_type) ? ?? ?? ??. `details[0]` ? `{summaryType, limit}`
-         *     - `RETRO_SUMMARY_TEMPLATE_IN_USE` ? ?? ??? ??? ?? ??
+         *     - `AUTH_OAUTH_ACCOUNT_ALREADY_LINKED` — link 시도한 OAuth 계정이 다른 사용자에 이미 연결됨
+         *     - `AUTH_OAUTH_PROVIDER_ALREADY_LINKED` — 현재 사용자가 같은 provider에 다른 계정으로 이미 연결됨
+         *     - `RETRO_SUMMARY_TEMPLATE_NAME_DUPLICATED` — 같은 (user, summary_type) 안에서 이름 중복
+         *     - `RETRO_SUMMARY_TEMPLATE_LIMIT_REACHED` — (user, summary_type) 별 개수 한도 초과. `details[0]` 에 `{summaryType, limit}`
+         *     - `RETRO_SUMMARY_TEMPLATE_IN_USE` — 활성 지정된 템플릿 삭제 시도
          */
         Conflict_409: {
             headers: {
@@ -3856,13 +4389,13 @@ export interface components {
             };
         };
         /**
-         * @description ?? ?? ??. ? ?? ??:
-         *     - **Pydantic ??? ??** ? `code: VALIDATION_ERROR`, `details` ? field? ???
-         *     - **??? ?? ??** (???? ?? ??) ? ??? ?? ??:
-         *       - `AUTH_COUNTRY_INVALID` ? ISO 3166-1 ??? ??, ?? tz ??? ?? ??
-         *       - `AUTH_COUNTRY_TIMEZONE_REQUIRED` ? ?? tz ???? timezone ??
-         *       - `AUTH_TIMEZONE_INVALID` ? IANA ?? ???? ?? ??? ?? ?
-         *       - `RETRO_SUMMARY_READINESS_UNSUPPORTED` ? readiness ??? monthly/annual ? ??, weekly ? ??
+         * @description 요청 검증 실패. 두 가지 경로:
+         *     - **Pydantic 스키마 에러** → `code: VALIDATION_ERROR`, `details` 에 field별 메시지
+         *     - **도메인 검증 에러** (핸들러가 직접 반환) → 도메인 코드 사용:
+         *       - `AUTH_COUNTRY_INVALID` — ISO 3166-1 미등록 국가, 또는 tz 데이터 없는 국가
+         *       - `AUTH_COUNTRY_TIMEZONE_REQUIRED` — 다중 tz 국가에서 timezone 누락
+         *       - `AUTH_TIMEZONE_INVALID` — IANA 형식 아니거나 해당 국가의 옵션 밖
+         *       - `RETRO_SUMMARY_READINESS_UNSUPPORTED` — readiness 점검은 monthly/annual 만 지원, weekly 는 거부
          */
         ValidationError_422: {
             headers: {
@@ -3886,10 +4419,10 @@ export interface components {
             };
         };
         /**
-         * @description ?? ?? ??. ??? ??:
-         *     - `GITHUB_RATE_LIMITED` ? GitHub API rate limit ?? (?? ? ???)
-         *     - `RETRO_SUMMARY_RATE_LIMIT_EXCEEDED` ? ???? AI ?? ?? ??(7? sliding window) ??.
-         *       `details[0]` ? `{ summaryType, limit, windowSeconds, retryAfterSeconds }` ??.
+         * @description 호출 한도 초과. 가능한 코드:
+         *     - `GITHUB_RATE_LIMITED` — GitHub API rate limit 초과 (잠시 후 재시도)
+         *     - `RETRO_SUMMARY_RATE_LIMIT_EXCEEDED` — 사용자별 AI 요약 생성 한도(7일 sliding window) 초과.
+         *       `details[0]` 에 `{ summaryType, limit, windowSeconds, retryAfterSeconds }` 포함.
          */
         RateLimited_429: {
             headers: {
@@ -3915,8 +4448,8 @@ export interface components {
             };
         };
         /**
-         * @description ?? ???(GitHub) push ??. sha ?? / ?? / ???? ?? ?.
-         *     FE? ????? "?? ??" ??. ?? retry? ??(?? commit ??).
+         * @description 외부 서비스(GitHub) push 실패. sha 충돌 / 권한 / 네트워크 오류 등.
+         *     FE는 사용자에게 "다시 시도" 안내. 자동 retry는 금지(중복 commit 위험).
          */
         BadGateway_502: {
             headers: {
@@ -3934,7 +4467,11 @@ export interface components {
                 "application/json": components["schemas"]["ErrorResponse"];
             };
         };
-        /** @description ?? ???(GitHub API) ??? ?? */
+        /**
+         * @description 외부 서비스 일시적 장애. 가능한 코드:
+         *     - `GITHUB_API_UNAVAILABLE` — GitHub API 장애
+         *     - `GOOGLE_CALENDAR_API_UNAVAILABLE` — Google Calendar API 장애
+         */
         ServiceUnavailable_503: {
             headers: {
                 [name: string]: unknown;

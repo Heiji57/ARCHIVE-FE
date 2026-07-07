@@ -17,4 +17,8 @@ export interface Todo {
    */
   startTime?: string | null;
   endTime?: string | null;
+  /** Google Calendar 연동 여부 (push 완료/대기/진행 중 포함). */
+  calendarLinked: boolean;
+  /** 연동 세부 상태. null = 미연동. */
+  calendarPushStatus: "pending" | "syncing" | "synced" | "failed" | "pending_delete" | null;
 }

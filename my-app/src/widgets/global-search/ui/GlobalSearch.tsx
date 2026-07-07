@@ -11,7 +11,7 @@ interface Props {
 }
 
 export function GlobalSearch({ onNavigate }: Props) {
-  const { state } = useArchiveApp();
+  const { state, requestFocus } = useArchiveApp();
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
@@ -57,6 +57,26 @@ export function GlobalSearch({ onNavigate }: Props) {
 
   const hasResults = results.todos.length > 0 || results.entries.length > 0;
 
+  // 할 일 선택 → 캘린더로 이동해 해당 날짜/상세를 연다.
+  const goToTodo = (todo: Todo) => {
+    setOpen(false);
+    requestFocus({ kind: "todo", todoId: todo.id, dateKey: todo.dateKey });
+    onNavigate?.("calendar");
+  };
+
+  // 회고 선택 → 회고록으로 이동해 해당 회고를 연다.
+  const goToEntry = (entry: JournalEntry) => {
+    setOpen(false);
+    requestFocus({ kind: "entry", entryId: entry.id });
+    onNavigate?.("retrospectives");
+  };
+
+  // Enter → 첫 번째 결과(할 일 우선, 없으면 회고)로 이동.
+  const activateFirst = () => {
+    if (results.todos.length > 0) goToTodo(results.todos[0]);
+    else if (results.entries.length > 0) goToEntry(results.entries[0]);
+  };
+
   return (
     <div className="global-search" data-open={open} ref={wrapRef}>
       <div className="global-search-wrap">
@@ -66,6 +86,14 @@ export function GlobalSearch({ onNavigate }: Props) {
           placeholder={t("search.placeholder")}
           value={q}
           onChange={(e) => setQ(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              activateFirst();
+            } else if (e.key === "Escape") {
+              setOpen(false);
+            }
+          }}
         />
         {open ? (
           <Search size={14} className="global-search-icon" />
@@ -86,10 +114,7 @@ export function GlobalSearch({ onNavigate }: Props) {
                       <SearchTodoRow
                         key={todo.id}
                         todo={todo}
-                        onClick={() => {
-                          setOpen(false);
-                          onNavigate?.("todos");
-                        }}
+                        onClick={() => goToTodo(todo)}
                       />
                     ))}
                   </>
@@ -103,10 +128,7 @@ export function GlobalSearch({ onNavigate }: Props) {
                       <SearchEntryRow
                         key={entry.id}
                         entry={entry}
-                        onClick={() => {
-                          setOpen(false);
-                          onNavigate?.("retrospectives");
-                        }}
+                        onClick={() => goToEntry(entry)}
                       />
                     ))}
                   </>

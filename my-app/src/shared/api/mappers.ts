@@ -12,6 +12,7 @@ import type { RetroTemplate } from "@/entities/template/model/types";
 import type { Todo } from "@/entities/todo/model/types";
 import type { OAuthProvider, User } from "@/entities/user/model/types";
 import { DEFAULT_SETTINGS, type AccountType, type AppSettings, type Locale } from "@/app/model/settings";
+import { readTodoBoardRange } from "@/shared/lib/todoRangePrefs";
 import { utcISOToLocalTime } from "@/shared/lib/date";
 import type { components } from "./schema";
 
@@ -68,6 +69,8 @@ export function toTodo(api: TodoResponse): Todo {
     completedAt: api.completed_at ?? null,
     startTime,
     endTime,
+    calendarLinked: api.calendar_linked,
+    calendarPushStatus: api.calendar_push_status ?? null,
   };
 }
 
@@ -107,9 +110,14 @@ export function toSettings(api: SettingsResponse, current?: AppSettings): AppSet
     },
     notificationRetentionDays: api.notificationRetentionDays,
     lastScheduleCheckAt: api.lastScheduleCheckAt ?? null,
+    calendarAutoPushTodo: api.calendarAutoPushTodo ?? false,
+    calendarAutoDeleteTodo: api.calendarAutoDeleteTodo ?? false,
     // FE-only fields — preserve existing local values (not stored server-side)
     accountType: current?.accountType ?? DEFAULT_SETTINGS.accountType,
     accountTypeDetermined: current?.accountTypeDetermined ?? DEFAULT_SETTINGS.accountTypeDetermined,
+    todoBoardRangeDays:
+      current?.todoBoardRangeDays ??
+      readTodoBoardRange(DEFAULT_SETTINGS.todoBoardRangeDays),
   };
 }
 
@@ -123,6 +131,8 @@ export function fromSettings(
     autoSummaryYearly: s.autoSummary.yearly,
     notificationRetentionDays: s.notificationRetentionDays,
     lastScheduleCheckAt: s.lastScheduleCheckAt,
+    calendarAutoPushTodo: s.calendarAutoPushTodo,
+    calendarAutoDeleteTodo: s.calendarAutoDeleteTodo,
   };
 }
 
