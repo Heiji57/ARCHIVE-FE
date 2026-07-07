@@ -56,6 +56,7 @@ export {
   apiGetSummary,
   apiGetSummaryEntry,
   apiGetSummaryReadiness,
+  apiUpdateSummaryContent,
   apiListSummaries,
   apiListSummaryTemplates,
   apiCreateSummaryTemplate,
@@ -89,6 +90,7 @@ export {
   apiResetTemplate,
   apiSetActiveTemplate,
 } from "./templates";
+export { apiGlobalSearch, type GlobalSearchResult } from "./search";
 export {
   apiGetConnection,
   apiListAvailableRepos,

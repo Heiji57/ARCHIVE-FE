@@ -44,12 +44,16 @@ export interface EntryPage {
 /**
  * GET /entries/paginated — 회고록 목록 페이지(과거 전체 이력, 최신순 페이지네이션).
  * `GET /entries`(최근 30일/명시적 기간용)와 용도가 다르니 혼용하지 말 것.
+ * - `retroType` 필수 — daily 는 journal_entries, weekly/monthly/yearly 는
+ *   retro_summaries(AI 요약, 소스 테이블이 달라 타입 없이 섞어 조회 불가)에서 조회한다.
+ * - `q` 로 키워드 검색 가능(daily=전문검색, summary=본문 부분일치).
  * 서버 오류 시 예외를 그대로 전파한다(호출부가 목록 로드 실패를 표면화하도록).
  */
 export async function apiListEntriesPaginated(params: {
-  retroType?: RetrospectiveType;
+  retroType: RetrospectiveType;
   page?: number;
   size?: number;
+  q?: string;
 }): Promise<EntryPage> {
   const res = await request<EntryPageResponse>("/entries/paginated", {
     query: params,

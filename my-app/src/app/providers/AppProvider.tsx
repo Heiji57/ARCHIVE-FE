@@ -101,6 +101,8 @@ import {
   apiUpdateTimezone,
   apiListAvailableRepos,
   apiGetEntry,
+  apiGlobalSearch,
+  apiUpdateSummaryContent,
   apiListEntries,
   apiListEntriesPaginated,
   apiListLinkedRepos,
@@ -510,34 +512,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
       })
       // eslint-disable-next-line no-console
       .catch((e) => console.error("[hydrate/todos] 로드 실패:", e));
-    // 회고 데이터는 소스가 둘로 분리된다 (이중 쓰기 제거):
-    //   - 일일 회고: GET /entries?retroType=daily (사용자 작성)
-    //   - 주/월/연 AI 요약: GET /summaries?type=... (서버 생성, retro_summaries)
-    // 둘을 병합해 state.entries 로 하이드레이션한다. 요약은 isSummary=true.
-    // 주의: GET /entries 는 retroType 만 주면 이제 "오늘 기준 최근 30일"만 반환한다
-    //   (예전의 무제한 전체 이력 아님 — 넓은 from/to 는 최대 366일 제한으로 422).
-    //   과거 전체 이력은 회고록 목록에서 GET /entries/paginated 로 페이지 조회한다.
-    void Promise.all([
-      apiListEntries({ retroType: "daily" }),
-      apiListSummaries("weekly"),
-      apiListSummaries("monthly"),
-      apiListSummaries("annual"),
-    ])
-      .then(([daily, weekly, monthly, annual]) => {
-        // 방어 ①: 서버가 retroType 필터를 무시해도 daily 외(옛 주/월/연 미러)는 버린다.
-        //   → /summaries 로 온 요약과 옛 /entries 미러가 같은 주에 중복으로 뜨는 것 방지.
+    // 회고 데이터: 일일 회고만 초기 하이드레이션한다(GET /entries?retroType=daily,
+    // 오늘 기준 최근 30일). 주/월/연 AI 요약(retro_summaries)은 더 이상 로그인 시
+    // 전체 이력을 미리 로드하지 않는다 — GET /entries/paginated 가 daily 뿐 아니라
+    // weekly/monthly/yearly 도 함께 지원하게 되어, 회고록 목록(RetrospectiveStudio)이
+    // 각 탭을 열 때(또는 최초 daily 탭) 그때그때 서버 페이지네이션으로 조회한다.
+    void apiListEntries({ retroType: "daily" })
+      .then((daily) => {
+        // 방어: 서버가 retroType 필터를 무시해도 daily 외 항목은 버린다.
         const dailyOnly = daily.filter((e) => e.retroType === "daily");
-        // 방어 ②: 같은 (retroType, 기간시작일) 요약이 둘 이상이면 최신(updatedAt) 1개만 유지.
-        const byPeriod = new Map<string, JournalEntry>();
-        for (const s of [...weekly, ...monthly, ...annual]) {
-          const key = `${s.retroType}:${s.dateKey}`;
-          const prev = byPeriod.get(key);
-          if (!prev || s.updatedAt > prev.updatedAt) byPeriod.set(key, s);
-        }
-        dispatch({
-          type: "hydrate/entries",
-          payload: { entries: [...dailyOnly, ...byPeriod.values()] },
-        });
+        dispatch({ type: "hydrate/entries", payload: { entries: dailyOnly } });
       })
       // eslint-disable-next-line no-console
       .catch((e) => console.error("[hydrate/entries] 로드 실패:", e));
@@ -729,6 +713,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   type EntryQueuePatch = Partial<
     Pick<JournalEntry, "title" | "content" | "retroType">
   >;
+  // AI 요약(isSummary) 편집 — PATCH /summaries/{id}. contentMarkdown 만 지원(title 은
+  // 서버가 저장하지 않는 FE 합성 라벨이라 편집 불가).
+  type SummaryQueuePatch = { contentMarkdown?: string | null };
   type ProfileQueuePatch = Partial<Pick<User, "displayName" | "avatarUrl">>;
   type TemplateQueuePatch = { name?: string | null; content?: string | null };
 
@@ -737,6 +724,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   > | null>(null);
   const entryQueueRef = useRef<ReturnType<
     typeof createCoalescingQueue<EntryQueuePatch>
+  > | null>(null);
+  const summaryQueueRef = useRef<ReturnType<
+    typeof createCoalescingQueue<SummaryQueuePatch>
   > | null>(null);
   const settingsQueueRef = useRef<ReturnType<
     typeof createCoalescingQueue<Partial<AppSettings>>
@@ -768,6 +758,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
           retroType: merged.retroType ?? base.retroType,
         });
       },
+      onError: () => reportApiErrorRef.current(),
+    });
+  }
+  if (!summaryQueueRef.current) {
+    summaryQueueRef.current = createCoalescingQueue<SummaryQueuePatch>({
+      delayMs: COALESCE_MS,
+      send: (id, merged) =>
+        apiUpdateSummaryContent(id, merged.contentMarkdown ?? null),
       onError: () => reportApiErrorRef.current(),
     });
   }
@@ -806,6 +804,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const todoQueue = todoQueueRef.current;
   const entryQueue = entryQueueRef.current;
+  const summaryQueue = summaryQueueRef.current;
   const settingsQueue = settingsQueueRef.current;
   const profileQueue = profileQueueRef.current;
   const templateQueue = templateQueueRef.current;
@@ -990,12 +989,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 회고록 목록 페이지 조회 (GET /entries/paginated). 받은 항목을 state.entries 에
-  // 병합하고 페이지 정보를 반환한다. useCallback([]) 으로 안정화 — 소비 훅
-  // (useDailyEntriesPage)이 이 함수를 effect 의존성에 넣어도 재조회 루프가 없다.
+  // 회고록 목록 페이지 조회 (GET /entries/paginated) — daily/weekly/monthly/yearly
+  // 4개 탭 전부 이 엔드포인트 하나로 서버 페이지네이션+검색(q)한다. 받은 항목을
+  // state.entries 에 병합하고 페이지 정보를 반환한다. useCallback([]) 으로 안정화
+  // — 소비 훅(useRetroEntriesPage)이 이 함수를 effect 의존성에 넣어도 재조회 루프가 없다.
   // 데모/mock 은 null 을 반환(호출부가 클라이언트 목록으로 폴백). 서버 오류는 전파한다.
   const loadEntriesPage = useCallback(
-    async (params: { retroType?: RetrospectiveType; page: number; size: number }) => {
+    async (params: {
+      retroType: RetrospectiveType;
+      page: number;
+      size: number;
+      q?: string;
+    }) => {
       if (!USE_API || isDemoMode()) return null;
       const res = await apiListEntriesPaginated(params);
       if (res.items.length > 0) {
@@ -1006,6 +1011,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   );
+
+  // 통합검색(GET /search) — nav 빠른 이동용. 결과를 state 에 병합해 검색 결과를
+  // 클릭했을 때(하이드레이션 범위 밖의 오래된 항목이어도) id 로 바로 조회 가능하게 한다.
+  // 데모/mock 은 null(호출부가 로컬 필터로 폴백). useCallback([]) 으로 안정화.
+  const globalSearch = useCallback(async (q: string, limit?: number) => {
+    if (!USE_API || isDemoMode()) return null;
+    const res = await apiGlobalSearch(q, limit);
+    for (const todo of res.todos) {
+      dispatch({ type: "todo/upsert", payload: { todo } });
+    }
+    if (res.entries.length > 0) {
+      dispatch({ type: "entries/merge", payload: { entries: res.entries } });
+    }
+    return res;
+  }, []);
 
   // ─── Google Calendar 연결 프로브 ─────────────────────────────────────────────
   const runCalendarRefresh = () => {
@@ -1205,10 +1225,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (patch.content !== undefined || patch.title !== undefined) {
         readinessCacheRef.current.clear();
       }
-      // AI 요약(isSummary)은 /summaries 가 진실 공급원 → /entries 로 저장하지 않는다.
-      // (PUT /entries/{summ_id} 는 404. 요약 내용 변경은 재생성으로만 반영.)
+      // AI 요약(isSummary)은 소스 테이블이 달라(retro_summaries) /entries 가 아니라
+      // PATCH /summaries/{id} 로 저장한다(title 은 FE 합성 라벨이라 서버에 없음 — 무시).
       const isSummary = state.entries.find((e) => e.id === id)?.isSummary;
-      if (isSummary) return;
+      if (isSummary) {
+        if (apiActive && patch.content !== undefined) {
+          summaryQueue.enqueue(id, { contentMarkdown: patch.content });
+        }
+        return;
+      }
       // 디바운스 코얼레싱 — 본문 타이핑을 idle 후 1회 upsert 로 합침.
       // (synced 는 서버 githubPush 필드 기반 — base 는 send 시점 최신값 사용)
       if (apiActive) {
@@ -1218,6 +1243,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
           retroType: patch.retroType,
         });
       }
+    },
+    revertSummaryEdit: (id) => {
+      const entry = state.entries.find((e) => e.id === id);
+      if (!entry?.isSummary || !apiActive) return;
+      // 되돌리기는 결과(AI 원본 마크다운)를 클라이언트가 미리 알 수 없으므로
+      // (타이핑 저장과 달리) 응답을 그대로 반영해야 한다 — entry/upsert 로 갱신.
+      summaryQueue.cancel(id); // 대기 중인 편집 저장이 있으면 되돌리기가 이기도록 취소
+      void apiUpdateSummaryContent(id, null)
+        .then((updated) => {
+          dispatch({ type: "entry/upsert", payload: { entry: updated } });
+        })
+        .catch(() => reportApiError());
     },
     createDailyEntry: (dateKey, onIdReplaced) => {
       const existing = state.entries.find(
@@ -1506,6 +1543,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     loadTodosForView,
     loadTodosForRange,
     loadEntriesPage,
+    globalSearch,
     pushNotification,
     markNotificationRead: (id) => {
       dispatch({ type: "notification/markRead", payload: { id } });

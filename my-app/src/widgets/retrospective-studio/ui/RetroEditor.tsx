@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef, useState } from "react"
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import {
   BookOpen,
@@ -10,6 +10,7 @@ import {
   Lock,
   Maximize2,
   Minimize2,
+  RotateCcw,
   RefreshCw,
   Save,
   X,
@@ -18,6 +19,7 @@ import type { JournalEntry } from "@/entities/entry/model/types"
 import type { GitHubCommit } from "@/entities/github/model/types"
 import { useArchiveApp } from "@/app/providers/useArchiveApp"
 import { can } from "@/shared/lib/permissions"
+import { ConfirmModal } from "@/shared/ui/confirm-modal/ConfirmModal"
 import { DisconnectBanner } from "@/shared/ui/disconnect-banner/DisconnectBanner"
 import { Pill } from "@/shared/ui/pill/Pill"
 import { useTodayKey } from "@/app/providers/useToday"
@@ -25,6 +27,7 @@ import { formatFullDate, fromDateKey } from "@/shared/lib/date"
 import { useTranslation } from "@/shared/lib/i18n"
 import { EditorErrorBoundary } from "@/shared/ui/rich-editor"
 import { RETRO_LABEL_KEY } from "../model/constants"
+import { extractMarkdownHeadings } from "../model/extractMarkdownHeadings"
 
 // TipTap 에디터는 번들 크기가 크므로 회고록 페이지 진입 시에만 로드
 const RichEditor = lazy(() => import("@/shared/ui/rich-editor/ui/RichEditor"))
@@ -39,6 +42,8 @@ export interface RetroEditorProps {
   pushTargetRepositoryId: string | null
   onUpdate: (patch: Partial<Pick<JournalEntry, "title" | "content">>) => void
   onSave: () => void
+  /** AI 요약(isSummary) 편집 해제 — 확인 후 AI 원본으로 되돌린다. */
+  onRevertSummary?: () => void
 }
 
 export function RetroEditor({
@@ -50,6 +55,7 @@ export function RetroEditor({
   pushTargetRepositoryId,
   onUpdate,
   onSave,
+  onRevertSummary,
 }: RetroEditorProps) {
   const { t } = useTranslation()
   const { state, loadCommits, pushRetrospective, pushNotification } = useArchiveApp()
@@ -147,6 +153,22 @@ export function RetroEditor({
 
   const canPush = isGithubConnected && !!pushTargetRepositoryId
 
+  // ─── AI 요약 되돌리기(편집 해제 → AI 원본 복귀) ────────────────────────────
+  const [revertConfirmOpen, setRevertConfirmOpen] = useState(false)
+
+  // ─── 확장 모드 목차(Notion 스타일, 확장 모드에서만 노출) ───────────────────
+  // 마크다운 헤딩을 뽑아 렌더된 RichEditor DOM 의 h1~h6 요소와 같은 순서로 매칭한다.
+  const headings = useMemo(
+    () => (expanded ? extractMarkdownHeadings(entry.content) : []),
+    [expanded, entry.content],
+  )
+  const expandMainRef = useRef<HTMLDivElement | null>(null)
+  const scrollToHeading = (index: number) => {
+    const headingEls =
+      expandMainRef.current?.querySelectorAll("h1, h2, h3, h4, h5, h6") ?? []
+    headingEls[index]?.scrollIntoView({ behavior: "smooth", block: "center" })
+  }
+
   return (
     <article>
       <div
@@ -184,6 +206,19 @@ export function RetroEditor({
             <Save size={11} />
             {t("retro.editor.autoSaved")}
           </span>
+
+          {/* AI 요약 되돌리기(편집 해제 → AI 원본 복귀) — 요약 항목에만 노출 */}
+          {entry.isSummary && onRevertSummary ? (
+            <button
+              type="button"
+              className="btn btn-utility"
+              onClick={() => setRevertConfirmOpen(true)}
+              style={{ padding: "6px 12px", fontSize: 12 }}
+              title={t("retro.summary.revert")}>
+              <RotateCcw size={12} />
+              {t("retro.summary.revert")}
+            </button>
+          ) : null}
 
           {/* 확장 버튼 */}
           <button
@@ -247,6 +282,8 @@ export function RetroEditor({
           <input
             value={entry.title}
             onChange={(e) => onUpdate({ title: e.target.value })}
+            readOnly={entry.isSummary}
+            title={entry.isSummary ? t("retro.summary.titleReadOnly") : undefined}
             placeholder={t("retro.editor.titlePlaceholder")}
             className="retro-title-input"
           />
@@ -445,7 +482,24 @@ export function RetroEditor({
             </section>
           ) : null}
 
-          {/* 회고 본문 — AI 요약(isSummary)은 읽기 전용, 일반 회고는 편집 가능 */}
+          {/* 미완성 요약(GET /entries/paginated placeholder) 안내 배너 */}
+          {entry.isSummary && entry.status && entry.status !== "completed" ? (
+            <div
+              style={{
+                padding: "10px 14px",
+                marginBottom: 12,
+                borderRadius: "var(--r-sm)",
+                background: "var(--color-tile-3)",
+                fontSize: 13,
+                color: "var(--color-body-muted)",
+              }}>
+              {entry.status === "failed"
+                ? t("retro.summary.statusFailed")
+                : t("retro.summary.statusPending")}
+            </div>
+          ) : null}
+
+          {/* 회고 본문 — AI 요약(isSummary)도 편집 가능(PATCH /summaries/{id}) */}
           <section className="section-card">
             {!entry.isSummary && (
               <div className="section-card-head">
@@ -484,20 +538,12 @@ export function RetroEditor({
                     에디터 로딩 중...
                   </div>
                 }>
-                {entry.isSummary ? (
-                  <RichEditor
-                    key={entry.id}
-                    value={entry.content}
-                    editable={false}
-                  />
-                ) : (
-                  <RichEditor
-                    key={entry.id}
-                    value={entry.content}
-                    placeholder={t("retro.editor.learnedPlaceholder")}
-                    onChange={(md) => onUpdate({ content: md })}
-                  />
-                )}
+                <RichEditor
+                  key={entry.id}
+                  value={entry.content}
+                  placeholder={t("retro.editor.learnedPlaceholder")}
+                  onChange={(md) => onUpdate({ content: md })}
+                />
               </Suspense>
             </EditorErrorBoundary>
           </section>
@@ -531,57 +577,89 @@ export function RetroEditor({
                 <input
                   value={entry.title}
                   onChange={(e) => onUpdate({ title: e.target.value })}
+                  readOnly={entry.isSummary}
+                  title={entry.isSummary ? t("retro.summary.titleReadOnly") : undefined}
                   placeholder={t("retro.editor.titlePlaceholder")}
                   className="retro-title-input"
                 />
-                <EditorErrorBoundary
-                  fallback={(error) => (
-                    <div
-                      style={{
-                        padding: 14,
-                        fontSize: 13,
-                        color: "var(--color-warn, #d9a23a)",
-                        background: "var(--color-tile-3)",
-                        borderRadius: "var(--r-sm)",
-                        fontFamily: "var(--font-mono, monospace)",
-                        whiteSpace: "pre-wrap",
-                      }}>
-                      <strong>에디터를 불러오지 못했습니다.</strong>
-                      {"\n"}
-                      {error.message}
-                    </div>
-                  )}>
-                  <Suspense
-                    fallback={
-                      <div
-                        style={{
-                          minHeight: 260,
-                          padding: 12,
-                          fontSize: 13,
-                          color: "var(--color-body-muted)",
-                        }}>
-                        에디터 로딩 중...
-                      </div>
-                    }>
-                    {entry.isSummary ? (
-                      <RichEditor
-                        value={entry.content}
-                        editable={false}
-                      />
-                    ) : (
-                      <RichEditor
-                        value={entry.content}
-                        placeholder={t("retro.editor.learnedPlaceholder")}
-                        onChange={(md) => onUpdate({ content: md })}
-                      />
-                    )}
-                  </Suspense>
-                </EditorErrorBoundary>
+                <div className="retro-expand-content-row">
+                  <div className="retro-expand-main" ref={expandMainRef}>
+                    <EditorErrorBoundary
+                      fallback={(error) => (
+                        <div
+                          style={{
+                            padding: 14,
+                            fontSize: 13,
+                            color: "var(--color-warn, #d9a23a)",
+                            background: "var(--color-tile-3)",
+                            borderRadius: "var(--r-sm)",
+                            fontFamily: "var(--font-mono, monospace)",
+                            whiteSpace: "pre-wrap",
+                          }}>
+                          <strong>에디터를 불러오지 못했습니다.</strong>
+                          {"\n"}
+                          {error.message}
+                        </div>
+                      )}>
+                      <Suspense
+                        fallback={
+                          <div
+                            style={{
+                              minHeight: 260,
+                              padding: 12,
+                              fontSize: 13,
+                              color: "var(--color-body-muted)",
+                            }}>
+                            에디터 로딩 중...
+                          </div>
+                        }>
+                        <RichEditor
+                          value={entry.content}
+                          placeholder={t("retro.editor.learnedPlaceholder")}
+                          onChange={(md) => onUpdate({ content: md })}
+                        />
+                      </Suspense>
+                    </EditorErrorBoundary>
+                  </div>
+
+                  {/* Notion 스타일 목차 — 확장 모드에서만 노출, 헤딩이 있을 때만 렌더 */}
+                  {headings.length > 0 ? (
+                    <aside className="retro-expand-toc">
+                      <p className="retro-expand-toc-title">{t("retro.toc.title")}</p>
+                      {headings.map((h, i) => (
+                        <button
+                          key={i}
+                          type="button"
+                          className="retro-expand-toc-item"
+                          style={{ paddingLeft: (h.level - 1) * 10 }}
+                          onClick={() => scrollToHeading(i)}>
+                          {h.text}
+                        </button>
+                      ))}
+                    </aside>
+                  ) : null}
+                </div>
               </div>
             </div>
           </div>,
           document.body,
         )}
+
+      {/* AI 요약 되돌리기 확인 */}
+      {revertConfirmOpen ? (
+        <ConfirmModal
+          open
+          title={t("retro.summary.revertConfirmTitle")}
+          message={t("retro.summary.revertConfirmMessage")}
+          confirmLabel={t("retro.summary.revertConfirm")}
+          cancelLabel={t("retro.summary.revertCancel")}
+          onConfirm={() => {
+            setRevertConfirmOpen(false)
+            onRevertSummary?.()
+          }}
+          onCancel={() => setRevertConfirmOpen(false)}
+        />
+      ) : null}
     </article>
   )
 }

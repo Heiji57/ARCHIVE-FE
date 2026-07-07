@@ -68,6 +68,7 @@
   transition: background 120ms ease;
 }
 .global-search-result:hover { background: var(--color-tile-4); }
+.global-search-result[data-highlighted="true"] { background: var(--color-tile-4); }
 .global-search-result-meta {
   font-size: 11px;
   color: var(--color-body-muted);

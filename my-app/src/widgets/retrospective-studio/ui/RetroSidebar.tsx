@@ -27,8 +27,8 @@ export interface RetroSidebarProps {
   loading?: boolean
   /** 서버 목록 로드 실패. */
   loadError?: boolean
-  /** 연/월/주·검색 필터 비활성 여부(서버 파라미터 미지원 → 백엔드 추가 대기). */
-  filtersDisabled: boolean
+  /** 연/월/주 필터 비활성 여부(/paginated 가 날짜 파라미터 미지원 → 백엔드 추가 대기). 검색(q)은 항상 활성. */
+  dateFiltersDisabled: boolean
 }
 
 export function RetroSidebar({
@@ -45,7 +45,7 @@ export function RetroSidebar({
   onNextPage,
   loading = false,
   loadError = false,
-  filtersDisabled,
+  dateFiltersDisabled,
 }: RetroSidebarProps) {
   const todayDateKey = useTodayKey()
   const { t } = useTranslation()
@@ -150,13 +150,13 @@ export function RetroSidebar({
           gridTemplateColumns: "1fr 1fr 1fr",
           gap: 6,
           marginBottom: 12,
-          opacity: filtersDisabled ? 0.5 : 1,
+          opacity: dateFiltersDisabled ? 0.5 : 1,
         }}>
         <select
           className="select"
           value={yearFilter}
           onChange={(e) => setYearFilter(e.target.value)}
-          disabled={filtersDisabled}
+          disabled={dateFiltersDisabled}
           title={t("retro.filter.year")}>
           <option value="all">{t("retro.filter.allYears")}</option>
           {years.map((y) => (
@@ -169,7 +169,7 @@ export function RetroSidebar({
           className="select"
           value={monthFilter}
           onChange={(e) => setMonthFilter(e.target.value)}
-          disabled={filtersDisabled}
+          disabled={dateFiltersDisabled}
           title={t("retro.filter.month")}>
           <option value="all">{t("retro.filter.allMonths")}</option>
           {MONTHS.map((m) => (
@@ -182,7 +182,7 @@ export function RetroSidebar({
           className="select"
           value={weekFilter}
           onChange={(e) => setWeekFilter(e.target.value)}
-          disabled={filtersDisabled}
+          disabled={dateFiltersDisabled}
           title={t("retro.filter.week")}>
           <option value="all">{t("retro.filter.allWeeks")}</option>
           {weeks.map((w) => (
@@ -193,7 +193,7 @@ export function RetroSidebar({
         </select>
       </div>
 
-      {/* Search */}
+      {/* Search — /paginated 가 q 를 지원하므로 서버 모드에서도 항상 활성. */}
       <div
         style={{
           display: "flex",
@@ -203,21 +203,19 @@ export function RetroSidebar({
           background: "var(--color-tile-3)",
           borderRadius: "var(--r-pill)",
           border: "1px solid var(--color-divider-soft)",
-          marginBottom: filtersDisabled ? 6 : 14,
-          opacity: filtersDisabled ? 0.5 : 1,
+          marginBottom: dateFiltersDisabled ? 6 : 14,
         }}>
         <Search size={14} style={{ color: "var(--color-body-muted)" }} />
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          disabled={filtersDisabled}
           placeholder={t("retro.search")}
           style={{ flex: 1, fontSize: 13, minWidth: 0 }}
         />
       </div>
 
-      {/* 필터 비활성 안내 — /paginated 가 검색·기간 파라미터를 아직 지원하지 않음 */}
-      {filtersDisabled ? (
+      {/* 날짜 필터 비활성 안내 — /paginated 가 연/월/주 파라미터를 아직 지원하지 않음 */}
+      {dateFiltersDisabled ? (
         <p
           style={{
             margin: "0 0 12px",

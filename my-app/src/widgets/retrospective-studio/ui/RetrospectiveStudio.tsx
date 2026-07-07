@@ -11,7 +11,8 @@ import { can } from "@/shared/lib/permissions";
 import { ConfirmModal } from "@/shared/ui/confirm-modal/ConfirmModal";
 import { EmptyState } from "@/shared/ui/empty-state/EmptyState";
 import { useTranslation } from "@/shared/lib/i18n";
-import { useDailyEntriesPage } from "../model/useDailyEntriesPage";
+import { useDebouncedValue } from "@/shared/lib/useDebouncedValue";
+import { useRetroEntriesPage } from "../model/useRetroEntriesPage";
 import { useRetroFilter } from "../model/useRetroFilter";
 import { PeriodPickerModal } from "./PeriodPickerModal";
 import { RetroEditor } from "./RetroEditor";
@@ -21,6 +22,7 @@ export function RetrospectiveStudio() {
   const {
     state,
     updateEntry,
+    revertSummaryEdit,
     createDailyEntry,
     pushNotification,
     startSummary,
@@ -67,34 +69,34 @@ export function RetrospectiveStudio() {
   const filterState = useRetroFilter(state.entries);
   const { filteredEntries } = filterState;
 
-  // 일간 회고 목록은 서버 페이지네이션(GET /entries/paginated)으로 조회한다.
-  // 주/월/연 요약은 소스(/summaries)가 달라 편집 불가·개수도 적으므로 기존
-  // 클라이언트 목록(useRetroFilter)을 그대로 유지한다.
-  const isDailyTab = filterState.retroFilter === "daily";
-  const dailyPage = useDailyEntriesPage(isDailyTab);
-  // 데모/mock 은 서버가 없어 serverMode=false → 클라이언트 목록으로 폴백.
-  const useServerList = isDailyTab && dailyPage.serverMode;
+  // 4개 탭(daily/weekly/monthly/yearly) 전부 서버 페이지네이션(GET /entries/paginated)
+  // 으로 조회한다 — daily=journal_entries, weekly/monthly/yearly=retro_summaries.
+  // 검색은 디바운스해 입력마다 요청하지 않는다.
+  const debouncedSearch = useDebouncedValue(filterState.search, 300);
+  const entriesPage = useRetroEntriesPage(filterState.retroFilter, debouncedSearch);
+  // 데모/mock 은 서버가 없어 serverMode=false → 클라이언트 목록(useRetroFilter)으로 폴백.
+  const useServerList = entriesPage.serverMode;
 
   // 서버 페이지 항목(id 순서)을 state.entries 에서 실제 엔트리로 해석한다
   // (편집이 state.entries 를 갱신하면 목록도 즉시 반영된다).
-  const dailyPageEntries = useMemo(
+  const serverPageEntries = useMemo(
     () =>
-      dailyPage.ids
+      entriesPage.ids
         .map((id) => state.entries.find((e) => e.id === id))
         .filter((e): e is JournalEntry => Boolean(e)),
-    [dailyPage.ids, state.entries],
+    [entriesPage.ids, state.entries],
   );
 
-  // 사이드바 목록 + 페이저 소스 (일간=서버, 그 외/폴백=클라이언트).
-  const listEntries = useServerList ? dailyPageEntries : filterState.pageEntries;
-  const currentPage = useServerList ? dailyPage.page : filterState.page + 1;
-  const totalPages = useServerList ? dailyPage.totalPages : filterState.totalPages;
+  // 사이드바 목록 + 페이저 소스 (서버 모드=서버 페이지, 폴백=클라이언트).
+  const listEntries = useServerList ? serverPageEntries : filterState.pageEntries;
+  const currentPage = useServerList ? entriesPage.page : filterState.page + 1;
+  const totalPages = useServerList ? entriesPage.totalPages : filterState.totalPages;
   const goPrevPage = () => {
-    if (useServerList) dailyPage.setPage(dailyPage.page - 1);
+    if (useServerList) entriesPage.setPage(entriesPage.page - 1);
     else filterState.setPage((p) => Math.max(0, p - 1));
   };
   const goNextPage = () => {
-    if (useServerList) dailyPage.setPage(dailyPage.page + 1);
+    if (useServerList) entriesPage.setPage(entriesPage.page + 1);
     else filterState.setPage((p) => Math.min(filterState.totalPages - 1, p + 1));
   };
 
@@ -149,6 +151,13 @@ export function RetrospectiveStudio() {
     if (!isGithubConnected) return;
     // RetroEditor 내에서 pushRetrospective 가 호출되고 성공 시 여기로 옴 → synced 마킹
     updateEntry(active.id, { synced: true });
+  };
+
+  // AI 요약 편집 해제(되돌리기) — 확인 모달은 RetroEditor 가 띄우고, 여기선 데모 게이팅 후 호출만.
+  const handleRevertSummary = () => {
+    if (!active) return;
+    if (requireLoginInDemo()) return;
+    revertSummaryEdit(active.id);
   };
 
   // [요약] 버튼 클릭 → 기간 선택 모달을 연다.
@@ -223,8 +232,8 @@ export function RetrospectiveStudio() {
       // 1페이지 최상단에 나타나도록 서버 목록을 다시 조회한다.
       (serverEntry) => {
         setSelectedId(serverEntry.id);
-        dailyPage.setPage(1);
-        dailyPage.refetch();
+        entriesPage.setPage(1);
+        entriesPage.refetch();
       },
     );
     if (existed) {
@@ -250,11 +259,12 @@ export function RetrospectiveStudio() {
         totalPages={totalPages}
         onPrevPage={goPrevPage}
         onNextPage={goNextPage}
-        loading={useServerList && dailyPage.loading}
-        loadError={useServerList && dailyPage.error}
-        // 연/월/주·검색 필터는 /paginated 가 파라미터를 지원하지 않아 일간(서버) 탭에서
-        // 비활성화한다. 백엔드가 필터 파라미터를 추가하면 활성화 예정.
-        filtersDisabled={useServerList}
+        loading={useServerList && entriesPage.loading}
+        loadError={useServerList && entriesPage.error}
+        // 연/월/주 필터는 /paginated 가 날짜 파라미터를 지원하지 않아 서버 모드에서
+        // 비활성화한다(검색 q 는 지원되므로 항상 활성). 백엔드가 날짜 필터 파라미터를
+        // 추가하면 활성화 예정.
+        dateFiltersDisabled={useServerList}
       />
 
       <main>
@@ -269,6 +279,7 @@ export function RetrospectiveStudio() {
             pushTargetRepositoryId={pushTargetRepositoryId}
             onUpdate={(patch) => updateEntry(active.id, patch)}
             onSave={handleSave}
+            onRevertSummary={handleRevertSummary}
           />
         ) : (
           <EmptyState message={t("retro.empty")} minHeight={360} fontSize={14} />

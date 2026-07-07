@@ -3,15 +3,17 @@ import { Search, X } from "lucide-react";
 import { useArchiveApp } from "@/app/providers/useArchiveApp";
 import type { JournalEntry } from "@/entities/entry/model/types";
 import type { AppRoute } from "@/app/model/types";
+import type { GlobalSearchResult } from "@/shared/api";
 import type { Todo } from "@/entities/todo/model/types";
 import { useTranslation } from "@/shared/lib/i18n";
+import { useDebouncedValue } from "@/shared/lib/useDebouncedValue";
 
 interface Props {
   onNavigate?: (route: AppRoute) => void;
 }
 
 export function GlobalSearch({ onNavigate }: Props) {
-  const { state, requestFocus } = useArchiveApp();
+  const { state, requestFocus, globalSearch } = useArchiveApp();
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
@@ -39,7 +41,38 @@ export function GlobalSearch({ onNavigate }: Props) {
     return () => document.removeEventListener("mousedown", onDocClick);
   }, [open]);
 
-  const results = useMemo(() => {
+  // 입력마다 GET /search 를 호출하지 않도록 디바운스한다.
+  const debouncedQ = useDebouncedValue(q, 250);
+  // 서버(GET /search) 응답 — 어떤 검색어에 대한 결과인지도 함께 기억해 stale 결과를 걸러낸다.
+  const [serverState, setServerState] = useState<{
+    q: string;
+    result: GlobalSearchResult;
+  } | null>(null);
+  // 데모/mock 모드(서버 없음) → false, 로컬 필터로 폴백.
+  const [serverMode, setServerMode] = useState(true);
+  const reqRef = useRef(0);
+
+  useEffect(() => {
+    const needle = debouncedQ.trim();
+    if (!needle) return;
+    const reqId = ++reqRef.current;
+    void globalSearch(needle, 6)
+      .then((res) => {
+        if (reqId !== reqRef.current) return; // stale 응답 무시
+        if (res === null) {
+          setServerMode(false); // 데모/mock → 로컬 필터로 폴백
+          return;
+        }
+        setServerMode(true);
+        setServerState({ q: needle, result: res });
+      })
+      .catch(() => {
+        /* 네트워크 오류 — 아래 results 계산이 로컬 필터로 자동 폴백한다 */
+      });
+  }, [debouncedQ, globalSearch]);
+
+  // 로컬 필터(데모/mock 폴백 + 디바운스 대기 중 즉시 미리보기용).
+  const localResults = useMemo(() => {
     const needle = q.trim().toLowerCase();
     if (!needle) return { todos: [], entries: [] };
     const todos = state.todos
@@ -54,6 +87,14 @@ export function GlobalSearch({ onNavigate }: Props) {
       .slice(0, 6);
     return { todos, entries };
   }, [state.todos, state.entries, q]);
+
+  // 디바운스가 현재 입력값에 따라잡았고(q === debouncedQ) 그 검색어에 대한 서버
+  // 응답이 이미 와 있으면 서버 결과를, 그 외(타이핑 중·데모)엔 로컬 결과를 쓴다.
+  const settled = q.trim() === debouncedQ.trim();
+  const results: GlobalSearchResult =
+    serverMode && settled && serverState?.q === debouncedQ.trim()
+      ? serverState.result
+      : localResults;
 
   const hasResults = results.todos.length > 0 || results.entries.length > 0;
 
@@ -71,10 +112,35 @@ export function GlobalSearch({ onNavigate }: Props) {
     onNavigate?.("retrospectives");
   };
 
-  // Enter → 첫 번째 결과(할 일 우선, 없으면 회고)로 이동.
-  const activateFirst = () => {
-    if (results.todos.length > 0) goToTodo(results.todos[0]);
-    else if (results.entries.length > 0) goToEntry(results.entries[0]);
+  // 화살표 이동을 위해 할일+회고를 화면 표시 순서(할일 먼저) 그대로 한 줄로 펼친다.
+  type FlatResult =
+    | { kind: "todo"; item: Todo }
+    | { kind: "entry"; item: JournalEntry };
+  const flatResults: FlatResult[] = useMemo(
+    () => [
+      ...results.todos.map((item): FlatResult => ({ kind: "todo", item })),
+      ...results.entries.map((item): FlatResult => ({ kind: "entry", item })),
+    ],
+    [results],
+  );
+
+  // 하이라이트된 결과 인덱스(화살표 이동). 검색어가 바뀌면 첫 항목으로 리셋.
+  const [highlightedIndex, setHighlightedIndex] = useState(0);
+  useEffect(() => {
+    // 검색어 변경 시 이전 결과 기준 하이라이트를 유지하지 않도록 리셋 — 의도적.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setHighlightedIndex(0);
+  }, [q]);
+  const activeIndex =
+    flatResults.length > 0
+      ? Math.min(highlightedIndex, flatResults.length - 1)
+      : -1;
+
+  const activateAt = (index: number) => {
+    const target = flatResults[index];
+    if (!target) return;
+    if (target.kind === "todo") goToTodo(target.item);
+    else goToEntry(target.item);
   };
 
   return (
@@ -89,9 +155,17 @@ export function GlobalSearch({ onNavigate }: Props) {
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               e.preventDefault();
-              activateFirst();
+              activateAt(activeIndex);
             } else if (e.key === "Escape") {
               setOpen(false);
+            } else if (e.key === "ArrowDown") {
+              if (flatResults.length === 0) return;
+              e.preventDefault();
+              setHighlightedIndex((i) => Math.min(i + 1, flatResults.length - 1));
+            } else if (e.key === "ArrowUp") {
+              if (flatResults.length === 0) return;
+              e.preventDefault();
+              setHighlightedIndex((i) => Math.max(i - 1, 0));
             }
           }}
         />
@@ -110,10 +184,11 @@ export function GlobalSearch({ onNavigate }: Props) {
                     <p className="global-search-section-title">
                       {t("search.section.todos")}
                     </p>
-                    {results.todos.map((todo) => (
+                    {results.todos.map((todo, i) => (
                       <SearchTodoRow
                         key={todo.id}
                         todo={todo}
+                        highlighted={i === activeIndex}
                         onClick={() => goToTodo(todo)}
                       />
                     ))}
@@ -124,10 +199,11 @@ export function GlobalSearch({ onNavigate }: Props) {
                     <p className="global-search-section-title">
                       {t("search.section.entries")}
                     </p>
-                    {results.entries.map((entry) => (
+                    {results.entries.map((entry, i) => (
                       <SearchEntryRow
                         key={entry.id}
                         entry={entry}
+                        highlighted={results.todos.length + i === activeIndex}
                         onClick={() => goToEntry(entry)}
                       />
                     ))}
@@ -151,9 +227,21 @@ export function GlobalSearch({ onNavigate }: Props) {
   );
 }
 
-function SearchTodoRow({ todo, onClick }: { todo: Todo; onClick: () => void }) {
+function SearchTodoRow({
+  todo,
+  highlighted,
+  onClick,
+}: {
+  todo: Todo;
+  highlighted: boolean;
+  onClick: () => void;
+}) {
   return (
-    <button type="button" className="global-search-result" onClick={onClick}>
+    <button
+      type="button"
+      className="global-search-result"
+      data-highlighted={highlighted ? "true" : undefined}
+      onClick={onClick}>
       <div>{todo.title}</div>
       <div className="global-search-result-meta">
         {todo.dateKey} · {todo.status}
@@ -164,13 +252,19 @@ function SearchTodoRow({ todo, onClick }: { todo: Todo; onClick: () => void }) {
 
 function SearchEntryRow({
   entry,
+  highlighted,
   onClick,
 }: {
   entry: JournalEntry;
+  highlighted: boolean;
   onClick: () => void;
 }) {
   return (
-    <button type="button" className="global-search-result" onClick={onClick}>
+    <button
+      type="button"
+      className="global-search-result"
+      data-highlighted={highlighted ? "true" : undefined}
+      onClick={onClick}>
       <div>{entry.title}</div>
       <div className="global-search-result-meta">
         {entry.dateKey} · {entry.retroType}

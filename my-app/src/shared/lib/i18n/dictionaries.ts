@@ -185,6 +185,17 @@ export type TranslationKey =
   | "retro.badge.today"
   | "retro.badge.draft"
   | "retro.badge.synced"
+  | "retro.badge.generating"
+  | "retro.badge.summaryFailed"
+  | "retro.summary.statusPending"
+  | "retro.summary.statusFailed"
+  | "retro.summary.titleReadOnly"
+  | "retro.summary.revert"
+  | "retro.summary.revertConfirmTitle"
+  | "retro.summary.revertConfirmMessage"
+  | "retro.summary.revertConfirm"
+  | "retro.summary.revertCancel"
+  | "retro.toc.title"
   | "retro.github.notConnected"
   | "retro.github.connectFromSettings"
   | "retro.github.noCommitsEmailHint"
@@ -668,7 +679,7 @@ const ko: Dict = {
   "retro.pager.next": "다음",
   "retro.list.loading": "목록을 불러오는 중…",
   "retro.list.loadError": "목록을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.",
-  "retro.filter.pendingHint": "검색·기간 필터는 곧 지원될 예정이에요.",
+  "retro.filter.pendingHint": "연/월/주 기간 필터는 곧 지원될 예정이에요.",
   "retro.pager.page": "{current} / {total}",
   "retro.filter.year": "연도",
   "retro.filter.month": "월",
@@ -679,6 +690,17 @@ const ko: Dict = {
   "retro.badge.today": "Today",
   "retro.badge.draft": "연결 안 됨",
   "retro.badge.synced": "연결됨",
+  "retro.badge.generating": "생성 중",
+  "retro.badge.summaryFailed": "생성 실패",
+  "retro.summary.statusPending": "AI 요약을 생성할 준비 중이에요. 잠시 후 다시 확인해 주세요.",
+  "retro.summary.statusFailed": "요약 생성에 실패했어요. 회고록 목록에서 다시 시도해 주세요.",
+  "retro.summary.titleReadOnly": "요약 제목은 기간으로 자동 생성되며 수정할 수 없어요.",
+  "retro.summary.revert": "AI 원본으로 되돌리기",
+  "retro.summary.revertConfirmTitle": "AI 원본으로 되돌릴까요?",
+  "retro.summary.revertConfirmMessage": "지금까지 편집한 내용이 사라지고 AI가 생성한 원본으로 돌아갑니다. 이 작업은 되돌릴 수 없어요.",
+  "retro.summary.revertConfirm": "되돌리기",
+  "retro.summary.revertCancel": "취소",
+  "retro.toc.title": "목차",
   "retro.github.notConnected": "GitHub 미연결 — 커밋과 동기화 비활성화됨",
   "retro.github.connectFromSettings": "Settings에서 GitHub 계정을 연결하세요.",
   "retro.github.noCommitsEmailHint":
@@ -1186,7 +1208,7 @@ const en: Dict = {
   "retro.pager.next": "Next",
   "retro.list.loading": "Loading list…",
   "retro.list.loadError": "Couldn't load the list. Please try again shortly.",
-  "retro.filter.pendingHint": "Search & date filters are coming soon.",
+  "retro.filter.pendingHint": "Year/month/week date filters are coming soon.",
   "retro.pager.page": "{current} / {total}",
   "retro.filter.year": "Year",
   "retro.filter.month": "Month",
@@ -1197,6 +1219,17 @@ const en: Dict = {
   "retro.badge.today": "Today",
   "retro.badge.draft": "Not connected",
   "retro.badge.synced": "Connected",
+  "retro.badge.generating": "Generating",
+  "retro.badge.summaryFailed": "Generation failed",
+  "retro.summary.statusPending": "This AI summary is queued for generation. Check back shortly.",
+  "retro.summary.statusFailed": "Summary generation failed. Try again from the retrospectives list.",
+  "retro.summary.titleReadOnly": "Summary titles are generated from the period and can't be edited.",
+  "retro.summary.revert": "Revert to AI original",
+  "retro.summary.revertConfirmTitle": "Revert to the AI original?",
+  "retro.summary.revertConfirmMessage": "Your edits will be discarded and replaced with the AI-generated original. This can't be undone.",
+  "retro.summary.revertConfirm": "Revert",
+  "retro.summary.revertCancel": "Cancel",
+  "retro.toc.title": "Contents",
   "retro.github.notConnected": "GitHub not connected — commits & sync disabled",
   "retro.github.connectFromSettings": "Connect a GitHub account from Settings.",
   "retro.github.noCommitsEmailHint":
@@ -1702,7 +1735,7 @@ const zh: Dict = {
   "retro.pager.next": "下一页",
   "retro.list.loading": "正在加载列表…",
   "retro.list.loadError": "无法加载列表，请稍后重试。",
-  "retro.filter.pendingHint": "搜索和日期筛选即将支持。",
+  "retro.filter.pendingHint": "年/月/周筛选即将支持。",
   "retro.pager.page": "{current} / {total}",
   "retro.filter.year": "年",
   "retro.filter.month": "月",
@@ -1713,6 +1746,17 @@ const zh: Dict = {
   "retro.badge.today": "Today",
   "retro.badge.draft": "未连接",
   "retro.badge.synced": "已连接",
+  "retro.badge.generating": "生成中",
+  "retro.badge.summaryFailed": "生成失败",
+  "retro.summary.statusPending": "AI 摘要正在排队生成，请稍后再查看。",
+  "retro.summary.statusFailed": "摘要生成失败，请在回顾列表中重试。",
+  "retro.summary.titleReadOnly": "摘要标题根据周期自动生成，无法编辑。",
+  "retro.summary.revert": "恢复为 AI 原文",
+  "retro.summary.revertConfirmTitle": "要恢复为 AI 原文吗？",
+  "retro.summary.revertConfirmMessage": "您的编辑内容将被丢弃，恢复为 AI 生成的原文。此操作无法撤销。",
+  "retro.summary.revertConfirm": "恢复",
+  "retro.summary.revertCancel": "取消",
+  "retro.toc.title": "目录",
   "retro.github.notConnected": "GitHub 未连接 — 提交与同步已停用",
   "retro.github.connectFromSettings": "请在设置中连接 GitHub 账户。",
   "retro.github.noCommitsEmailHint":
@@ -2207,7 +2251,7 @@ const ja: Dict = {
   "retro.pager.next": "次へ",
   "retro.list.loading": "一覧を読み込み中…",
   "retro.list.loadError": "一覧を読み込めませんでした。しばらくして再試行してください。",
-  "retro.filter.pendingHint": "検索・期間フィルターは近日対応予定です。",
+  "retro.filter.pendingHint": "年/月/週フィルターは近日対応予定です。",
   "retro.pager.page": "{current} / {total}",
   "retro.filter.year": "年",
   "retro.filter.month": "月",
@@ -2218,6 +2262,17 @@ const ja: Dict = {
   "retro.badge.today": "Today",
   "retro.badge.draft": "未接続",
   "retro.badge.synced": "接続済み",
+  "retro.badge.generating": "生成中",
+  "retro.badge.summaryFailed": "生成失敗",
+  "retro.summary.statusPending": "AI要約は生成待ちです。しばらくしてから確認してください。",
+  "retro.summary.statusFailed": "要約の生成に失敗しました。振り返り一覧から再試行してください。",
+  "retro.summary.titleReadOnly": "要約のタイトルは期間から自動生成され、編集できません。",
+  "retro.summary.revert": "AIオリジナルに戻す",
+  "retro.summary.revertConfirmTitle": "AIオリジナルに戻しますか？",
+  "retro.summary.revertConfirmMessage": "これまでの編集内容は破棄され、AIが生成したオリジナルに戻ります。この操作は取り消せません。",
+  "retro.summary.revertConfirm": "戻す",
+  "retro.summary.revertCancel": "キャンセル",
+  "retro.toc.title": "目次",
   "retro.github.notConnected": "GitHub 未接続 — コミットと同期は無効です",
   "retro.github.connectFromSettings":
     "設定から GitHub アカウントを接続してください。",

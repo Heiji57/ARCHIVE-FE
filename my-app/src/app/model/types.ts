@@ -105,12 +105,23 @@ export interface ArchiveAppContextValue {
     startTime: string | null,
     endTime: string | null,
   ) => void;
+  /**
+   * AI 요약(isSummary=true) 항목은 title 패치를 무시하고(서버 미저장, FE 합성 라벨)
+   * content 패치만 PATCH /summaries/{id}(contentMarkdown)로 디바운스 저장한다.
+   * 데모/mock 은 로컬 낙관적 반영만 하고 서버에는 쓰지 않는다.
+   */
   updateEntry: (
     id: string,
     patch: Partial<
       Pick<JournalEntry, "title" | "content" | "synced" | "retroType">
     >,
   ) => void;
+  /**
+   * AI 요약 편집 해제 — PATCH /summaries/{id} 에 contentMarkdown:null 을 보내
+   * 사용자 편집을 버리고 AI 원본으로 되돌린다. 결과(되돌아간 마크다운)는 미리 알 수
+   * 없으므로 응답을 그대로 state 에 반영한다. 데모/mock 은 no-op.
+   */
+  revertSummaryEdit: (id: string) => void;
   /**
    * 일간 회고 생성(또는 기존 반환).
    * onIdReplaced: USE_API 모드에서 POST 응답의 서버 ID 로 교체될 때 호출.
@@ -153,8 +164,9 @@ export interface ArchiveAppContextValue {
   /** Google Calendar 연결 해제 (연결 + 이벤트 삭제). */
   disconnectCalendar: () => Promise<{ ok: boolean }>;
   /**
-   * Google Calendar 수동 동기화 — GET /todos?from=&to= 로 할 일 목록을 재조회해
-   * state 를 교체한다 (POST /calendar/sync 는 deprecated).
+   * Google Calendar 수동 동기화 — GET /todos?from=&to= 로 할 일 목록을 재조회한다.
+   * 서버가 stale 판단 시 자동으로 Google 과 동기화 후 최신 todos 를 반환하므로
+   * 별도의 동기화 전용 엔드포인트를 호출하지 않는다.
    */
   syncCalendar: (from: string, to: string) => Promise<{ ok: boolean }>;
   /**
@@ -170,15 +182,28 @@ export interface ArchiveAppContextValue {
   /**
    * 회고록 목록 페이지 조회 (GET /entries/paginated). 과거 전체 이력을 최신순으로
    * 페이지 단위 조회하고, 받은 항목을 state.entries 에 병합한다(entries/merge).
+   * daily 뿐 아니라 weekly/monthly/yearly(AI 요약)도 이 엔드포인트 하나로 조회한다.
    * - 데모/mock 모드에서는 서버가 없으므로 null 을 반환한다 → 호출부는 클라이언트
    *   목록(state.entries)으로 폴백한다.
    * - 서버 오류는 삼키지 않고 예외로 전파한다(호출부가 목록 로드 실패를 표시하도록).
    */
   loadEntriesPage: (params: {
-    retroType?: RetrospectiveType;
+    retroType: RetrospectiveType;
     page: number;
     size: number;
+    q?: string;
   }) => Promise<import("@/shared/api").EntryPage | null>;
+  /**
+   * 통합검색(GET /search) — nav 빠른 이동용. Todo(title) + 회고 daily entry
+   * (title+content)만 대상이며, weekly/monthly/yearly 요약은 포함하지 않는다.
+   * 결과를 state.todos/state.entries 에 병합해(id 로 upsert) 검색 결과 클릭 시
+   * 바로 조회 가능하게 한다(하이드레이션 범위 밖의 오래된 항목이어도 동작).
+   * 데모/mock 모드에서는 null 을 반환한다 → 호출부는 로컬 필터로 폴백한다.
+   */
+  globalSearch: (
+    q: string,
+    limit?: number,
+  ) => Promise<import("@/shared/api").GlobalSearchResult | null>;
   pushNotification: (
     type: NoticeType,
     title: string,

@@ -3,6 +3,7 @@
  * 이 파일에서만 변환하고 FE 내부는 기존 camelCase 타입을 그대로 쓴다.
  */
 import type { GithubPush, JournalEntry } from "@/entities/entry/model/types";
+import { formatSummaryTitle } from "@/entities/entry/lib/summaryTitle";
 import type {
   NoticeCategory,
   NoticeType,
@@ -86,16 +87,22 @@ export function toEntry(api: EntryResponse): JournalEntry {
         repositoryFullName: api.githubPush.repositoryFullName,
       }
     : null;
+  const isSummary = api.isSummary ?? false;
   return {
     id: api.id,
     dateKey: api.date_key,
-    title: api.title,
+    // 요약(GET /entries/paginated, isSummary=true)은 서버 title 기본값
+    // ("{periodStart} ~ {periodEnd}") 대신 FE 자체 라벨을 쓴다 — toSummaryEntry
+    // (GET /summaries)와 동일한 항목이 같은 제목으로 보이도록 포맷을 공유한다.
+    title: isSummary ? formatSummaryTitle(api.retro_type, api.date_key) : api.title,
     content: api.content,
     retroType: api.retro_type,
     updatedAt: api.updated_at ?? api.created_at,
     githubPush,
     // synced 는 서버 push 레코드 기반 (localStorage 서명 불필요)
     synced: githubPush !== null,
+    isSummary,
+    status: api.status ?? null,
   };
 }
 

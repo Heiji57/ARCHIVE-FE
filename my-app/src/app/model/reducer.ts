@@ -80,12 +80,20 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       return { ...state, entries: action.payload.entries };
 
     case "entries/merge": {
-      // id 기준 upsert-many. 기존 항목은 서버 값으로 교체(updatedAt 은 항목 자체 값 유지),
-      // 없던 항목은 추가한다. 요약(isSummary) 등 다른 소스로 들어온 항목은 건드리지 않는다.
+      // id 기준 upsert-many. 기존 항목은 서버 값으로 교체하고, 없던 항목은 추가한다.
       const byId = new Map(state.entries.map((e) => [e.id, e]));
       for (const entry of action.payload.entries) {
         const prev = byId.get(entry.id);
-        byId.set(entry.id, prev ? { ...prev, ...entry } : entry);
+        if (prev && prev.isSummary && entry.isSummary) {
+          // GET /entries/paginated 의 EntryResponse 에는 editedContent 짝 필드가 없어
+          // (SummaryResponse 에만 존재) 이 응답의 content 가 사용자 편집본을 반영하는지
+          // AI 원본인지 계약상 불명확하다 — 이미 아는 본문(로컬에 정확히 반영돼 있는
+          // 값)을 목록 재조회로 퇴화시키지 않도록 content 는 항상 기존 값을 보존한다.
+          // 실제 편집/되돌리기/재생성 갱신은 entry/upsert(PATCH·SSE 재조회)가 담당한다.
+          byId.set(entry.id, { ...prev, ...entry, content: prev.content });
+        } else {
+          byId.set(entry.id, prev ? { ...prev, ...entry } : entry);
+        }
       }
       return { ...state, entries: [...byId.values()] };
     }

@@ -13,7 +13,7 @@ import type {
   SummaryKind,
   SummaryReadiness,
 } from "@/entities/summary/model/types";
-import { fromDateKey, getISOWeek } from "@/shared/lib/date";
+import { formatSummaryTitle } from "@/entities/entry/lib/summaryTitle";
 import { API_BASE_URL } from "./config";
 import { refreshAccessToken, request } from "./client";
 import { getAccessToken } from "./tokenStore";
@@ -55,26 +55,11 @@ const TYPE_TO_RETRO: Record<SummaryType, RetrospectiveType> = {
   annual: "yearly",
 };
 
-/** 요약 응답엔 title 이 없으므로 summary_type + 기간으로 표시용 제목을 만든다. */
-function summaryTitle(api: SummaryResponse): string {
-  const start = api.period_start;
-  const [y, m] = start.split("-");
-  switch (api.summary_type) {
-    case "weekly": {
-      const w = getISOWeek(fromDateKey(start));
-      return `${y}-W${String(w).padStart(2, "0")} 주간 회고`;
-    }
-    case "monthly":
-      return `${y}년 ${Number(m)}월 월간 회고`;
-    case "annual":
-    default:
-      return `${y}년 연간 회고`;
-  }
-}
-
 /**
  * AI 요약(SummaryResponse) → 회고 표시용 JournalEntry.
- * 요약은 /summaries 가 진실 공급원이라 /entries 로 저장하지 않는다(isSummary=true).
+ * `editedContent`(사용자 편집 오버라이드)가 있으면 그걸 우선 쓰고, 없으면 AI 원본
+ * (content.markdown)을 쓴다 — PATCH /summaries/{id} 로 사용자가 직접 편집할 수 있다
+ * (AI 원본은 비파괴 보존, contentMarkdown:null 로 편집 해제 시 원본 복귀).
  * dateKey 는 period_start(기간 시작일) — 회고 사이드바의 연/월/주 필터와 정합.
  */
 export function toSummaryEntry(api: SummaryResponse): JournalEntry {
@@ -88,22 +73,40 @@ export function toSummaryEntry(api: SummaryResponse): JournalEntry {
         repositoryFullName: gp.repositoryFullName,
       }
     : null;
+  const retroType = TYPE_TO_RETRO[api.summary_type];
   return {
     id: api.id,
     dateKey: api.period_start,
-    title: summaryTitle(api),
-    content: api.content?.markdown ?? "",
-    retroType: TYPE_TO_RETRO[api.summary_type],
+    title: formatSummaryTitle(retroType, api.period_start),
+    content: api.editedContent ?? api.content?.markdown ?? "",
+    retroType,
     githubPush,
     synced: githubPush !== null,
     updatedAt: api.updated_at ?? api.created_at,
     isSummary: true,
+    status: api.status,
   };
 }
 
 /** 단일 요약을 회고 표시용 entry 로 조회 (GET /summaries/{id}). */
 export async function apiGetSummaryEntry(id: string): Promise<JournalEntry> {
   const res = await request<SummaryResponse>(`/summaries/${id}`);
+  return toSummaryEntry(res);
+}
+
+/**
+ * AI 요약 편집 저장/해제 (PATCH /summaries/{id}).
+ * contentMarkdown 이 문자열이면 그 마크다운으로 덮어쓰고, null 이면 편집을 해제해
+ * AI 원본(content.markdown)으로 복귀한다(AI 재호출 없음, rate limit 소모 없음).
+ */
+export async function apiUpdateSummaryContent(
+  id: string,
+  contentMarkdown: string | null,
+): Promise<JournalEntry> {
+  const res = await request<SummaryResponse>(`/summaries/${id}`, {
+    method: "PATCH",
+    body: { contentMarkdown },
+  });
   return toSummaryEntry(res);
 }
 

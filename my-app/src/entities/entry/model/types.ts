@@ -29,4 +29,10 @@ export interface JournalEntry {
    * 요약은 /summaries 가 진실 공급원이라 /entries 로 저장하지 않는다(편집 미영속).
    */
   isSummary?: boolean;
+  /**
+   * 요약 생성 상태(isSummary=true 일 때만 의미 있음). GET /entries/paginated 는
+   * 미완성 요약도 placeholder 로 내려줄 수 있다 — pending/in_progress/failed 는
+   * 읽기 전용 편집기에 본문 대신 상태 안내를 보여줘야 한다. daily 회고는 항상 null.
+   */
+  status?: "pending" | "in_progress" | "completed" | "failed" | null;
 }

@@ -1174,16 +1174,26 @@ export interface paths {
         };
         /**
          * 회고록 목록 페이지 (페이지네이션)
-         * @description 전체 이력을 최신순(`date_key` desc)으로 페이지네이션 조회한다. `GET /entries`
-         *     (초기 하이드레이션용, 최근 30일 기본)와 달리 과거 전체 이력을 훑어보는
-         *     회고록 목록 페이지용 — `retroType` 미지정 시 전체 타입 대상.
+         * @description 전체 이력을 최신순으로 페이지네이션 조회한다. `GET /entries`(초기 하이드레이션용,
+         *     최근 30일 기본)와 달리 과거 전체 이력을 훑어보는 회고록 목록 페이지용.
+         *
+         *     - `retroType` **필수**. daily 는 `journal_entries`, weekly/monthly/annual 은
+         *       `retro_summaries`(AI 생성 요약)에서 조회한다 — 소스 테이블이 달라 타입 없이
+         *       섞어서 조회할 수 없다.
+         *     - 응답 각 항목의 `isSummary`(요약 여부) + `status`(요약 전용:
+         *       pending/in_progress/completed/failed, entry 는 null)로 출처 구분.
+         *     - `githubPush` 는 이 엔드포인트에서 항상 키가 존재한다(nullable) — `GET /entries`
+         *       와 달리 비개발자/GitHub 미연결 사용자도 키 자체는 오고 값만 null.
+         *     - `q` 로 키워드 검색 가능. daily 는 `content_tsv` full-text, summary 는
+         *       `content`/`edited_content` ILIKE.
          */
         get: {
             parameters: {
-                query?: {
-                    retroType?: components["schemas"]["RetroType"];
+                query: {
+                    retroType: components["schemas"]["RetroType"];
                     page?: number;
                     size?: number;
+                    q?: string;
                 };
                 header?: never;
                 path?: never;
@@ -1308,6 +1318,54 @@ export interface paths {
                 404: components["responses"]["NotFound_404"];
             };
         };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 통합검색 (Todo + 회고 daily entry)
+         * @description Todo(`title`)와 회고 daily entry(`title`+`content`)를 동시 검색한다. 두 리소스의
+         *     관련도 점수는 서로 비교 불가능해 하나로 합치지 않고 타입별로 나눠 반환한다.
+         *     weekly/monthly/annual 요약은 이 검색에 포함되지 않는다(회고록 목록 페이지의
+         *     `GET /entries/paginated?q=` 사용).
+         */
+        get: {
+            parameters: {
+                query: {
+                    q: string;
+                    /** @description 타입별(todos/entries 각각) 최대 반환 개수 */
+                    limit?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description 조회 성공 */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiResponseGlobalSearch"];
+                    };
+                };
+                401: components["responses"]["Unauthorized_401"];
+                422: components["responses"]["ValidationError_422"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -3879,8 +3937,24 @@ export interface components {
             title: string;
             content: string;
             retro_type: components["schemas"]["RetroType"];
-            /** @description 해당 (retro_type, date_key) 기반 period 에 push 된 적이 없으면 null */
+            /**
+             * @description 해당 (retro_type, date_key) 기반 period 에 push 된 적이 없으면 null.
+             *     `GET /entries` 는 비개발자/GitHub 미연결 사용자에게 이 키 자체를 생략하지만,
+             *     `GET /entries/paginated` 는 항상 키가 존재한다(값만 null).
+             */
             githubPush?: components["schemas"]["GithubPushResponse"] | null;
+            /**
+             * @description true 면 `journal_entries` 가 아니라 `retro_summaries`(AI 생성 요약, weekly/
+             *     monthly/annual)에서 온 항목 — `GET /entries/paginated` 전용, `GET /entries`
+             *     에서는 항상 false.
+             * @default false
+             */
+            isSummary: boolean;
+            /**
+             * @description isSummary=true 일 때만 의미 있음(요약 생성 상태). entry 는 null.
+             * @enum {string|null}
+             */
+            status?: "pending" | "in_progress" | "completed" | "failed" | null;
             /** Format: date-time */
             created_at: string;
             /** Format: date-time */
@@ -3901,6 +3975,13 @@ export interface components {
         };
         ApiResponseEntryPage: components["schemas"]["ApiResponseEmpty"] & {
             data?: components["schemas"]["EntryPageResponse"];
+        };
+        GlobalSearchResponse: {
+            todos: components["schemas"]["TodoResponse"][];
+            entries: components["schemas"]["EntryResponse"][];
+        };
+        ApiResponseGlobalSearch: components["schemas"]["ApiResponseEmpty"] & {
+            data?: components["schemas"]["GlobalSearchResponse"];
         };
         /** @description AI 생성 요약 마크다운 문자열. 사용자 템플릿이 있으면 그 블록 구조(헤딩/불릿/번호목록/체크박스/인용구 등)를 그대로 따른다. 템플릿이 없으면 기본 4-섹션 마크다운(## 헤딩 + 불릿 리스트)이 생성된다. FE 는 Tiptap 마크다운 확장으로 렌더링한다. */
         SummaryContentResponse: {

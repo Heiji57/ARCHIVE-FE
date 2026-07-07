@@ -604,6 +604,54 @@
   margin-bottom: 20px;
 }
 
+/* 본문 + 목차(TOC) 가로 배치 — Notion 스타일 우측 고정 목차 */
+.retro-expand-content-row {
+  display: flex;
+  gap: 32px;
+  align-items: flex-start;
+}
+.retro-expand-main {
+  flex: 1;
+  min-width: 0;
+}
+.retro-expand-toc {
+  width: 200px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  max-height: calc(100vh - 140px);
+  overflow-y: auto;
+  padding-left: 16px;
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+}
+.retro-expand-toc-title {
+  margin: 0 0 10px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.4);
+}
+.retro-expand-toc-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 0;
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.6);
+}
+.retro-expand-toc-item:hover {
+  color: rgba(255, 255, 255, 0.95);
+}
+@media (max-width: 1000px) {
+  .retro-expand-toc {
+    display: none;
+  }
+}
+
 /* 모바일 — 풀스크린에 가깝게 */
 @media (max-width: 768px) {
   .retro-expand-overlay {

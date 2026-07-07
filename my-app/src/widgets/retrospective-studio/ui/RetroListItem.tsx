@@ -21,6 +21,10 @@ function RetroListItemImpl({
 }: RetroListItemProps) {
   const { t } = useTranslation();
   const isDraft = !entry.synced;
+  // 미완성 요약(GET /entries/paginated 의 placeholder) — 생성 중/실패 상태 배지.
+  const summaryPending = entry.isSummary && entry.status === "pending";
+  const summaryInProgress = entry.isSummary && entry.status === "in_progress";
+  const summaryFailed = entry.isSummary && entry.status === "failed";
 
   return (
     <button
@@ -38,6 +42,16 @@ function RetroListItemImpl({
         {isToday ? (
           <Pill tone="blue" className="pill-sm">
             {t("retro.badge.today")}
+          </Pill>
+        ) : null}
+        {summaryPending || summaryInProgress ? (
+          <Pill tone="warn" className="pill-sm">
+            {t("retro.badge.generating")}
+          </Pill>
+        ) : null}
+        {summaryFailed ? (
+          <Pill tone="warn" className="pill-sm">
+            {t("retro.badge.summaryFailed")}
           </Pill>
         ) : null}
         {/* 동기화 상태 배지는 GitHub 연동이 가능한 개발자 계정에만 노출한다. */}
