@@ -77,7 +77,7 @@ async function rawRequest<T>(path: string, opts: RequestOptions): Promise<T> {
 
   // 비-OK 응답의 상세를 콘솔에 출력해 디버깅을 돕는다.
   if (!res.ok) {
-    // eslint-disable-next-line no-console
+     
     console.error(
       `[ARCHIVE API] ${res.status} ${res.statusText} — ${method} ${path}`,
       json ?? text,

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { CheckCircle2, Circle, FileText, Plus, Trash2 } from "lucide-react";
 import type { RetrospectiveType } from "@/entities/entry/model/types";
 import type { RetroTemplate } from "@/entities/template";
@@ -13,6 +13,7 @@ import {
   apiSetActiveSummaryTemplate,
 } from "@/shared/api";
 import { COALESCE_MS, createCoalescingQueue } from "@/shared/lib/coalesce";
+import { useLatestRef } from "@/shared/lib/useLatestRef";
 import { useTranslation, type TranslateFn, type TranslationKey } from "@/shared/lib/i18n";
 import { SettingsCardHeader } from "./SettingsCardHeader";
 import { TemplateEditorPanel } from "./TemplateEditorPanel";
@@ -74,21 +75,23 @@ function SummaryTemplateTab({ retroType }: SummaryTemplateTabProps) {
   const summaryType = RETRO_TO_SUMMARY_TYPE[retroType];
   const typeLabel = t(TYPE_LABEL_KEY[retroType]);
 
-  // pushNotification은 매 렌더마다 새 참조가 생성되므로 ref로 보관해
-  // useEffect/useCallback 의존성 배열에서 제외한다.
-  const pushRef = useRef(pushNotification);
-  pushRef.current = pushNotification;
+  // pushNotification은 매 렌더마다 새 참조가 생성되므로 latest-ref로 보관해
+  // useEffect/큐 콜백 의존성에서 제외한다(콜백에서만 읽음).
+  const pushRef = useLatestRef(pushNotification);
 
   const [templates, setTemplates] = useState<SummaryTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  // CoalescingQueue — AppProvider 와 동일한 COALESCE_MS 사용
+  // CoalescingQueue — AppProvider 와 동일한 COALESCE_MS 사용.
+  // useState 초기화 함수로 1회만 생성해 안정적 참조를 유지한다.
+  // pushRef.current 는 비동기 onError 콜백에서만 읽지만, 린터가 초기화 클로저
+  // 전체를 렌더 단계로 보아 오탐하므로 이 한 줄만 예외 처리한다.
   type UpdatePatch = { name?: string; content?: string };
-  const updateQueueRef = useRef<ReturnType<typeof createCoalescingQueue<UpdatePatch>> | null>(null);
-  if (!updateQueueRef.current) {
-    updateQueueRef.current = createCoalescingQueue<UpdatePatch>({
+  // eslint-disable-next-line react-hooks/refs
+  const [updateQueue] = useState(() =>
+    createCoalescingQueue<UpdatePatch>({
       delayMs: COALESCE_MS,
       send: (id, patch) =>
         apiUpdateSummaryTemplate(id, patch).then((updated) => {
@@ -98,9 +101,8 @@ function SummaryTemplateTab({ retroType }: SummaryTemplateTabProps) {
         const code = isApiError(err) ? err.code : "UNKNOWN";
         pushRef.current("warning", "템플릿 저장 실패", `오류 코드: ${code}`);
       },
-    });
-  }
-  const updateQueue = updateQueueRef.current;
+    }),
+  );
 
   // 탭 전환·페이지 이탈 시 대기 중 변경을 즉시 전송해 유실 방지
   useEffect(() => {
@@ -134,7 +136,8 @@ function SummaryTemplateTab({ retroType }: SummaryTemplateTabProps) {
     return () => {
       cancelled = true;
     };
-  }, [summaryType]); // summaryType만 의존 — pushRef는 ref이므로 제외
+    // pushRef 는 안정적 ref(useLatestRef)라 재실행에 영향 없음 — summaryType 변경 시에만 재조회.
+  }, [summaryType, pushRef]);
 
   const scheduleUpdate = (id: string, patch: UpdatePatch) => {
     setTemplates((prev) =>

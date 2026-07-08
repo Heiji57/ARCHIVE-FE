@@ -73,7 +73,7 @@ export async function apiGetConnection(): Promise<{
   // 진단: 200 인데 본문이 비거나 래핑이 어긋나면 res 가 undefined 일 수 있다.
   // 그 경우 res.connected 접근에서 예외 → 호출측이 not-connected 로 처리하므로,
   // 여기서 실제 수신값을 남겨 원인을 좁힌다.
-  // eslint-disable-next-line no-console
+   
   console.info("[github] GET /github/connection 언래핑 결과:", res);
   return {
     connected: res?.connected ?? false,

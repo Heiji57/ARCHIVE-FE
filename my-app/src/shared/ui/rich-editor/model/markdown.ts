@@ -6,8 +6,7 @@ import TurndownService from "turndown";
  * TipTap은 내부적으로 HTML을 사용하고, 우리는 entry.content에 마크다운으로 저장.
  */
 
-const ALERT_TYPES = ["NOTE", "TIP", "IMPORTANT", "WARNING", "CAUTION"] as const;
-type AlertType = (typeof ALERT_TYPES)[number];
+type AlertType = "NOTE" | "TIP" | "IMPORTANT" | "WARNING" | "CAUTION";
 
 // Marked: GFM 기본, 줄바꿈 1줄로 처리
 marked.setOptions({ gfm: true, breaks: true });

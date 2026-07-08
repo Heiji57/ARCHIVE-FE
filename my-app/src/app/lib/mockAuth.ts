@@ -97,7 +97,7 @@ export async function mockRequestEmailCode(
   });
 
   // Mock — 콘솔에 출력.
-  // eslint-disable-next-line no-console
+   
   console.log(
     `%c[ARCHIVE Mock Email] %c${normalizedEmail} 인증 코드: %c${code}`,
     "color: #888",
@@ -270,7 +270,7 @@ export async function mockRequestPasswordReset(email: string): Promise<void> {
   lastResetEmail = normalizedEmail;
   if (findUserByEmail(normalizedEmail)) {
     const token = `mock-reset-${createId("tok")}`;
-    // eslint-disable-next-line no-console
+     
     console.log(
       `%c[ARCHIVE Mock] 비밀번호 재설정 링크: %c/reset-password?token=${token}`,
       "color: #888",

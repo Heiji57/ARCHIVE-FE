@@ -1,5 +1,7 @@
 import { useEffect, useId, useRef } from "react";
-import { useDnd, type DragKind, type DragPayload } from "./DndContext";
+import { useLatestRef } from "@/shared/lib/useLatestRef";
+import { useDnd } from "./useDnd";
+import type { DragKind, DragPayload } from "./dndContext";
 
 /**
  * Attach to a container that accepts drops of a given kind.
@@ -12,8 +14,8 @@ export function useDropTarget<K extends DragKind>(
   const id = useId();
   const ref = useRef<HTMLDivElement | null>(null);
   const { state, registerDrop } = useDnd();
-  const onDropRef = useRef(onDrop);
-  onDropRef.current = onDrop;
+  // onDrop 은 drop 콜백(비동기)에서만 읽으므로 latest-ref 로 최신값 유지.
+  const onDropRef = useLatestRef(onDrop);
 
   useEffect(() => {
     if (!ref.current) return;
@@ -24,7 +26,7 @@ export function useDropTarget<K extends DragKind>(
       onDrop: (payload) => onDropRef.current(payload as DragPayload<K>),
     });
     return unregister;
-  }, [id, kind, registerDrop]);
+  }, [id, kind, registerDrop, onDropRef]);
 
   const isOver = state.overTargetId === id;
   const isActive = state.payload?.kind === kind;

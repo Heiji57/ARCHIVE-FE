@@ -49,7 +49,10 @@ export function BlockHandle({ editor }: { editor: Editor }) {
       e.dataTransfer.setDragImage(hover.blockEl, 0, hover.blockEl.offsetHeight / 2);
       // node를 함께 전달해야 drop 핸들러가 node.replace(tr)로 원본을 정확히 삭제함.
       // node 없이 { slice, move: true }만 넘기면 tr.deleteSelection() 폴백 → 복사 버그.
-      // node 프로퍼티는 ProseMirror 내부 Dragging 클래스에만 있고 공개 타입에 없음 → 캐스팅
+      // node 프로퍼티는 ProseMirror 내부 Dragging 클래스에만 있고 공개 타입에 없음 → 캐스팅.
+      // 드래그 시작 이벤트 핸들러에서 ProseMirror 내부 상태를 직접 세팅하는 정당한 명령형
+      // 상호작용이라 immutability 규칙을 예외 처리한다.
+      // eslint-disable-next-line react-hooks/immutability
       (view as unknown as { dragging: unknown }).dragging = {
         slice,
         move: true,

@@ -8,7 +8,8 @@ import { DayCell } from "./DayCell";
 
 interface WeekChipProps {
   todo: Todo;
-  onSelect: () => void;
+  /** 안정적 참조(setState 등)를 그대로 넘겨야 memo 가 작동한다 — 인라인 클로저 금지. */
+  onSelect: (id: string) => void;
 }
 
 const WeekChip = memo(function WeekChipImpl({ todo, onSelect }: WeekChipProps) {
@@ -16,7 +17,7 @@ const WeekChip = memo(function WeekChipImpl({ todo, onSelect }: WeekChipProps) {
   return (
     <button
       type="button"
-      onClick={onSelect}
+      onClick={() => onSelect(todo.id)}
       data-draggable="true"
       data-dragging={isDragging ? "true" : undefined}
       data-status={todo.status}
@@ -179,7 +180,7 @@ export function WeekGrid({
                   <WeekChip
                     key={item.id}
                     todo={item}
-                    onSelect={() => onSelect(item.id)}
+                    onSelect={onSelect}
                   />
                 ))}
               </div>
@@ -198,7 +199,6 @@ export function WeekGrid({
             >
               {isAdding ? (
                 <input
-                  // eslint-disable-next-line jsx-a11y/no-autofocus
                   autoFocus
                   value={addingTitle}
                   onChange={(e) => setAddingTitle(e.target.value)}

@@ -1,5 +1,6 @@
 import { useCallback, useRef } from "react";
-import { useDnd, type DragKind, type DragPayload, type DragRect } from "./DndContext";
+import { useDnd } from "./useDnd";
+import type { DragKind, DragPayload, DragRect } from "./dndContext";
 
 export function useDraggable<K extends DragKind, D extends { id?: unknown }>(payload: {
   kind: K;

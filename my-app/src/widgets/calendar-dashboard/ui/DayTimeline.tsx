@@ -14,6 +14,11 @@ import {
   snap,
   type TimelineBlock,
 } from "../model/timeline";
+import {
+  currentMinutes,
+  layoutFreeDrag,
+  visualSpan,
+} from "../model/timelineDrag";
 
 export interface DayTimelineProps {
   dayKey: string;
@@ -69,63 +74,10 @@ interface ChipDragState {
   blockW: number;
 }
 
-function currentMinutes(): number {
-  const now = new Date();
-  return now.getHours() * 60 + now.getMinutes();
-}
-
-interface Span {
-  startMin: number;
-  endMin: number;
-}
-
-/** 렌더 높이가 최소 MIN_BLOCK_MIN 이므로 레인 계산도 시각적 점유 구간 기준으로 한다. */
-function visualSpan(b: Span): Span {
-  return {
-    startMin: b.startMin,
-    endMin: Math.max(b.endMin, b.startMin + MIN_BLOCK_MIN),
-  };
-}
-
-function overlapsSpan(a: Span, b: Span) {
-  return a.startMin < b.endMin && a.endMin > b.startMin;
-}
-
 function pointInEl(x: number, y: number, el: HTMLElement | null): boolean {
   if (!el) return false;
   const r = el.getBoundingClientRect();
   return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
-}
-
-/**
- * free 드래그 레이아웃: 드래그 블록을 새 시간(ns~ne)으로 옮기고 targetLane 선호를
- * 적용해 전체 레인을 재배치한다. 드래그 프리뷰와 커밋이 이 함수 하나를 공유하므로
- * 놓았을 때 위치가 프리뷰와 달라질 수 없다.
- */
-function layoutFreeDrag(
-  blocks: TimelineBlock[],
-  lanePrefs: Record<string, number>,
-  dragId: string,
-  ns: number,
-  ne: number,
-  targetLane: number,
-): { layout: { lane: number; lanes: number }[]; prefs: Record<string, number> } {
-  const dragSpan = visualSpan({ startMin: ns, endMin: ne });
-  const spans = blocks.map((b) => (b.todo.id === dragId ? dragSpan : visualSpan(b)));
-  // 드래그 블록이 노리는 레인을 선호하던 겹침 블록은 양보 (최근 드래그가 우선)
-  const prefs: Record<string, number> = { [dragId]: targetLane };
-  blocks.forEach((b, i) => {
-    if (b.todo.id === dragId) return;
-    const p = lanePrefs[b.todo.id];
-    if (p === undefined) return;
-    if (p === targetLane && overlapsSpan(spans[i], dragSpan)) return;
-    prefs[b.todo.id] = p;
-  });
-  const layout = assignLanes(
-    spans,
-    blocks.map((b) => prefs[b.todo.id]),
-  );
-  return { layout, prefs };
 }
 
 export function DayTimeline({
@@ -273,7 +225,8 @@ export function DayTimeline({
         Math.max(Math.abs(rawDeltaX), Math.abs(rawDeltaY)) > DRAG_THRESHOLD_PX;
       const moved = prev.moved || movedNow;
 
-      let { mode, deltaMin, targetLane } = prev;
+      const { deltaMin, targetLane } = prev;
+      let mode = prev.mode;
 
       // pending → free 전환 (임계값 초과 시)
       if (mode === "pending" && moved) mode = "free";
@@ -347,7 +300,8 @@ export function DayTimeline({
       // 미지정 영역에 놓으면 시간 제거.
       if (d.moved && overUntimed) {
         setLanePrefs((p) => {
-          const { [d.id]: _, ...rest } = p;
+          const rest = { ...p };
+          delete rest[d.id];
           return rest;
         });
         onUntime(d.id);
@@ -699,7 +653,10 @@ export function DayTimeline({
           - 블록 형태: 실제 1시간 블록처럼 트랙 폭 × 1시간 높이. 트랙 안쪽(좌측 정렬 +
             해당 시각 슬롯)에 배치해 시간 지정 영역을 벗어나지 않게 한다. */}
       {chipDrag
-        ? (() => {
+        ? // 드래그 고스트 위치는 트랙의 현재 화면 좌표(getBoundingClientRect)가 필요해
+          // 렌더 시점에 ref 를 읽는다 — 측정용 escape hatch라 refs 규칙을 예외 처리한다.
+          // eslint-disable-next-line react-hooks/refs
+          (() => {
             let style: React.CSSProperties;
             if (chipDrag.overTimeline) {
               const r = trackRef.current?.getBoundingClientRect();

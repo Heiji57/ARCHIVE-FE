@@ -102,6 +102,8 @@ export function SearchableSelect({
   useLayoutEffect(() => {
     if (!open) return;
     computeRect();
+    // 열릴 때 현재 선택값 위치로 active 초기화(외부 open 상태와 동기화).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setActive(filtered.findIndex((o) => o.value === value));
   }, [open, computeRect]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -130,8 +132,9 @@ export function SearchableSelect({
     };
   }, [open, computeRect]);
 
-  // 필터가 바뀌면 active 보정
+  // 필터가 바뀌어 active 가 범위를 벗어나면 마지막 항목으로 보정.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (active >= filtered.length) setActive(filtered.length - 1);
   }, [filtered.length, active]);
 

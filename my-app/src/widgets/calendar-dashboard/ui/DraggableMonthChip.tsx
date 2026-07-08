@@ -5,7 +5,8 @@ import { TODO_DRAG_KIND } from "../model/constants";
 
 export interface DraggableMonthChipProps {
   todo: Todo;
-  onSelect: () => void;
+  /** 안정적 참조(setState 등)를 그대로 넘겨야 memo 가 작동한다 — 인라인 클로저 금지. */
+  onSelect: (id: string) => void;
 }
 
 function DraggableMonthChipImpl({ todo, onSelect }: DraggableMonthChipProps) {
@@ -14,7 +15,7 @@ function DraggableMonthChipImpl({ todo, onSelect }: DraggableMonthChipProps) {
   return (
     <button
       type="button"
-      onClick={onSelect}
+      onClick={() => onSelect(todo.id)}
       data-draggable="true"
       data-dragging={isDragging ? "true" : undefined}
       data-status={todo.status}

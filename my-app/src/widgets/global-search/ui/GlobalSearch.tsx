@@ -25,6 +25,8 @@ export function GlobalSearch({ onNavigate }: Props) {
       const id = window.setTimeout(() => inputRef.current?.focus(), 100);
       return () => window.clearTimeout(id);
     }
+    // 닫힐 때 입력값 초기화(외부 open 상태와 동기화).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setQ("");
   }, [open]);
 

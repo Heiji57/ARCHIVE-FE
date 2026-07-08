@@ -12,11 +12,13 @@ export function SummaryOverlay() {
   const [canMinimize, setCanMinimize] = useState(false);
 
   useEffect(() => {
+    // 최소화 버튼은 오버레이 표시 1초 뒤 나타난다 — 타이머(외부 시스템)와 동기화하는
+    // 정당한 패턴이라 set-state-in-effect 를 예외 처리한다.
     if (!pending || pending.minimized) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCanMinimize(false);
       return;
     }
-    // Minimize button appears 1s after the overlay shows.
     setCanMinimize(false);
     const id = window.setTimeout(
       () => setCanMinimize(true),

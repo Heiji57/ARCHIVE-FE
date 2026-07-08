@@ -1,4 +1,5 @@
-export { DndProvider, useDnd } from "./DndContext";
+export { DndProvider } from "./DndContext";
+export { useDnd } from "./useDnd";
 export { useDraggable } from "./useDraggable";
 export { useDropTarget } from "./useDropTarget";
-export type { DragKind, DragPayload } from "./DndContext";
+export type { DragKind, DragPayload } from "./dndContext";

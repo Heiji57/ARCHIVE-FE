@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { Editor } from "@tiptap/react";
+import { useLatestRef } from "@/shared/lib/useLatestRef";
 import type { TurnIntoOption } from "./turnIntoOptions";
 
 export interface HoverState {
@@ -23,10 +24,9 @@ export function useBlockHandle(editor: Editor) {
   const [hover, setHover] = useState<HoverState | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [turnIntoOpen, setTurnIntoOpen] = useState(false);
-  const hoverRef = useRef(hover);
-  hoverRef.current = hover;
-  const menuOpenRef = useRef(menuOpen);
-  menuOpenRef.current = menuOpen;
+  // hover/menuOpen 은 이벤트 핸들러·타이머에서만 읽으므로 latest-ref 로 최신값 유지.
+  const hoverRef = useLatestRef(hover);
+  const menuOpenRef = useLatestRef(menuOpen);
 
   // debounced hide — 핸들/메뉴/블록 사이의 짧은 갭을 견디게
   const hideTimerRef = useRef<number | null>(null);

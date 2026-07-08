@@ -24,9 +24,3 @@ export function StatusIcon({ status, size = 16 }: StatusIconProps) {
 
   return <Circle size={size} className="status-icon" data-status="not-start" />;
 }
-
-export const STATUS_LABELS: Record<TaskStatus, string> = {
-  done: "Done · 완료",
-  "in-progress": "In Progress · 진행 중",
-  "not-start": "To Do · 시작 전",
-};

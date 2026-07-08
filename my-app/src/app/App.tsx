@@ -1,4 +1,4 @@
-import { startTransition, useEffect, useMemo, useState } from "react";
+import { lazy, startTransition, Suspense, useEffect, useMemo, useState } from "react";
 import type { AppRoute } from "@/app/model/types";
 import { AppProvider } from "@/app/providers/AppProvider";
 import { useArchiveApp } from "@/app/providers/useArchiveApp";
@@ -12,16 +12,6 @@ import {
   getPathFromRoute,
   getRouteFromPath,
 } from "@/app/router/navigation";
-import { CalendarPage } from "@/pages/calendar/ui/CalendarPage";
-import { ForgotPasswordPage } from "@/pages/forgot-password/ui/ForgotPasswordPage";
-import { LandingPage } from "@/pages/landing";
-import { LoginPage } from "@/pages/login/ui/LoginPage";
-import { OnboardingPage } from "@/pages/onboarding/ui/OnboardingPage";
-import { ResetPasswordPage } from "@/pages/reset-password/ui/ResetPasswordPage";
-import { RetrospectivesPage } from "@/pages/retrospectives/ui/RetrospectivesPage";
-import { SettingsPage } from "@/pages/settings/ui/SettingsPage";
-import { SignupPage } from "@/pages/signup/ui/SignupPage";
-import { TodosPage } from "@/pages/todos/ui/TodosPage";
 import { DndProvider } from "@/shared/lib/dnd";
 import { TodoDragGhost } from "@/app/TodoDragGhost";
 import { I18nProvider, useTranslation } from "@/shared/lib/i18n";
@@ -29,6 +19,39 @@ import { AppShell } from "@/widgets/app-shell";
 import { ToastViewport } from "@/widgets/notifications";
 import { SummaryFloatingChip, SummaryOverlay } from "@/widgets/summary";
 import { AccountTypeForm, AuthShell } from "@/widgets/auth";
+
+// 페이지 단위 코드 스플리팅 — 로그인 사용자의 초기 번들에서 랜딩/auth 페이지를,
+// 미로그인 방문자의 초기 번들에서 앱 페이지를 제외한다 (named export → lazy 어댑터).
+const CalendarPage = lazy(() =>
+  import("@/pages/calendar/ui/CalendarPage").then((m) => ({ default: m.CalendarPage })),
+);
+const TodosPage = lazy(() =>
+  import("@/pages/todos/ui/TodosPage").then((m) => ({ default: m.TodosPage })),
+);
+const RetrospectivesPage = lazy(() =>
+  import("@/pages/retrospectives/ui/RetrospectivesPage").then((m) => ({ default: m.RetrospectivesPage })),
+);
+const SettingsPage = lazy(() =>
+  import("@/pages/settings/ui/SettingsPage").then((m) => ({ default: m.SettingsPage })),
+);
+const LandingPage = lazy(() =>
+  import("@/pages/landing").then((m) => ({ default: m.LandingPage })),
+);
+const LoginPage = lazy(() =>
+  import("@/pages/login/ui/LoginPage").then((m) => ({ default: m.LoginPage })),
+);
+const SignupPage = lazy(() =>
+  import("@/pages/signup/ui/SignupPage").then((m) => ({ default: m.SignupPage })),
+);
+const ForgotPasswordPage = lazy(() =>
+  import("@/pages/forgot-password/ui/ForgotPasswordPage").then((m) => ({ default: m.ForgotPasswordPage })),
+);
+const ResetPasswordPage = lazy(() =>
+  import("@/pages/reset-password/ui/ResetPasswordPage").then((m) => ({ default: m.ResetPasswordPage })),
+);
+const OnboardingPage = lazy(() =>
+  import("@/pages/onboarding/ui/OnboardingPage").then((m) => ({ default: m.OnboardingPage })),
+);
 
 type ResolvedRoute =
   | { kind: "auth"; route: AuthRoute }
@@ -105,11 +128,15 @@ function LocalizedShell({
     <I18nProvider locale={state.settings.locale}>
       <DndProvider>
         <TodoDragGhost />
-        <AuthGate
-          resolved={resolved}
-          navigateApp={navigateApp}
-          navigateAuth={navigateAuth}
-        />
+        {/* lazy 페이지 최초 청크 로딩 경계 — 라우트 전환은 startTransition 이라
+            이전 화면이 유지되고, 이 fallback 은 첫 진입에만 잠깐 보인다. */}
+        <Suspense fallback={null}>
+          <AuthGate
+            resolved={resolved}
+            navigateApp={navigateApp}
+            navigateAuth={navigateAuth}
+          />
+        </Suspense>
       </DndProvider>
     </I18nProvider>
   );
@@ -231,7 +258,8 @@ function AppContent({
   return (
     <>
       <AppShell route={route} onNavigate={onNavigate}>
-        {pages[route]}
+        {/* 페이지 청크 로딩 중에도 상단 네비게이션(AppShell)은 유지한다. */}
+        <Suspense fallback={null}>{pages[route]}</Suspense>
       </AppShell>
       <ToastViewport notifications={state.notifications} />
       <SummaryOverlay />

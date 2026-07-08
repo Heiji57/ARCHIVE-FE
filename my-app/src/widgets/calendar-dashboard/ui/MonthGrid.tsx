@@ -36,7 +36,6 @@ export function MonthGrid({
   const anchorKey = todayKey;
 
   const [modalDate, setModalDate] = useState<string | null>(null);
-  const [hoverDate, setHoverDate] = useState<string | null>(null);
   const [addingDate, setAddingDate] = useState<string | null>(null);
   const [addingTitle, setAddingTitle] = useState("");
   const [modalAdding, setModalAdding] = useState(false);
@@ -113,7 +112,6 @@ export function MonthGrid({
           const items = byDate[k] ?? [];
           const visible = items.slice(0, 3);
           const more = items.length - visible.length;
-          const isHovered = hoverDate === k;
           const isAdding = addingDate === k;
 
           return (
@@ -121,6 +119,7 @@ export function MonthGrid({
               key={k}
               dateKey={k}
               onDropTodo={onDropTodo}
+              className="month-day-cell"
               style={{
                 background: todayCell
                   ? "rgba(94, 106, 210, 0.06)"
@@ -137,8 +136,6 @@ export function MonthGrid({
                   : "1px solid var(--color-divider-soft)",
                 position: "relative",
               }}
-              onMouseEnter={() => setHoverDate(k)}
-              onMouseLeave={() => { if (!isAdding) setHoverDate(null); }}
             >
               {/* 날짜 헤더 */}
               <div
@@ -173,10 +170,12 @@ export function MonthGrid({
                       {t("calendar.today")}
                     </span>
                   ) : null}
-                  {/* hover 시 + 버튼 */}
-                  {(isHovered || isAdding) && inMonth ? (
+                  {/* + 버튼 — 표시 여부는 CSS :hover 로 처리 (state 리렌더 없음) */}
+                  {inMonth ? (
                     <button
                       type="button"
+                      className="month-cell-add-btn"
+                      data-adding={isAdding ? "true" : undefined}
                       onClick={(e) => { e.stopPropagation(); startCellAdd(k); }}
                       style={{
                         display: "flex",
@@ -204,7 +203,7 @@ export function MonthGrid({
                   <DraggableMonthChip
                     key={item.id}
                     todo={item}
-                    onSelect={() => onSelect(item.id)}
+                    onSelect={onSelect}
                   />
                 ))}
                 {more > 0 ? (
@@ -241,13 +240,9 @@ export function MonthGrid({
                     } else if (e.key === "Escape") {
                       setAddingDate(null);
                       setAddingTitle("");
-                      setHoverDate(null);
                     }
                   }}
-                  onBlur={() => {
-                    commitCellAdd();
-                    setHoverDate(null);
-                  }}
+                  onBlur={commitCellAdd}
                 />
               ) : null}
             </DayCell>

@@ -30,7 +30,8 @@ export function ToastViewport({
       // ones from history don't flood the screen on mount).
       const age = Date.now() - new Date(n.timestamp).getTime();
       if (age >= TOAST_LIFETIME_MS) {
-        // Stale — hide immediately on mount.
+        // Stale — hide immediately on mount (시간 기반 동기화라 예외 처리).
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setHiddenIds((prev) => {
           if (prev.has(n.id)) return prev;
           const next = new Set(prev);

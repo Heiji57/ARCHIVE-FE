@@ -71,7 +71,6 @@ function KanbanCardImpl({ todo, isDone, onUpdate, onSelect }: KanbanCardProps) {
           <div className="kanban-card-spacer" />
         )}
 
-        {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
         <div className="kanban-card-actions" onClick={(e) => e.stopPropagation()}>
           <Pill
             tone="outline"

@@ -133,6 +133,8 @@ export function useTableControls(editor: Editor) {
     dragRef.current = null;
     document.removeEventListener("mousemove", onDrag);
     document.removeEventListener("mouseup", onDragEnd);
+    // 드래그 종료 시 커서 원복(이벤트 핸들러 내 DOM 조작) — immutability 오탐 예외.
+    // eslint-disable-next-line react-hooks/immutability
     document.body.style.cursor = "";
   };
 

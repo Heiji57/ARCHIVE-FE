@@ -1,19 +1,14 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react"
-import { createPortal } from "react-dom"
+import { lazy, Suspense, useEffect, useRef, useState } from "react"
 import {
   BookOpen,
   Check,
   CheckCircle,
   Clock,
-  ExternalLink,
   GitCommit,
   Lock,
   Maximize2,
-  Minimize2,
   RotateCcw,
-  RefreshCw,
   Save,
-  X,
 } from "lucide-react"
 import type { JournalEntry } from "@/entities/entry/model/types"
 import type { GitHubCommit } from "@/entities/github/model/types"
@@ -27,7 +22,8 @@ import { formatFullDate, fromDateKey } from "@/shared/lib/date"
 import { useTranslation } from "@/shared/lib/i18n"
 import { EditorErrorBoundary } from "@/shared/ui/rich-editor"
 import { RETRO_LABEL_KEY } from "../model/constants"
-import { extractMarkdownHeadings } from "../model/extractMarkdownHeadings"
+import { RetroCommitsSection } from "./RetroCommitsSection"
+import { RetroExpandOverlay } from "./RetroExpandOverlay"
 
 // TipTap 에디터는 번들 크기가 크므로 회고록 페이지 진입 시에만 로드
 const RichEditor = lazy(() => import("@/shared/ui/rich-editor/ui/RichEditor"))
@@ -82,6 +78,8 @@ export function RetroEditor({
     if (!isDailyEntry || !isGithubConnected) return
     if (commitsLoadedRef.current) return
     commitsLoadedRef.current = true
+    // 커밋 로드(외부 API) 시작 시 로딩 플래그 표시 — 데이터 페치 표준 패턴이라 예외 처리.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoadingCommits(true)
     void loadCommits(entry.dateKey)
       .then(setCommits)
@@ -155,19 +153,6 @@ export function RetroEditor({
 
   // ─── AI 요약 되돌리기(편집 해제 → AI 원본 복귀) ────────────────────────────
   const [revertConfirmOpen, setRevertConfirmOpen] = useState(false)
-
-  // ─── 확장 모드 목차(Notion 스타일, 확장 모드에서만 노출) ───────────────────
-  // 마크다운 헤딩을 뽑아 렌더된 RichEditor DOM 의 h1~h6 요소와 같은 순서로 매칭한다.
-  const headings = useMemo(
-    () => (expanded ? extractMarkdownHeadings(entry.content) : []),
-    [expanded, entry.content],
-  )
-  const expandMainRef = useRef<HTMLDivElement | null>(null)
-  const scrollToHeading = (index: number) => {
-    const headingEls =
-      expandMainRef.current?.querySelectorAll("h1, h2, h3, h4, h5, h6") ?? []
-    headingEls[index]?.scrollIntoView({ behavior: "smooth", block: "center" })
-  }
 
   return (
     <article>
@@ -346,140 +331,14 @@ export function RetroEditor({
 
           {/* 커밋 기록 (개발자 계정 + 일간 회고 + GitHub 연결 시 표시) */}
           {isGithubEnabled && isGithubConnected && isDailyEntry ? (
-            <section
-              className="section-card-tile-2"
-              style={{ marginBottom: 16 }}>
-              <div className="section-card-head">
-                <div className="avatar avatar-sm avatar-primary">
-                  <GitCommit size={14} />
-                </div>
-                <p className="section-card-title">
-                  {isTodayDaily
-                    ? t("retro.editor.commits")
-                    : t("retro.editor.commitsPast")}
-                </p>
-                <span
-                  style={{
-                    marginLeft: "auto",
-                    fontSize: 12,
-                    color: "var(--color-body-muted)",
-                  }}>
-                  @{githubConnectedAs}
-                </span>
-                {/* 새로고침 버튼 */}
-                <button
-                  type="button"
-                  className="btn btn-utility"
-                  style={{ padding: "4px 8px", fontSize: 11, marginLeft: 6 }}
-                  onClick={handleRefreshCommits}
-                  disabled={loadingCommits}
-                  title={t("retro.editor.loadCommits")}>
-                  <RefreshCw
-                    size={11}
-                    style={
-                      loadingCommits
-                        ? { animation: "summary-spin 900ms linear infinite" }
-                        : undefined
-                    }
-                  />
-                </button>
-              </div>
-
-              {loadingCommits ? (
-                <p
-                  style={{
-                    margin: 0,
-                    fontSize: 13,
-                    color: "var(--color-body-muted)",
-                  }}>
-                  {t("retro.editor.loadCommits")}…
-                </p>
-              ) : commits.length === 0 ? (
-                <div
-                  style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  <p
-                    style={{
-                      margin: 0,
-                      fontSize: 13,
-                      color: "var(--color-body-muted)",
-                    }}>
-                    {!hasVerifiedEmails
-                      ? t("retro.github.noCommitsReconnect")
-                      : isTodayDaily
-                        ? t("retro.editor.noCommits")
-                        : t("retro.editor.noCommitsPast")}
-                  </p>
-                  {/* hasVerifiedEmails=true 인데도 0건: GitHub Emails 안내 링크 */}
-                  {hasVerifiedEmails && (
-                    <a
-                      href="https://github.com/settings/emails"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{
-                        fontSize: 11,
-                        color: "var(--color-primary)",
-                        textDecoration: "underline",
-                      }}>
-                      {t("retro.github.emailsSettingsLink")} ↗
-                    </a>
-                  )}
-                </div>
-              ) : (
-                <ul
-                  className="t-mono"
-                  style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  {commits.map((c) => (
-                    <li
-                      key={`${c.repositoryId}-${c.sha}`}
-                      style={{
-                        padding: "10px 14px",
-                        borderRadius: "var(--r-sm)",
-                        background: "var(--color-tile-3)",
-                        fontSize: 13,
-                        lineHeight: 1.5,
-                        display: "flex",
-                        gap: 10,
-                        alignItems: "center",
-                        flexWrap: "wrap",
-                      }}>
-                      {/* 출처 저장소 배지 */}
-                      <span
-                        style={{
-                          color: "var(--color-primary-on-dark)",
-                          fontWeight: 600,
-                          fontSize: 11,
-                          background:
-                            "color-mix(in srgb, var(--color-primary) 15%, transparent)",
-                          padding: "2px 7px",
-                          borderRadius: "var(--r-pill)",
-                          whiteSpace: "nowrap",
-                        }}>
-                        {c.fullName}
-                      </span>
-                      <span style={{ flex: 1, minWidth: 160 }}>
-                        {c.message}
-                      </span>
-                      <a
-                        href={c.htmlUrl}
-                        target="_blank"
-                        rel="noreferrer noopener"
-                        style={{
-                          color: "var(--color-ink-muted-48)",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: 3,
-                          textDecoration: "none",
-                          fontSize: 11,
-                        }}
-                        title={c.sha}>
-                        {c.sha.slice(0, 7)}
-                        <ExternalLink size={10} />
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </section>
+            <RetroCommitsSection
+              commits={commits}
+              loading={loadingCommits}
+              onRefresh={handleRefreshCommits}
+              githubConnectedAs={githubConnectedAs}
+              hasVerifiedEmails={hasVerifiedEmails}
+              isToday={isTodayDaily}
+            />
           ) : null}
 
           {/* 미완성 요약(GET /entries/paginated placeholder) 안내 배너 */}
@@ -550,100 +409,14 @@ export function RetroEditor({
         </>
       )}
 
-      {/* 확장 모드 — Portal */}
-      {expanded &&
-        createPortal(
-          <div
-            className="retro-expand-overlay"
-            onClick={(e) => {
-              if (e.target === e.currentTarget) setExpanded(false)
-            }}>
-            <div className="retro-expand-card">
-              <div className="retro-expand-toolbar">
-                <span className="retro-expand-hint">
-                  Esc 또는 Ctrl+Shift+F 로 닫기
-                </span>
-                <button
-                  type="button"
-                  className="retro-expand-close"
-                  onClick={() => setExpanded(false)}
-                  aria-label="확장 닫기"
-                  title="닫기 (Esc)">
-                  <Minimize2 size={14} />
-                  <X size={16} />
-                </button>
-              </div>
-              <div className="retro-expand-body">
-                <input
-                  value={entry.title}
-                  onChange={(e) => onUpdate({ title: e.target.value })}
-                  readOnly={entry.isSummary}
-                  title={entry.isSummary ? t("retro.summary.titleReadOnly") : undefined}
-                  placeholder={t("retro.editor.titlePlaceholder")}
-                  className="retro-title-input"
-                />
-                <div className="retro-expand-content-row">
-                  <div className="retro-expand-main" ref={expandMainRef}>
-                    <EditorErrorBoundary
-                      fallback={(error) => (
-                        <div
-                          style={{
-                            padding: 14,
-                            fontSize: 13,
-                            color: "var(--color-warn, #d9a23a)",
-                            background: "var(--color-tile-3)",
-                            borderRadius: "var(--r-sm)",
-                            fontFamily: "var(--font-mono, monospace)",
-                            whiteSpace: "pre-wrap",
-                          }}>
-                          <strong>에디터를 불러오지 못했습니다.</strong>
-                          {"\n"}
-                          {error.message}
-                        </div>
-                      )}>
-                      <Suspense
-                        fallback={
-                          <div
-                            style={{
-                              minHeight: 260,
-                              padding: 12,
-                              fontSize: 13,
-                              color: "var(--color-body-muted)",
-                            }}>
-                            에디터 로딩 중...
-                          </div>
-                        }>
-                        <RichEditor
-                          value={entry.content}
-                          placeholder={t("retro.editor.learnedPlaceholder")}
-                          onChange={(md) => onUpdate({ content: md })}
-                        />
-                      </Suspense>
-                    </EditorErrorBoundary>
-                  </div>
-
-                  {/* Notion 스타일 목차 — 확장 모드에서만 노출, 헤딩이 있을 때만 렌더 */}
-                  {headings.length > 0 ? (
-                    <aside className="retro-expand-toc">
-                      <p className="retro-expand-toc-title">{t("retro.toc.title")}</p>
-                      {headings.map((h, i) => (
-                        <button
-                          key={i}
-                          type="button"
-                          className="retro-expand-toc-item"
-                          style={{ paddingLeft: (h.level - 1) * 10 }}
-                          onClick={() => scrollToHeading(i)}>
-                          {h.text}
-                        </button>
-                      ))}
-                    </aside>
-                  ) : null}
-                </div>
-              </div>
-            </div>
-          </div>,
-          document.body,
-        )}
+      {/* 확장 모드 — Portal (Notion 스타일 목차 포함) */}
+      {expanded ? (
+        <RetroExpandOverlay
+          entry={entry}
+          onUpdate={onUpdate}
+          onClose={() => setExpanded(false)}
+        />
+      ) : null}
 
       {/* AI 요약 되돌리기 확인 */}
       {revertConfirmOpen ? (

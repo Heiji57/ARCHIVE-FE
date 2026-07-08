@@ -67,7 +67,9 @@ export const SlashMenu = forwardRef<SlashMenuRef, SlashMenuProps>(
     }
 
     let flatIndex = -1;
-    // ref 배열 길이 조정
+    // 렌더할 항목 수에 맞춰 ref 배열 길이를 맞춘다(스크롤-인투-뷰용 el 저장소).
+    // 렌더 중 조정이 필요한 escape hatch라 refs 규칙을 예외 처리한다.
+    // eslint-disable-next-line react-hooks/refs
     itemRefs.current.length = items.length;
     return (
       <div ref={containerRef} className="slash-menu">

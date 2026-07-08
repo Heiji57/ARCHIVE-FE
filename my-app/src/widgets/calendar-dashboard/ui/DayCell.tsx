@@ -5,9 +5,8 @@ export interface DayCellProps {
   dateKey: string;
   onDropTodo: (todoId: string, dateKey: string) => void;
   children: React.ReactNode;
+  className?: string;
   style?: React.CSSProperties;
-  onMouseEnter?: () => void;
-  onMouseLeave?: () => void;
 }
 
 /**
@@ -18,9 +17,8 @@ export function DayCell({
   dateKey,
   onDropTodo,
   children,
+  className,
   style,
-  onMouseEnter,
-  onMouseLeave,
 }: DayCellProps) {
   const { ref, isOver, isActive } = useDropTarget<typeof TODO_DRAG_KIND>(
     TODO_DRAG_KIND,
@@ -35,9 +33,8 @@ export function DayCell({
       ref={ref}
       data-drop-active={isActive}
       data-drop-over={isOver}
+      className={className}
       style={style}
-      onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave}
     >
       {children}
     </div>

@@ -33,6 +33,8 @@ import type {
 } from "@/app/model/types";
 import { AppContext } from "@/app/providers/context";
 import { usePersistAppState } from "@/app/providers/usePersistAppState";
+import { useCoalescingQueues } from "@/app/providers/useCoalescingQueues";
+import { useServerSync } from "@/app/providers/useServerSync";
 import { findEntryByDateKeyAndType } from "@/entities/entry/lib/selectors";
 import type { JournalEntry, RetrospectiveType } from "@/entities/entry/model/types";
 import type {
@@ -65,7 +67,6 @@ import {
   todayKeyInTz,
   toDateKey,
 } from "@/shared/lib/date";
-import { COALESCE_MS, createCoalescingQueue } from "@/shared/lib/coalesce";
 import { writeTodoBoardRange } from "@/shared/lib/todoRangePrefs";
 import { createId } from "@/shared/lib/id";
 import { translate } from "@/shared/lib/i18n";
@@ -108,7 +109,6 @@ import {
   apiListLinkedRepos,
   apiListNotifications,
   apiListSessions,
-  apiListSummaries,
   apiListTodos,
   apiLogin,
   apiLogout,
@@ -127,17 +127,12 @@ import {
   apiUnlinkRepo,
   apiUpdateProfile,
   apiUpdateRepo,
-  apiUpdateSettings,
-  apiUpdateTemplate,
-  apiUpdateTodo,
-  apiUpsertEntry,
   apiVerifyEmailCode,
   apiListTemplates,
   apiCreateTemplate,
   apiDeleteTemplate,
   apiResetTemplate,
   apiSetActiveTemplate,
-  streamNotifications,
   streamSummary,
 } from "@/shared/api";
 import {
@@ -345,11 +340,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // readiness 점검 결과 캐시 ("kind:periodStart" 별). entry 추가/수정 시 무효화한다.
   const readinessCacheRef = useRef<Map<string, SummaryReadiness>>(new Map());
 
-  const finalizeApiSummary = (
-    summaryId: string,
-    kind: SummaryKind,
-    _targetDateKey: string,
-  ) => {
+  const finalizeApiSummary = (summaryId: string, kind: SummaryKind) => {
     // 요약은 retro_summaries 가 진실 공급원. /entries 로 미러링하지 않고,
     // 완성된 요약을 표시용 entry(isSummary=true)로 state 에만 upsert 한다.
     // (서버엔 이미 저장돼 있으므로 새로고침 시 /summaries 에서 다시 로드된다.)
@@ -399,7 +390,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const complete = (summaryId: string) => {
       if (finished) return;
       finished = true;
-      finalizeApiSummary(summaryId, kind, targetDateKey);
+      finalizeApiSummary(summaryId, kind);
     };
 
     void apiGenerateSummary(kind, periodStart, force)
@@ -510,7 +501,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       .then((todos) => {
         dispatch({ type: "hydrate/todos", payload: { todos } });
       })
-      // eslint-disable-next-line no-console
+       
       .catch((e) => console.error("[hydrate/todos] 로드 실패:", e));
     // 회고 데이터: 일일 회고만 초기 하이드레이션한다(GET /entries?retroType=daily,
     // 오늘 기준 최근 30일). 주/월/연 AI 요약(retro_summaries)은 더 이상 로그인 시
@@ -523,7 +514,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const dailyOnly = daily.filter((e) => e.retroType === "daily");
         dispatch({ type: "hydrate/entries", payload: { entries: dailyOnly } });
       })
-      // eslint-disable-next-line no-console
+       
       .catch((e) => console.error("[hydrate/entries] 로드 실패:", e));
     void apiGetSettings()
       .then((settings) =>
@@ -566,122 +557,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!uid || calendarProbedRef.current === uid) return;
     calendarProbedRef.current = uid;
     runCalendarRefresh();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [state.currentUser?.id]);
 
-  // ─── API 모드: 실시간 알림 SSE 구독 (자동 재연결) ───────────────────────────
-
-  // 이미 처리한 summary 알림 ID — 재연결 replay 또는 수동 생성 per-summary SSE 와
-  // notification SSE 가 동시에 도달할 때 중복 refetch/토스트를 방지한다.
-  const processedNotifIdsRef = useRef<Set<string>>(new Set());
-
-  // 모든 요약 타입을 재조회해 state 에 upsert — 토스트 없이 silent 갱신.
-  // 멱등: 동일 entry.id 는 덮어쓰고, 신규 entry 는 추가된다.
-  const refetchSummaries = useCallback(async () => {
-    try {
-      const [weekly, monthly, annual] = await Promise.all([
-        apiListSummaries("weekly").catch((): JournalEntry[] => []),
-        apiListSummaries("monthly").catch((): JournalEntry[] => []),
-        apiListSummaries("annual").catch((): JournalEntry[] => []),
-      ]);
-      for (const entry of [...weekly, ...monthly, ...annual]) {
-        dispatch({ type: "entry/upsert", payload: { entry } });
-      }
-    } catch {
-      /* 네트워크 오류 — 다음 재연결 시 보정 */
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!USE_API || !state.currentUser?.id) return;
-    let stopped = false;
-    let abort: (() => void) | null = null;
-    let retryTimer = 0;
-
-    const connect = () => {
-      if (stopped) return;
-      abort = streamNotifications(
-        (notification) => {
-          dispatch({ type: "notification/push", payload: { notification } });
-          // category === "summary" 알림 = 서버 자동 요약 완료/실패 신호.
-          // notification.id 기준 dedup 후 silent refetch — 토스트는 notification
-          // 자체(알림 패널)가 담당하므로 여기선 추가 토스트를 띄우지 않는다.
-          // resource !== "summary" 인 일반 알림(sync/system)은 무시한다.
-          if (notification.category === "summary") {
-            if (!processedNotifIdsRef.current.has(notification.id)) {
-              processedNotifIdsRef.current.add(notification.id);
-              void refetchSummaries();
-            }
-          }
-        },
-        () => {
-          // SSE 종료(5분 타임아웃 등) → 재연결 + 누락 변경 보정 refetch
-          // 알림과 요약 모두 갱신해 끊긴 동안 누락된 이벤트를 보정한다.
-          if (!stopped) {
-            void refetchSummaries();
-            void apiListNotifications()
-              .then((notifications) =>
-                dispatch({ type: "hydrate/notifications", payload: { notifications } }),
-              )
-              .catch(() => {});
-            retryTimer = window.setTimeout(connect, 3000);
-          }
-        },
-        ({ todoId, calendarLinked, calendarPushStatus }) => {
-          dispatch({ type: "todo/set-calendar", payload: { id: todoId, calendarLinked, calendarPushStatus } });
-        },
-      );
-    };
-    connect();
-
-    return () => {
-      stopped = true;
-      if (retryTimer) window.clearTimeout(retryTimer);
-      abort?.();
-    };
-  }, [state.currentUser?.id, refetchSummaries]);
-
-  // ─── 캘린더 동기화 폴링 폴백 ─────────────────────────────────────────────────
-  // SSE 이벤트가 유실될 경우를 대비해 "pending/syncing" 상태 할 일을 주기적으로 재조회한다.
-  // hydrate/todos 전체 교체 대신 해당 할 일의 calendarPushStatus 만 갱신해 다른 상태를 보호.
-  const pollingIdsRef = useRef<Set<string>>(new Set());
-  useEffect(() => {
-    // 데모는 서버 동기화가 없으므로 폴링하지 않는다(방어적 — 데모엔 연동 할 일도 없음).
-    if (!USE_API || isDemoMode()) return;
-    for (const todo of state.todos) {
-      if (
-        (todo.calendarPushStatus === "pending" || todo.calendarPushStatus === "syncing") &&
-        !pollingIdsRef.current.has(todo.id)
-      ) {
-        pollingIdsRef.current.add(todo.id);
-        const todoId = todo.id;
-        const dateKey = todo.dateKey;
-        let attempts = 0;
-        const poll = () => {
-          if (++attempts > 12) { pollingIdsRef.current.delete(todoId); return; }
-          void apiListTodos({ from: dateKey, to: dateKey })
-            .then((fetched) => {
-              const updated = fetched.find((t) => t.id === todoId);
-              if (!updated) { pollingIdsRef.current.delete(todoId); return; }
-              if (updated.calendarPushStatus !== "pending" && updated.calendarPushStatus !== "syncing") {
-                dispatch({ type: "todo/set-calendar", payload: {
-                  id: todoId,
-                  calendarLinked: updated.calendarLinked,
-                  calendarPushStatus: updated.calendarPushStatus,
-                }});
-                pollingIdsRef.current.delete(todoId);
-              } else {
-                window.setTimeout(poll, 5000);
-              }
-            })
-            .catch(() => { window.setTimeout(poll, 5000); });
-        };
-        window.setTimeout(poll, 5000);
-      }
-    }
-  // state.todos 가 바뀔 때만 새 pending 항목을 감지하면 충분 — pollingIdsRef 로 중복 방지
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.todos]);
+  // ─── API 모드: 서버 동기화 인프라(SSE 알림 스트림 + 캘린더 폴링 폴백) ────────
+  useServerSync({ userId: state.currentUser?.id, todos: state.todos, dispatch });
 
   // ─── API 모드 헬퍼 ──────────────────────────────────────────────────────────
   // 실패 시 일시적 토스트로 알린다 (네트워크 오류 메시지 재사용).
@@ -694,142 +574,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
     );
   };
   // ─── 디바운스 코얼레싱 큐 ────────────────────────────────────────────────────
-  // 변경이 잦은 서버 쓰기(todo/회고/설정/프로필)를 idle 후 1회로 합쳐 보낸다.
-  // UI 는 각 핸들러에서 즉시 낙관적 dispatch 하므로 체감 지연은 없다.
-  // COALESCE_MS 는 shared/lib/coalesce 에서 앱 전역으로 관리.
-
-  // 큐 send 클로저는 1회만 생성되므로 최신 state 를 ref 로 참조한다.
-  const reportApiErrorRef = useRef<() => void>(() => {});
-  reportApiErrorRef.current = reportApiError;
-  const latestRef = useRef({
-    settings: state.settings,
-    entries: state.entries,
-  });
-  latestRef.current = { settings: state.settings, entries: state.entries };
-
-  type TodoQueuePatch = Partial<
-    Pick<Todo, "title" | "status" | "description" | "dateKey">
-  > & { startTime?: string | null; endTime?: string | null; timezone?: string | null };
-  type EntryQueuePatch = Partial<
-    Pick<JournalEntry, "title" | "content" | "retroType">
-  >;
-  // AI 요약(isSummary) 편집 — PATCH /summaries/{id}. contentMarkdown 만 지원(title 은
-  // 서버가 저장하지 않는 FE 합성 라벨이라 편집 불가).
-  type SummaryQueuePatch = { contentMarkdown?: string | null };
-  type ProfileQueuePatch = Partial<Pick<User, "displayName" | "avatarUrl">>;
-  type TemplateQueuePatch = { name?: string | null; content?: string | null };
-
-  const todoQueueRef = useRef<ReturnType<
-    typeof createCoalescingQueue<TodoQueuePatch>
-  > | null>(null);
-  const entryQueueRef = useRef<ReturnType<
-    typeof createCoalescingQueue<EntryQueuePatch>
-  > | null>(null);
-  const summaryQueueRef = useRef<ReturnType<
-    typeof createCoalescingQueue<SummaryQueuePatch>
-  > | null>(null);
-  const settingsQueueRef = useRef<ReturnType<
-    typeof createCoalescingQueue<Partial<AppSettings>>
-  > | null>(null);
-  const profileQueueRef = useRef<ReturnType<
-    typeof createCoalescingQueue<ProfileQueuePatch>
-  > | null>(null);
-  const templateQueueRef = useRef<ReturnType<
-    typeof createCoalescingQueue<TemplateQueuePatch>
-  > | null>(null);
-
-  if (!todoQueueRef.current) {
-    todoQueueRef.current = createCoalescingQueue<TodoQueuePatch>({
-      delayMs: COALESCE_MS,
-      send: (id, merged) => apiUpdateTodo(id, merged),
-      onError: () => reportApiErrorRef.current(),
-    });
-  }
-  if (!entryQueueRef.current) {
-    entryQueueRef.current = createCoalescingQueue<EntryQueuePatch>({
-      delayMs: COALESCE_MS,
-      send: (id, merged) => {
-        const base = latestRef.current.entries.find((e) => e.id === id);
-        if (!base) return Promise.resolve();
-        return apiUpsertEntry(id, {
-          dateKey: base.dateKey,
-          title: merged.title ?? base.title,
-          content: merged.content ?? base.content,
-          retroType: merged.retroType ?? base.retroType,
-        });
-      },
-      onError: () => reportApiErrorRef.current(),
-    });
-  }
-  if (!summaryQueueRef.current) {
-    summaryQueueRef.current = createCoalescingQueue<SummaryQueuePatch>({
-      delayMs: COALESCE_MS,
-      send: (id, merged) =>
-        apiUpdateSummaryContent(id, merged.contentMarkdown ?? null),
-      onError: () => reportApiErrorRef.current(),
-    });
-  }
-  if (!settingsQueueRef.current) {
-    settingsQueueRef.current = createCoalescingQueue<Partial<AppSettings>>({
-      delayMs: COALESCE_MS,
-      // settings 는 전체 교체(PUT) — 누적 patch(기본 merge: undefined 무시, 최신 우선)를
-      // send 시점의 최신 settings 에 합쳐 보낸다. autoSummary 는 호출부에서 항상
-      // 완전한 객체를 넘기므로 last-wins 로 충분하다.
-      send: (_key, merged) => {
-        const cur = latestRef.current.settings;
-        const full: AppSettings = {
-          ...cur,
-          ...merged,
-          autoSummary: { ...cur.autoSummary, ...(merged.autoSummary ?? {}) },
-        };
-        return apiUpdateSettings(full);
-      },
-      onError: () => reportApiErrorRef.current(),
-    });
-  }
-  if (!profileQueueRef.current) {
-    profileQueueRef.current = createCoalescingQueue<ProfileQueuePatch>({
-      delayMs: COALESCE_MS,
-      send: (_key, merged) => apiUpdateProfile(merged),
-      onError: () => reportApiErrorRef.current(),
-    });
-  }
-  if (!templateQueueRef.current) {
-    templateQueueRef.current = createCoalescingQueue<TemplateQueuePatch>({
-      delayMs: COALESCE_MS,
-      send: (id, merged) => apiUpdateTemplate(id, merged),
-      onError: () => reportApiErrorRef.current(),
-    });
-  }
-
-  const todoQueue = todoQueueRef.current;
-  const entryQueue = entryQueueRef.current;
-  const summaryQueue = summaryQueueRef.current;
-  const settingsQueue = settingsQueueRef.current;
-  const profileQueue = profileQueueRef.current;
-  const templateQueue = templateQueueRef.current;
-
-  // 페이지 이탈/탭 숨김 시 대기 중 변경을 즉시 전송해 유실 창을 최소화.
-  // 데모는 서버 큐에 아무것도 쌓이지 않으므로(모든 변경이 로컬 전용) 리스너를 걸지 않는다.
-  useEffect(() => {
-    if (!USE_API || isDemoMode()) return;
-    const flushAll = () => {
-      todoQueue.flushAll();
-      entryQueue.flushAll();
-      settingsQueue.flushAll();
-      profileQueue.flushAll();
-      templateQueue.flushAll();
-    };
-    const onVisibility = () => {
-      if (document.visibilityState === "hidden") flushAll();
-    };
-    window.addEventListener("beforeunload", flushAll);
-    document.addEventListener("visibilitychange", onVisibility);
-    return () => {
-      window.removeEventListener("beforeunload", flushAll);
-      document.removeEventListener("visibilitychange", onVisibility);
-    };
-  }, [todoQueue, entryQueue, settingsQueue, profileQueue, templateQueue]);
+  // 변경이 잦은 서버 쓰기(todo/회고/요약/설정/프로필/템플릿)를 idle 후 1회로 합쳐
+  // 보낸다. 큐 생성·flush·최신 state 참조는 useCoalescingQueues 로 캡슐화한다.
+  const {
+    todoQueue,
+    entryQueue,
+    summaryQueue,
+    settingsQueue,
+    profileQueue,
+    templateQueue,
+  } = useCoalescingQueues(state, reportApiError);
 
   // 설정은 전체 교체(PUT)이므로 현재 settings 에 patch 를 합쳐 전송.
   const syncSettings = (patch: Partial<AppSettings>) => {
@@ -889,7 +643,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     void apiGetConnection()
       .then((connection) => {
         // 진단: 200 인데 미연결로 보이는 경우 실제 응답값을 확인한다.
-        // eslint-disable-next-line no-console
+         
         console.info("[github] connection 응답:", connection);
         if (!connection || !connection.connected) {
           dispatch({
@@ -951,7 +705,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     } catch {
       /* transient network error — 다음 재시도에서 보정 */
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, []);
 
   // 할 일 보드 "전체" 보기 로드 — 오늘 기준 앞뒤로 rangeDays 를 나눈 구간을 조회한다.
@@ -986,7 +740,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     } catch {
       /* transient network error — 다음 재시도에서 보정 */
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, []);
 
   // 회고록 목록 페이지 조회 (GET /entries/paginated) — daily/weekly/monthly/yearly
@@ -1008,7 +762,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
       return res;
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
     [],
   );
 

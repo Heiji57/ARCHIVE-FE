@@ -1,5 +1,4 @@
 export { Pill, type PillTone } from "./pill/Pill";
-export { ToggleRow, type ToggleRowProps } from "./toggle-row/ToggleRow";
 export {
   DisconnectBanner,
   type DisconnectBannerProps,
