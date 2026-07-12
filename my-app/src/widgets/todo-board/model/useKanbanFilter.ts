@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { getVisibleBoardTodos } from "@/entities/todo/lib/selectors";
 import type { TaskStatus, Todo } from "@/entities/todo/model/types";
 import {
@@ -9,6 +9,7 @@ import {
   toDateKey,
 } from "@/shared/lib/date";
 import type { DateFilter } from "./constants";
+import { readTodoBoardFilter, writeTodoBoardFilter } from "./todoFilterPrefs";
 
 /**
  * Manages the Todo board's date filter + grouped (status) view of todos.
@@ -19,7 +20,12 @@ import type { DateFilter } from "./constants";
  * without requiring a manual refresh.
  */
 export function useKanbanFilter(todos: Todo[], rangeDays: number) {
-  const [filter, setFilter] = useState<DateFilter>({ kind: "all" });
+  // 마지막으로 고른 기간 필터를 localStorage 에서 복원한다(페이지 재진입 시 유지).
+  const [filter, setFilterState] = useState<DateFilter>(readTodoBoardFilter);
+  const setFilter = useCallback((next: DateFilter) => {
+    setFilterState(next);
+    writeTodoBoardFilter(next);
+  }, []);
 
   const [, forceTick] = useState(0);
   useEffect(() => {

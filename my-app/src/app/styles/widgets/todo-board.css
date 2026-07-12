@@ -96,29 +96,33 @@
   background: var(--color-tile-2);
   border-radius: var(--r-md);
   border: 1px solid var(--color-divider-soft);
-  padding: 12px 14px 14px 10px;
-  display: flex;
-  gap: 10px;
-  align-items: flex-start;
+  border-left-width: 3px;
+  padding: 12px 14px;
   flex-shrink: 0;
   transition: background 100ms ease, box-shadow 120ms ease, transform 120ms ease, border-color 100ms ease;
 }
-/* 시작 전(not-start) hover — 중립 밝아짐 */
-.kanban-card:hover:not([data-dragging="true"]):not([data-popover-open="true"]) {
+/* 상태별 좌측 액센트 컬러 (컬럼 도트와 동일 계열) */
+.kanban-card[data-status="not-start"]   { border-left-color: var(--color-ink-muted-48); }
+.kanban-card[data-status="in-progress"] { border-left-color: var(--color-primary); }
+.kanban-card[data-status="done"]        { border-left-color: var(--color-status-done); }
+
+/* 시작 전(not-start) hover — 중립 밝아짐 (좌측 액센트는 유지) */
+.kanban-card:hover:not([data-dragging="true"]) {
   background: var(--color-tile-3);
   border-color: var(--color-divider);
+  border-left-color: var(--color-ink-muted-48);
   box-shadow: 0 4px 18px rgba(0, 0, 0, 0.38);
   transform: translateY(-1px);
 }
 /* 진행 중(in-progress) hover — 파란 틴트 */
-.kanban-card[data-status="in-progress"]:hover:not([data-dragging="true"]):not([data-popover-open="true"]) {
+.kanban-card[data-status="in-progress"]:hover:not([data-dragging="true"]) {
   background: rgba(94, 106, 210, 0.22);
   border-color: var(--color-primary);
   box-shadow: 0 4px 18px rgba(94, 106, 210, 0.32);
   transform: translateY(-1px);
 }
 /* 완료(done) hover — 초록 틴트 */
-.kanban-card[data-status="done"]:hover:not([data-dragging="true"]):not([data-popover-open="true"]) {
+.kanban-card[data-status="done"]:hover:not([data-dragging="true"]) {
   background: rgba(39, 166, 68, 0.18);
   border-color: var(--color-status-done);
   box-shadow: 0 4px 18px rgba(39, 166, 68, 0.24);
@@ -127,16 +131,18 @@
 .kanban-card[data-done="true"] {
   background: var(--color-tile-3);
 }
-.kanban-card-status-btn {
-  margin-top: 2px;
-  flex-shrink: 0;
-}
 .kanban-card-body {
-  flex: 1;
   min-width: 0;
+}
+.kanban-card-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
 }
 .kanban-card-title {
   margin: 0;
+  flex: 1;
+  min-width: 0;
   font-size: 14px;
   font-weight: 500;
   letter-spacing: -0.16px;
@@ -146,84 +152,67 @@
   text-decoration: line-through;
   color: var(--color-body-muted);
 }
-.kanban-card-desc {
-  margin: 4px 0 8px;
+.kanban-card-notes {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--color-ink-muted-48);
+}
+.kanban-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+.kanban-card-status-btn {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+.kanban-card-date {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   font-size: 12px;
   color: var(--color-body-muted);
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-.kanban-card-spacer {
-  height: 4px;
-}
-.kanban-card-actions {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-  position: relative;
 }
 
-/* ---------- Quick capture ---------- */
+/* ---------- Quick capture (bar above the board) ---------- */
 .quick-capture {
-  background: var(--color-tile-1);
-  border: 1px solid var(--color-divider-soft);
-  border-radius: var(--r-xl);
-  padding: 28px 32px;
-  margin-bottom: 28px;
-}
-.quick-capture-form {
   display: flex;
-  gap: 14px;
-  align-items: center;
-  flex-wrap: wrap;
+  gap: 12px;
+  align-items: stretch;
+  margin-bottom: 24px;
 }
+/* 입력 박스 — 독립된 큰 라운드 컨테이너 */
 .quick-capture-input-wrap {
   flex: 1;
-  min-width: 280px;
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 18px;
-  background: var(--color-tile-3);
-  border-radius: var(--r-pill);
+  padding: 14px 20px;
+  background: var(--color-tile-1);
   border: 1px solid var(--color-divider-soft);
+  border-radius: var(--r-lg);
 }
 .quick-capture-input-wrap > svg {
-  color: var(--color-primary);
+  color: var(--color-body-muted);
   flex-shrink: 0;
 }
 .quick-capture-input {
   flex: 1;
-  font-size: 16px;
+  font-size: 15px;
   min-width: 0;
 }
+/* 날짜칩 · Add 버튼 — 입력 박스와 분리된 형제, 높이 동일(stretch) */
 .quick-capture-date-wrap {
   position: relative;
+  flex-shrink: 0;
 }
 .quick-capture-date-btn {
-  padding: 11px 18px;
+  height: 100%;
+  padding: 0 16px;
 }
 .quick-capture-submit {
-  padding: 12px 24px;
-}
-.quick-capture-calendar-check {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  margin-top: 12px;
-  font-size: 13px;
-  color: var(--color-body-muted);
-  cursor: pointer;
-  user-select: none;
-}
-.quick-capture-calendar-check input[type="checkbox"] {
-  accent-color: var(--color-primary);
-  cursor: pointer;
-}
-.quick-capture-hint {
-  margin: 10px 0 0;
-  font-size: 13px;
-  color: var(--color-body-muted);
+  flex-shrink: 0;
+  padding: 0 22px;
 }

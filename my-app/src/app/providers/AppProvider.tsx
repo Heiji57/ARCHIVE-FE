@@ -754,6 +754,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       page: number;
       size: number;
       q?: string;
+      from?: string;
+      to?: string;
     }) => {
       if (!USE_API || isDemoMode()) return null;
       const res = await apiListEntriesPaginated(params);

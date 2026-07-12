@@ -3,6 +3,7 @@ import {
   BookOpen,
   Check,
   CheckCircle,
+  ChevronLeft,
   Clock,
   GitCommit,
   Lock,
@@ -40,6 +41,8 @@ export interface RetroEditorProps {
   onSave: () => void
   /** AI 요약(isSummary) 편집 해제 — 확인 후 AI 원본으로 되돌린다. */
   onRevertSummary?: () => void
+  /** 갤러리로 돌아가기 (2화면 네비게이션). */
+  onBack: () => void
 }
 
 export function RetroEditor({
@@ -52,6 +55,7 @@ export function RetroEditor({
   onUpdate,
   onSave,
   onRevertSummary,
+  onBack,
 }: RetroEditorProps) {
   const { t } = useTranslation()
   const { state, loadCommits, pushRetrospective, pushNotification } = useArchiveApp()
@@ -156,6 +160,11 @@ export function RetroEditor({
 
   return (
     <article>
+      <button type="button" className="retro-back-link" onClick={onBack}>
+        <ChevronLeft size={15} />
+        {t("retro.gallery.backToList")}
+      </button>
+
       <div
         style={{
           display: "flex",

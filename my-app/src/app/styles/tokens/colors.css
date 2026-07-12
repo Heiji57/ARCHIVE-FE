@@ -41,6 +41,8 @@
   --color-status-progress: #5e6ad2;
   --color-status-todo:     #8a8f98;
   --color-warn:            #d9a23a;  /* muted amber — used sparingly */
+  --color-danger:          #d0563f;  /* muted terracotta — destructive actions (overwrite/delete) */
+  --color-danger-focus:    #bf4a34;
 
   /* Focus ring */
   --ring-soft:             rgba(94, 106, 210, 0.28);

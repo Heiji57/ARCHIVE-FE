@@ -40,6 +40,15 @@
   background: var(--color-tile-2);
 }
 
+.btn-danger {
+  background: var(--color-danger);
+  color: #fff;
+}
+
+.btn-danger:hover {
+  background: var(--color-danger-focus);
+}
+
 .btn-utility {
   padding: 7px 14px;
   border-radius: var(--r-sm);

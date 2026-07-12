@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { AlertTriangle } from "lucide-react";
 import { useArchiveApp } from "@/app/providers/useArchiveApp";
 import { useTodayKey } from "@/app/providers/useToday";
 import type { JournalEntry } from "@/entities/entry/model/types";
@@ -9,14 +10,14 @@ import type {
 import { fromDateKey } from "@/shared/lib/date";
 import { can } from "@/shared/lib/permissions";
 import { ConfirmModal } from "@/shared/ui/confirm-modal/ConfirmModal";
-import { EmptyState } from "@/shared/ui/empty-state/EmptyState";
 import { useTranslation } from "@/shared/lib/i18n";
 import { useDebouncedValue } from "@/shared/lib/useDebouncedValue";
+import { useLatestRef } from "@/shared/lib/useLatestRef";
 import { useRetroEntriesPage } from "../model/useRetroEntriesPage";
 import { useRetroFilter } from "../model/useRetroFilter";
 import { PeriodPickerModal } from "./PeriodPickerModal";
 import { RetroEditor } from "./RetroEditor";
-import { RetroSidebar } from "./RetroSidebar";
+import { RetroGallery } from "./RetroGallery";
 
 export function RetrospectiveStudio() {
   const {
@@ -73,7 +74,11 @@ export function RetrospectiveStudio() {
   // 으로 조회한다 — daily=journal_entries, weekly/monthly/yearly=retro_summaries.
   // 검색은 디바운스해 입력마다 요청하지 않는다.
   const debouncedSearch = useDebouncedValue(filterState.search, 300);
-  const entriesPage = useRetroEntriesPage(filterState.retroFilter, debouncedSearch);
+  const entriesPage = useRetroEntriesPage(
+    filterState.retroFilter,
+    debouncedSearch,
+    filterState.dateRange,
+  );
   // 데모/mock 은 서버가 없어 serverMode=false → 클라이언트 목록(useRetroFilter)으로 폴백.
   const useServerList = entriesPage.serverMode;
 
@@ -100,15 +105,48 @@ export function RetrospectiveStudio() {
     else filterState.setPage((p) => Math.min(filterState.totalPages - 1, p + 1));
   };
 
+  // AI 요약 완료 시 갤러리만 즉시 갱신 — 서버 모드는 /entries/paginated 의 ids 가
+  // 완료된 요약을 자동으로 포함하지 않으므로(로컬 state.entries 갱신과 별개) 직접
+  // refetch 해야 카드가 나타난다. (클라이언트 폴백 목록은 state.entries 파생이라
+  // 이미 자동 반영됨 — 서버 모드에서만 필요.)
+  const galleryRefreshRef = useLatestRef({
+    retroFilter: filterState.retroFilter,
+    useServerList,
+    setPage: entriesPage.setPage,
+    refetch: entriesPage.refetch,
+  });
+  const prevPendingSummaryRef = useRef(state.pendingSummary);
+  useEffect(() => {
+    const prev = prevPendingSummaryRef.current;
+    prevPendingSummaryRef.current = state.pendingSummary;
+    // pendingSummary 가 "있었다가 없어짐" = 완료(또는 취소) 전이. 지금 보고 있는
+    // 탭(kind)과 일치할 때만 새로고침한다.
+    if (prev && !state.pendingSummary && prev.kind === galleryRefreshRef.current.retroFilter) {
+      if (galleryRefreshRef.current.useServerList) {
+        galleryRefreshRef.current.setPage(1);
+        galleryRefreshRef.current.refetch();
+      }
+    }
+  }, [state.pendingSummary, galleryRefreshRef]);
+
   const [selectedId, setSelectedId] = useState<string | null>(
     () => filteredEntries[0]?.id ?? null,
   );
+
+  // 2화면 네비게이션: 카드 그리드(gallery) ⇄ 편집기(editor).
+  const [view, setView] = useState<"gallery" | "editor">("gallery");
 
   const active =
     state.entries.find((e) => e.id === selectedId) ??
     listEntries[0] ??
     filteredEntries[0] ??
     null;
+
+  // 카드 선택 → 편집기로 전환.
+  const openEntry = (id: string) => {
+    setSelectedId(id);
+    setView("editor");
+  };
 
   // 전역 검색에서 특정 회고로 이동 요청 → 해당 회고 종류로 필터를 맞추고 선택.
   const { setRetroFilter } = filterState;
@@ -118,6 +156,7 @@ export function RetrospectiveStudio() {
     if (target) {
       setRetroFilter(target.retroType);
       setSelectedId(target.id);
+      setView("editor");
     }
     clearFocus();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -243,52 +282,47 @@ export function RetrospectiveStudio() {
     }
     filterState.setRetroFilter("daily");
     setSelectedId(entry.id);
+    setView("editor");
   };
 
   return (
     <div className="page retro-page">
-      <RetroSidebar
-        filterState={filterState}
-        active={active}
-        onSelect={setSelectedId}
-        onSummarize={handleSummarize}
-        onNewDaily={handleNewDaily}
-        showSyncBadge={can(state.settings.accountType, "github")}
-        listEntries={listEntries}
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onPrevPage={goPrevPage}
-        onNextPage={goNextPage}
-        loading={useServerList && entriesPage.loading}
-        loadError={useServerList && entriesPage.error}
-        // 연/월/주 필터는 /paginated 가 날짜 파라미터를 지원하지 않아 서버 모드에서
-        // 비활성화한다(검색 q 는 지원되므로 항상 활성). 백엔드가 날짜 필터 파라미터를
-        // 추가하면 활성화 예정.
-        dateFiltersDisabled={useServerList}
-      />
-
-      <main>
-        {active ? (
-          <RetroEditor
-            key={active.id}
-            entry={active}
-            completedTodos={completedTodos}
-            githubConnectedAs={githubConnectedAs}
-            isGithubConnected={isGithubConnected}
-            hasVerifiedEmails={hasVerifiedEmails}
-            pushTargetRepositoryId={pushTargetRepositoryId}
-            onUpdate={(patch) => updateEntry(active.id, patch)}
-            onSave={handleSave}
-            onRevertSummary={handleRevertSummary}
-          />
-        ) : (
-          <EmptyState message={t("retro.empty")} minHeight={360} fontSize={14} />
-        )}
-      </main>
+      {view === "editor" && active ? (
+        <RetroEditor
+          key={active.id}
+          entry={active}
+          completedTodos={completedTodos}
+          githubConnectedAs={githubConnectedAs}
+          isGithubConnected={isGithubConnected}
+          hasVerifiedEmails={hasVerifiedEmails}
+          pushTargetRepositoryId={pushTargetRepositoryId}
+          onUpdate={(patch) => updateEntry(active.id, patch)}
+          onSave={handleSave}
+          onRevertSummary={handleRevertSummary}
+          onBack={() => setView("gallery")}
+        />
+      ) : (
+        <RetroGallery
+          filterState={filterState}
+          activeId={selectedId}
+          onSelect={openEntry}
+          onSummarize={handleSummarize}
+          onNewDaily={handleNewDaily}
+          showSyncBadge={can(state.settings.accountType, "github")}
+          listEntries={listEntries}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPrevPage={goPrevPage}
+          onNextPage={goNextPage}
+          loading={useServerList && entriesPage.loading}
+          loadError={useServerList && entriesPage.error}
+        />
+      )}
 
       {readinessDialog ? (
         <ConfirmModal
           open
+          icon={<span className="retro-warn-badge"><AlertTriangle size={18} /></span>}
           title={t("retro.readiness.title")}
           message={
             <span style={{ whiteSpace: "pre-line" }}>
@@ -328,6 +362,7 @@ export function RetrospectiveStudio() {
       {overwriteDialog ? (
         <ConfirmModal
           open
+          tone="danger"
           title={t("retro.overwrite.title")}
           message={
             <span style={{ whiteSpace: "pre-line" }}>

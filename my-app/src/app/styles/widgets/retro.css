@@ -1,70 +1,347 @@
-/* ---------- Retrospective page layout ---------- */
+/* ---------- Retrospective page ---------- */
 .retro-page {
   padding-top: 32px;
-  display: grid;
-  grid-template-columns: 320px 1fr;
-  gap: 32px;
 }
 
-@media (max-width: 900px) {
-  .retro-page {
-    grid-template-columns: 1fr;
-  }
+/* ---------- Editor: back link ---------- */
+.retro-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 18px;
+  padding: 4px 0;
+  font-size: 13px;
+  color: var(--color-body-muted);
+  transition: color 120ms ease;
 }
-
-/* ---------- Retro sidebar list item ---------- */
-.retro-list-item {
-  text-align: left;
-  padding: 12px 14px;
-  border-radius: var(--r-md);
-  background: var(--color-tile-2);
+.retro-back-link:hover {
   color: var(--color-ink);
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  cursor: pointer;
-  /* 위치 변경 없이 background/color만 전환 → 빠른 마우스 이동에도 카드가
-     hit area를 벗어나지 않아 떨림(re-trigger) 없음 */
-  transition:
-    background-color 160ms cubic-bezier(0.2, 0.8, 0.2, 1),
-    color 160ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
-.retro-list-item:hover {
-  background: var(--color-tile-3);
-}
-.retro-list-item[data-active="true"] {
-  background: var(--color-ink);
-  color: var(--color-canvas);
-}
-.retro-list-item[data-active="true"]:hover {
-  background: var(--color-ink);
-}
-.retro-list-item-head {
+
+/* ---------- Gallery header ---------- */
+.retro-gallery-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 22px;
+  flex-wrap: wrap;
+}
+.retro-gallery-tools {
+  display: flex;
+  align-items: center;
   gap: 8px;
 }
-.retro-list-item-title {
-  margin: 0;
+
+/* Search — expands to the right on focus; AI/filter buttons shift along. */
+.retro-gallery-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 240px;
+  max-width: 100%;
+  padding: 9px 14px;
+  background: var(--color-tile-3);
+  border: 1px solid var(--color-divider-soft);
+  border-radius: var(--r-pill);
+  transition:
+    width 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    border-color 120ms ease;
+}
+.retro-gallery-search:focus-within {
+  width: 340px;
+  border-color: var(--color-primary);
+}
+.retro-gallery-search-icon {
+  color: var(--color-body-muted);
+  flex-shrink: 0;
+}
+.retro-gallery-search input {
+  flex: 1;
+  min-width: 0;
   font-size: 13px;
+  background: transparent;
+}
+
+/* Icon buttons (period filter, AI summary) + popovers */
+.retro-gallery-pop {
+  position: relative;
+}
+.retro-gallery-icon-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--r-pill);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-tile-3);
+  color: var(--color-body-muted);
+  border: 1px solid var(--color-divider-soft);
+  transition:
+    background-color 120ms ease,
+    color 120ms ease;
+}
+.retro-gallery-icon-btn:hover:not(:disabled) {
+  background: var(--color-tile-4);
+  color: var(--color-ink);
+}
+.retro-gallery-icon-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.retro-gallery-ai-btn {
+  color: var(--color-primary);
+}
+
+.retro-gallery-pop-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+}
+.retro-gallery-pop-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 41;
+  min-width: 210px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--color-tile-1);
+  border: 1px solid var(--color-divider-soft);
+  border-radius: var(--r-md);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+}
+.retro-gallery-ai-menu {
+  left: auto;
+  right: 0;
+  min-width: 160px;
+  padding: 6px;
+}
+.retro-gallery-ai-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border-radius: var(--r-sm);
+  font-size: 13px;
+  color: var(--color-ink);
+  text-align: left;
+  transition: background-color 120ms ease;
+}
+.retro-gallery-ai-item:hover {
+  background: var(--color-tile-3);
+}
+.retro-gallery-pop-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--color-body-muted);
+}
+.retro-gallery-pop-row .select {
+  min-width: 110px;
+}
+.retro-gallery-pop-hint {
+  margin: 2px 0 0;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--color-body-muted);
+}
+
+/* Type chips */
+.retro-gallery-tabs {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  background: var(--color-tile-3);
+  border-radius: var(--r-pill);
+}
+.retro-gallery-chip {
+  padding: 7px 14px;
+  border-radius: var(--r-pill);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-body-muted);
+  transition:
+    background-color 120ms ease,
+    color 120ms ease;
+}
+.retro-gallery-chip[data-active="true"] {
+  background: var(--color-tile-4);
+  color: var(--color-ink);
+}
+
+/* ---------- Card grid ---------- */
+.retro-gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.retro-card {
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 154px;
+  padding: 18px;
+  border-radius: var(--r-lg);
+  background: var(--color-tile-2);
+  border: 1px solid var(--color-divider-soft);
+  cursor: pointer;
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease;
+}
+.retro-card:hover {
+  background: var(--color-tile-3);
+  border-color: var(--color-hairline-strong);
+}
+.retro-card[data-active="true"] {
+  border-color: var(--color-primary);
+}
+
+.retro-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.retro-card-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--r-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+/* 차분한 뮤트 팔레트 — 카드마다 은은한 다양성, 알록달록하지 않게 채도 억제. */
+.retro-card-icon-tone-0 { background: #6b7a99; } /* slate */
+.retro-card-icon-tone-1 { background: #5f8a78; } /* sage */
+.retro-card-icon-tone-2 { background: #a3745f; } /* clay */
+.retro-card-icon-tone-3 { background: #9a8a55; } /* sand */
+.retro-card-icon-tone-4 { background: #837196; } /* mauve */
+.retro-card-icon-tone-5 { background: #5d8296; } /* dusty blue */
+
+.retro-card-title {
+  margin: 0;
+  font-size: 15px;
   font-weight: 600;
-  letter-spacing: -0.14px;
+  letter-spacing: -0.2px;
+  color: var(--color-ink);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.retro-list-item-date {
-  font-size: 10px;
-  color: var(--color-body-muted);
-  flex-shrink: 0;
-}
-.retro-list-item[data-active="true"] .retro-list-item-date {
-  color: var(--color-ink-muted-48);
-}
-.retro-list-item-badges {
+.retro-card-meta {
   display: flex;
-  gap: 4px;
-  min-height: 15px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: auto;
+}
+.retro-card-date {
+  font-size: 12px;
+  color: var(--color-body-muted);
+}
+.retro-card-sync {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--color-body-muted);
+}
+.retro-card-sync-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-status-todo);
+}
+.retro-card-sync.is-synced .retro-card-sync-dot {
+  background: var(--color-status-done);
+}
+.retro-card-sync.is-draft .retro-card-sync-dot {
+  background: var(--color-warn);
+}
+.retro-card-badges {
+  display: flex;
   flex-wrap: wrap;
+  gap: 6px;
+  min-height: 15px;
+}
+
+/* New-retrospective card */
+.retro-card-new {
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  border-style: dashed;
+  background: transparent;
+  color: var(--color-body-muted);
+}
+.retro-card-new:hover {
+  background: var(--color-tile-2);
+  color: var(--color-ink);
+}
+.retro-card-new-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--r-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-tile-3);
+}
+.retro-card-new-label {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* ---------- First-run empty state ---------- */
+.retro-gallery-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 80px 20px;
+  text-align: center;
+}
+.retro-gallery-empty-icon {
+  width: 52px;
+  height: 52px;
+  margin-bottom: 4px;
+  border-radius: var(--r-md);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-tile-3);
+  color: var(--color-body-muted);
+}
+.retro-gallery-empty-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-ink);
+}
+.retro-gallery-empty-desc {
+  margin: 0 0 8px;
+  max-width: 360px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--color-body-muted);
+}
+
+/* ---------- Warn badge (readiness modal) ---------- */
+.retro-warn-badge {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--r-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--color-warn) 18%, transparent);
+  color: var(--color-warn);
 }

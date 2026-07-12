@@ -1,8 +1,8 @@
 import { useRef, useState } from "react";
 import { CalendarDays } from "lucide-react";
+import { DatePickerPopover } from "@/entities/todo/ui/DatePickerPopover";
 import { useTranslation } from "@/shared/lib/i18n";
 import type { DateFilter } from "../model/constants";
-import { DatePickerPopover } from "./DatePickerPopover";
 
 export interface TodoFilterRowProps {
   filter: DateFilter;

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useArchiveApp } from "@/app/providers/useArchiveApp";
 import type { RetrospectiveType } from "@/entities/entry/model/types";
+import type { DateRange } from "./useRetroFilter";
 
 export interface RetroEntriesPage {
   /** 현재 페이지(1-based). */
@@ -29,10 +30,12 @@ export interface RetroEntriesPage {
  *
  * @param retroType 조회할 회고 종류(사이드바 탭).
  * @param q 검색어(디바운스는 호출부 책임) — 비어 있으면 무필터.
+ * @param dateRange 연/월/주 선택을 변환한 단일 range(useRetroFilter.dateRange) — null 이면 무필터.
  */
 export function useRetroEntriesPage(
   retroType: RetrospectiveType,
   q: string,
+  dateRange: DateRange | null,
   size = 10,
 ): RetroEntriesPage {
   const { loadEntriesPage } = useArchiveApp();
@@ -44,12 +47,13 @@ export function useRetroEntriesPage(
   const [serverMode, setServerMode] = useState(true);
   // 경쟁 조건 방지: 마지막으로 시작한 요청만 상태에 반영한다.
   const reqRef = useRef(0);
-  // retroType/q 변경 감지용(값이 바뀌면 페이지를 1로 리셋).
-  const keyRef = useRef(`${retroType}|${q}`);
+  // retroType/q/dateRange 변경 감지용(값이 바뀌면 페이지를 1로 리셋).
+  const rangeKey = `${dateRange?.from ?? ""}~${dateRange?.to ?? ""}`;
+  const keyRef = useRef(`${retroType}|${q}|${rangeKey}`);
   const [refetchTick, setRefetchTick] = useState(0);
 
   useEffect(() => {
-    const key = `${retroType}|${q}`;
+    const key = `${retroType}|${q}|${rangeKey}`;
     const filterChanged = key !== keyRef.current;
     keyRef.current = key;
 
@@ -65,7 +69,14 @@ export function useRetroEntriesPage(
     // 데이터 로드 시작 시 loading 플래그를 세우는 표준 패턴 — 동기 setState 이지만 의도적.
     setLoading(true);
     setError(false);
-    void loadEntriesPage({ retroType, page, size, q: q || undefined })
+    void loadEntriesPage({
+      retroType,
+      page,
+      size,
+      q: q || undefined,
+      from: dateRange?.from,
+      to: dateRange?.to,
+    })
       .then((res) => {
         if (reqId !== reqRef.current) return; // stale 응답 무시
         if (res === null) {
@@ -82,7 +93,7 @@ export function useRetroEntriesPage(
       .finally(() => {
         if (reqId === reqRef.current) setLoading(false);
       });
-  }, [retroType, q, page, size, loadEntriesPage, refetchTick]);
+  }, [retroType, q, rangeKey, page, size, loadEntriesPage, refetchTick, dateRange]);
 
   const setPage = useCallback((p: number) => setPageState(Math.max(1, p)), []);
 

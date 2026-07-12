@@ -1,28 +1,26 @@
 import { useState } from "react";
-import { ArrowRight, CalendarDays, ChevronDown, Sparkles } from "lucide-react";
+import { CalendarDays, ChevronDown, Plus } from "lucide-react";
+import { DatePickerPopover } from "@/entities/todo/ui/DatePickerPopover";
 import { addDays, toDateKey, todayKey } from "@/shared/lib/date";
 import { useTranslation } from "@/shared/lib/i18n";
-import { DatePickerPopover } from "./DatePickerPopover";
 
 export interface QuickCaptureProps {
-  onSubmit: (text: string, dateKey: string, pushToCalendar: boolean | null) => void;
-  /** 캘린더가 연결된 상태일 때만 체크박스를 표시한다. */
-  calendarConnected?: boolean;
-  /** 초기 체크 상태 (사용자가 명시적으로 바꾸기 전까지만 사용). */
-  calendarAutoPushTodo?: boolean;
+  onSubmit: (text: string, dateKey: string) => void;
 }
 
 /**
- * Top "Quick Capture" form on the Todo board. Text field +
- * date chip + Enter button.
+ * Compact single-row capture bar at the bottom of the Todo board:
+ * text field + date chip + Add button.
+ *
+ * 새 할 일의 Google Calendar push 여부는 `calendarAutoPushTodo` 설정을
+ * 그대로 따른다(생성 시 별도 토글 없음 → 서버가 설정값으로 처리).
+ * 개별 할 일의 캘린더 연동 변경은 상세 패널에서 한다.
  */
-export function QuickCapture({ onSubmit, calendarConnected, calendarAutoPushTodo }: QuickCaptureProps) {
+export function QuickCapture({ onSubmit }: QuickCaptureProps) {
   const { t } = useTranslation();
   const [input, setInput] = useState("");
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickedDate, setPickedDate] = useState(todayKey);
-  // null = 사용자가 명시적으로 바꾸지 않음 → 서버에 null 전송
-  const [pushToCalendar, setPushToCalendar] = useState<boolean | null>(null);
 
   const today = new Date();
   const todayK = toDateKey(today);
@@ -38,69 +36,48 @@ export function QuickCapture({ onSubmit, calendarConnected, calendarAutoPushTodo
   const submit = (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!input.trim()) return;
-    onSubmit(input.trim(), pickedDate, pushToCalendar);
+    onSubmit(input.trim(), pickedDate);
     setInput("");
-    setPushToCalendar(null);
   };
 
   return (
-    <section className="quick-capture">
-      <form onSubmit={submit} className="quick-capture-form">
-        <div className="quick-capture-input-wrap">
-          <Sparkles size={18} />
-          <input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder={t("todo.quickCapture.placeholder")}
-            className="quick-capture-input"
-          />
-        </div>
+    <form onSubmit={submit} className="quick-capture">
+      <div className="quick-capture-input-wrap">
+        <Plus size={16} />
+        <input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder={t("todo.quickCapture.placeholder")}
+          className="quick-capture-input"
+        />
+      </div>
 
-        <div className="quick-capture-date-wrap">
-          <button
-            type="button"
-            onClick={() => setPickerOpen((p) => !p)}
-            className="btn btn-utility quick-capture-date-btn"
-          >
-            <CalendarDays size={14} />
-            {pickedLabel}
-            <ChevronDown size={12} />
-          </button>
-
-          {pickerOpen ? (
-            <DatePickerPopover
-              value={pickedDate}
-              onChange={(v) => {
-                setPickedDate(v);
-                setPickerOpen(false);
-              }}
-              onClose={() => setPickerOpen(false)}
-            />
-          ) : null}
-        </div>
-
+      <div className="quick-capture-date-wrap">
         <button
-          type="submit"
-          className="btn btn-primary quick-capture-submit"
+          type="button"
+          onClick={() => setPickerOpen((p) => !p)}
+          className="btn btn-utility quick-capture-date-btn"
         >
-          {t("todo.quickCapture.enter")} <ArrowRight size={14} />
+          <CalendarDays size={14} />
+          {pickedLabel}
+          <ChevronDown size={12} />
         </button>
-      </form>
 
-      {calendarConnected ? (
-        <label className="quick-capture-calendar-check">
-          <input
-            type="checkbox"
-            checked={pushToCalendar ?? calendarAutoPushTodo ?? false}
-            onChange={(e) => setPushToCalendar(e.target.checked)}
+        {pickerOpen ? (
+          <DatePickerPopover
+            value={pickedDate}
+            onChange={(v) => {
+              setPickedDate(v);
+              setPickerOpen(false);
+            }}
+            onClose={() => setPickerOpen(false)}
           />
-          {t("todo.create.pushToCalendar")}
-        </label>
-      ) : null}
+        ) : null}
+      </div>
 
-      <p className="quick-capture-hint">
-        {t("todo.quickCapture.hint")}
-      </p>
-    </section>
+      <button type="submit" className="btn btn-primary quick-capture-submit">
+        {t("todo.quickCapture.add")}
+      </button>
+    </form>
   );
 }

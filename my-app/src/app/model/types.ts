@@ -192,6 +192,8 @@ export interface ArchiveAppContextValue {
     page: number;
     size: number;
     q?: string;
+    from?: string;
+    to?: string;
   }) => Promise<import("@/shared/api").EntryPage | null>;
   /**
    * 통합검색(GET /search) — nav 빠른 이동용. Todo(title) + 회고 daily entry

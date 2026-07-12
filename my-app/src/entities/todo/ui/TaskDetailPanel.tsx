@@ -16,6 +16,7 @@ import type { TaskStatus, Todo } from "@/entities/todo/model/types";
 import { StatusIcon } from "@/entities/todo/ui/StatusIcon";
 import { formatFullDate, fromDateKey } from "@/shared/lib/date";
 import { useTranslation } from "@/shared/lib/i18n";
+import { DatePickerPopover } from "./DatePickerPopover";
 
 export type TodoPatch = Partial<
   Pick<Todo, "title" | "status" | "description" | "dateKey">
@@ -63,6 +64,7 @@ export function TaskDetailPanel({
   calendarNeedsReauth = false,
 }: TaskDetailPanelProps) {
   const [statusOpen, setStatusOpen] = useState(false);
+  const [dateOpen, setDateOpen] = useState(false);
   const { t, locale } = useTranslation();
   const d = fromDateKey(todo.dateKey);
 
@@ -268,21 +270,44 @@ export function TaskDetailPanel({
           >
             {t("calendar.taskDetail.date")}
           </p>
-          <input
-            type="date"
-            value={todo.dateKey}
-            onChange={(e) => { if (e.target.value) onUpdate({ dateKey: e.target.value }); }}
-            style={{
-              width: "100%",
-              fontSize: 14,
-              padding: "11px 14px",
-              borderRadius: "var(--r-md)",
-              background: "var(--color-tile-3)",
-              border: "1px solid var(--color-divider-soft)",
-              colorScheme: "dark",
-              color: "var(--color-ink)",
-            }}
-          />
+          <div style={{ position: "relative" }}>
+            <button
+              type="button"
+              onClick={() => setDateOpen((o) => !o)}
+              style={{
+                width: "100%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "11px 14px",
+                borderRadius: "var(--r-md)",
+                background: "var(--color-tile-3)",
+                border: "1px solid var(--color-divider-soft)",
+                color: "var(--color-ink)",
+                fontSize: 14,
+              }}
+            >
+              <span
+                style={{ display: "inline-flex", gap: 8, alignItems: "center" }}
+              >
+                <CalendarDays size={15} />
+                {todo.dateKey}
+              </span>
+              <ChevronDown size={14} />
+            </button>
+
+            {dateOpen ? (
+              <DatePickerPopover
+                value={todo.dateKey}
+                anchorRight={false}
+                onChange={(v) => {
+                  onUpdate({ dateKey: v });
+                  setDateOpen(false);
+                }}
+                onClose={() => setDateOpen(false)}
+              />
+            ) : null}
+          </div>
         </div>
 
         {/* Time (optional) */}

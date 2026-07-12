@@ -10,7 +10,9 @@ import {
   toDateKey,
 } from "@/shared/lib/date";
 import { useTranslation } from "@/shared/lib/i18n";
-import { EN_DAYS } from "../model/constants";
+
+/** Day-of-week single-letter labels for the popover calendar header (Monday-first). */
+const DOW_LABELS = ["M", "T", "W", "T", "F", "S", "S"];
 
 export interface DatePickerPopoverProps {
   value: string;
@@ -21,8 +23,8 @@ export interface DatePickerPopoverProps {
 
 /**
  * Month-navigable date picker popover with quick presets
- * (today / tomorrow / weekend). Used by Quick Capture and
- * by the card date chip.
+ * (today / tomorrow / weekend). Used by Quick Capture, the board
+ * date filter, and the task detail panel.
  */
 export function DatePickerPopover({
   value,
@@ -148,7 +150,7 @@ export function DatePickerPopover({
             margin: "0 0 4px",
           }}
         >
-          {EN_DAYS.map((d, i) => (
+          {DOW_LABELS.map((d, i) => (
             <span
               key={i}
               style={{

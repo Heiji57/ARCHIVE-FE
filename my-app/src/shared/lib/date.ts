@@ -185,6 +185,19 @@ export function getWeekKey(date: Date): string {
   return `${date.getFullYear()}-W${pad(getISOWeek(date))}`;
 }
 
+/** ISO 8601 연도+주차의 월요일을 로컬 Date로 반환한다(getISOWeek 의 역함수). */
+export function dateOfISOWeek(year: number, week: number): Date {
+  const simple = new Date(Date.UTC(year, 0, 1 + (week - 1) * 7));
+  const dow = simple.getUTCDay() || 7; // 월=1 .. 일=7
+  simple.setUTCDate(simple.getUTCDate() - dow + 1);
+  return new Date(
+    simple.getUTCFullYear(),
+    simple.getUTCMonth(),
+    simple.getUTCDate(),
+    12,
+  );
+}
+
 export function formatMonthLabel(date: Date, locale: Locale = "ko") {
   return new Intl.DateTimeFormat(LOCALE_TAG[locale], {
     year: "numeric",

@@ -33,8 +33,10 @@ export function TodoBoard({ onNavigate }: TodoBoardProps) {
     ? findTodoById(state.todos, selectedId)
     : null;
 
-  const handleSubmit = (text: string, dateKey: string, pushToCalendar: boolean | null) => {
-    addTodo(text, dateKey, { status: "not-start", pushToCalendar }, setSelectedId);
+  const handleSubmit = (text: string, dateKey: string) => {
+    // 새 할 일의 Google Calendar push 여부는 calendarAutoPushTodo 설정을 따른다
+    // (pushToCalendar: null → 서버가 설정값으로 처리).
+    addTodo(text, dateKey, { status: "not-start", pushToCalendar: null }, setSelectedId);
     pushNotification(
       "success",
       t("todo.notif.added.title"),
@@ -44,11 +46,7 @@ export function TodoBoard({ onNavigate }: TodoBoardProps) {
 
   return (
     <div className="page todo-page">
-      <QuickCapture
-        onSubmit={handleSubmit}
-        calendarConnected={state.calendar.status === "connected"}
-        calendarAutoPushTodo={state.settings.calendarAutoPushTodo}
-      />
+      <QuickCapture onSubmit={handleSubmit} />
 
       <TodoFilterRow filter={filter} onChange={setFilter} todayKey={todayK} />
 

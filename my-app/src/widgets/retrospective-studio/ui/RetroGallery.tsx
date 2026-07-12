@@ -1,0 +1,317 @@
+import { useState } from "react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+  Search,
+  SlidersHorizontal,
+  Sparkles,
+} from "lucide-react";
+import type { JournalEntry } from "@/entities/entry/model/types";
+import type { SummaryKind } from "@/entities/summary/model/types";
+import { useTodayKey } from "@/app/providers/useToday";
+import { EmptyState } from "@/shared/ui/empty-state/EmptyState";
+import { useTranslation, type TranslationKey } from "@/shared/lib/i18n";
+import { MONTHS, RETRO_FILTERS } from "../model/constants";
+import type { UseRetroFilterResult } from "../model/useRetroFilter";
+import { RetroCard } from "./RetroCard";
+
+export interface RetroGalleryProps {
+  filterState: UseRetroFilterResult;
+  /** 현재 편집 중인 회고 id (카드 하이라이트용). */
+  activeId: string | null;
+  onSelect: (id: string) => void;
+  onNewDaily: () => void;
+  onSummarize: (kind: SummaryKind) => void;
+  showSyncBadge: boolean;
+  listEntries: JournalEntry[];
+  currentPage: number;
+  totalPages: number;
+  onPrevPage: () => void;
+  onNextPage: () => void;
+  loading?: boolean;
+  loadError?: boolean;
+}
+
+const SUMMARY_KINDS: { kind: SummaryKind; labelKey: TranslationKey }[] = [
+  { kind: "weekly", labelKey: "retro.summarize.weekly" },
+  { kind: "monthly", labelKey: "retro.summarize.monthly" },
+  { kind: "yearly", labelKey: "retro.summarize.yearly" },
+];
+
+export function RetroGallery({
+  filterState,
+  activeId,
+  onSelect,
+  onNewDaily,
+  onSummarize,
+  showSyncBadge,
+  listEntries,
+  currentPage,
+  totalPages,
+  onPrevPage,
+  onNextPage,
+  loading = false,
+  loadError = false,
+}: RetroGalleryProps) {
+  const todayDateKey = useTodayKey();
+  const { t } = useTranslation();
+  const {
+    retroFilter,
+    setRetroFilter,
+    search,
+    setSearch,
+    yearFilter,
+    setYearFilter,
+    monthFilter,
+    setMonthFilter,
+    weekFilter,
+    setWeekFilter,
+    years,
+    weeks,
+  } = filterState;
+
+  // AI 요약 메뉴(주간/월간/연간) 및 기간 필터 팝오버 — 로컬 열림 상태.
+  const [aiMenuOpen, setAiMenuOpen] = useState(false);
+  const [filterOpen, setFilterOpen] = useState(false);
+
+  // 검색·기간 필터가 모두 초기값이고 daily 탭이면 "첫 방문(빈 상태)"으로 간주.
+  const isPristine =
+    retroFilter === "daily" &&
+    search === "" &&
+    yearFilter === "all" &&
+    monthFilter === "all" &&
+    weekFilter === "all";
+
+  const isEmpty = !loadError && !loading && listEntries.length === 0;
+
+  // 첫 방문 빈 상태: 헤더 없이 중앙 CTA 하나만.
+  if (isEmpty && isPristine) {
+    return (
+      <section className="retro-gallery">
+        <div className="retro-gallery-empty">
+          <span className="retro-gallery-empty-icon">
+            <Plus size={22} />
+          </span>
+          <h3 className="retro-gallery-empty-title">{t("retro.gallery.emptyTitle")}</h3>
+          <p className="retro-gallery-empty-desc">{t("retro.gallery.emptyDesc")}</p>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={onNewDaily}
+            style={{ justifyContent: "center" }}
+          >
+            {t("retro.gallery.newRetro")}
+          </button>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="retro-gallery">
+      {/* ── 헤더: 검색(확장) + AI 요약 (좌) / 타입 칩 (우) ── */}
+      <div className="retro-gallery-head">
+        <div className="retro-gallery-tools">
+          <div className="retro-gallery-search">
+            <Search size={14} className="retro-gallery-search-icon" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={t("retro.search")}
+            />
+          </div>
+
+          {/* 기간 필터 팝오버 트리거 (연/월/주) */}
+          <div className="retro-gallery-pop">
+            <button
+              type="button"
+              className="retro-gallery-icon-btn"
+              onClick={() => setFilterOpen((v) => !v)}
+              title={t("retro.filter.periodFilter")}
+              aria-label={t("retro.filter.periodFilter")}
+            >
+              <SlidersHorizontal size={15} />
+            </button>
+            {filterOpen ? (
+              <>
+                <div
+                  className="retro-gallery-pop-backdrop"
+                  onClick={() => setFilterOpen(false)}
+                />
+                <div className="retro-gallery-pop-panel" role="menu">
+                  <label className="retro-gallery-pop-row">
+                    <span>{t("retro.filter.year")}</span>
+                    <select
+                      className="select"
+                      value={yearFilter}
+                      onChange={(e) => setYearFilter(e.target.value)}
+                    >
+                      <option value="all">{t("retro.filter.allYears")}</option>
+                      {years.map((y) => (
+                        <option key={y} value={y}>
+                          {y}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="retro-gallery-pop-row">
+                    <span>{t("retro.filter.month")}</span>
+                    <select
+                      className="select"
+                      value={monthFilter}
+                      onChange={(e) => setMonthFilter(e.target.value)}
+                      disabled={yearFilter === "all"}
+                    >
+                      <option value="all">{t("retro.filter.allMonths")}</option>
+                      {MONTHS.map((m) => (
+                        <option key={m} value={m}>
+                          {m}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="retro-gallery-pop-row">
+                    <span>{t("retro.filter.week")}</span>
+                    <select
+                      className="select"
+                      value={weekFilter}
+                      onChange={(e) => setWeekFilter(e.target.value)}
+                      disabled={yearFilter === "all"}
+                    >
+                      <option value="all">{t("retro.filter.allWeeks")}</option>
+                      {weeks.map((w) => (
+                        <option key={w} value={w}>
+                          W{w}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  {yearFilter === "all" ? (
+                    <p className="retro-gallery-pop-hint">
+                      {t("retro.filter.yearFirstHint")}
+                    </p>
+                  ) : null}
+                </div>
+              </>
+            ) : null}
+          </div>
+
+          {/* AI 요약 생성 (주간/월간/연간 메뉴) */}
+          <div className="retro-gallery-pop">
+            <button
+              type="button"
+              className="retro-gallery-icon-btn retro-gallery-ai-btn"
+              onClick={() => setAiMenuOpen((v) => !v)}
+              title={t("retro.gallery.aiSummary")}
+              aria-label={t("retro.gallery.aiSummary")}
+            >
+              <Sparkles size={15} />
+            </button>
+            {aiMenuOpen ? (
+              <>
+                <div
+                  className="retro-gallery-pop-backdrop"
+                  onClick={() => setAiMenuOpen(false)}
+                />
+                <div className="retro-gallery-pop-panel retro-gallery-ai-menu" role="menu">
+                  {SUMMARY_KINDS.map(({ kind, labelKey }) => (
+                    <button
+                      key={kind}
+                      type="button"
+                      className="retro-gallery-ai-item"
+                      role="menuitem"
+                      onClick={() => {
+                        setAiMenuOpen(false);
+                        onSummarize(kind);
+                      }}
+                    >
+                      <Sparkles size={12} /> {t(labelKey)}
+                    </button>
+                  ))}
+                </div>
+              </>
+            ) : null}
+          </div>
+        </div>
+
+        {/* 타입 칩 */}
+        <div className="retro-gallery-tabs">
+          {RETRO_FILTERS.map((f) => (
+            <button
+              key={f.id}
+              type="button"
+              className="retro-gallery-chip"
+              data-active={retroFilter === f.id ? "true" : undefined}
+              onClick={() => setRetroFilter(f.id)}
+            >
+              {t(f.labelKey)}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ── 카드 그리드 ── */}
+      {loadError ? (
+        <EmptyState message={t("retro.list.loadError")} minHeight={220} />
+      ) : loading && listEntries.length === 0 ? (
+        <EmptyState message={t("retro.list.loading")} minHeight={220} />
+      ) : (
+        <div className="retro-gallery-grid">
+          {/* 새 회고록 만들기 카드 — 일간은 즉시 오늘자 생성, 주간/월간/연간은
+              기간 선택 모달(PeriodPickerModal)을 그 종류로 바로 연다. */}
+          <button
+            type="button"
+            className="retro-card retro-card-new"
+            onClick={() =>
+              retroFilter === "daily" ? onNewDaily() : onSummarize(retroFilter)
+            }
+          >
+            <span className="retro-card-new-icon">
+              <Plus size={18} />
+            </span>
+            <span className="retro-card-new-label">
+              {t("retro.gallery.newRetro")}
+            </span>
+          </button>
+
+          {listEntries.map((e) => (
+            <RetroCard
+              key={e.id}
+              entry={e}
+              isActive={e.id === activeId}
+              isToday={e.dateKey === todayDateKey}
+              onSelect={onSelect}
+              showSyncBadge={showSyncBadge}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* 페이저 */}
+      {totalPages > 1 ? (
+        <div className="pager" style={{ marginTop: 20 }}>
+          <button
+            type="button"
+            className="pager-btn"
+            disabled={currentPage <= 1 || loading}
+            onClick={onPrevPage}
+          >
+            <ChevronLeft size={12} /> {t("retro.pager.prev")}
+          </button>
+          <span>
+            {t("retro.pager.page", { current: currentPage, total: totalPages })}
+          </span>
+          <button
+            type="button"
+            className="pager-btn"
+            disabled={currentPage >= totalPages || loading}
+            onClick={onNextPage}
+          >
+            {t("retro.pager.next")} <ChevronRight size={12} />
+          </button>
+        </div>
+      ) : null}
+    </section>
+  );
+}

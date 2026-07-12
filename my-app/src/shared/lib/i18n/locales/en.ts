@@ -38,9 +38,7 @@ export const en: Dict = {
 
   "todo.quickCapture.placeholder":
     "Write a task — e.g. Draft the weekly report by today",
-  "todo.quickCapture.hint":
-    "Hit enter to send it to the board. No date? It goes to today.",
-  "todo.quickCapture.enter": "Enter",
+  "todo.quickCapture.add": "Add",
   "todo.col.notStart.label": "Not Started",
   "todo.col.notStart.ko": "Backlog",
   "todo.col.inProgress.label": "In Progress",
@@ -48,9 +46,9 @@ export const en: Dict = {
   "todo.col.done.label": "Done",
   "todo.col.done.ko": "Complete",
   "todo.col.empty": "Nothing here yet.",
-  "todo.card.nextStep": "Next step",
   "todo.card.advance": "Advance status",
   "todo.card.changeDate": "Change date",
+  "todo.card.hasNotes": "Has notes",
   "todo.filter.all": "All",
   "todo.filter.today": "Today",
   "todo.filter.thisWeek": "This week",
@@ -184,7 +182,7 @@ export const en: Dict = {
   "retro.pager.next": "Next",
   "retro.list.loading": "Loading list…",
   "retro.list.loadError": "Couldn't load the list. Please try again shortly.",
-  "retro.filter.pendingHint": "Year/month/week date filters are coming soon.",
+  "retro.filter.yearFirstHint": "Pick a year first to narrow by month/week.",
   "retro.pager.page": "{current} / {total}",
   "retro.filter.year": "Year",
   "retro.filter.month": "Month",
@@ -217,6 +215,12 @@ export const en: Dict = {
   "retro.newDaily.duplicate": "Today's retrospective already exists",
   "retro.newDaily.created": "Today's daily retrospective has been created",
   "retro.editor.autoSaved": "Changes are saved automatically",
+  "retro.gallery.emptyTitle": "No retrospectives yet",
+  "retro.gallery.emptyDesc": "Write your first reflection, or let AI generate a summary from your tasks and commits.",
+  "retro.gallery.newRetro": "New retrospective",
+  "retro.gallery.aiSummary": "Generate with AI",
+  "retro.gallery.backToList": "All retrospectives",
+  "retro.filter.periodFilter": "Period filter",
 
   "summary.processing.title": "AI summary in progress",
   "summary.processing.message":
@@ -408,7 +412,6 @@ export const en: Dict = {
   "settings.calendar.autoDeleteTodoConfirmMsg": "When this setting is on, deleting an event in Google Calendar will permanently delete the linked task. This cannot be undone. Continue?",
   "settings.calendar.autoDeleteTodoConfirmOk": "Enable",
   "settings.calendar.autoDeleteTodoConfirmCancel": "Cancel",
-  "todo.create.pushToCalendar": "Add to Google Calendar",
   "calendar.event.allDay": "All day",
   "calendar.event.openInGoogle": "Open in Google Calendar",
   "calendar.event.readonly": "Read-only",

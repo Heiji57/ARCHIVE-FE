@@ -15,6 +15,10 @@ export interface ConfirmModalProps {
   onDismiss?: () => void;
   /** 취소 버튼 숨김 (단일 액션 알림용) */
   hideCancel?: boolean;
+  /** 확인 버튼 톤 — "danger" 면 파괴적(빨강) 스타일. 기본 primary. */
+  tone?: "default" | "danger";
+  /** 제목 위에 표시할 아이콘 (경고 배지 등). */
+  icon?: ReactNode;
 }
 
 /** 범용 확인 모달 (Portal + 오버레이 + Esc 닫기). 다크 테마 인라인 스타일. */
@@ -28,6 +32,8 @@ export function ConfirmModal({
   onCancel,
   onDismiss,
   hideCancel,
+  tone = "default",
+  icon,
 }: ConfirmModalProps) {
   useEffect(() => {
     if (!open) return;
@@ -75,6 +81,7 @@ export function ConfirmModal({
           boxShadow: "0 24px 60px rgba(0,0,0,0.45)",
         }}
       >
+        {icon ? <div style={{ marginBottom: 12 }}>{icon}</div> : null}
         <h3
           style={{
             margin: "0 0 10px",
@@ -118,7 +125,7 @@ export function ConfirmModal({
           )}
           <button
             type="button"
-            className="btn btn-primary"
+            className={tone === "danger" ? "btn btn-danger" : "btn btn-primary"}
             onClick={onConfirm}
             style={{ padding: "9px 18px" }}
           >

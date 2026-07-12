@@ -4,8 +4,21 @@ import type {
   JournalEntry,
   RetrospectiveType,
 } from "@/entities/entry/model/types";
-import { fromDateKey, getISOWeek } from "@/shared/lib/date";
+import {
+  dateOfISOWeek,
+  endOfISOWeek,
+  endOfMonth,
+  fromDateKey,
+  getISOWeek,
+  toDateKey,
+} from "@/shared/lib/date";
 import { PAGE_SIZE } from "./constants";
+
+/** GET /entries/paginated 의 from/to 로 그대로 보낼 수 있는 기간(YYYY-MM-DD, 양끝 포함). */
+export interface DateRange {
+  from: string;
+  to: string;
+}
 
 export interface UseRetroFilterResult {
   retroFilter: RetrospectiveType;
@@ -25,7 +38,13 @@ export interface UseRetroFilterResult {
   filteredEntries: JournalEntry[];
   pageEntries: JournalEntry[];
   years: string[];
+  /** 선택된 연도 안의 ISO 주차 목록(연도 미선택 시 빈 배열 — 주는 연도에 종속). */
   weeks: string[];
+  /**
+   * 연/월/주 선택을 서버 필터용 단일 range 로 변환한 값(week > month > year 우선순위).
+   * 연도 미선택("all")이면 null(무필터). 서버 모드 호출부(useRetroEntriesPage)가 쓴다.
+   */
+  dateRange: DateRange | null;
 }
 
 /**
@@ -50,6 +69,11 @@ export function useRetroFilter(entries: JournalEntry[]): UseRetroFilterResult {
   };
   const setYearFilter = (s: string) => {
     setYearFilterRaw(s);
+    // 월/주는 연도에 종속(주 목록이 연도 안에서만 계산됨) — 연도를 해제하면 같이 초기화.
+    if (s === "all") {
+      setMonthFilterRaw("all");
+      setWeekFilterRaw("all");
+    }
     resetPage();
   };
   const setMonthFilter = (s: string) => {
@@ -98,12 +122,30 @@ export function useRetroFilter(entries: JournalEntry[]): UseRetroFilterResult {
     return Array.from(s).sort((a, b) => b.localeCompare(a));
   }, [allOfType]);
 
+  // 주는 연도에 종속 — 연도를 고르기 전엔 특정 주가 어느 해인지 알 수 없어 목록을 비운다.
   const weeks = useMemo(() => {
+    if (yearFilter === "all") return [];
+    const inYear = allOfType.filter((e) => e.dateKey.startsWith(`${yearFilter}-`));
     const s = new Set(
-      allOfType.map((e) => String(getISOWeek(fromDateKey(e.dateKey)))),
+      inYear.map((e) => String(getISOWeek(fromDateKey(e.dateKey)))),
     );
     return Array.from(s).sort((a, b) => Number(a) - Number(b));
-  }, [allOfType]);
+  }, [allOfType, yearFilter]);
+
+  // 서버 필터(from/to)용 단일 range — 주 > 월 > 연 우선순위로 가장 구체적인 선택을 range 화한다.
+  const dateRange = useMemo<DateRange | null>(() => {
+    if (yearFilter === "all") return null;
+    const year = Number(yearFilter);
+    if (weekFilter !== "all") {
+      const monday = dateOfISOWeek(year, Number(weekFilter));
+      return { from: toDateKey(monday), to: toDateKey(endOfISOWeek(monday)) };
+    }
+    if (monthFilter !== "all") {
+      const start = new Date(year, Number(monthFilter) - 1, 1, 12);
+      return { from: toDateKey(start), to: toDateKey(endOfMonth(start)) };
+    }
+    return { from: `${yearFilter}-01-01`, to: `${yearFilter}-12-31` };
+  }, [yearFilter, monthFilter, weekFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filteredEntries.length / PAGE_SIZE));
   const pageStart = page * PAGE_SIZE;
@@ -131,5 +173,6 @@ export function useRetroFilter(entries: JournalEntry[]): UseRetroFilterResult {
     pageEntries,
     years,
     weeks,
+    dateRange,
   };
 }

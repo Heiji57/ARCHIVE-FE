@@ -38,9 +38,7 @@ export const ko: Dict = {
 
   "todo.quickCapture.placeholder":
     "할 일을 작성해보세요 — 예: 오늘 내로 보고서 작성하기",
-  "todo.quickCapture.hint":
-    "입력하는 순간 칸반에 정렬됩니다. 날짜를 비워두면 오늘로 추가합니다.",
-  "todo.quickCapture.enter": "Enter",
+  "todo.quickCapture.add": "추가",
   "todo.col.notStart.label": "Not Started",
   "todo.col.notStart.ko": "시작 전",
   "todo.col.inProgress.label": "In Progress",
@@ -48,9 +46,9 @@ export const ko: Dict = {
   "todo.col.done.label": "Done",
   "todo.col.done.ko": "완료",
   "todo.col.empty": "아직 이 열에 배치된 카드가 없습니다.",
-  "todo.card.nextStep": "다음 단계",
   "todo.card.advance": "상태 변경",
   "todo.card.changeDate": "날짜 수정",
+  "todo.card.hasNotes": "메모 있음",
   "todo.filter.all": "전체",
   "todo.filter.today": "오늘",
   "todo.filter.thisWeek": "이번 주",
@@ -182,7 +180,7 @@ export const ko: Dict = {
   "retro.pager.next": "다음",
   "retro.list.loading": "목록을 불러오는 중…",
   "retro.list.loadError": "목록을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.",
-  "retro.filter.pendingHint": "연/월/주 기간 필터는 곧 지원될 예정이에요.",
+  "retro.filter.yearFirstHint": "연도를 먼저 선택하면 월/주로 좁힐 수 있어요.",
   "retro.pager.page": "{current} / {total}",
   "retro.filter.year": "연도",
   "retro.filter.month": "월",
@@ -215,6 +213,12 @@ export const ko: Dict = {
   "retro.newDaily.duplicate": "오늘의 회고록이 이미 존재합니다",
   "retro.newDaily.created": "오늘의 일일 회고가 생성되었습니다",
   "retro.editor.autoSaved": "변경사항은 자동으로 저장됩니다",
+  "retro.gallery.emptyTitle": "아직 회고록이 없어요",
+  "retro.gallery.emptyDesc": "첫 회고를 작성하거나, AI가 할 일과 커밋으로 요약을 만들게 하세요.",
+  "retro.gallery.newRetro": "새 회고록 만들기",
+  "retro.gallery.aiSummary": "AI 요약 생성",
+  "retro.gallery.backToList": "모든 회고록",
+  "retro.filter.periodFilter": "기간 필터",
 
   "summary.processing.title": "AI 요약 처리 중",
   "summary.processing.message":
@@ -404,7 +408,6 @@ export const ko: Dict = {
   "settings.calendar.autoDeleteTodoConfirmMsg": "이 설정을 켜면 Google Calendar에서 일정을 삭제할 때 연동된 할 일이 되돌릴 수 없이 함께 삭제됩니다. 계속하시겠습니까?",
   "settings.calendar.autoDeleteTodoConfirmOk": "설정 켜기",
   "settings.calendar.autoDeleteTodoConfirmCancel": "취소",
-  "todo.create.pushToCalendar": "Google 캘린더에 추가",
   "calendar.event.allDay": "종일",
   "calendar.event.openInGoogle": "Google Calendar에서 열기",
   "calendar.event.readonly": "읽기 전용",
