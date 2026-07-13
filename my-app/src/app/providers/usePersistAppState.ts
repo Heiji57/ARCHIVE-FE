@@ -13,6 +13,7 @@ export function usePersistAppState(state: AppState) {
     saveAppState({
       todos: state.todos,
       entries: state.entries,
+      folders: state.folders,
       notifications: state.notifications,
       settings: state.settings,
       pendingSummary: state.pendingSummary,
@@ -23,6 +24,7 @@ export function usePersistAppState(state: AppState) {
     });
   }, [
     state.entries,
+    state.folders,
     state.todos,
     state.notifications,
     state.settings,

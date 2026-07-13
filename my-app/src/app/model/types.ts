@@ -15,6 +15,7 @@ import type {
   SummaryKind,
   SummaryReadiness,
 } from "@/entities/summary/model/types";
+import type { Folder } from "@/entities/folder/model/types";
 import type { Session } from "@/entities/session/model/types";
 import type { RetroTemplate } from "@/entities/template";
 import type { TaskStatus, Todo } from "@/entities/todo/model/types";
@@ -36,6 +37,12 @@ export type AppFocusTarget =
 export interface PersistedAppState {
   todos: Todo[];
   entries: JournalEntry[];
+  /**
+   * 폴더 로컬 캐시. 서버 모드에서는 GET /folders/contents 응답이 점진적으로
+   * 병합되는 부분 캐시(권위 있는 소스는 항상 서버)이고, 데모/mock 모드에서는
+   * 이 배열 자체가 유일한 저장소다(entries/todos 와 동일한 패턴).
+   */
+  folders: Folder[];
   notifications: NotificationItem[];
   settings: AppSettings;
   pendingSummary: PendingSummary | null;
@@ -130,6 +137,8 @@ export interface ArchiveAppContextValue {
   createDailyEntry: (
     dateKey: string,
     onIdReplaced?: (serverEntry: JournalEntry) => void,
+    /** 지정하면 생성 직후 이 폴더로 옮긴다(현재 폴더 브라우징 중 생성 시). */
+    folderId?: string | null,
   ) => { entry: JournalEntry; existed: boolean };
   // ─── GitHub (서버 저장소 연결 모델) ────────────────────────────────────────
   /** 연결 상태·연결된 저장소 목록을 (재)조회해 상태에 반영. */
@@ -188,13 +197,59 @@ export interface ArchiveAppContextValue {
    * - 서버 오류는 삼키지 않고 예외로 전파한다(호출부가 목록 로드 실패를 표시하도록).
    */
   loadEntriesPage: (params: {
-    retroType: RetrospectiveType;
+    /** 생략 시 4개 타입을 합친 "전체" 뷰(GET /entries/paginated 의 retroType 생략). */
+    retroType?: RetrospectiveType;
     page: number;
     size: number;
     q?: string;
     from?: string;
     to?: string;
   }) => Promise<import("@/shared/api").EntryPage | null>;
+  // ─── Folders (회고록 폴더 정리) ─────────────────────────────────────────────
+  /**
+   * 폴더 열람(GET /folders/contents). folderId 생략 시 최상위, retroType 생략 시
+   * 4개 타입을 합친 "전체" 뷰. 반환된 entries 는 state.entries 에 병합하고,
+   * folders 는 state.folders 캐시에 병합한다.
+   * 데모/mock 모드에서는 null 을 반환한다 → 호출부는 state.folders/state.entries
+   * 를 직접 필터링해 폴백한다.
+   */
+  loadFolderContents: (params: {
+    folderId?: string;
+    retroType?: RetrospectiveType;
+    page: number;
+    size: number;
+  }) => Promise<import("@/shared/api").FolderContents | null>;
+  /**
+   * 폴더 생성. parentFolderId 생략/null 이면 최상위. 데모/mock 은 로컬 상태에만
+   * 반영(낙관적, 서버 없음).
+   */
+  createFolder: (
+    name: string,
+    parentFolderId?: string | null,
+  ) => Promise<Folder | null>;
+  /**
+   * 폴더 이름 변경 및/또는 이동(부모 변경). patch 에 parentFolderId 를 명시적으로
+   * 넣으면(문자열|null) 이동, 필드 자체를 생략하면 이동 없음(이름만 변경).
+   */
+  updateFolder: (
+    folderId: string,
+    patch: { name?: string; parentFolderId?: string | null },
+  ) => Promise<Folder | null>;
+  /**
+   * 폴더 삭제. 내용물(하위 폴더·회고록)은 삭제되지 않고 최상위로 풀린다(orphan) —
+   * 로컬 캐시(state.folders/state.entries)에도 동일하게 반영한다.
+   */
+  deleteFolder: (folderId: string) => Promise<boolean>;
+  /**
+   * 회고록을 다른 폴더로 이동(드래그앤드롭). folderId=null 이면 폴더 소속 해제.
+   * retroType 은 daily(journal_entries) vs weekly/monthly/yearly(retro_summaries)
+   * 라우팅에 필수.
+   */
+  moveEntryToFolder: (
+    entryId: string,
+    retroType: RetrospectiveType,
+    folderId: string | null,
+  ) => Promise<boolean>;
   /**
    * 통합검색(GET /search) — nav 빠른 이동용. Todo(title) + 회고 daily entry
    * (title+content)만 대상이며, weekly/monthly/yearly 요약은 포함하지 않는다.

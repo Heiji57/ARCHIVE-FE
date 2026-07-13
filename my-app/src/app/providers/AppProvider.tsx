@@ -37,6 +37,7 @@ import { useCoalescingQueues } from "@/app/providers/useCoalescingQueues";
 import { useServerSync } from "@/app/providers/useServerSync";
 import { findEntryByDateKeyAndType } from "@/entities/entry/lib/selectors";
 import type { JournalEntry, RetrospectiveType } from "@/entities/entry/model/types";
+import type { Folder } from "@/entities/folder/model/types";
 import type {
   NoticeCategory,
   NoticeType,
@@ -134,6 +135,11 @@ import {
   apiResetTemplate,
   apiSetActiveTemplate,
   streamSummary,
+  apiCreateFolder,
+  apiGetFolderContents,
+  apiUpdateFolder,
+  apiDeleteFolder,
+  apiMoveEntryToFolder,
 } from "@/shared/api";
 import {
   MOCK_AVAILABLE_REPOS,
@@ -750,7 +756,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // 데모/mock 은 null 을 반환(호출부가 클라이언트 목록으로 폴백). 서버 오류는 전파한다.
   const loadEntriesPage = useCallback(
     async (params: {
-      retroType: RetrospectiveType;
+      /** 생략 시 4개 타입을 합친 "전체" 뷰(GET /entries/paginated 의 retroType 생략). */
+      retroType?: RetrospectiveType;
       page: number;
       size: number;
       q?: string;
@@ -764,7 +771,31 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
       return res;
     },
-     
+
+    [],
+  );
+
+  // 폴더 열람(GET /folders/contents) — 반환된 folders/entries 를 각각 로컬 캐시에
+  // 병합한다. 데모/mock 은 null(호출부가 state.folders/state.entries 를 직접
+  // 필터링해 폴백). useCallback([]) 으로 안정화(useFolderContents 의 effect 의존성).
+  const loadFolderContents = useCallback(
+    async (params: {
+      folderId?: string;
+      retroType?: RetrospectiveType;
+      page: number;
+      size: number;
+    }) => {
+      if (!USE_API || isDemoMode()) return null;
+      const res = await apiGetFolderContents(params);
+      if (res.folders.length > 0) {
+        dispatch({ type: "folder/merge", payload: { folders: res.folders } });
+      }
+      if (res.entries.length > 0) {
+        dispatch({ type: "entries/merge", payload: { entries: res.entries } });
+      }
+      return res;
+    },
+
     [],
   );
 
@@ -1012,7 +1043,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         })
         .catch(() => reportApiError());
     },
-    createDailyEntry: (dateKey, onIdReplaced) => {
+    createDailyEntry: (dateKey, onIdReplaced, folderId) => {
       const existing = state.entries.find(
         (e) => e.dateKey === dateKey && e.retroType === "daily",
       );
@@ -1033,6 +1064,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         githubPush: null,
         synced: false,
         updatedAt: new Date().toISOString(),
+        folderId: folderId ?? null,
       };
       dispatch({ type: "entry/upsert", payload: { entry } });
       // 새 entry 추가 → readiness 캐시 무효화
@@ -1049,10 +1081,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
           .then((serverEntry) => {
             dispatch({
               type: "entry/replaceId",
-              payload: { localId, serverEntry },
+              payload: { localId, serverEntry: { ...serverEntry, folderId: folderId ?? null } },
             });
             // 호출자(RetrospectiveStudio)가 selectedId 를 서버 ID 로 갱신할 수 있도록 통지
             onIdReplaced?.(serverEntry);
+            // 폴더 안에서 생성한 경우 — 생성 자체는 폴더를 모르므로(EntryCreateRequest
+            // 에 folder_id 없음) 별도로 이동 호출을 보낸다.
+            if (folderId) {
+              void apiMoveEntryToFolder(serverEntry.id, "daily", folderId).catch(
+                () => reportApiError(),
+              );
+            }
           })
           .catch(() => reportApiError());
       }
@@ -1299,6 +1338,89 @@ export function AppProvider({ children }: { children: ReactNode }) {
     loadTodosForView,
     loadTodosForRange,
     loadEntriesPage,
+    loadFolderContents,
+    // ─── Folders ────────────────────────────────────────────────────────────
+    createFolder: async (name, parentFolderId) => {
+      if (!apiActive) {
+        const folder: Folder = {
+          id: createId("folder"),
+          name,
+          parentFolderId: parentFolderId ?? null,
+          folderCount: 0,
+          entryCount: 0,
+          createdAt: new Date().toISOString(),
+          updatedAt: null,
+        };
+        dispatch({ type: "folder/merge", payload: { folders: [folder] } });
+        return folder;
+      }
+      try {
+        const folder = await apiCreateFolder({ name, parentFolderId });
+        dispatch({ type: "folder/merge", payload: { folders: [folder] } });
+        return folder;
+      } catch (e) {
+        const locale = state.settings.locale;
+        const msg =
+          e instanceof ApiError && e.code === "FOLDER_NAME_DUPLICATED"
+            ? translate(locale, "folder.error.duplicateName")
+            : translate(locale, "auth.error.network");
+        pushNotification("warning", msg, "", { transient: true });
+        return null;
+      }
+    },
+    updateFolder: async (folderId, patch) => {
+      if (!apiActive) {
+        const existing = state.folders.find((f) => f.id === folderId);
+        if (!existing) return null;
+        const updated: Folder = {
+          ...existing,
+          ...patch,
+          updatedAt: new Date().toISOString(),
+        };
+        dispatch({ type: "folder/merge", payload: { folders: [updated] } });
+        return updated;
+      }
+      try {
+        const folder = await apiUpdateFolder(folderId, patch);
+        dispatch({ type: "folder/merge", payload: { folders: [folder] } });
+        return folder;
+      } catch (e) {
+        const locale = state.settings.locale;
+        const msg =
+          e instanceof ApiError && e.code === "FOLDER_NAME_DUPLICATED"
+            ? translate(locale, "folder.error.duplicateName")
+            : e instanceof ApiError && e.code === "FOLDER_CIRCULAR_REFERENCE"
+              ? translate(locale, "folder.error.circular")
+              : translate(locale, "auth.error.network");
+        pushNotification("warning", msg, "", { transient: true });
+        return null;
+      }
+    },
+    deleteFolder: async (folderId) => {
+      dispatch({ type: "folder/remove", payload: { id: folderId } });
+      if (!apiActive) return true;
+      try {
+        await apiDeleteFolder(folderId);
+        return true;
+      } catch {
+        reportApiError();
+        return false;
+      }
+    },
+    moveEntryToFolder: async (entryId, retroType, folderId) => {
+      dispatch({
+        type: "entry/update",
+        payload: { id: entryId, patch: { folderId } },
+      });
+      if (!apiActive) return true;
+      try {
+        await apiMoveEntryToFolder(entryId, retroType, folderId);
+        return true;
+      } catch {
+        reportApiError();
+        return false;
+      }
+    },
     globalSearch,
     pushNotification,
     markNotificationRead: (id) => {

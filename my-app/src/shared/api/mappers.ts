@@ -4,6 +4,7 @@
  */
 import type { GithubPush, JournalEntry } from "@/entities/entry/model/types";
 import { formatSummaryTitle } from "@/entities/entry/lib/summaryTitle";
+import type { Folder } from "@/entities/folder/model/types";
 import type {
   NoticeCategory,
   NoticeType,
@@ -20,6 +21,7 @@ import type { components } from "./schema";
 type UserResponse = components["schemas"]["UserResponse"];
 type TodoResponse = components["schemas"]["TodoResponse"];
 type EntryResponse = components["schemas"]["EntryResponse"];
+type FolderResponse = components["schemas"]["FolderResponse"];
 type SettingsResponse = components["schemas"]["SettingsResponse"];
 type NotificationResponse = components["schemas"]["NotificationResponse"];
 type RetroTemplateResponse = components["schemas"]["RetroTemplateResponse"];
@@ -103,6 +105,20 @@ export function toEntry(api: EntryResponse): JournalEntry {
     synced: githubPush !== null,
     isSummary,
     status: api.status ?? null,
+    folderId: api.folderId ?? null,
+  };
+}
+
+// ─── Folder ─────────────────────────────────────────────────────────────────
+export function toFolder(api: FolderResponse): Folder {
+  return {
+    id: api.id,
+    name: api.name,
+    parentFolderId: api.parentFolderId ?? null,
+    folderCount: api.folderCount,
+    entryCount: api.entryCount,
+    createdAt: api.createdAt,
+    updatedAt: api.updatedAt ?? null,
   };
 }
 

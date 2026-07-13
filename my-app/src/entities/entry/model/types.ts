@@ -35,4 +35,6 @@ export interface JournalEntry {
    * 읽기 전용 편집기에 본문 대신 상태 안내를 보여줘야 한다. daily 회고는 항상 null.
    */
   status?: "pending" | "in_progress" | "completed" | "failed" | null;
+  /** 소속 폴더 id. 폴더에 속하지 않으면 null. */
+  folderId: string | null;
 }

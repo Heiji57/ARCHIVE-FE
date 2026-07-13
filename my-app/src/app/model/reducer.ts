@@ -98,6 +98,27 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       return { ...state, entries: [...byId.values()] };
     }
 
+    case "folder/merge": {
+      const byId = new Map(state.folders.map((f) => [f.id, f]));
+      for (const folder of action.payload.folders) {
+        byId.set(folder.id, folder);
+      }
+      return { ...state, folders: [...byId.values()] };
+    }
+
+    case "folder/remove": {
+      const { id } = action.payload;
+      return {
+        ...state,
+        folders: state.folders
+          .filter((f) => f.id !== id)
+          .map((f) => (f.parentFolderId === id ? { ...f, parentFolderId: null } : f)),
+        entries: state.entries.map((e) =>
+          e.folderId === id ? { ...e, folderId: null } : e,
+        ),
+      };
+    }
+
     case "hydrate/notifications":
       return { ...state, notifications: action.payload.notifications };
 
@@ -143,10 +164,16 @@ export function appReducer(state: AppState, action: AppAction): AppState {
         (e) => e.id === action.payload.entry.id,
       );
       if (existingIndex >= 0) {
+        const prev = state.entries[existingIndex];
         const next = state.entries.slice();
         next[existingIndex] = {
-          ...next[existingIndex],
+          ...prev,
           ...action.payload.entry,
+          // SummaryResponse(GET /summaries/{id})엔 folderId 가 없어 toSummaryEntry
+          // 가 항상 null 을 채운다 — 요약 재생성/되돌리기로 이 액션이 다시 실행돼도
+          // 폴더 소속을 잃지 않도록 기존 값을 유지한다. 실제 폴더 이동은 항상
+          // entry/update(folderId 패치)로만 이뤄진다.
+          folderId: prev.folderId,
           updatedAt: new Date().toISOString(),
         };
         return { ...state, entries: next };

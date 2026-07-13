@@ -12,6 +12,23 @@ interface Props {
   onNavigate?: (route: AppRoute) => void;
 }
 
+// 서버 결과와 로컬 결과를 id 기준으로 중복 제거하며 병합한다(서버 우선).
+function mergeById<T extends { id: string }>(
+  primary: T[],
+  secondary: T[],
+  limit: number,
+): T[] {
+  const seen = new Set<string>();
+  const merged: T[] = [];
+  for (const item of [...primary, ...secondary]) {
+    if (seen.has(item.id)) continue;
+    seen.add(item.id);
+    merged.push(item);
+    if (merged.length >= limit) break;
+  }
+  return merged;
+}
+
 export function GlobalSearch({ onNavigate }: Props) {
   const { state, requestFocus, globalSearch } = useArchiveApp();
   const { t } = useTranslation();
@@ -45,11 +62,11 @@ export function GlobalSearch({ onNavigate }: Props) {
 
   // 입력마다 GET /search 를 호출하지 않도록 디바운스한다.
   const debouncedQ = useDebouncedValue(q, 250);
-  // 서버(GET /search) 응답 — 어떤 검색어에 대한 결과인지도 함께 기억해 stale 결과를 걸러낸다.
-  const [serverState, setServerState] = useState<{
-    q: string;
-    result: GlobalSearchResult;
-  } | null>(null);
+  // 서버(GET /search) 응답을 검색어별로 캐싱한다 — 이전에 검색했던 검색어로
+  // 되돌아가도(예: "ab" → "abc" → 다시 "ab") 재요청 없이 즉시 재사용한다.
+  // ref 로 보관하고, 갱신 시 setCacheVersion 으로 리렌더만 트리거한다.
+  const serverCacheRef = useRef<Map<string, GlobalSearchResult>>(new Map());
+  const [, setCacheVersion] = useState(0);
   // 데모/mock 모드(서버 없음) → false, 로컬 필터로 폴백.
   const [serverMode, setServerMode] = useState(true);
   const reqRef = useRef(0);
@@ -57,6 +74,7 @@ export function GlobalSearch({ onNavigate }: Props) {
   useEffect(() => {
     const needle = debouncedQ.trim();
     if (!needle) return;
+    if (serverCacheRef.current.has(needle)) return; // 이미 캐시된 검색어 — 재요청 생략
     const reqId = ++reqRef.current;
     void globalSearch(needle, 6)
       .then((res) => {
@@ -66,14 +84,24 @@ export function GlobalSearch({ onNavigate }: Props) {
           return;
         }
         setServerMode(true);
-        setServerState({ q: needle, result: res });
+        const cache = serverCacheRef.current;
+        cache.set(needle, res);
+        if (cache.size > 20) {
+          // Map 은 삽입 순서를 보존하므로 가장 오래된 항목부터 제거한다.
+          const oldestKey = cache.keys().next().value;
+          if (oldestKey !== undefined) cache.delete(oldestKey);
+        }
+        setCacheVersion((v) => v + 1); // ref 갱신을 화면에 반영
       })
       .catch(() => {
         /* 네트워크 오류 — 아래 results 계산이 로컬 필터로 자동 폴백한다 */
       });
   }, [debouncedQ, globalSearch]);
 
-  // 로컬 필터(데모/mock 폴백 + 디바운스 대기 중 즉시 미리보기용).
+  // 로컬 필터 — 서버(GET /search)와 동일하게 daily 회고만 대상으로 한다
+  // (주/월/연 요약은 서버 검색 범위 밖이라 로컬에서도 제외해야 두 결과가
+  // 어긋나지 않는다). 타이핑 중 즉시 미리보기 + 데모/mock 폴백 + 서버 결과와의
+  // 병합에 쓰인다.
   const localResults = useMemo(() => {
     const needle = q.trim().toLowerCase();
     if (!needle) return { todos: [], entries: [] };
@@ -81,6 +109,7 @@ export function GlobalSearch({ onNavigate }: Props) {
       .filter((todo) => todo.title.toLowerCase().includes(needle))
       .slice(0, 6);
     const entries = state.entries
+      .filter((e) => e.retroType === "daily")
       .filter(
         (e) =>
           e.title.toLowerCase().includes(needle) ||
@@ -90,13 +119,22 @@ export function GlobalSearch({ onNavigate }: Props) {
     return { todos, entries };
   }, [state.todos, state.entries, q]);
 
-  // 디바운스가 현재 입력값에 따라잡았고(q === debouncedQ) 그 검색어에 대한 서버
-  // 응답이 이미 와 있으면 서버 결과를, 그 외(타이핑 중·데모)엔 로컬 결과를 쓴다.
+  // 디바운스가 현재 입력값에 따라잡은(q === debouncedQ) 검색어의 서버 응답이
+  // 캐시에 있으면 로컬 결과와 "병합"해서 보여준다(교체가 아니라 합집합, id로
+  // 중복 제거하며 서버 결과 우선) — 서버 응답이 도착하는 순간 항목이 사라지거나
+  // 리스트가 통째로 바뀌는 깜빡임을 없앤다. 아직 응답이 없거나(타이핑 중) 데모
+  // 모드면 로컬 결과만 쓴다.
   const settled = q.trim() === debouncedQ.trim();
-  const results: GlobalSearchResult =
-    serverMode && settled && serverState?.q === debouncedQ.trim()
-      ? serverState.result
-      : localResults;
+  const serverResult =
+    serverMode && settled
+      ? serverCacheRef.current.get(debouncedQ.trim())
+      : undefined;
+  const results: GlobalSearchResult = serverResult
+    ? {
+        todos: mergeById(serverResult.todos, localResults.todos, 6),
+        entries: mergeById(serverResult.entries, localResults.entries, 6),
+      }
+    : localResults;
 
   const hasResults = results.todos.length > 0 || results.entries.length > 0;
 

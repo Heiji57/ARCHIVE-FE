@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useArchiveApp } from "@/app/providers/useArchiveApp";
-import type { RetrospectiveType } from "@/entities/entry/model/types";
+import type { RetroTab } from "./constants";
 import type { DateRange } from "./useRetroFilter";
 
 export interface RetroEntriesPage {
@@ -28,14 +28,18 @@ export interface RetroEntriesPage {
  * daily(journal_entries) 뿐 아니라 weekly/monthly/yearly(AI 요약, retro_summaries)도
  * 이 엔드포인트 하나로 조회한다 — retroType 또는 검색어(q)가 바뀌면 1페이지로 리셋한다.
  *
- * @param retroType 조회할 회고 종류(사이드바 탭).
+ * @param retroType 조회할 회고 종류(사이드바 탭). "all" 이면 retroType 쿼리를
+ *   생략해 4종을 합친 "전체" 뷰를 요청한다(서버가 정렬까지 처리).
  * @param q 검색어(디바운스는 호출부 책임) — 비어 있으면 무필터.
  * @param dateRange 연/월/주 선택을 변환한 단일 range(useRetroFilter.dateRange) — null 이면 무필터.
+ * @param enabled false 면 조회를 건너뛴다(폴더 브라우징 뷰가 대신 활성일 때
+ *   불필요한 중복 요청을 막는다).
  */
 export function useRetroEntriesPage(
-  retroType: RetrospectiveType,
+  retroType: RetroTab,
   q: string,
   dateRange: DateRange | null,
+  enabled = true,
   size = 10,
 ): RetroEntriesPage {
   const { loadEntriesPage } = useArchiveApp();
@@ -53,6 +57,7 @@ export function useRetroEntriesPage(
   const [refetchTick, setRefetchTick] = useState(0);
 
   useEffect(() => {
+    if (!enabled) return;
     const key = `${retroType}|${q}|${rangeKey}`;
     const filterChanged = key !== keyRef.current;
     keyRef.current = key;
@@ -70,7 +75,7 @@ export function useRetroEntriesPage(
     setLoading(true);
     setError(false);
     void loadEntriesPage({
-      retroType,
+      retroType: retroType === "all" ? undefined : retroType,
       page,
       size,
       q: q || undefined,
@@ -93,7 +98,7 @@ export function useRetroEntriesPage(
       .finally(() => {
         if (reqId === reqRef.current) setLoading(false);
       });
-  }, [retroType, q, rangeKey, page, size, loadEntriesPage, refetchTick, dateRange]);
+  }, [retroType, q, rangeKey, page, size, loadEntriesPage, refetchTick, dateRange, enabled]);
 
   const setPage = useCallback((p: number) => setPageState(Math.max(1, p)), []);
 

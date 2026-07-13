@@ -5,6 +5,7 @@ import type {
   GitHubStatus,
   LinkedRepository,
 } from "@/entities/github/model/types";
+import type { Folder } from "@/entities/folder/model/types";
 import type { NotificationItem } from "@/entities/notification/model/types";
 import type {
   PendingSummary,
@@ -65,11 +66,18 @@ export type AppAction =
       payload: {
         id: string;
         patch: Partial<
-          Pick<JournalEntry, "title" | "content" | "synced" | "retroType">
+          Pick<
+            JournalEntry,
+            "title" | "content" | "synced" | "retroType" | "folderId"
+          >
         >;
       };
     }
   | { type: "entry/upsert"; payload: { entry: JournalEntry } }
+  // 폴더 캐시 upsert-many(id 기준) — GET /folders/contents 병합 + 데모/mock 저장소.
+  | { type: "folder/merge"; payload: { folders: Folder[] } }
+  // 폴더 삭제 + cascade orphan(하위 폴더 parentFolderId, 안의 회고록 folderId → null).
+  | { type: "folder/remove"; payload: { id: string } }
   /** POST 응답 서버 ID 로 낙관적 로컬 ID 를 교체한다. */
   | { type: "entry/replaceId"; payload: { localId: string; serverEntry: JournalEntry } }
   /** POST 응답 서버 ID 로 낙관적 로컬 ID 를 교체한다. */

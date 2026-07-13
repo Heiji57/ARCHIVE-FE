@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle } from "lucide-react";
 import { useArchiveApp } from "@/app/providers/useArchiveApp";
 import { useTodayKey } from "@/app/providers/useToday";
-import type { JournalEntry } from "@/entities/entry/model/types";
+import type { JournalEntry, RetrospectiveType } from "@/entities/entry/model/types";
+import type { Folder } from "@/entities/folder/model/types";
 import type {
   SummaryKind,
   SummaryReadiness,
@@ -10,9 +11,12 @@ import type {
 import { fromDateKey } from "@/shared/lib/date";
 import { can } from "@/shared/lib/permissions";
 import { ConfirmModal } from "@/shared/ui/confirm-modal/ConfirmModal";
+import { TextField } from "@/shared/ui/text-field/TextField";
 import { useTranslation } from "@/shared/lib/i18n";
 import { useDebouncedValue } from "@/shared/lib/useDebouncedValue";
 import { useLatestRef } from "@/shared/lib/useLatestRef";
+import { useFolderContents } from "../model/useFolderContents";
+import { useFolderNav, type FolderCrumb } from "../model/useFolderNav";
 import { useRetroEntriesPage } from "../model/useRetroEntriesPage";
 import { useRetroFilter } from "../model/useRetroFilter";
 import { PeriodPickerModal } from "./PeriodPickerModal";
@@ -69,15 +73,33 @@ export function RetrospectiveStudio() {
 
   const filterState = useRetroFilter(state.entries);
   const { filteredEntries } = filterState;
+  const { createFolder, updateFolder, deleteFolder, moveEntryToFolder } =
+    useArchiveApp();
 
   // 4개 탭(daily/weekly/monthly/yearly) 전부 서버 페이지네이션(GET /entries/paginated)
   // 으로 조회한다 — daily=journal_entries, weekly/monthly/yearly=retro_summaries.
   // 검색은 디바운스해 입력마다 요청하지 않는다.
   const debouncedSearch = useDebouncedValue(filterState.search, 300);
+
+  // 폴더 브라우징 경로(현재 폴더 + breadcrumb) — GET /folders/contents 는 검색어/
+  // 기간을 지원하지 않으므로, 둘 중 하나라도 걸려 있으면 플랫 뷰(useRetroEntriesPage)
+  // 로 전환하고 폴더 UI 는 숨긴다("검색은 폴더를 가로질러 전체를 훑는다" 는 의도).
+  const folderNav = useFolderNav();
+  const isFolderView =
+    debouncedSearch.trim() === "" && filterState.dateRange === null;
+
   const entriesPage = useRetroEntriesPage(
     filterState.retroFilter,
     debouncedSearch,
     filterState.dateRange,
+    !isFolderView,
+  );
+  const folderContents = useFolderContents(
+    state.folders,
+    state.entries,
+    folderNav.currentFolderId,
+    filterState.retroFilter,
+    isFolderView,
   );
   // 데모/mock 은 서버가 없어 serverMode=false → 클라이언트 목록(useRetroFilter)으로 폴백.
   const useServerList = entriesPage.serverMode;
@@ -92,28 +114,45 @@ export function RetrospectiveStudio() {
     [entriesPage.ids, state.entries],
   );
 
-  // 사이드바 목록 + 페이저 소스 (서버 모드=서버 페이지, 폴백=클라이언트).
-  const listEntries = useServerList ? serverPageEntries : filterState.pageEntries;
-  const currentPage = useServerList ? entriesPage.page : filterState.page + 1;
-  const totalPages = useServerList ? entriesPage.totalPages : filterState.totalPages;
+  // 사이드바 목록 + 페이저 소스. 폴더 뷰가 우선이고(폴더 자체가 서버/클라 폴백을
+  // 이미 흡수), 아니면 기존 플랫 뷰(서버 모드=서버 페이지, 폴백=클라이언트).
+  const listEntries = isFolderView
+    ? folderContents.entries
+    : useServerList
+      ? serverPageEntries
+      : filterState.pageEntries;
+  const currentPage = isFolderView
+    ? folderContents.page
+    : useServerList
+      ? entriesPage.page
+      : filterState.page + 1;
+  const totalPages = isFolderView
+    ? folderContents.totalPages
+    : useServerList
+      ? entriesPage.totalPages
+      : filterState.totalPages;
   const goPrevPage = () => {
-    if (useServerList) entriesPage.setPage(entriesPage.page - 1);
+    if (isFolderView) folderContents.setPage(folderContents.page - 1);
+    else if (useServerList) entriesPage.setPage(entriesPage.page - 1);
     else filterState.setPage((p) => Math.max(0, p - 1));
   };
   const goNextPage = () => {
-    if (useServerList) entriesPage.setPage(entriesPage.page + 1);
+    if (isFolderView) folderContents.setPage(folderContents.page + 1);
+    else if (useServerList) entriesPage.setPage(entriesPage.page + 1);
     else filterState.setPage((p) => Math.min(filterState.totalPages - 1, p + 1));
   };
 
-  // AI 요약 완료 시 갤러리만 즉시 갱신 — 서버 모드는 /entries/paginated 의 ids 가
-  // 완료된 요약을 자동으로 포함하지 않으므로(로컬 state.entries 갱신과 별개) 직접
-  // refetch 해야 카드가 나타난다. (클라이언트 폴백 목록은 state.entries 파생이라
-  // 이미 자동 반영됨 — 서버 모드에서만 필요.)
+  // AI 요약 완료 시 갤러리만 즉시 갱신 — 서버 모드는 /entries/paginated 나
+  // /folders/contents 의 목록이 완료된 요약을 자동으로 포함하지 않으므로(로컬
+  // state.entries 갱신과 별개) 직접 refetch 해야 카드가 나타난다. (클라이언트
+  // 폴백 목록은 state.entries 파생이라 이미 자동 반영됨 — 서버 모드에서만 필요.)
   const galleryRefreshRef = useLatestRef({
     retroFilter: filterState.retroFilter,
+    isFolderView,
     useServerList,
-    setPage: entriesPage.setPage,
-    refetch: entriesPage.refetch,
+    setEntriesPage: entriesPage.setPage,
+    refetchEntries: entriesPage.refetch,
+    refetchFolder: folderContents.refetch,
   });
   const prevPendingSummaryRef = useRef(state.pendingSummary);
   useEffect(() => {
@@ -122,12 +161,73 @@ export function RetrospectiveStudio() {
     // pendingSummary 가 "있었다가 없어짐" = 완료(또는 취소) 전이. 지금 보고 있는
     // 탭(kind)과 일치할 때만 새로고침한다.
     if (prev && !state.pendingSummary && prev.kind === galleryRefreshRef.current.retroFilter) {
-      if (galleryRefreshRef.current.useServerList) {
-        galleryRefreshRef.current.setPage(1);
-        galleryRefreshRef.current.refetch();
+      if (galleryRefreshRef.current.isFolderView) {
+        galleryRefreshRef.current.refetchFolder();
+      } else if (galleryRefreshRef.current.useServerList) {
+        galleryRefreshRef.current.setEntriesPage(1);
+        galleryRefreshRef.current.refetchEntries();
       }
     }
   }, [state.pendingSummary, galleryRefreshRef]);
+
+  // ─── 폴더 CRUD (생성/이름변경/삭제) + 드래그앤드롭 이동 ─────────────────────
+  const [folderPrompt, setFolderPrompt] = useState<{
+    mode: "create" | "rename";
+    folder?: Folder;
+    name: string;
+  } | null>(null);
+  const [folderDeleteTarget, setFolderDeleteTarget] = useState<Folder | null>(
+    null,
+  );
+
+  const submitFolderPrompt = async () => {
+    if (!folderPrompt) return;
+    const name = folderPrompt.name.trim();
+    if (!name) return;
+    if (folderPrompt.mode === "create") {
+      await createFolder(name, folderNav.currentFolderId);
+    } else if (folderPrompt.folder) {
+      await updateFolder(folderPrompt.folder.id, { name });
+    }
+    setFolderPrompt(null);
+    folderContents.refetch();
+  };
+
+  const confirmDeleteFolder = async () => {
+    const target = folderDeleteTarget;
+    if (!target) return;
+    setFolderDeleteTarget(null);
+    const crumbIndex = folderNav.breadcrumb.findIndex((c) => c.id === target.id);
+    await deleteFolder(target.id);
+    if (crumbIndex >= 0) {
+      // 지금 보고 있는 경로 위쪽이 삭제됐으면 그 지점 이전으로 물러난다.
+      if (crumbIndex === 0) folderNav.goToRoot();
+      else folderNav.goToCrumb(crumbIndex - 1);
+    } else {
+      folderContents.refetch();
+    }
+  };
+
+  const handleDropEntryOnFolder = (
+    entryId: string,
+    retroType: RetrospectiveType,
+    targetFolderId: string | null,
+  ) => {
+    void moveEntryToFolder(entryId, retroType, targetFolderId).then(() =>
+      folderContents.refetch(),
+    );
+  };
+
+  const handleDropFolderOnFolder = (
+    draggedFolderId: string,
+    targetFolderId: string | null,
+  ) => {
+    void updateFolder(draggedFolderId, { parentFolderId: targetFolderId }).then(
+      () => folderContents.refetch(),
+    );
+  };
+
+  const handleEnterFolder = (folder: FolderCrumb) => folderNav.enterFolder(folder);
 
   const [selectedId, setSelectedId] = useState<string | null>(
     () => filteredEntries[0]?.id ?? null,
@@ -271,9 +371,15 @@ export function RetrospectiveStudio() {
       // 1페이지 최상단에 나타나도록 서버 목록을 다시 조회한다.
       (serverEntry) => {
         setSelectedId(serverEntry.id);
-        entriesPage.setPage(1);
-        entriesPage.refetch();
+        if (isFolderView) {
+          folderContents.refetch();
+        } else {
+          entriesPage.setPage(1);
+          entriesPage.refetch();
+        }
       },
+      // 폴더를 보는 중이면 그 폴더 안에 생성한다.
+      folderNav.currentFolderId,
     );
     if (existed) {
       pushNotification("info", t("retro.newDaily.duplicate"), dateKey);
@@ -314,8 +420,26 @@ export function RetrospectiveStudio() {
           totalPages={totalPages}
           onPrevPage={goPrevPage}
           onNextPage={goNextPage}
-          loading={useServerList && entriesPage.loading}
-          loadError={useServerList && entriesPage.error}
+          loading={
+            isFolderView ? folderContents.loading : useServerList && entriesPage.loading
+          }
+          loadError={
+            isFolderView ? folderContents.error : useServerList && entriesPage.error
+          }
+          debouncedSearch={debouncedSearch}
+          isFolderView={isFolderView}
+          folders={isFolderView ? folderContents.folders : []}
+          breadcrumb={folderNav.breadcrumb}
+          onEnterFolder={handleEnterFolder}
+          onGoToRoot={folderNav.goToRoot}
+          onGoToCrumb={folderNav.goToCrumb}
+          onCreateFolder={() => setFolderPrompt({ mode: "create", name: "" })}
+          onRenameFolder={(folder) =>
+            setFolderPrompt({ mode: "rename", folder, name: folder.name })
+          }
+          onDeleteFolder={setFolderDeleteTarget}
+          onDropEntryOnFolder={handleDropEntryOnFolder}
+          onDropFolderOnFolder={handleDropFolderOnFolder}
         />
       )}
 
@@ -373,6 +497,53 @@ export function RetrospectiveStudio() {
           cancelLabel={t("retro.overwrite.cancel")}
           onConfirm={confirmOverwrite}
           onCancel={() => setOverwriteDialog(null)}
+        />
+      ) : null}
+
+      {folderPrompt ? (
+        <ConfirmModal
+          open
+          title={
+            folderPrompt.mode === "create"
+              ? t("folder.newFolder")
+              : t("folder.rename")
+          }
+          message={
+            <TextField
+              autoFocus
+              value={folderPrompt.name}
+              placeholder={t("folder.namePlaceholder")}
+              onChange={(e) =>
+                setFolderPrompt((prev) =>
+                  prev ? { ...prev, name: e.target.value } : prev,
+                )
+              }
+              onKeyDown={(e) => {
+                if (e.key === "Enter") void submitFolderPrompt();
+              }}
+            />
+          }
+          confirmLabel={t("common.confirm")}
+          cancelLabel={t("common.cancel")}
+          onConfirm={() => void submitFolderPrompt()}
+          onCancel={() => setFolderPrompt(null)}
+        />
+      ) : null}
+
+      {folderDeleteTarget ? (
+        <ConfirmModal
+          open
+          tone="danger"
+          title={t("folder.deleteTitle")}
+          message={
+            <span style={{ whiteSpace: "pre-line" }}>
+              {t("folder.deleteMessage")}
+            </span>
+          }
+          confirmLabel={t("common.delete")}
+          cancelLabel={t("common.cancel")}
+          onConfirm={() => void confirmDeleteFolder()}
+          onCancel={() => setFolderDeleteTarget(null)}
         />
       ) : null}
     </div>

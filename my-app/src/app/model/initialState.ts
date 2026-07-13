@@ -14,6 +14,7 @@ export function getInitialAppState(): AppState {
     return {
       todos: [],
       entries: [],
+      folders: [],
       notifications: [],
       settings: { ...DEFAULT_SETTINGS },
       pendingSummary: null,

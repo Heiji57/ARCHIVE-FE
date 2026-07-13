@@ -1178,9 +1178,11 @@ export interface paths {
          * @description 전체 이력을 최신순으로 페이지네이션 조회한다. `GET /entries`(초기 하이드레이션용,
          *     최근 30일 기본)와 달리 과거 전체 이력을 훑어보는 회고록 목록 페이지용.
          *
-         *     - `retroType` **필수**. daily 는 `journal_entries`, weekly/monthly/annual 은
-         *       `retro_summaries`(AI 생성 요약)에서 조회한다 — 소스 테이블이 달라 타입 없이
-         *       섞어서 조회할 수 없다.
+         *     - `retroType` 지정 시 daily 는 `journal_entries`, weekly/monthly/annual 은
+         *       `retro_summaries`(AI 생성 요약)에서 조회한다 — 소스 테이블이 다르다.
+         *     - `retroType` **생략 시** 두 소스(daily + weekly/monthly/annual)를 합쳐
+         *       최신순("전체" 뷰)으로 반환한다. 정렬 기준은 daily 는 `date_key`, summary 는
+         *       `period_start` (레코드 생성 시각이 아니라 회고 대상 날짜 기준).
          *     - 응답 각 항목의 `isSummary`(요약 여부) + `status`(요약 전용:
          *       pending/in_progress/completed/failed, entry 는 null)로 출처 구분.
          *     - `githubPush` 는 이 엔드포인트에서 항상 키가 존재한다(nullable) — `GET /entries`
@@ -1195,8 +1197,9 @@ export interface paths {
          */
         get: {
             parameters: {
-                query: {
-                    retroType: components["schemas"]["RetroType"];
+                query?: {
+                    /** @description 생략 시 전체 타입을 합친 "전체" 뷰. */
+                    retroType?: components["schemas"]["RetroType"];
                     page?: number;
                     size?: number;
                     q?: string;
@@ -1333,6 +1336,266 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/entries/{entry_id}/folder": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @example entry_01HXYZ... */
+                entry_id: components["parameters"]["EntryIdPath"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * 회고록을 다른 폴더로 이동 (또는 폴더 소속 해제)
+         * @description 폴더 갤러리에서 회고록을 드래그해 폴더로 옮길 때 사용. `retroType` 으로
+         *     어느 테이블(daily=`journal_entries`, weekly/monthly/yearly=
+         *     `retro_summaries`)을 조회할지 라우팅한다 — 두 테이블의 id 공간이 달라
+         *     `retroType` 없이는 entry_id 만으로 어디 있는지 알 수 없다
+         *     (`GET /entries/paginated` 와 동일한 이유로 필수).
+         */
+        patch: {
+            parameters: {
+                query: {
+                    retroType: components["schemas"]["RetroType"];
+                };
+                header?: never;
+                path: {
+                    /** @example entry_01HXYZ... */
+                    entry_id: components["parameters"]["EntryIdPath"];
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    /**
+                     * @example {
+                     *       "folderId": "folder_01HXYZ..."
+                     *     }
+                     */
+                    "application/json": components["schemas"]["MoveEntryFolderRequest"];
+                };
+            };
+            responses: {
+                /** @description 이동 성공 */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiResponseEmpty"];
+                    };
+                };
+                401: components["responses"]["Unauthorized_401"];
+                404: components["responses"]["NotFound_404"];
+                422: components["responses"]["ValidationError_422"];
+            };
+        };
+        trace?: never;
+    };
+    "/folders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 폴더 생성
+         * @description `parentFolderId` 생략/null 이면 최상위에 생성. 같은 부모(최상위 포함)
+         *     아래 이름 중복은 409.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    /**
+                     * @example {
+                     *       "name": "2026년 상반기",
+                     *       "parentFolderId": null
+                     *     }
+                     */
+                    "application/json": components["schemas"]["FolderCreateRequest"];
+                };
+            };
+            responses: {
+                /** @description 생성 성공 */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiResponseFolder"];
+                    };
+                };
+                401: components["responses"]["Unauthorized_401"];
+                404: components["responses"]["NotFound_404"];
+                409: components["responses"]["Conflict_409"];
+                422: components["responses"]["ValidationError_422"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/folders/contents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 폴더 열람 — 직계 하위 폴더 + 직계 회고록 조회
+         * @description `folderId` 생략 시 최상위(root) 조회.
+         *
+         *     - `retroType` 지정 → 그 타입만(daily=`journal_entries`,
+         *       weekly/monthly/yearly=`retro_summaries`).
+         *     - `retroType` 생략 → 4개 타입을 모두 합쳐 최신순으로 정렬한 "전체" 뷰.
+         *
+         *     응답은 `folders`(직계 하위 폴더)와 `entries`(직계 회고록)로 분리되어
+         *     내려온다 — 폴더와 회고록은 서로 다른 리소스라 하나의 배열로 합치지 않는다
+         *     (`GET /search` 의 `{todos, entries}` 분리와 동일한 이유).
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description 생략 시 최상위(root) 조회. */
+                    folderId?: string;
+                    retroType?: components["schemas"]["RetroType"];
+                    page?: number;
+                    size?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description 조회 성공 */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiResponseFolderContents"];
+                    };
+                };
+                401: components["responses"]["Unauthorized_401"];
+                404: components["responses"]["NotFound_404"];
+                422: components["responses"]["ValidationError_422"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/folders/{folder_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @example folder_01HXYZ... */
+                folder_id: components["parameters"]["FolderIdPath"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * 폴더 삭제
+         * @description 폴더만 삭제되고 내용물(하위 폴더·회고록)은 삭제되지 않는다 — 하위 폴더의
+         *     `parentFolderId`, 안의 회고록의 `folderId` 는 최상위로 자동 해제(orphan)된다.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @example folder_01HXYZ... */
+                    folder_id: components["parameters"]["FolderIdPath"];
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description 삭제 성공 */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiResponseEmpty"];
+                    };
+                };
+                401: components["responses"]["Unauthorized_401"];
+                404: components["responses"]["NotFound_404"];
+            };
+        };
+        options?: never;
+        head?: never;
+        /**
+         * 폴더 이름 변경 및/또는 이동
+         * @description PATCH 부분 수정. `parentFolderId` 를 명시적으로 보내면(문자열 또는 null)
+         *     이동, 필드 자체를 생략하면 이동 없음(이름만 변경).
+         *
+         *     자기 자신 또는 자신의 하위 폴더 밑으로 이동을 시도하면
+         *     `422 FOLDER_CIRCULAR_REFERENCE`. 이동/변경 후 이름이 같은 부모 아래
+         *     다른 폴더와 중복되면 409.
+         */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @example folder_01HXYZ... */
+                    folder_id: components["parameters"]["FolderIdPath"];
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["FolderUpdateRequest"];
+                };
+            };
+            responses: {
+                /** @description 수정 성공 */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiResponseFolder"];
+                    };
+                };
+                401: components["responses"]["Unauthorized_401"];
+                404: components["responses"]["NotFound_404"];
+                409: components["responses"]["Conflict_409"];
+                422: components["responses"]["ValidationError_422"];
+            };
+        };
         trace?: never;
     };
     "/search": {
@@ -3967,6 +4230,8 @@ export interface components {
              * @enum {string|null}
              */
             status?: "pending" | "in_progress" | "completed" | "failed" | null;
+            /** @description 소속 폴더 id. 폴더에 속하지 않으면 null. */
+            folderId?: string | null;
             /** Format: date-time */
             created_at: string;
             /** Format: date-time */
@@ -3987,6 +4252,57 @@ export interface components {
         };
         ApiResponseEntryPage: components["schemas"]["ApiResponseEmpty"] & {
             data?: components["schemas"]["EntryPageResponse"];
+        };
+        FolderCreateRequest: {
+            name: string;
+            /** @description 생략 또는 null 이면 최상위에 생성. */
+            parentFolderId?: string | null;
+        };
+        /** @description PATCH 부분 수정 — 전송된 필드만 갱신. */
+        FolderUpdateRequest: {
+            name?: string;
+            /**
+             * @description 문자열 → 그 폴더로 이동. 명시적 null → 최상위로 이동. 필드 자체를
+             *     생략하면 이동 없음(이름만 변경).
+             */
+            parentFolderId?: string | null;
+        };
+        FolderResponse: {
+            id: string;
+            userId: string;
+            name: string;
+            parentFolderId?: string | null;
+            /** @description 이 폴더의 직계 하위 폴더 개수. */
+            folderCount: number;
+            /** @description 이 폴더에 직접 속한 회고록 개수(daily+weekly+monthly+yearly 합산). */
+            entryCount: number;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt?: string | null;
+        };
+        ApiResponseFolder: components["schemas"]["ApiResponseEmpty"] & {
+            data?: components["schemas"]["FolderResponse"];
+        };
+        /**
+         * @description 폴더의 직계 하위 폴더와 직계 회고록을 타입별로 분리해서 반환한다
+         *     (`GET /search` 의 `{todos, entries}` 분리와 동일한 이유 — 서로 다른
+         *     리소스를 억지로 하나의 배열에 합치지 않는다).
+         */
+        FolderContentsResponse: {
+            folders: components["schemas"]["FolderResponse"][];
+            entries: components["schemas"]["EntryResponse"][];
+            /** @description entries 전체 매칭 건수(페이지 무관) */
+            total: number;
+            page: number;
+            size: number;
+        };
+        ApiResponseFolderContents: components["schemas"]["ApiResponseEmpty"] & {
+            data?: components["schemas"]["FolderContentsResponse"];
+        };
+        MoveEntryFolderRequest: {
+            /** @description 이동할 폴더 id. null 이면 폴더 소속 해제(미분류로 이동). */
+            folderId: string | null;
         };
         GlobalSearchResponse: {
             todos: components["schemas"]["TodoResponse"][];
@@ -4435,6 +4751,7 @@ export interface components {
          *     - 도메인별 NOT_FOUND (`TODO_NOT_FOUND`, `JOURNAL_ENTRY_NOT_FOUND`, `RETRO_SUMMARY_NOT_FOUND`, `NOTIFICATION_NOT_FOUND`, `USER_NOT_FOUND`, `GITHUB_REPOSITORY_NOT_FOUND`)
          *     - `AUTH_SESSION_NOT_FOUND` — 폐기 대상 sessionId 가 본인 소유가 아니거나 이미 만료됨
          *     - `RETRO_SUMMARY_TEMPLATE_NOT_FOUND` — 템플릿이 존재하지 않거나 본인 소유가 아니거나 활성 설정의 키와 summary_type 이 불일치
+         *     - `FOLDER_NOT_FOUND` — 폴더가 존재하지 않거나 본인 소유가 아님
          */
         NotFound_404: {
             headers: {
@@ -4464,6 +4781,7 @@ export interface components {
          *     - `RETRO_SUMMARY_TEMPLATE_NAME_DUPLICATED` — 같은 (user, summary_type) 안에서 이름 중복
          *     - `RETRO_SUMMARY_TEMPLATE_LIMIT_REACHED` — (user, summary_type) 별 개수 한도 초과. `details[0]` 에 `{summaryType, limit}`
          *     - `RETRO_SUMMARY_TEMPLATE_IN_USE` — 활성 지정된 템플릿 삭제 시도
+         *     - `FOLDER_NAME_DUPLICATED` — 같은 부모 폴더(최상위 포함) 아래 이름 중복
          */
         Conflict_409: {
             headers: {
@@ -4489,6 +4807,7 @@ export interface components {
          *       - `AUTH_COUNTRY_TIMEZONE_REQUIRED` — 다중 tz 국가에서 timezone 누락
          *       - `AUTH_TIMEZONE_INVALID` — IANA 형식 아니거나 해당 국가의 옵션 밖
          *       - `RETRO_SUMMARY_READINESS_UNSUPPORTED` — readiness 점검은 monthly/annual 만 지원, weekly 는 거부
+         *       - `FOLDER_CIRCULAR_REFERENCE` — 폴더를 자기 자신 또는 자신의 하위 폴더 밑으로 이동 시도
          */
         ValidationError_422: {
             headers: {
@@ -4592,6 +4911,8 @@ export interface components {
         SummaryIdPath: string;
         /** @example noti_01HXYZ... */
         NotificationIdPath: string;
+        /** @example folder_01HXYZ... */
+        FolderIdPath: string;
         OAuthProviderPath: components["schemas"]["OAuthProvider"];
     };
     requestBodies: never;

@@ -2,8 +2,9 @@ import { memo } from "react";
 import { BookOpen } from "lucide-react";
 import type { JournalEntry } from "@/entities/entry/model/types";
 import { Pill } from "@/shared/ui/pill/Pill";
+import { useDraggable } from "@/shared/lib/dnd";
 import { useTranslation } from "@/shared/lib/i18n";
-import { RETRO_LABEL_KEY } from "../model/constants";
+import { RETRO_DRAG_KIND, RETRO_LABEL_KEY, type RetroDragPayload } from "../model/constants";
 import { formatEntryDateRange } from "../model/formatEntryDate";
 
 export interface RetroCardProps {
@@ -43,6 +44,15 @@ function RetroCardImpl({
   const summaryPending = entry.isSummary && entry.status === "pending";
   const summaryInProgress = entry.isSummary && entry.status === "in_progress";
   const summaryFailed = entry.isSummary && entry.status === "failed";
+  // 폴더로 드래그해 옮길 수 있게 한다(회고록 폴더 정리 기능).
+  const { isDragging, ...dragHandlers } = useDraggable({
+    kind: RETRO_DRAG_KIND,
+    data: {
+      itemType: "entry",
+      id: entry.id,
+      retroType: entry.retroType,
+    } satisfies RetroDragPayload,
+  });
 
   return (
     <button
@@ -50,6 +60,9 @@ function RetroCardImpl({
       onClick={() => onSelect(entry.id)}
       className="retro-card"
       data-active={isActive ? "true" : undefined}
+      data-draggable="true"
+      data-dragging={isDragging ? "true" : undefined}
+      {...dragHandlers}
     >
       <div className="retro-card-top">
         <span className={`retro-card-icon ${toneClass(entry.id)}`}>

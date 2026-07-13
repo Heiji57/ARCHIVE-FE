@@ -44,6 +44,14 @@ export {
 } from "./entries";
 export type { EntryPage } from "./entries";
 export {
+  apiCreateFolder,
+  apiGetFolderContents,
+  apiUpdateFolder,
+  apiDeleteFolder,
+  apiMoveEntryToFolder,
+} from "./folders";
+export type { FolderContents } from "./folders";
+export {
   apiGetSettings,
   apiUpdateSettings,
   apiSetPushTarget,

@@ -14,6 +14,7 @@ import {
 } from "@/app/router/navigation";
 import { DndProvider } from "@/shared/lib/dnd";
 import { TodoDragGhost } from "@/app/TodoDragGhost";
+import { RetroDragGhost } from "@/app/RetroDragGhost";
 import { I18nProvider, useTranslation } from "@/shared/lib/i18n";
 import { AppShell } from "@/widgets/app-shell";
 import { ToastViewport } from "@/widgets/notifications";
@@ -128,6 +129,7 @@ function LocalizedShell({
     <I18nProvider locale={state.settings.locale}>
       <DndProvider>
         <TodoDragGhost />
+        <RetroDragGhost />
         {/* lazy 페이지 최초 청크 로딩 경계 — 라우트 전환은 startTransition 이라
             이전 화면이 유지되고, 이 fallback 은 첫 진입에만 잠깐 보인다. */}
         <Suspense fallback={null}>

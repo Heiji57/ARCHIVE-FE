@@ -1,9 +1,6 @@
 import { useMemo, useState } from "react";
 import { getEntriesByRetroType } from "@/entities/entry/lib/selectors";
-import type {
-  JournalEntry,
-  RetrospectiveType,
-} from "@/entities/entry/model/types";
+import type { JournalEntry } from "@/entities/entry/model/types";
 import {
   dateOfISOWeek,
   endOfISOWeek,
@@ -12,7 +9,7 @@ import {
   getISOWeek,
   toDateKey,
 } from "@/shared/lib/date";
-import { PAGE_SIZE } from "./constants";
+import { PAGE_SIZE, type RetroTab } from "./constants";
 
 /** GET /entries/paginated 의 from/to 로 그대로 보낼 수 있는 기간(YYYY-MM-DD, 양끝 포함). */
 export interface DateRange {
@@ -21,8 +18,8 @@ export interface DateRange {
 }
 
 export interface UseRetroFilterResult {
-  retroFilter: RetrospectiveType;
-  setRetroFilter: (t: RetrospectiveType) => void;
+  retroFilter: RetroTab;
+  setRetroFilter: (t: RetroTab) => void;
   search: string;
   setSearch: (s: string) => void;
   yearFilter: string;
@@ -52,8 +49,7 @@ export interface UseRetroFilterResult {
  * Returns memoized derived lists (filteredEntries, pageEntries, years, weeks).
  */
 export function useRetroFilter(entries: JournalEntry[]): UseRetroFilterResult {
-  const [retroFilter, setRetroFilterRaw] =
-    useState<RetrospectiveType>("daily");
+  const [retroFilter, setRetroFilterRaw] = useState<RetroTab>("daily");
   const [search, setSearch] = useState("");
   const [yearFilter, setYearFilterRaw] = useState("all");
   const [monthFilter, setMonthFilterRaw] = useState("all");
@@ -63,7 +59,7 @@ export function useRetroFilter(entries: JournalEntry[]): UseRetroFilterResult {
   const resetPage = () => setPage(0);
 
   // Wrappers that reset the page when the underlying filter changes.
-  const setRetroFilter = (t: RetrospectiveType) => {
+  const setRetroFilter = (t: RetroTab) => {
     setRetroFilterRaw(t);
     resetPage();
   };
@@ -85,8 +81,10 @@ export function useRetroFilter(entries: JournalEntry[]): UseRetroFilterResult {
     resetPage();
   };
 
+  // "all" 탭: 타입 구분 없이 4종 전부(서버 GET /entries/paginated 의 retroType
+  // 생략과 동일한 의미) — 클라이언트 폴백(데모/mock)에서만 쓰인다.
   const allOfType = useMemo(
-    () => getEntriesByRetroType(entries, retroFilter),
+    () => (retroFilter === "all" ? entries : getEntriesByRetroType(entries, retroFilter)),
     [entries, retroFilter],
   );
 

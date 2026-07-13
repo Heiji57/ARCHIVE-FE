@@ -23,6 +23,7 @@ export function loadAppState(fallback: PersistedAppState): PersistedAppState {
       entries: Array.isArray(parsed.entries)
         ? parsed.entries
         : fallback.entries,
+      folders: Array.isArray(parsed.folders) ? parsed.folders : fallback.folders,
       notifications: Array.isArray(parsed.notifications)
         ? parsed.notifications
         : fallback.notifications,

@@ -82,6 +82,7 @@ export const seedState: PersistedAppState = {
       githubPush: null,
       synced: true,
       retroType: "daily",
+      folderId: null,
       content:
         "Redis를 로컬에 세팅하면서 Docker 환경과 호스트 간 포트 매핑 문제로 시간을 많이 썼다. 다음부터는 docker-compose 설정부터 먼저 점검해야겠다.",
     },
@@ -93,6 +94,7 @@ export const seedState: PersistedAppState = {
       githubPush: null,
       synced: true,
       retroType: "daily",
+      folderId: null,
       content:
         "ERD를 구체화하면서 사용자와 회고 작업 간 관계를 다시 확인했다. 관계형 설계 초반에는 naming rule을 먼저 정하는 것이 중요하다.",
     },
@@ -104,6 +106,7 @@ export const seedState: PersistedAppState = {
       githubPush: null,
       synced: true,
       retroType: "weekly",
+      folderId: null,
       content:
         "주간 단위로 보면 일정 관리보다 회고 템플릿 정리가 더 큰 병목이었다. UI 초안을 빠르게 만들고 구조를 나중에 맞추는 방식이 효과적이었다.",
     },
@@ -115,6 +118,7 @@ export const seedState: PersistedAppState = {
       githubPush: null,
       synced: true,
       retroType: "monthly",
+      folderId: null,
       content:
         "한 달 동안 쌓인 작업 로그를 다시 보고 반복되는 작업 패턴을 정리했다. 월간 회고는 다음 달 계획과 바로 이어지도록 쓰는 것이 중요하다.",
     },
@@ -126,6 +130,7 @@ export const seedState: PersistedAppState = {
       githubPush: null,
       synced: true,
       retroType: "yearly",
+      folderId: null,
       content:
         "초기 프로젝트에서 가장 크게 배운 점은 기록을 열심히 남기는 것보다 회고의 주기를 유지하는 것이 더 중요하다는 사실이었다.",
     },
@@ -137,10 +142,12 @@ export const seedState: PersistedAppState = {
       githubPush: null,
       synced: false,
       retroType: "daily",
+      folderId: null,
       content:
         "오늘은 Redis 적용 과정에서 Docker 포트 이슈를 해결했고, API 문서 초안을 빠르게 정리했다.",
     },
   ],
+  folders: [],
   notifications: [],
   settings: {
     ...DEFAULT_SETTINGS,

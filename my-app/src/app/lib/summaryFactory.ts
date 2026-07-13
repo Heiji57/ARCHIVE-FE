@@ -74,6 +74,7 @@ export function buildSummaryEntry(
     githubPush: null,
     synced: false,
     retroType: KIND_TO_TYPE[kind],
+    folderId: null,
     content,
   };
 }

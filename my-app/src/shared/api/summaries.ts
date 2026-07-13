@@ -85,6 +85,10 @@ export function toSummaryEntry(api: SummaryResponse): JournalEntry {
     updatedAt: api.updated_at ?? api.created_at,
     isSummary: true,
     status: api.status,
+    // SummaryResponse 에는 folderId 가 없다(계약 간극) — 신규 entry 기본값(미분류).
+    // 이미 아는 entry 를 이 값으로 갱신할 때는 reducer(entry/upsert)가 기존
+    // folderId 를 보존한다.
+    folderId: null,
   };
 }
 
