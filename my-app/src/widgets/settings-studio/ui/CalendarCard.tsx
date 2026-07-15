@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CalendarDays, Link2, Link2Off, RefreshCw } from "lucide-react";
+import { CalendarDays, Link2, Link2Off, RefreshCw, TriangleAlert } from "lucide-react";
 import { useArchiveApp } from "@/app/providers/useArchiveApp";
 import { endOfMonth, startOfMonth, toDateKey } from "@/shared/lib/date";
 import { DisconnectBanner } from "@/shared/ui/disconnect-banner/DisconnectBanner";
@@ -112,47 +112,24 @@ export function CalendarCard() {
 
           {/* 재인증 필요 배너 */}
           {status === "needs-reauth" ? (
-            <div
-              style={{
-                margin: "0 0 14px",
-                padding: "10px 14px",
-                background: "var(--color-warn-subtle, rgba(234,179,8,.1))",
-                border: "1px solid var(--color-warn, #ca8a04)",
-                borderRadius: "var(--r-sm)",
-                display: "flex",
-                alignItems: "flex-start",
-                gap: 10,
-              }}
-            >
-              <span style={{ fontSize: 14, lineHeight: 1 }}>🔄</span>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <p
-                  style={{
-                    margin: "0 0 2px",
-                    fontSize: 12,
-                    fontWeight: 600,
-                    color: "var(--color-warn-text, #854d0e)",
-                  }}
-                >
+            <div className="calendar-reauth" role="status">
+              <span className="calendar-reauth__icon" aria-hidden="true">
+                <TriangleAlert size={17} strokeWidth={2} />
+              </span>
+              <div className="calendar-reauth__body">
+                <p className="calendar-reauth__title">
                   {t("settings.calendar.reauthBanner")}
                 </p>
-                <p
-                  style={{
-                    margin: "0 0 8px",
-                    fontSize: 11,
-                    color: "var(--color-body-muted)",
-                    lineHeight: 1.5,
-                  }}
-                >
+                <p className="calendar-reauth__msg">
                   {t("settings.calendar.reauthBannerMsg")}
                 </p>
                 <button
                   type="button"
-                  className="btn btn-primary"
-                  style={{ fontSize: 11, padding: "4px 10px" }}
+                  className="btn calendar-reauth__btn"
                   onClick={() => void handleConnect()}
                   disabled={connecting}
                 >
+                  <Link2 size={13} />
                   {connecting
                     ? t("settings.calendar.connecting")
                     : t("settings.calendar.reconnect")}
