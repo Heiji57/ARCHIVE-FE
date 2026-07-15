@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle } from "lucide-react";
+import type { RetroRouteParams } from "@/app/router/navigation";
 import { useArchiveApp } from "@/app/providers/useArchiveApp";
 import { useTodayKey } from "@/app/providers/useToday";
 import type { JournalEntry, RetrospectiveType } from "@/entities/entry/model/types";
@@ -23,7 +24,7 @@ import { PeriodPickerModal } from "./PeriodPickerModal";
 import { RetroEditor } from "./RetroEditor";
 import { RetroGallery } from "./RetroGallery";
 
-export function RetrospectiveStudio() {
+export function RetrospectiveStudio({ retroParams, onRetroNavigate }: { retroParams?: RetroRouteParams; onRetroNavigate?: (params: RetroRouteParams) => void }) {
   const {
     state,
     updateEntry,
@@ -230,11 +231,13 @@ export function RetrospectiveStudio() {
   const handleEnterFolder = (folder: FolderCrumb) => folderNav.enterFolder(folder);
 
   const [selectedId, setSelectedId] = useState<string | null>(
-    () => filteredEntries[0]?.id ?? null,
+    () => retroParams?.entryId ?? filteredEntries[0]?.id ?? null,
   );
 
   // 2화면 네비게이션: 카드 그리드(gallery) ⇄ 편집기(editor).
-  const [view, setView] = useState<"gallery" | "editor">("gallery");
+  const [view, setView] = useState<"gallery" | "editor">(() =>
+    retroParams?.view === "editor" ? "editor" : "gallery"
+  );
 
   const active =
     state.entries.find((e) => e.id === selectedId) ??
@@ -246,6 +249,7 @@ export function RetrospectiveStudio() {
   const openEntry = (id: string) => {
     setSelectedId(id);
     setView("editor");
+    onRetroNavigate?.({ view: "editor", entryId: id });
   };
 
   // 전역 검색에서 특정 회고로 이동 요청 → 해당 회고 종류로 필터를 맞추고 선택.
@@ -261,6 +265,16 @@ export function RetrospectiveStudio() {
     clearFocus();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focusTarget, state.entries]);
+
+  // URL 파라미터 변경 시 view와 selectedId를 동기화 (뒤로가기 등).
+  useEffect(() => {
+    if (retroParams?.view === "editor" && retroParams?.entryId) {
+      setSelectedId(retroParams.entryId);
+      setView("editor");
+    } else if (retroParams?.view !== "editor") {
+      setView("gallery");
+    }
+  }, [retroParams?.view, retroParams?.entryId]);
 
   const completedTodos = useMemo(
     () =>
@@ -405,7 +419,10 @@ export function RetrospectiveStudio() {
           onUpdate={(patch) => updateEntry(active.id, patch)}
           onSave={handleSave}
           onRevertSummary={handleRevertSummary}
-          onBack={() => setView("gallery")}
+          onBack={() => {
+            setView("gallery");
+            onRetroNavigate?.({});
+          }}
         />
       ) : (
         <RetroGallery

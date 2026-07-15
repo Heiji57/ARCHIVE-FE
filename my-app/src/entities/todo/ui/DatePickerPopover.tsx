@@ -91,7 +91,7 @@ export function DatePickerPopover({
                 padding: "8px 12px",
                 borderRadius: "var(--r-sm)",
                 textAlign: "left",
-                fontSize: 13,
+                fontSize: 16,
                 background:
                   o.v === value ? "var(--color-tile-4)" : "transparent",
                 color: "var(--color-ink)",
@@ -102,7 +102,7 @@ export function DatePickerPopover({
                 style={{
                   color: "var(--color-body-muted)",
                   marginLeft: 6,
-                  fontSize: 11,
+                  fontSize: 12,
                 }}
               >
                 {o.v}
@@ -129,7 +129,7 @@ export function DatePickerPopover({
           >
             <ChevronLeft size={14} />
           </button>
-          <span style={{ fontSize: 13, fontWeight: 600 }}>{monthLabel}</span>
+          <span style={{ fontSize: 16, fontWeight: 600 }}>{monthLabel}</span>
           <button
             type="button"
             aria-label={t("todo.picker.next")}
@@ -155,7 +155,7 @@ export function DatePickerPopover({
               key={i}
               style={{
                 textAlign: "center",
-                fontSize: 10,
+                fontSize: 12,
                 color: "var(--color-body-muted)",
               }}
             >

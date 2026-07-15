@@ -113,7 +113,7 @@ export function WeekGrid({
             style={{
               background: todayCell
                 ? "rgba(94, 106, 210, 0.07)"
-                : "var(--color-tile-1)",
+                : "var(--color-tile-2)",
               borderRadius: "var(--r-sm)",
               border: todayCell
                 ? "1px solid rgba(94, 106, 210, 0.4)"
@@ -163,7 +163,7 @@ export function WeekGrid({
               {items.length > 0 ? (
                 <span
                   style={{
-                    fontSize: 11,
+                    fontSize: 12,
                     color: "var(--color-body-muted)",
                     fontVariantNumeric: "tabular-nums",
                   }}

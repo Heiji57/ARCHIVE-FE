@@ -1,6 +1,6 @@
 import { type FormEvent, useState } from "react"
 import type { AuthRoute } from "@/app/router/authRoute"
-import { CabinetMark } from "./CabinetMark"
+import { ArchiveLogo } from "@/shared/ui"
 import { revealDelay } from "./useScrollReveal"
 
 interface LandingHeroProps {
@@ -67,7 +67,7 @@ export function LandingHero({ onNavigateAuth, onDemo }: LandingHeroProps) {
           aria-label="A.R.C.H.I.V.E 캘린더 화면 미리보기">
           <div className="lp-window-bar">
             <span className="lp-window-url">
-              <CabinetMark />
+              <ArchiveLogo />
               archive.app / calendar
             </span>
           </div>

@@ -181,7 +181,7 @@ export function RetroEditor({
           <p
             style={{
               margin: 0,
-              fontSize: 14,
+              fontSize: 16,
               color: "var(--color-body-muted)",
             }}>
             {formatFullDate(d)}
@@ -194,7 +194,7 @@ export function RetroEditor({
               display: "inline-flex",
               alignItems: "center",
               gap: 4,
-              fontSize: 11,
+              fontSize: 12,
               color: "var(--color-body-muted)",
             }}>
             <Save size={11} />
@@ -312,7 +312,7 @@ export function RetroEditor({
                         padding: "10px 12px",
                         borderRadius: "var(--r-sm)",
                         background: "var(--color-tile-3)",
-                        fontSize: 14,
+                        fontSize: 16,
                         display: "flex",
                         gap: 10,
                         alignItems: "center",
@@ -329,7 +329,7 @@ export function RetroEditor({
                 <p
                   style={{
                     margin: 0,
-                    fontSize: 13,
+                    fontSize: 16,
                     color: "var(--color-body-muted)",
                   }}>
                   {t("retro.editor.noCompleted")}
@@ -358,7 +358,7 @@ export function RetroEditor({
                 marginBottom: 12,
                 borderRadius: "var(--r-sm)",
                 background: "var(--color-tile-3)",
-                fontSize: 13,
+                fontSize: 16,
                 color: "var(--color-body-muted)",
               }}>
               {entry.status === "failed"
@@ -382,7 +382,7 @@ export function RetroEditor({
                 <div
                   style={{
                     padding: 14,
-                    fontSize: 13,
+                    fontSize: 16,
                     color: "var(--color-warn, #d9a23a)",
                     background: "var(--color-tile-3)",
                     borderRadius: "var(--r-sm)",
@@ -400,7 +400,7 @@ export function RetroEditor({
                     style={{
                       minHeight: 260,
                       padding: 12,
-                      fontSize: 13,
+                      fontSize: 16,
                       color: "var(--color-body-muted)",
                     }}>
                     에디터 로딩 중...

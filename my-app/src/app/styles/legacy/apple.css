@@ -2,7 +2,7 @@
 .apple-eyebrow {
   color: var(--color-primary-on-dark);
   font-family: var(--font-text);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -11,7 +11,7 @@
 .apple-eyebrow-muted {
   color: var(--color-body-muted);
   font-family: var(--font-text);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.24em;
   text-transform: uppercase;
@@ -20,7 +20,7 @@
 .apple-copy {
   color: var(--color-body-muted);
   font-family: var(--font-text);
-  font-size: 17px;
+  font-size: 18px;
   letter-spacing: -0.02em;
   line-height: 1.47;
 }

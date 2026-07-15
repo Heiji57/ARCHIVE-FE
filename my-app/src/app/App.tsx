@@ -1,4 +1,4 @@
-import { lazy, startTransition, Suspense, useEffect, useMemo, useState } from "react";
+import { lazy, startTransition, Suspense, useEffect, useMemo, useState, type ReactNode } from "react";
 import type { AppRoute } from "@/app/model/types";
 import { AppProvider } from "@/app/providers/AppProvider";
 import { useArchiveApp } from "@/app/providers/useArchiveApp";
@@ -11,6 +11,9 @@ import {
 import {
   getPathFromRoute,
   getRouteFromPath,
+  getRetroParamsFromPath,
+  getRetroPathFromParams,
+  type RetroRouteParams,
 } from "@/app/router/navigation";
 import { DndProvider } from "@/shared/lib/dnd";
 import { TodoDragGhost } from "@/app/TodoDragGhost";
@@ -94,6 +97,19 @@ export default function App() {
     });
   };
 
+  const navigateRetro = (retroParams: RetroRouteParams) => {
+    const nextPath = getRetroPathFromParams(retroParams);
+    const isDemo =
+      new URLSearchParams(window.location.search).get("demo") === "true";
+    const target = isDemo ? `${nextPath}?demo=true` : nextPath;
+    if (window.location.pathname + window.location.search !== target) {
+      window.history.pushState({}, "", target);
+    }
+    startTransition(() => {
+      setResolved({ kind: "app", route: "retrospectives" });
+    });
+  };
+
   const navigateAuth = (nextRoute: AuthRoute) => {
     const nextPath = getPathFromAuthRoute(nextRoute);
     if (window.location.pathname !== nextPath) {
@@ -109,6 +125,7 @@ export default function App() {
       <LocalizedShell
         resolved={resolved}
         navigateApp={navigateApp}
+        navigateRetro={navigateRetro}
         navigateAuth={navigateAuth}
       />
     </AppProvider>
@@ -118,10 +135,12 @@ export default function App() {
 function LocalizedShell({
   resolved,
   navigateApp,
+  navigateRetro,
   navigateAuth,
 }: {
   resolved: ResolvedRoute;
   navigateApp: (route: AppRoute) => void;
+  navigateRetro: (params: RetroRouteParams) => void;
   navigateAuth: (route: AuthRoute) => void;
 }) {
   const { state } = useArchiveApp();
@@ -136,6 +155,7 @@ function LocalizedShell({
           <AuthGate
             resolved={resolved}
             navigateApp={navigateApp}
+            navigateRetro={navigateRetro}
             navigateAuth={navigateAuth}
           />
         </Suspense>
@@ -152,10 +172,12 @@ function LocalizedShell({
 function AuthGate({
   resolved,
   navigateApp,
+  navigateRetro,
   navigateAuth,
 }: {
   resolved: ResolvedRoute;
   navigateApp: (route: AppRoute) => void;
+  navigateRetro: (params: RetroRouteParams) => void;
   navigateAuth: (route: AuthRoute) => void;
 }) {
   const { state } = useArchiveApp();
@@ -187,7 +209,7 @@ function AuthGate({
   // 데모 모드: 인증 없이 앱 실행
   if (isDemoMode) {
     const appRoute = resolved.kind === "app" ? resolved.route : "calendar";
-    return <AppContent route={appRoute} onNavigate={navigateApp} isDemo />;
+    return <AppContent route={appRoute} onNavigate={navigateApp} onRetroNavigate={navigateRetro} isDemo />;
   }
 
   if (!isAuthenticated) {
@@ -222,7 +244,7 @@ function AuthGate({
   }
 
   const appRoute = resolved.kind === "app" ? resolved.route : "calendar";
-  return <AppContent route={appRoute} onNavigate={navigateApp} />;
+  return <AppContent route={appRoute} onNavigate={navigateApp} onRetroNavigate={navigateRetro} />;
 }
 
 function AccountTypeScreen() {
@@ -240,28 +262,35 @@ function AccountTypeScreen() {
 function AppContent({
   route,
   onNavigate,
+  onRetroNavigate,
   isDemo = false,
 }: {
   route: AppRoute;
   onNavigate: (route: AppRoute) => void;
+  onRetroNavigate: (params: RetroRouteParams) => void;
   isDemo?: boolean;
 }) {
   const { state } = useArchiveApp();
+  const retroParams = getRetroParamsFromPath(window.location.pathname);
+
   const pages = useMemo(
     () => ({
       calendar: <CalendarPage onNavigate={onNavigate} />,
       todos: <TodosPage onNavigate={onNavigate} />,
-      retrospectives: <RetrospectivesPage />,
+      retrospectives: <RetrospectivesPage retroParams={retroParams} onRetroNavigate={onRetroNavigate} />,
       settings: <SettingsPage />,
     }),
-    [onNavigate],
+    [onNavigate, onRetroNavigate, retroParams],
   );
 
   return (
     <>
       <AppShell route={route} onNavigate={onNavigate}>
-        {/* 페이지 청크 로딩 중에도 상단 네비게이션(AppShell)은 유지한다. */}
-        <Suspense fallback={null}>{pages[route]}</Suspense>
+        {/* 페이지 청크 로딩 중에도 상단 네비게이션(AppShell)은 유지한다.
+            key={route} 로 같은 경로여도 nav 재클릭 시 페이지가 리마운트되도록. */}
+        <Suspense fallback={null}>
+          <PageRenderer key={route} route={route} pages={pages} />
+        </Suspense>
       </AppShell>
       <ToastViewport notifications={state.notifications} />
       <SummaryOverlay />
@@ -269,6 +298,16 @@ function AppContent({
       {isDemo && <DemoBanner />}
     </>
   );
+}
+
+function PageRenderer({
+  route,
+  pages,
+}: {
+  route: AppRoute;
+  pages: Record<AppRoute, ReactNode>;
+}) {
+  return <>{pages[route]}</>;
 }
 
 function DemoBanner() {
@@ -292,7 +331,7 @@ function DemoBanner() {
         className="btn-icon"
         onClick={() => setHidden(true)}
         aria-label="닫기"
-        style={{ fontSize: 14 }}
+        style={{ fontSize: 16 }}
       >
         ✕
       </button>

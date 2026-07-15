@@ -154,7 +154,7 @@ export function GithubCard() {
                 gap: 10,
               }}
             >
-              <span style={{ fontSize: 14, lineHeight: 1 }}>🔄</span>
+              <span style={{ fontSize: 16, lineHeight: 1 }}>🔄</span>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <p
                   style={{
@@ -169,7 +169,7 @@ export function GithubCard() {
                 <p
                   style={{
                     margin: "0 0 8px",
-                    fontSize: 11,
+                    fontSize: 12,
                     color: "var(--color-body-muted)",
                     lineHeight: 1.5,
                   }}
@@ -179,7 +179,7 @@ export function GithubCard() {
                 <button
                   type="button"
                   className="btn btn-primary"
-                  style={{ fontSize: 11, padding: "4px 10px" }}
+                  style={{ fontSize: 12, padding: "4px 10px" }}
                   onClick={() => void handleConnectAccount()}
                   disabled={connecting}
                 >
@@ -227,7 +227,7 @@ export function GithubCard() {
                           ? "var(--color-primary)"
                           : "var(--color-body-muted)",
                         padding: "4px 8px",
-                        fontSize: 11,
+                        fontSize: 12,
                         gap: 4,
                       }}
                     >
@@ -289,7 +289,7 @@ export function GithubCard() {
               <p
                 style={{
                   margin: "0 0 8px",
-                  fontSize: 11,
+                  fontSize: 12,
                   color: "var(--color-body-muted)",
                   lineHeight: 1.5,
                 }}
@@ -302,7 +302,7 @@ export function GithubCard() {
                 onChange={(e) =>
                   setPushTarget(e.target.value || null)
                 }
-                style={{ width: "100%", fontSize: 13 }}
+                style={{ width: "100%", fontSize: 16 }}
               >
                 <option value="">
                   {t("settings.github.pushTargetNone")}

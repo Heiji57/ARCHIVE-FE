@@ -116,7 +116,7 @@ export function SessionsCard() {
                 <span style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                   <span
                     style={{
-                      fontSize: 13,
+                      fontSize: 16,
                       color: "var(--color-ink)",
                       display: "flex",
                       alignItems: "center",
@@ -128,7 +128,7 @@ export function SessionsCard() {
                       <Pill tone="green">{t("settings.sessions.thisDevice")}</Pill>
                     ) : null}
                   </span>
-                  <span style={{ fontSize: 11, color: "var(--color-body-muted)" }}>
+                  <span style={{ fontSize: 12, color: "var(--color-body-muted)" }}>
                     {s.ipPrefix ? `${s.ipPrefix}.x · ` : ""}
                     {relativeTime(s.lastUsedAt, locale)}
                   </span>
@@ -140,7 +140,7 @@ export function SessionsCard() {
                 onClick={() => void handleRevoke(s)}
                 disabled={busy === s.sessionId}
                 title={t("settings.sessions.signOut")}
-                style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11 }}
+                style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12 }}
               >
                 <LogOut size={13} />
                 {t("settings.sessions.signOut")}

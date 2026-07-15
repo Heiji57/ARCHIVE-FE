@@ -38,7 +38,7 @@
 .notif-item-icon.warning { background: var(--color-warn); color: var(--color-canvas); }
 .notif-item-title {
   margin: 0 0 2px;
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 600;
   letter-spacing: -0.15px;
 }
@@ -49,7 +49,7 @@
   line-height: 1.5;
 }
 .notif-item-time {
-  font-size: 10px;
+  font-size: 12px;
   color: var(--color-ink-muted-48);
   margin-top: 4px;
 }
@@ -76,12 +76,12 @@
 }
 .notif-panel-empty {
   height: 140px;
-  font-size: 13px;
+  font-size: 16px;
   color: var(--color-body-muted);
 }
 .notif-panel-retention {
   margin: 16px 4px 0;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--color-ink-muted-48);
   text-align: center;
 }

@@ -86,7 +86,7 @@ export function MonthGrid({
             key={i}
             style={{
               padding: "8px 4px",
-              fontSize: 11,
+              fontSize: 12,
               letterSpacing: "0.18em",
               fontWeight: 600,
               textTransform: "uppercase",
@@ -123,7 +123,7 @@ export function MonthGrid({
               style={{
                 background: todayCell
                   ? "rgba(94, 106, 210, 0.06)"
-                  : "var(--color-tile-1)",
+                  : "var(--color-tile-2)",
                 minHeight: 124,
                 padding: 10,
                 opacity: inMonth ? 1 : 0.35,
@@ -147,7 +147,7 @@ export function MonthGrid({
               >
                 <span
                   style={{
-                    fontSize: 13,
+                    fontSize: 16,
                     fontWeight: 600,
                     color: todayCell
                       ? "var(--color-primary-on-dark)"
@@ -160,7 +160,7 @@ export function MonthGrid({
                   {todayCell ? (
                     <span
                       style={{
-                        fontSize: 9,
+                        fontSize: 12,
                         letterSpacing: "0.14em",
                         color: "var(--color-primary-on-dark)",
                         fontWeight: 600,
@@ -212,7 +212,7 @@ export function MonthGrid({
                     onClick={() => setModalDate(k)}
                     style={{
                       margin: 0,
-                      fontSize: 11,
+                      fontSize: 12,
                       color: "var(--color-primary-on-dark)",
                       background: "transparent",
                       border: "none",
@@ -273,7 +273,7 @@ export function MonthGrid({
               maxHeight: "70vh",
               display: "flex",
               flexDirection: "column",
-              background: "var(--color-tile-1)",
+              background: "var(--color-tile-2)",
               borderRadius: "var(--r-lg)",
               border: "1px solid var(--color-divider-soft)",
               boxShadow: "0 24px 56px rgba(0,0,0,0.55)",
@@ -294,7 +294,7 @@ export function MonthGrid({
               <p
                 style={{
                   margin: 0,
-                  fontSize: 14,
+                  fontSize: 16,
                   fontWeight: 600,
                   color: "var(--color-ink)",
                 }}
@@ -340,7 +340,7 @@ export function MonthGrid({
                     border: "1px solid var(--color-divider-soft)",
                     cursor: "pointer",
                     textAlign: "left",
-                    fontSize: 13,
+                    fontSize: 16,
                     color: "var(--color-ink)",
                     flexShrink: 0,
                   }}

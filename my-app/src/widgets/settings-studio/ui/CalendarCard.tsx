@@ -103,7 +103,7 @@ export function CalendarCard() {
           <p
             style={{
               margin: "0 0 14px",
-              fontSize: 11,
+              fontSize: 12,
               color: "var(--color-body-muted)",
             }}
           >
@@ -155,10 +155,10 @@ export function CalendarCard() {
               style={{ marginTop: 2, accentColor: "var(--color-primary)" }}
             />
             <div>
-              <p style={{ margin: 0, fontSize: 13, fontWeight: 500 }}>
+              <p style={{ margin: 0, fontSize: 16, fontWeight: 500 }}>
                 {t("settings.calendar.autoPushTodo")}
               </p>
-              <p style={{ margin: "2px 0 0", fontSize: 11, color: "var(--color-body-muted)", lineHeight: 1.5 }}>
+              <p style={{ margin: "2px 0 0", fontSize: 12, color: "var(--color-body-muted)", lineHeight: 1.5 }}>
                 {t("settings.calendar.autoPushTodoDesc")}
               </p>
             </div>
@@ -187,10 +187,10 @@ export function CalendarCard() {
               style={{ marginTop: 2, accentColor: "var(--color-primary)" }}
             />
             <div>
-              <p style={{ margin: 0, fontSize: 13, fontWeight: 500 }}>
+              <p style={{ margin: 0, fontSize: 16, fontWeight: 500 }}>
                 {t("settings.calendar.autoDeleteTodo")}
               </p>
-              <p style={{ margin: "2px 0 0", fontSize: 11, color: "var(--color-body-muted)", lineHeight: 1.5 }}>
+              <p style={{ margin: "2px 0 0", fontSize: 12, color: "var(--color-body-muted)", lineHeight: 1.5 }}>
                 {t("settings.calendar.autoDeleteTodoDesc")}
               </p>
             </div>

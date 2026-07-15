@@ -120,7 +120,7 @@ export function PeriodPickerModal({
         <p
           style={{
             margin: "0 0 16px",
-            fontSize: 13,
+            fontSize: 16,
             lineHeight: 1.5,
             color: "var(--color-body-muted)",
           }}
@@ -168,7 +168,7 @@ export function PeriodPickerModal({
                   <span
                     style={{
                       display: "block",
-                      fontSize: 14,
+                      fontSize: 16,
                       fontWeight: 600,
                       color: "var(--color-ink)",
                     }}
@@ -178,7 +178,7 @@ export function PeriodPickerModal({
                       <span
                         style={{
                           marginLeft: 8,
-                          fontSize: 10,
+                          fontSize: 12,
                           fontWeight: 600,
                           padding: "2px 7px",
                           borderRadius: "var(--r-pill)",
@@ -194,7 +194,7 @@ export function PeriodPickerModal({
                     style={{
                       display: "block",
                       marginTop: 2,
-                      fontSize: 11,
+                      fontSize: 12,
                       color: "var(--color-body-muted)",
                     }}
                   >

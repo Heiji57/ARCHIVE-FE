@@ -1,7 +1,7 @@
 import { type FormEvent, useState } from "react"
 import type { AppRoute } from "@/app/model/types"
 import type { AuthRoute } from "@/app/router/authRoute"
-import { CabinetMark } from "./CabinetMark"
+import { ArchiveLogo } from "@/shared/ui"
 import { revealDelay } from "./useScrollReveal"
 
 interface LandingCTAProps {
@@ -125,8 +125,8 @@ export function LandingFooter({ onNavigateAuth, onDemo }: LandingFooterProps) {
         <div className="lp-footer-grid">
           <div className="lp-reveal" style={revealDelay(0)}>
             <span className="lp-brand">
-              <CabinetMark className="lp-brand-mark" />
-              <span className="lp-brand-name" style={{ fontSize: 15 }}>
+              <ArchiveLogo className="lp-brand-mark" />
+              <span className="lp-brand-name" style={{ fontSize: 18 }}>
                 A.R.C.H.I.V.E
               </span>
             </span>

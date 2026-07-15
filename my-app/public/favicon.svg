@@ -1,15 +1,40 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" role="img" aria-label="A.R.C.H.I.V.E">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Archive">
   <defs>
-    <linearGradient id="fbg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#3b62e8"/>
-      <stop offset="100%" stop-color="#a282e8"/>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#3b62e8"></stop>
+      <stop offset="100%" stop-color="#a282e8"></stop>
     </linearGradient>
+    <linearGradient id="sheen" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff"></stop>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"></stop>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="18" stdDeviation="15" flood-color="#3b62e8" flood-opacity="0.28"></feDropShadow>
+    </filter>
   </defs>
-  <rect width="32" height="32" rx="7" fill="url(#fbg)"/>
-  <path d="M 22 5 L 28 9 L 28 16 L 22 12 Z" fill="rgba(255,255,255,0.85)"/>
-  <path d="M 17 8 L 25 13 L 25 19 L 17 15 Z" fill="rgba(255,255,255,0.62)"/>
-  <path d="M 12 13 L 22 19 L 22 25 L 12 19 Z" fill="#0a84ff"/>
-  <path d="M 22 19 L 28 16 L 28 22 L 22 25 Z" fill="rgba(255,255,255,0.45)"/>
-  <path d="M 6 16 L 16 22 L 16 27 L 6 21 Z" fill="rgba(255,255,255,0.32)"/>
-  <path d="M 16 22 L 26 17 L 26 22 L 16 27 Z" fill="rgba(255,255,255,0.22)"/>
+
+  <g filter="url(#shadow)">
+    <rect x="16" y="16" width="480" height="480" rx="112" fill="url(#bg)"></rect>
+    <rect x="16" y="16" width="480" height="200" rx="112" fill="url(#sheen)" opacity="0.10"></rect>
+
+
+    <path d="M120 300 L120 262 Q120 248 134 248 L198 248 Q206 248 211 254 L228 274 L378 274 Q392 274 392 288 L392 356 Q392 380 368 380 L144 380 Q120 380 120 356 Z" fill="#ffffff" fill-opacity="0.30"></path>
+
+
+    <g transform="rotate(-11 244 322)">
+      <rect x="184" y="150" width="120" height="172" rx="16" fill="#ffffff" fill-opacity="0.38"></rect>
+    </g>
+    <g transform="rotate(-2 264 322)">
+      <rect x="204" y="140" width="120" height="182" rx="16" fill="#ffffff" fill-opacity="0.66"></rect>
+    </g>
+    <g transform="rotate(7 275 324)">
+      <rect x="212" y="132" width="126" height="192" rx="16" fill="#ffffff"></rect>
+      <rect x="232" y="160" width="78" height="11" rx="5.5" fill="#3b62e8"></rect>
+      <rect x="232" y="186" width="60" height="11" rx="5.5" fill="#3b62e8" fill-opacity="0.5"></rect>
+      <rect x="232" y="212" width="68" height="11" rx="5.5" fill="#3b62e8" fill-opacity="0.32"></rect>
+    </g>
+
+
+    <path d="M120 322 Q120 306 136 306 L376 306 Q392 306 392 322 L392 356 Q392 380 368 380 L144 380 Q120 380 120 356 Z" fill="#ffffff"></path>
+  </g>
 </svg>

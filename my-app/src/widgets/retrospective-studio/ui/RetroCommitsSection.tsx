@@ -45,7 +45,7 @@ export function RetroCommitsSection({
         <button
           type="button"
           className="btn btn-utility"
-          style={{ padding: "4px 8px", fontSize: 11, marginLeft: 6 }}
+          style={{ padding: "4px 8px", fontSize: 12, marginLeft: 6 }}
           onClick={onRefresh}
           disabled={loading}
           title={t("retro.editor.loadCommits")}>
@@ -61,12 +61,12 @@ export function RetroCommitsSection({
       </div>
 
       {loading ? (
-        <p style={{ margin: 0, fontSize: 13, color: "var(--color-body-muted)" }}>
+        <p style={{ margin: 0, fontSize: 16, color: "var(--color-body-muted)" }}>
           {t("retro.editor.loadCommits")}…
         </p>
       ) : commits.length === 0 ? (
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <p style={{ margin: 0, fontSize: 13, color: "var(--color-body-muted)" }}>
+          <p style={{ margin: 0, fontSize: 16, color: "var(--color-body-muted)" }}>
             {!hasVerifiedEmails
               ? t("retro.github.noCommitsReconnect")
               : isToday
@@ -80,7 +80,7 @@ export function RetroCommitsSection({
               target="_blank"
               rel="noopener noreferrer"
               style={{
-                fontSize: 11,
+                fontSize: 12,
                 color: "var(--color-primary)",
                 textDecoration: "underline",
               }}>
@@ -99,7 +99,7 @@ export function RetroCommitsSection({
                 padding: "10px 14px",
                 borderRadius: "var(--r-sm)",
                 background: "var(--color-tile-3)",
-                fontSize: 13,
+                fontSize: 16,
                 lineHeight: 1.5,
                 display: "flex",
                 gap: 10,
@@ -111,7 +111,7 @@ export function RetroCommitsSection({
                 style={{
                   color: "var(--color-primary-on-dark)",
                   fontWeight: 600,
-                  fontSize: 11,
+                  fontSize: 12,
                   background:
                     "color-mix(in srgb, var(--color-primary) 15%, transparent)",
                   padding: "2px 7px",
@@ -131,7 +131,7 @@ export function RetroCommitsSection({
                   alignItems: "center",
                   gap: 3,
                   textDecoration: "none",
-                  fontSize: 11,
+                  fontSize: 12,
                 }}
                 title={c.sha}>
                 {c.sha.slice(0, 7)}

@@ -13,7 +13,7 @@
   border: 1px solid var(--color-divider-soft);
   border-radius: var(--r-pill);
   padding: 0 14px 0 36px;
-  font-size: 13px;
+  font-size: 16px;
   width: 0;
   opacity: 0;
   margin-right: 0;
@@ -51,7 +51,7 @@
 }
 .global-search-section-title {
   margin: 8px 8px 4px;
-  font-size: 10px;
+  font-size: 12px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--color-body-muted);
@@ -63,20 +63,20 @@
   text-align: left;
   padding: 10px 12px;
   border-radius: var(--r-sm);
-  font-size: 13px;
+  font-size: 16px;
   color: var(--color-ink);
   transition: background 120ms ease;
 }
 .global-search-result:hover { background: var(--color-tile-4); }
 .global-search-result[data-highlighted="true"] { background: var(--color-tile-4); }
 .global-search-result-meta {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--color-body-muted);
   margin-top: 2px;
 }
 .global-search-empty {
   padding: 18px 12px;
-  font-size: 13px;
+  font-size: 16px;
   color: var(--color-body-muted);
   text-align: center;
 }

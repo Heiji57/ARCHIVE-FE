@@ -1,5 +1,11 @@
+import type { RetroRouteParams } from "@/app/router/navigation";
 import { RetrospectiveStudio } from "@/widgets/retrospective-studio";
 
-export function RetrospectivesPage() {
-  return <RetrospectiveStudio />;
+interface RetrospectivesPageProps {
+  retroParams?: RetroRouteParams;
+  onRetroNavigate?: (params: RetroRouteParams) => void;
+}
+
+export function RetrospectivesPage({ retroParams, onRetroNavigate }: RetrospectivesPageProps) {
+  return <RetrospectiveStudio retroParams={retroParams} onRetroNavigate={onRetroNavigate} />;
 }

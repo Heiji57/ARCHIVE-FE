@@ -60,7 +60,7 @@ export function TemplateEditorPanel({
           <div
             style={{
               padding: 14,
-              fontSize: 13,
+              fontSize: 16,
               color: "var(--color-warn, #d9a23a)",
               background: "var(--color-tile-3)",
               borderRadius: "var(--r-sm)",
@@ -78,7 +78,7 @@ export function TemplateEditorPanel({
               style={{
                 minHeight: 200,
                 padding: 12,
-                fontSize: 13,
+                fontSize: 16,
                 color: "var(--color-body-muted)",
               }}>
               에디터 로딩 중...

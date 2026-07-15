@@ -40,7 +40,7 @@
 }
 .summary-overlay-message {
   margin: 0 0 22px;
-  font-size: 14px;
+  font-size: 16px;
   color: var(--color-body-muted);
   line-height: 1.55;
 }
@@ -58,7 +58,7 @@
   align-items: center;
   gap: 10px;
   box-shadow: var(--shadow-toast);
-  font-size: 13px;
+  font-size: 16px;
   cursor: pointer;
   transition: transform 160ms ease, background 160ms ease;
 }

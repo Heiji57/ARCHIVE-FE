@@ -10,7 +10,7 @@
   gap: 4px;
   margin-bottom: 18px;
   padding: 4px 0;
-  font-size: 13px;
+  font-size: 16px;
   color: var(--color-body-muted);
   transition: color 120ms ease;
 }
@@ -59,7 +59,7 @@
 .retro-gallery-search input {
   flex: 1;
   min-width: 0;
-  font-size: 13px;
+  font-size: 16px;
   background: transparent;
 }
 
@@ -125,7 +125,7 @@
   gap: 8px;
   padding: 9px 12px;
   border-radius: var(--r-sm);
-  font-size: 13px;
+  font-size: 16px;
   color: var(--color-ink);
   text-align: left;
   transition: background-color 120ms ease;
@@ -146,7 +146,7 @@
 }
 .retro-gallery-pop-hint {
   margin: 2px 0 0;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.4;
   color: var(--color-body-muted);
 }
@@ -324,7 +324,7 @@
 
 .retro-card-title {
   margin: 0;
-  font-size: 15px;
+  font-size: 18px;
   font-weight: 600;
   letter-spacing: -0.2px;
   color: var(--color-ink);
@@ -347,7 +347,7 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--color-body-muted);
 }
 .retro-card-sync-dot {
@@ -392,7 +392,7 @@
   background: var(--color-tile-3);
 }
 .retro-card-new-label {
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 500;
 }
 
@@ -425,7 +425,7 @@
 .retro-gallery-empty-desc {
   margin: 0 0 8px;
   max-width: 360px;
-  font-size: 13px;
+  font-size: 16px;
   line-height: 1.5;
   color: var(--color-body-muted);
 }

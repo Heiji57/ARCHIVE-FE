@@ -1,5 +1,5 @@
 import type { AuthRoute } from "@/app/router/authRoute"
-import { CabinetMark } from "./CabinetMark"
+import { ArchiveLogo } from "@/shared/ui"
 
 interface LandingNavProps {
   onNavigateAuth: (route: AuthRoute) => void
@@ -30,7 +30,7 @@ export function LandingNav({ onNavigateAuth }: LandingNavProps) {
     <nav className="lp-nav" aria-label="Primary">
       <div className="lp-nav-inner">
         <button type="button" className="lp-brand" onClick={scrollToTop}>
-          <CabinetMark className="lp-brand-mark" />
+          <ArchiveLogo className="lp-brand-mark" />
           <span className="lp-brand-name">A.R.C.H.I.V.E</span>
         </button>
 

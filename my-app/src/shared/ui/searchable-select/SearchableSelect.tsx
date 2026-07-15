@@ -286,7 +286,7 @@ export function SearchableSelect({
                       border: "none",
                       outline: "none",
                       color: "var(--color-ink)",
-                      fontSize: 13,
+                      fontSize: 16,
                     }}
                   />
                 </div>
@@ -299,7 +299,7 @@ export function SearchableSelect({
                     <div
                       style={{
                         padding: "12px 10px",
-                        fontSize: 13,
+                        fontSize: 16,
                         color: "var(--color-body-muted)",
                         textAlign: "center",
                       }}
@@ -324,7 +324,7 @@ export function SearchableSelect({
                             justifyContent: "space-between",
                             gap: 8,
                             padding: "8px 10px",
-                            fontSize: 13,
+                            fontSize: 16,
                             borderRadius: "var(--r-sm)",
                             cursor: "pointer",
                             color: "var(--color-ink)",

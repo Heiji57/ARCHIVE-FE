@@ -1,4 +1,5 @@
 export { Pill, type PillTone } from "./pill/Pill";
+export { ArchiveLogo, type ArchiveLogoProps } from "./logo/ArchiveLogo";
 export {
   DisconnectBanner,
   type DisconnectBannerProps,

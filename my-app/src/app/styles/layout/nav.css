@@ -26,16 +26,18 @@
   gap: 8px;
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: 13px;
+  font-size: 14px;
   letter-spacing: 0.32em;
   color: var(--color-ink);
 }
 
 /* SVG brand mark inside .gn-brand */
 .gn-brand-mark {
-  width: 22px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   flex-shrink: 0;
+  position: relative;
+  top: -4px;
 }
 
 .gn-links {
@@ -49,7 +51,7 @@
   align-items: center;
   gap: 6px;
   padding: 6px 12px;
-  font-size: 13px;
+  font-size: 16px;
   letter-spacing: -0.06px;
   color: var(--color-body-muted);
   border-radius: var(--r-md);

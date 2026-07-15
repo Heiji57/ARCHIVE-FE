@@ -22,7 +22,7 @@
 }
 .settings-section-label {
   margin: 0;
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -30,7 +30,7 @@
 }
 .settings-section-hint {
   margin: 0;
-  font-size: 14px;
+  font-size: 16px;
   color: var(--color-ink-muted-48);
 }
 
@@ -45,7 +45,7 @@
 /* Description paragraph inside a settings card (under its header) */
 .settings-card-description {
   margin: 0 0 16px;
-  font-size: 13px;
+  font-size: 16px;
   color: var(--color-body-muted);
   line-height: 1.55;
 }
@@ -100,13 +100,13 @@
   min-width: 0;
 }
 .setting-row-label {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
   color: var(--color-ink);
 }
 .setting-row-desc {
   margin: 0;
-  font-size: 12.5px;
+  font-size: 12px;
   color: var(--color-body-muted);
   line-height: 1.45;
 }
@@ -146,7 +146,7 @@
   align-items: center;
   gap: 6px;
   padding: 7px 12px;
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 500;
   border-radius: var(--r-sm);
   color: var(--color-body-muted);
@@ -174,7 +174,7 @@
 }
 .setting-apply-hint {
   margin: 0;
-  font-size: 11.5px;
+  font-size: 12px;
   color: var(--color-body-muted);
   line-height: 1.5;
 }
@@ -215,12 +215,12 @@
 }
 .locale-btn-native {
   margin: 0;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
 }
 .locale-btn-label {
   margin: 2px 0 0;
-  font-size: 11px;
+  font-size: 12px;
   opacity: 0.7;
 }
 
@@ -235,14 +235,14 @@
 }
 .notif-retention-input {
   width: 80px;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 600;
   text-align: center;
   background: transparent;
   color: var(--color-ink);
 }
 .notif-retention-unit {
-  font-size: 13px;
+  font-size: 16px;
   color: var(--color-body-muted);
 }
 
@@ -268,7 +268,7 @@
   flex-shrink: 0;
   min-width: 52px;
   text-align: right;
-  font-size: 15px;
+  font-size: 18px;
   font-weight: 600;
   color: var(--color-ink);
   font-variant-numeric: tabular-nums;
@@ -276,7 +276,7 @@
 .todo-range-scale {
   display: flex;
   justify-content: space-between;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--color-body-muted);
   font-variant-numeric: tabular-nums;
 }
@@ -295,7 +295,7 @@
   display: flex;
   gap: 12px;
   align-items: baseline;
-  font-size: 13px;
+  font-size: 16px;
 }
 .github-info-label {
   color: var(--color-body-muted);
@@ -305,7 +305,7 @@
 .github-info-value {
   color: var(--color-ink);
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: 16px;
 }
 
 /* Settings action buttons (Connect / Disconnect) */
@@ -348,7 +348,7 @@
 }
 .calendar-reauth__title {
   margin: 0 0 3px;
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 600;
   letter-spacing: -0.1px;
   color: var(--color-ink);
@@ -407,21 +407,21 @@
 }
 .github-repo-name {
   font-family: var(--font-mono, monospace);
-  font-size: 13px;
+  font-size: 16px;
   color: var(--color-ink);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .github-repo-branch {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--color-body-muted);
 }
 .github-repo-badge {
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  font-size: 10px;
+  font-size: 12px;
   color: var(--color-warn, #d9a23a);
   padding: 2px 7px;
   border-radius: var(--r-pill);
@@ -455,13 +455,13 @@
   margin: 0 0 4px;
 }
 .github-empty {
-  font-size: 13px;
+  font-size: 16px;
   color: var(--color-body-muted);
   padding: 8px 2px;
   margin: 0;
 }
 .github-connect-hint {
-  font-size: 13px;
+  font-size: 16px;
   color: var(--color-body-muted);
   line-height: 1.5;
   margin: 0 0 14px;
@@ -497,7 +497,7 @@
 }
 .template-list-caption {
   margin: 0 0 10px;
-  font-size: 11.5px;
+  font-size: 12px;
   line-height: 1.45;
   color: var(--color-ink-muted-48);
 }
@@ -509,7 +509,7 @@
   border-radius: var(--r-md);
   border: 1px solid transparent;
   color: var(--color-ink);
-  font-size: 13px;
+  font-size: 16px;
   background: transparent;
   transition:
     background 0.12s,
@@ -592,7 +592,7 @@
   gap: 6px;
   padding: 9px 10px;
   margin-top: 8px;
-  font-size: 13px;
+  font-size: 16px;
   color: var(--color-body-muted);
   border-radius: var(--r-md);
   text-align: left;
@@ -621,7 +621,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
+  font-size: 16px;
   color: var(--color-body-muted);
   text-align: center;
 }
@@ -640,13 +640,13 @@
 .template-editor-name-static {
   flex: 1;
   margin: 0;
-  font-size: 15px;
+  font-size: 18px;
   font-weight: 600;
   color: var(--color-ink);
 }
 .template-name-input {
   flex: 1;
-  font-size: 15px;
+  font-size: 18px;
   font-weight: 600;
   background: transparent;
   color: var(--color-ink);
@@ -669,6 +669,6 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--color-body-muted);
 }

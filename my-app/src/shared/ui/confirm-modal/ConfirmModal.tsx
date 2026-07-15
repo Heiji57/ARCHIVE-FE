@@ -98,7 +98,7 @@ export function ConfirmModal({
           <div
             style={{
               margin: "0 0 20px",
-              fontSize: 14,
+              fontSize: 16,
               lineHeight: 1.6,
               color: "var(--color-body-muted)",
             }}

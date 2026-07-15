@@ -39,6 +39,6 @@
 
 /* Compact size variant (used for small status badges) */
 .pill-sm {
-  font-size: 10px;
+  font-size: 12px;
   padding: 3px 8px;
 }

@@ -111,7 +111,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 13px;
+  font-size: 16px;
   color: var(--color-body-muted);
 }
 
@@ -122,7 +122,7 @@
   border: 1px solid var(--color-divider-soft);
   border-radius: var(--r-lg);
   overflow: hidden;
-  background: var(--color-tile-1);
+  background: var(--color-tile-2);
 }
 
 /* "종일"(시간 미지정) 영역 */
@@ -136,7 +136,7 @@
 }
 .day-allday-label {
   flex: 0 0 auto;
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--color-body-muted);
@@ -244,7 +244,7 @@
 }
 .chip-drag-ghost-time {
   flex: 0 0 auto;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--color-body-muted);
   font-variant-numeric: tabular-nums;
 }
@@ -272,7 +272,7 @@
   top: -7px;
   width: 52px;
   text-align: right;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--color-body-muted);
   font-variant-numeric: tabular-nums;
 }
@@ -303,7 +303,7 @@
   border-radius: 9px;
   background: #5e69d1;
   color: #fff;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
   display: flex;
   align-items: center;
@@ -384,7 +384,7 @@
 .day-block-time {
   display: block;
   margin-top: 2px;
-  font-size: 10px;
+  font-size: 12px;
   color: var(--color-body-muted);
   font-variant-numeric: tabular-nums;
 }
@@ -428,7 +428,7 @@
   display: block;
   width: 100%;
   text-align: left;
-  font-size: 11px;
+  font-size: 14px;
   padding: 3px 6px 3px 7px;
   border-radius: 4px;
   border: none;
@@ -486,13 +486,13 @@
 }
 .week-chip-time {
   margin: 0 0 1px;
-  font-size: 10px;
+  font-size: 12px;
   color: var(--color-body-muted);
   font-variant-numeric: tabular-nums;
 }
 .week-chip-title {
   margin: 0;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--color-ink);
   overflow: hidden;
@@ -518,7 +518,7 @@
 /* ---------- 인라인 할일 추가 입력 (MonthGrid 셀 / DayTimeline 트랙) ---------- */
 .month-add-input {
   width: 100%;
-  font-size: 11px;
+  font-size: 12px;
   padding: 4px 7px;
   border-radius: 4px;
   border: 1.5px solid var(--color-primary);
@@ -562,7 +562,7 @@
 }
 .cal-event-chip-time {
   flex: 0 0 auto;
-  font-size: 10px;
+  font-size: 12px;
   color: var(--color-body-muted);
   font-variant-numeric: tabular-nums;
 }
@@ -613,7 +613,7 @@
 }
 .day-add-time {
   display: block;
-  font-size: 10px;
+  font-size: 12px;
   color: var(--color-primary-on-dark);
   margin-top: 3px;
   padding-left: 2px;

@@ -52,7 +52,7 @@ body[data-dnd-dragging] .day-block:hover {
 }
 .drag-ghost-title {
   margin: 0;
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 600;
   letter-spacing: -0.14px;
   color: var(--color-ink);
@@ -73,7 +73,7 @@ body[data-dnd-dragging] .day-block:hover {
   flex-shrink: 0;
 }
 .drag-ghost-date {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--color-body-muted);
   font-variant-numeric: tabular-nums;
 }

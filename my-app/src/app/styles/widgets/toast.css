@@ -60,7 +60,7 @@
 }
 
 .toast-title {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
   letter-spacing: -0.1px;
   margin: 0 0 2px;
@@ -68,7 +68,7 @@
 }
 
 .toast-msg {
-  font-size: 13px;
+  font-size: 16px;
   color: var(--color-body-muted);
   margin: 0;
   line-height: 1.4;
@@ -77,7 +77,7 @@
 .toast-action {
   display: inline-block;
   margin-top: 8px;
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 600;
   color: var(--color-primary-on-dark);
   transition: color 0.12s;

@@ -44,7 +44,7 @@ const STATUS_ORDER: TaskStatus[] = ["not-start", "in-progress", "done"];
 
 const timeInputStyle: CSSProperties = {
   flex: 1,
-  fontSize: 14,
+  fontSize: 16,
   padding: "11px 14px",
   borderRadius: "var(--r-md)",
   background: "var(--color-tile-3)",
@@ -138,7 +138,7 @@ export function TaskDetailPanel({
         <p
           style={{
             margin: "8px 0 0",
-            fontSize: 14,
+            fontSize: 16,
             color: "var(--color-body-muted)",
           }}
         >
@@ -178,7 +178,7 @@ export function TaskDetailPanel({
                 background: "var(--color-tile-3)",
                 border: "1px solid var(--color-divider-soft)",
                 color: "var(--color-ink)",
-                fontSize: 14,
+                fontSize: 16,
               }}
             >
               <span
@@ -219,7 +219,7 @@ export function TaskDetailPanel({
                       gap: 8,
                       alignItems: "center",
                       padding: "10px 14px",
-                      fontSize: 14,
+                      fontSize: 16,
                       color: "var(--color-ink)",
                       background:
                         todo.status === s
@@ -284,7 +284,7 @@ export function TaskDetailPanel({
                 background: "var(--color-tile-3)",
                 border: "1px solid var(--color-divider-soft)",
                 color: "var(--color-ink)",
-                fontSize: 14,
+                fontSize: 16,
               }}
             >
               <span
@@ -353,7 +353,7 @@ export function TaskDetailPanel({
               }
               style={timeInputStyle}
             />
-            <span style={{ color: "var(--color-body-muted)", fontSize: 14 }}>–</span>
+            <span style={{ color: "var(--color-body-muted)", fontSize: 16 }}>–</span>
             <input
               type="time"
               aria-label={t("calendar.taskDetail.endTime")}
@@ -367,7 +367,7 @@ export function TaskDetailPanel({
           <p
             style={{
               margin: "8px 0 0",
-              fontSize: 11,
+              fontSize: 12,
               lineHeight: 1.5,
               color: "var(--color-body-muted)",
             }}
@@ -388,7 +388,7 @@ export function TaskDetailPanel({
             value={todo.description ?? ""}
             onChange={(e) => onUpdate({ description: e.target.value })}
             className="editor-area"
-            style={{ minHeight: 160, fontSize: 14 }}
+            style={{ minHeight: 160, fontSize: 16 }}
             placeholder={t("calendar.taskDetail.descPlaceholder")}
           />
         </div>
@@ -421,7 +421,7 @@ export function TaskDetailPanel({
                   type="button"
                   onClick={onToggleCalendarLink}
                   className="btn btn-utility"
-                  style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13 }}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 16 }}
                 >
                   {todo.calendarLinked ? (
                     <CalendarMinus size={14} />
@@ -476,7 +476,7 @@ export function TaskDetailPanel({
               <p
                 style={{
                   margin: 0,
-                  fontSize: 13,
+                  fontSize: 16,
                   fontWeight: 600,
                   letterSpacing: "-0.1px",
                 }}
@@ -497,7 +497,7 @@ export function TaskDetailPanel({
                 type="button"
                 onClick={onGoToRetro}
                 className="btn btn-primary"
-                style={{ padding: "8px 16px", fontSize: 13 }}
+                style={{ padding: "8px 16px", fontSize: 16 }}
               >
                 {t("calendar.taskDetail.goToRetro")} <ArrowRight size={12} />
               </button>
