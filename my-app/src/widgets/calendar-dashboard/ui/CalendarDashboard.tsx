@@ -24,8 +24,20 @@ export interface CalendarDashboardProps {
 }
 
 export function CalendarDashboard({ onNavigate }: CalendarDashboardProps) {
-  const { state, addTodo, updateTodo, moveTodo, setTodoTime, removeTodo, loadTodosForView, toggleTodoCalendarLink, focusTarget, clearFocus } =
-    useArchiveApp();
+  const {
+    state,
+    addTodo,
+    updateTodo,
+    updateTodoRecurrence,
+    convertTodoToRecurring,
+    moveTodo,
+    setTodoTime,
+    removeTodo,
+    loadTodosForView,
+    toggleTodoCalendarLink,
+    focusTarget,
+    clearFocus,
+  } = useArchiveApp();
   // "오늘" = user.timezone 기준 (데모는 앵커 날짜). useTodayKey 가 분기 처리.
   const todayCellKey = useTodayKey();
   const anchorDate = useMemo(
@@ -72,25 +84,25 @@ export function CalendarDashboard({ onNavigate }: CalendarDashboardProps) {
     };
   }, [expanded]);
 
+  // 현재 뷰(일/주/월)가 커버하는 날짜 범위 — 재조회(뷰 전환 시 + 반복 변경 후) 공용.
+  const viewRange = useMemo(() => {
+    if (view === "day") {
+      const k = toDateKey(cursor);
+      return { from: k, to: k };
+    }
+    if (view === "week") {
+      return { from: toDateKey(startOfWeek(cursor)), to: toDateKey(endOfWeek(cursor)) };
+    }
+    return { from: toDateKey(startOfMonth(cursor)), to: toDateKey(endOfMonth(cursor)) };
+  }, [view, cursor]);
+
   // view 또는 cursor 가 바뀌면 해당 범위의 할 일 + 캘린더 이벤트를 재조회한다.
   // 서버 62일 제한에 맞게 뷰 단위로 요청한다.
   useEffect(() => {
-    let from: string;
-    let to: string;
-    if (view === "day") {
-      from = toDateKey(cursor);
-      to = from;
-    } else if (view === "week") {
-      from = toDateKey(startOfWeek(cursor));
-      to = toDateKey(endOfWeek(cursor));
-    } else {
-      from = toDateKey(startOfMonth(cursor));
-      to = toDateKey(endOfMonth(cursor));
-    }
-    void loadTodosForView(from, to);
+    void loadTodosForView(viewRange.from, viewRange.to);
     // loadTodosForView 는 useCallback([]) 으로 안정화되어 있으므로 deps 에서 제외한다.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [view, cursor]);
+  }, [viewRange]);
 
   const selectedTodo = selectedId
     ? findTodoById(state.todos, selectedId)
@@ -189,10 +201,20 @@ export function CalendarDashboard({ onNavigate }: CalendarDashboardProps) {
               onNavigate("retrospectives");
               setSelectedId(null);
             }}
-            onDelete={() => {
-              removeTodo(selectedTodo.id);
+            onDelete={(scope) => {
+              removeTodo(selectedTodo.id, scope);
               setSelectedId(null);
             }}
+            onUpdateRecurrence={(rule) =>
+              void updateTodoRecurrence(selectedTodo.id, rule).then(() =>
+                loadTodosForView(viewRange.from, viewRange.to),
+              )
+            }
+            onConvertToRecurring={(rule) =>
+              void convertTodoToRecurring(selectedTodo.id, rule).then(() =>
+                loadTodosForView(viewRange.from, viewRange.to),
+              )
+            }
             onToggleCalendarLink={
               state.calendar.status === "connected" || state.calendar.status === "needs-reauth"
                 ? () => toggleTodoCalendarLink(selectedTodo.id)

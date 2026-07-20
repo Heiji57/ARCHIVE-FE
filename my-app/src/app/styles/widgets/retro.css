@@ -299,6 +299,9 @@
 .retro-card[data-active="true"] {
   border-color: var(--color-primary);
 }
+.retro-card[data-today="true"] {
+  border-color: var(--color-primary);
+}
 
 .retro-card-top {
   display: flex;

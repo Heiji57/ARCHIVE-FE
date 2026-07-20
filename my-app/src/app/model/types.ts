@@ -18,7 +18,7 @@ import type {
 import type { Folder } from "@/entities/folder/model/types";
 import type { Session } from "@/entities/session/model/types";
 import type { RetroTemplate } from "@/entities/template";
-import type { TaskStatus, Todo } from "@/entities/todo/model/types";
+import type { RecurrenceRule, RecurrenceScope, TaskStatus, Todo } from "@/entities/todo/model/types";
 import type { OAuthProvider, User } from "@/entities/user/model/types";
 import type { AppSettings, Locale } from "@/app/model/settings";
 
@@ -85,7 +85,13 @@ export interface ArchiveAppContextValue {
   addTodo: (
     title: string,
     dateKey?: string,
-    options?: { status?: TaskStatus; description?: string; pushToCalendar?: boolean | null },
+    options?: {
+      status?: TaskStatus;
+      description?: string;
+      pushToCalendar?: boolean | null;
+      /** 반복 규칙. 지정 시 서버에 반복 시리즈 베이스로 생성된다 (api.yaml TodoCreateRequest). */
+      recurrenceRule?: RecurrenceRule | null;
+    },
     onCreated?: (id: string) => void,
   ) => void;
   /**
@@ -100,7 +106,35 @@ export interface ArchiveAppContextValue {
     patch: Partial<Pick<Todo, "title" | "status" | "description" | "dateKey">>,
   ) => void;
   moveTodo: (id: string, dateKey: string) => void;
-  removeTodo: (id: string) => void;
+  /**
+   * 할 일 삭제. 반복 시리즈의 경우 scope 로 삭제 범위를 지정한다
+   * (생략/"this" = 이 회차만, "following" = 이 회차부터 이후 전체, "all" = 시리즈 전체).
+   * "following"/"all" 은 낙관적으로 로컬에서도 일치하는 시리즈 항목을 함께 제거한다.
+   */
+  removeTodo: (id: string, scope?: RecurrenceScope) => void;
+  /**
+   * 반복 시리즈의 가상 인스턴스(isVirtual=true)에서 이 회차부터 이후 전체에 적용할
+   * 반복 규칙을 바꾼다 (recurrence_scope: "following" 고정 — 서버가 새 시리즈로 분리).
+   * 가상 인스턴스가 아닌 항목에는 서버가 무시하므로 호출하지 않는다.
+   * 데모/mock 모드는 반복 확장 로직이 없어 no-op.
+   *
+   * PATCH 응답은 새로 분리된 시리즈의 base row 원본 형태(is_virtual:false, series_id:null)로
+   * 온다 — 목록 조회에서 나오는 가상 인스턴스 모양과 달라 로컬에 그대로 반영해도 반복으로
+   * 인식되지 않는다. 호출부(TodoBoard/CalendarDashboard)가 반환된 Promise 완료 후 현재
+   * 보이는 범위를 재조회해 올바른 모양으로 교체해야 한다.
+   */
+  updateTodoRecurrence: (id: string, rule: RecurrenceRule) => Promise<void>;
+  /**
+   * 비반복 단독 할 일(isVirtual=false, seriesId=null)을 반복 시리즈로 전환한다.
+   * 이 항목 자체가 새 시리즈의 base 가 되어(이 날짜가 첫 회차), recurrence_scope 는
+   * 의미가 없으므로 지정하지 않는다. 이미 어떤 시리즈에 속한 항목(seriesId 있음)에는
+   * 서버가 무시한다 — 그 경우는 updateTodoRecurrence(가상 인스턴스 전용)를 쓴다.
+   * 데모/mock 모드는 반복 확장 로직이 없어 no-op.
+   *
+   * PATCH 응답이 base row 원본 형태로 오는 것은 updateTodoRecurrence 와 동일 — 호출부가
+   * 반환된 Promise 완료 후 현재 보이는 범위를 재조회해야 한다.
+   */
+  convertTodoToRecurring: (id: string, rule: RecurrenceRule) => Promise<void>;
   /**
    * 할 일의 시작/종료 시각 설정 (일간 타임라인 블록·드래그 재배치용).
    * null 을 주면 해당 시각을 비운다("HH:mm" 형식).

@@ -60,6 +60,7 @@ function RetroCardImpl({
       onClick={() => onSelect(entry.id)}
       className="retro-card"
       data-active={isActive ? "true" : undefined}
+      data-today={isToday ? "true" : undefined}
       data-draggable="true"
       data-dragging={isDragging ? "true" : undefined}
       {...dragHandlers}

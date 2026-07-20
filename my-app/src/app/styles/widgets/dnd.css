@@ -32,7 +32,6 @@ body[data-dnd-dragging] .day-block:hover {
   box-shadow: none !important;
   filter: none !important;
   background: revert !important;
-  border-color: revert !important;
 }
 
 /* 마우스를 따라다니는 드래그 고스트 카드 */

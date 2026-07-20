@@ -1,5 +1,19 @@
 export type TaskStatus = "done" | "in-progress" | "not-start";
 
+export interface RecurrenceRule {
+  unit: "day" | "week";
+  /** 반복 간격 (1~365). 예: unit="week", interval=2 → 2주마다. */
+  interval: number;
+  /** 반복 종료 날짜(포함, 로컬 "YYYY-MM-DD"). null = 무기한. */
+  until: string | null;
+}
+
+/**
+ * 반복 시리즈 수정/삭제 범위.
+ * "this" = 이 회차만, "following" = 이 회차부터 이후 전체, "all" = 시리즈 전체(삭제 전용).
+ */
+export type RecurrenceScope = "this" | "following" | "all";
+
 export interface Todo {
   id: string;
   title: string;
@@ -21,4 +35,12 @@ export interface Todo {
   calendarLinked: boolean;
   /** 연동 세부 상태. null = 미연동. */
   calendarPushStatus: "pending" | "syncing" | "synced" | "failed" | "pending_delete" | null;
+  /** 반복 시리즈의 가상 인스턴스(DB row 없음). ID 형식: "{base_id}::{slot_date}". */
+  isVirtual: boolean;
+  /** 예외 row(또는 가상 인스턴스)의 베이스 todo ID. 비반복 및 베이스는 null. */
+  seriesId: string | null;
+  /** 예외 row가 커버하는 원래 슬롯 날짜(시리즈 멤버십 키). 비반복은 null. */
+  originalDateKey: string | null;
+  /** 반복 베이스 row에만 존재(현재 목록 조회 응답엔 거의 포함되지 않음). */
+  recurrenceRule: RecurrenceRule | null;
 }

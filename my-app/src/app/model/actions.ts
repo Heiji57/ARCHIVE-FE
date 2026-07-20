@@ -12,7 +12,7 @@ import type {
   SummaryKind,
 } from "@/entities/summary/model/types";
 import type { RetroTemplate } from "@/entities/template";
-import type { Todo } from "@/entities/todo/model/types";
+import type { RecurrenceRule, Todo } from "@/entities/todo/model/types";
 import type { User } from "@/entities/user/model/types";
 import type { AccountType, AppSettings, Locale } from "@/app/model/settings";
 
@@ -27,6 +27,11 @@ export type AppAction =
         description?: string;
         startTime?: string;
         endTime?: string;
+        /**
+         * 로컬(비 API) 생성 경로에서 표시용으로만 보존한다 — 데모/mock 모드는
+         * 서버의 반복 인스턴스 생성 로직이 없어 실제 반복은 일어나지 않는다.
+         */
+        recurrenceRule?: RecurrenceRule | null;
       };
     }
   | {
@@ -44,6 +49,11 @@ export type AppAction =
   | { type: "todo/move"; payload: { id: string; dateKey: string } }
   | { type: "todo/upsert"; payload: { todo: Todo } }
   | { type: "todo/remove"; payload: { id: string } }
+  | {
+      /** 반복 시리즈 삭제(following/all) 후 로컬 state 에서 일치하는 항목들을 정리. */
+      type: "todo/removeSeries";
+      payload: { seriesId: string; fromDateKey: string | null };
+    }
   | {
       type: "todo/set-calendar";
       payload: {

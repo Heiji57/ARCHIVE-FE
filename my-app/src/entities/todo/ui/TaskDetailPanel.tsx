@@ -8,15 +8,19 @@ import {
   CheckCircle2,
   ChevronDown,
   Loader,
+  Repeat,
   Sparkles,
   Trash2,
   X,
 } from "lucide-react";
-import type { TaskStatus, Todo } from "@/entities/todo/model/types";
+import type { RecurrenceRule, RecurrenceScope, TaskStatus, Todo } from "@/entities/todo/model/types";
+import { isRecurringTodo } from "@/entities/todo/lib/selectors";
 import { StatusIcon } from "@/entities/todo/ui/StatusIcon";
 import { formatFullDate, fromDateKey } from "@/shared/lib/date";
 import { useTranslation } from "@/shared/lib/i18n";
 import { DatePickerPopover } from "./DatePickerPopover";
+import { RecurrencePopover } from "./RecurrencePopover";
+import { RecurrenceScopeDialog } from "./RecurrenceScopeDialog";
 
 export type TodoPatch = Partial<
   Pick<Todo, "title" | "status" | "description" | "dateKey">
@@ -29,8 +33,22 @@ export interface TaskDetailPanelProps {
   /** 시작/종료 시각 설정 (일간 타임라인 블록용). null = 비움. */
   onSetTime: (startTime: string | null, endTime: string | null) => void;
   onGoToRetro: () => void;
-  /** 작업 삭제 (휴지통 버튼 / Delete 키). */
-  onDelete: () => void;
+  /**
+   * 작업 삭제 (휴지통 버튼 / Delete 키).
+   * 반복 시리즈 항목이면 범위 선택 다이얼로그를 먼저 띄운 뒤 선택된 scope 로 호출한다.
+   */
+  onDelete: (scope?: RecurrenceScope) => void;
+  /**
+   * 가상 인스턴스(todo.isVirtual)의 반복 규칙을 이 회차부터 변경한다
+   * (recurrence_scope: "following" 고정). 가상 인스턴스가 아니면 섹션 자체가 숨겨져
+   * 호출되지 않는다.
+   */
+  onUpdateRecurrence: (rule: RecurrenceRule) => void;
+  /**
+   * 비반복 단독 할 일(!isVirtual && seriesId===null)을 반복 시리즈로 전환한다.
+   * 이미 어떤 시리즈에 속한 항목이면 섹션 자체가 숨겨져 호출되지 않는다.
+   */
+  onConvertToRecurring: (rule: RecurrenceRule) => void;
   /**
    * Google Calendar 연동 토글 콜백.
    * undefined 이면 섹션을 숨긴다(캘린더 미연결 등).
@@ -60,13 +78,43 @@ export function TaskDetailPanel({
   onSetTime,
   onGoToRetro,
   onDelete,
+  onUpdateRecurrence,
+  onConvertToRecurring,
   onToggleCalendarLink,
   calendarNeedsReauth = false,
 }: TaskDetailPanelProps) {
   const [statusOpen, setStatusOpen] = useState(false);
   const [dateOpen, setDateOpen] = useState(false);
+  const [deleteScopeOpen, setDeleteScopeOpen] = useState(false);
+  const [recurrencePopoverOpen, setRecurrencePopoverOpen] = useState(false);
+  // 팝오버가 열려 있는 동안의 편집 중 값 — RecurrencePopover 는 매 조작마다 onChange 를
+  // 호출하는 컨트롤드 컴포넌트라, 부모가 draft 로 들고 있다가 닫힐 때만 실제로 전송해야
+  // 종료일 입력 같은 다단계 조작 중간에 조기 제출/닫힘이 일어나지 않는다.
+  const [draftRecurrenceRule, setDraftRecurrenceRule] = useState<RecurrenceRule | null>(null);
   const { t, locale } = useTranslation();
   const d = fromDateKey(todo.dateKey);
+  const recurring = isRecurringTodo(todo);
+
+  // 반복 팝오버를 닫는 모든 경로(완료 클릭/바깥 클릭/헤더 버튼 재클릭)가 여길 거친다 —
+  // draft 가 있을 때만(사용자가 실제로 뭔가 편집했을 때만) 전송한다.
+  const closeRecurrencePopover = () => {
+    if (draftRecurrenceRule) {
+      if (todo.isVirtual) onUpdateRecurrence(draftRecurrenceRule);
+      else onConvertToRecurring(draftRecurrenceRule);
+    }
+    setDraftRecurrenceRule(null);
+    setRecurrencePopoverOpen(false);
+  };
+
+  // 반복 항목이면 범위 선택 다이얼로그를 먼저 띄운다(가이드 권장 UX).
+  // 비반복 항목은 기존과 동일하게 즉시 삭제한다.
+  const requestDelete = () => {
+    if (recurring) {
+      setDeleteScopeOpen(true);
+      return;
+    }
+    onDelete();
+  };
 
   // Delete 키로 작업 삭제 — 단, 입력란(제목/설명/날짜 등)에 포커스가 있을 땐
   // 텍스트 편집을 방해하지 않도록 무시한다.
@@ -81,11 +129,12 @@ export function TaskDetailPanel({
         (el as HTMLElement | null)?.isContentEditable;
       if (editable) return;
       e.preventDefault();
-      onDelete();
+      requestDelete();
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [onDelete]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [recurring, onDelete]);
 
   const STATUS_LABEL: Record<TaskStatus, string> = {
     "not-start": t("todo.col.notStart.ko"),
@@ -111,9 +160,23 @@ export function TaskDetailPanel({
         >
           <p
             className="t-eyebrow"
-            style={{ color: "var(--color-body-muted)", margin: 0 }}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              color: "var(--color-body-muted)",
+              margin: 0,
+            }}
           >
             {t("calendar.taskDetail.title")}
+            {recurring ? (
+              <span
+                style={{ display: "inline-flex", alignItems: "center", gap: 3 }}
+                title={t("todo.card.recurring")}
+              >
+                <Repeat size={11} />
+              </span>
+            ) : null}
           </p>
           <div style={{ display: "flex", gap: 4 }}>
             <button
@@ -121,7 +184,7 @@ export function TaskDetailPanel({
               className="btn-icon detail-delete-btn"
               aria-label={t("calendar.taskDetail.delete")}
               title={t("calendar.taskDetail.delete")}
-              onClick={onDelete}
+              onClick={requestDelete}
             >
               <Trash2 size={16} />
             </button>
@@ -309,6 +372,69 @@ export function TaskDetailPanel({
             ) : null}
           </div>
         </div>
+
+        {/*
+          Recurrence:
+          - isVirtual → 이 회차부터 이후 반복 규칙 변경 (recurrence_scope: following)
+          - 비반복 단독 항목(!recurring) → 반복 시리즈로 전환
+          - 예외 row(seriesId 있음, !isVirtual) → 서버가 둘 다 지원하지 않아 섹션 숨김
+        */}
+        {todo.isVirtual || !recurring ? (
+          <div>
+            <p
+              className="t-eyebrow"
+              style={{ margin: "0 0 8px", color: "var(--color-body-muted)" }}
+            >
+              {t("todo.recurrence.title")}
+            </p>
+            <div style={{ position: "relative" }}>
+              <button
+                type="button"
+                onClick={() => {
+                  if (recurrencePopoverOpen) closeRecurrencePopover();
+                  else setRecurrencePopoverOpen(true);
+                }}
+                style={{
+                  width: "100%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  padding: "11px 14px",
+                  borderRadius: "var(--r-md)",
+                  background: "var(--color-tile-3)",
+                  border: "1px solid var(--color-divider-soft)",
+                  color: "var(--color-ink)",
+                  fontSize: 16,
+                }}
+              >
+                <span style={{ display: "inline-flex", gap: 8, alignItems: "center" }}>
+                  <Repeat size={15} />
+                  {t(todo.isVirtual ? "todo.recurrence.detail.summary" : "todo.recurrence.detail.convert")}
+                </span>
+                <ChevronDown size={14} />
+              </button>
+
+              {recurrencePopoverOpen ? (
+                <RecurrencePopover
+                  value={draftRecurrenceRule}
+                  showOffOption={false}
+                  onChange={setDraftRecurrenceRule}
+                  onClose={closeRecurrencePopover}
+                />
+              ) : null}
+            </div>
+            <p
+              style={{
+                margin: "8px 0 0",
+                fontSize: 12,
+                lineHeight: 1.5,
+                color: "var(--color-body-muted)",
+              }}
+            >
+              {t(todo.isVirtual ? "todo.recurrence.detail.hint" : "todo.recurrence.detail.convertHint")}
+            </p>
+          </div>
+        ) : null}
 
         {/* Time (optional) */}
         <div>
@@ -505,6 +631,17 @@ export function TaskDetailPanel({
           </div>
         </div>
       </div>
+
+      <RecurrenceScopeDialog
+        open={deleteScopeOpen}
+        title={t("todo.recurrence.deleteTitle")}
+        scopes={["this", "following", "all"]}
+        onChoose={(scope) => {
+          setDeleteScopeOpen(false);
+          onDelete(scope);
+        }}
+        onCancel={() => setDeleteScopeOpen(false)}
+      />
     </div>
   );
 }

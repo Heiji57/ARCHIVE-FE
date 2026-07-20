@@ -1,304 +1,417 @@
-import type { ReactNode } from "react"
-import { revealDelay } from "./useScrollReveal"
+import { useEffect, useRef, useState } from "react"
+import { useTranslation } from "@/shared/lib/i18n"
+import type { TranslateFn } from "@/shared/lib/i18n"
+import { calDays, getShowcaseTabs } from "./landingData"
 
-interface LandingFeaturesProps {
-  onDemoTodos: () => void
-  onDemoRetro: () => void
-  onDemoSettings: () => void
-}
-
-export function LandingFeatures({
-  onDemoTodos,
-  onDemoRetro,
-  onDemoSettings,
-}: LandingFeaturesProps) {
+/** 미니 캘린더 (bento · showcase 프리뷰 공용) */
+function MiniCalendar({ t }: { t: TranslateFn }) {
+  const days = calDays(t)
+  const dow = [
+    t("landing.calendar.dow.sun"),
+    t("landing.calendar.dow.mon"),
+    t("landing.calendar.dow.tue"),
+    t("landing.calendar.dow.wed"),
+    t("landing.calendar.dow.thu"),
+    t("landing.calendar.dow.fri"),
+    t("landing.calendar.dow.sat"),
+  ]
   return (
     <>
-      {/* ── Three Pillars ─────────────────────────────────── */}
-      <section className="lp-section" id="features">
-        <div className="lp-section-head lp-reveal" style={revealDelay(0)}>
-          <p className="lp-section-eyebrow">One workflow</p>
-          <h2>세 개의 화면, 하나의 흐름</h2>
-          <p>
-            계획하고, 정리하고, 되돌아보는 일을 한 자리에서. 각 화면은 서로
-            끊기지 않고 자연스럽게 이어집니다.
-          </p>
-        </div>
-
-        <div className="lp-pillars">
-          <Pillar
-            delay={80}
-            icon={<IconCalendar />}
-            eyebrow="Planning Canvas"
-            title="캘린더"
-            body="주간·월간 일정과 작업 카드를 한 화면에서. 카드를 누르면 우측에서 디테일이 펼쳐지고, 오늘은 언제나 액션 블루로 강조됩니다."
-          />
-          <Pillar
-            delay={200}
-            icon={<IconKanban />}
-            eyebrow="Editorial Kanban"
-            title="할 일"
-            body="자연어로 적는 순간 칸반에 정렬됩니다. 시작 전 · 진행 중 · 완료, 세 열로 하루의 흐름을 한눈에 정리하세요."
-          />
-          <Pillar
-            delay={320}
-            icon={<IconLedger />}
-            eyebrow="Writing Ledger"
-            title="회고"
-            body="완료한 작업과 오늘의 커밋이 자동으로 모입니다. 배운 점만 적으면, 나머지는 GitHub 저장소에 안전하게 동기화됩니다."
-          />
-        </div>
-      </section>
-
-      {/* ── Discord-style feature cards ───────────────────── */}
-      <section className="lp-section" id="workflow" style={{ paddingTop: 0 }}>
-        {/* card 1 — kanban */}
-        <section className="lp-feature-screen">
-          <div className="lp-feature lp-feature-grad-1">
-            <div className="lp-feature-text lp-reveal" style={revealDelay(0)}>
-              <p className="ey">Quick Capture</p>
-              <h3>적는 순간, 보드에 정렬됩니다</h3>
-              <p>
-                떠오른 일을 한 줄로 적으면 됩니다. 날짜를 비워두면 오늘로,
-                적으면 그 날짜의 캘린더로 — 입력하는 즉시 알맞은 자리를
-                찾아갑니다.
-              </p>
-              <button
-                type="button"
-                className="lp-feature-cta"
-                onClick={onDemoTodos}>
-                칸반 체험하기 →
-              </button>
-            </div>
-            <div
-              className="lp-mock lp-reveal"
-              style={revealDelay(140)}
-              aria-hidden="true">
-              <MockHead title="to-dos · editorial kanban" />
-              <div className="lp-mock-kanban">
-                <div className="lp-mock-col">
-                  <p className="lp-mock-col-h">시작 전</p>
-                  <div className="lp-mock-card">OAuth 콜백 점검</div>
-                  <div className="lp-mock-card">다크 토큰 검수</div>
-                </div>
-                <div className="lp-mock-col">
-                  <p className="lp-mock-col-h">진행 중</p>
-                  <div className="lp-mock-card blue">Sub-header 작업</div>
-                  <div className="lp-mock-card">프롬프트 다듬기</div>
-                </div>
-                <div className="lp-mock-col">
-                  <p className="lp-mock-col-h">완료</p>
-                  <div className="lp-mock-card done">캐시 전략 정리</div>
-                  <div className="lp-mock-card done">와이어프레임</div>
-                </div>
-              </div>
-            </div>
+      <div className="lp-mini-dow">
+        {dow.map((d, i) => (
+          <span key={d} className={i === 0 ? "sun" : undefined}>
+            {d}
+          </span>
+        ))}
+      </div>
+      <div className="lp-mini-grid">
+        {days.map((d, i) => (
+          <div key={i} style={d.style}>
+            <span style={d.numStyle}>{d.n}</span>
+            {d.chip ? <span style={d.chipStyle}>{d.chip}</span> : null}
           </div>
-        </section>
-
-        {/* card 2 — github sync */}
-        <section className="lp-feature-screen">
-          <div className="lp-feature lp-feature-grad-2 reverse" id="sync">
-            <div
-              className="lp-mock lp-reveal"
-              style={revealDelay(140)}
-              aria-hidden="true">
-              <MockHead title="retrospectives · 오늘의 커밋" />
-              <Commit
-                repo="archive-app"
-                msg="feat(calendar): sticky sub-header"
-                sha="8f23c41"
-              />
-              <Commit
-                repo="archive-app"
-                msg="fix(toast): auto-dismiss timing"
-                sha="1a44b09"
-              />
-              <Commit
-                repo="design-tokens"
-                msg="chore: bump dark palette"
-                sha="c0a8d1e"
-              />
-              <div className="lp-commit-synced">
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="#27a644"
-                  strokeWidth="2.4"
-                  strokeLinecap="round"
-                  strokeLinejoin="round">
-                  <polyline points="4 12 10 18 20 6" />
-                </svg>
-                <span>@rangkim/archive-journal 에 동기화됨</span>
-              </div>
-            </div>
-            <div className="lp-feature-text lp-reveal" style={revealDelay(0)}>
-              <p className="ey">GitHub Sync</p>
-              <h3>회고는 커밋과 함께 보관됩니다</h3>
-              <p>
-                추적할 저장소만 골라두면, 그날의 커밋이 회고에 자동으로
-                묶입니다. 기록은 흩어지지 않고 당신의 GitHub 계정에 그대로
-                남습니다.
-              </p>
-              <button
-                type="button"
-                className="lp-feature-cta"
-                onClick={onDemoRetro}>
-                연동 살펴보기 →
-              </button>
-            </div>
-          </div>
-        </section>
-
-        {/* card 3 — AI auto-retro */}
-        <section className="lp-feature-screen">
-          <div className="lp-feature lp-feature-grad-3" id="ai">
-            <div className="lp-feature-text lp-reveal" style={revealDelay(0)}>
-              <p className="ey">AI Auto-Retrospective</p>
-              <h3>주간 요약은, 묻지 않아도 도착합니다</h3>
-              <p>
-                매주 일요일 자정 · 매월 말일 · 매년 마지막 날. 그동안의 흐름을
-                AI가 스스로 정리해 마크다운 요약으로 만들고, 우상단 토스트로
-                살며시 알려드립니다.
-              </p>
-              <button
-                type="button"
-                className="lp-feature-cta"
-                onClick={onDemoSettings}>
-                템플릿 편집기 보기 →
-              </button>
-            </div>
-            <div
-              className="lp-mock lp-reveal"
-              style={revealDelay(140)}
-              aria-hidden="true">
-              <div className="lp-mock-head">
-                <span
-                  className="lp-mock-dot"
-                  style={{ background: "#5e6ad2" }}
-                />
-                <span className="lp-mock-title" style={{ marginLeft: 0 }}>
-                  주간 기록 요약 · 자동 생성됨
-                </span>
-              </div>
-              <div className="lp-mock-summary">
-                <p className="h"># 이번 주의 흐름</p>
-                <p style={{ margin: "0 0 4px" }}>
-                  관찰한 흐름 — 캘린더와 회고를 잇는 작업에 시간이
-                  집중되었습니다.
-                </p>
-                <p className="muted">완료 11건 · 커밋 34개 · 회고 5회</p>
-                <p className="lead">다음 액션</p>
-                <p className="next">→ backdrop-filter 모바일 성능 점검</p>
-              </div>
-            </div>
-          </div>
-        </section>
-      </section>
-
-      {/* ── Quote ─────────────────────────────────────────── */}
-      <section className="lp-quote">
-        <blockquote className="lp-reveal" style={revealDelay(0)}>
-          &ldquo;도구와 트렌드는 바뀌어도,{" "}
-          <span className="hl">남겨둔 기록은 사라지지 않는다.</span> 하루의
-          끝에서 모든 것이 한 자리에 모인다.&rdquo;
-        </blockquote>
-        <cite className="lp-reveal" style={revealDelay(150)}>
-          — A.R.C.H.I.V.E의 설계 원칙
-        </cite>
-      </section>
+        ))}
+      </div>
     </>
   )
 }
 
-function Pillar({
-  icon,
-  eyebrow,
-  title,
-  body,
-  delay,
-}: {
-  icon: ReactNode
-  eyebrow: string
-  title: string
-  body: string
-  delay: number
-}) {
+function Check({ size = 11, stroke = "#27a644" }: { size?: number; stroke?: string }) {
   return (
-    <article className="lp-pillar lp-reveal" style={revealDelay(delay)}>
-      <span className="lp-pillar-icon">{icon}</span>
-      <p className="ey">{eyebrow}</p>
-      <h3>{title}</h3>
-      <p>{body}</p>
-    </article>
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={stroke}
+      strokeWidth="3"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      style={{ flexShrink: 0 }}>
+      <polyline points="4 12 10 18 20 6" />
+    </svg>
   )
 }
 
-function MockHead({ title }: { title: string }) {
+/* ── Pillars — bento grid ──────────────────────────────── */
+function Pillars({ t }: { t: TranslateFn }) {
   return (
-    <div className="lp-mock-head">
-      <span className="lp-mock-dot" style={{ background: "#ff5f57" }} />
-      <span className="lp-mock-dot" style={{ background: "#febc2e" }} />
-      <span className="lp-mock-dot" style={{ background: "#28c840" }} />
-      <span className="lp-mock-title">{title}</span>
+    <section id="pillars" className="lp-section lp-snap-screen">
+      <div className="lp-section-head lp-reveal" data-reveal="0">
+        <p className="lp-eyebrow">One workspace</p>
+        <h2>{t("landing.pillars.title")}</h2>
+      </div>
+
+      <div className="lp-bento">
+        {/* CALENDAR */}
+        <div className="lp-card lp-card--cal lp-reveal" data-reveal="1">
+          <p className="lp-card-ey">CALENDAR</p>
+          <h3>{t("nav.calendar")}</h3>
+          <p className="desc">{t("landing.pillars.calendar.desc")}</p>
+          <div className="lp-mini-cal">
+            <div className="lp-mini-cal-head">
+              <span className="m">{t("landing.calendar.monthLabel")}</span>
+              <span className="lp-mini-seg">
+                <span>{t("landing.calendar.week")}</span>
+                <span className="on">{t("landing.calendar.month")}</span>
+              </span>
+            </div>
+            <MiniCalendar t={t} />
+          </div>
+        </div>
+
+        {/* KANBAN */}
+        <div className="lp-card lp-reveal" data-reveal="2">
+          <p className="lp-card-ey">KANBAN</p>
+          <h3>{t("nav.todos")}</h3>
+          <div className="lp-card-todo-list">
+            <div className="lp-todo-row prog">
+              <span className="dot" style={{ background: "#828fff" }} />
+              <span className="txt">{t("landing.mock.subheaderWork")}</span>
+              <span className="tag">{t("landing.mock.tagInProgress")}</span>
+            </div>
+            <div className="lp-todo-row">
+              <span
+                className="dot"
+                style={{ border: "1.5px solid #62666d", background: "transparent" }}
+              />
+              <span className="txt" style={{ color: "#d0d6e0" }}>
+                {t("landing.mock.oauthCheck")}
+              </span>
+            </div>
+            <div className="lp-todo-row done">
+              <Check />
+              <span className="txt line">{t("landing.mock.cacheStrategy")}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* LEDGER */}
+        <div className="lp-card lp-reveal" data-reveal="3">
+          <p className="lp-card-ey">LEDGER</p>
+          <h3>{t("nav.retrospectives")}</h3>
+          <div className="lp-card-todo-list">
+            <div className="lp-retro-row">
+              <Check />
+              <span className="line">{t("landing.mock.cacheStrategy")}</span>
+            </div>
+            <div className="lp-retro-row">
+              <Check />
+              <span className="line">{t("landing.mock.wireframe")}</span>
+            </div>
+            <div className="lp-retro-foot">
+              <span>{t("landing.mock.ledgerFootNote")}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* AI SUMMARY */}
+        <div className="lp-card lp-card--ai lp-reveal" data-reveal="4">
+          <div style={{ flex: 1 }}>
+            <p className="ey">{t("landing.mock.aiWeeklyLabel")}</p>
+            <p className="lead">{t("landing.pillars.ai.lead")}</p>
+            <div className="stats">
+              <span>
+                <b>11</b> {t("landing.mock.labelDone")}
+              </span>
+              <span>
+                <b>8</b> {t("landing.mock.labelCommits")}
+              </span>
+              <span>
+                <b>5</b> {t("landing.mock.labelRetros")}
+              </span>
+            </div>
+          </div>
+          <svg
+            viewBox="0 0 120 44"
+            style={{ width: 140, height: 44, flexShrink: 0 }}>
+            <polyline
+              points="0,36 20,30 40,32 60,20 80,24 100,10 120,6"
+              fill="none"
+              stroke="#828fff"
+              strokeWidth="2"
+            />
+          </svg>
+        </div>
+
+        {/* GITHUB SYNC */}
+        <div className="lp-card lp-card--sync lp-reveal" data-reveal="5">
+          <i />
+          <div>
+            <p className="ey">GITHUB SYNC</p>
+            <p>{t("landing.pillars.githubSync.desc")}</p>
+          </div>
+        </div>
+
+        {/* LANGUAGES */}
+        <div className="lp-card lp-card--lang lp-reveal" data-reveal="6">
+          <span className="ey">4 LANGUAGES</span>
+          {["한국어", "English", "中文", "日本語"].map((l) => (
+            <span key={l} className="lp-lang-pill">
+              {l}
+            </span>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+/* ── Marquee ───────────────────────────────────────────── */
+function MarqueeGroup({ t, ariaHidden }: { t: TranslateFn; ariaHidden?: boolean }) {
+  const items = [
+    t("landing.marquee.daily"),
+    t("landing.marquee.weekly"),
+    t("landing.marquee.monthly"),
+    t("landing.marquee.yearly"),
+    t("landing.marquee.githubSync"),
+    t("landing.marquee.globalSearch"),
+    "한국어 · English · 中文 · 日本語",
+  ]
+  return (
+    <span className="lp-marquee-group" aria-hidden={ariaHidden}>
+      {items.map((item, i) => (
+        <span key={`${item}-${i}`} style={{ display: "inline-flex", gap: 40 }}>
+          <span>{item}</span>
+          <span className="sep">◆</span>
+        </span>
+      ))}
+    </span>
+  )
+}
+
+function Marquee({ t }: { t: TranslateFn }) {
+  return (
+    <div className="lp-marquee">
+      <div className="lp-marquee-track" data-marquee>
+        <MarqueeGroup t={t} />
+        <MarqueeGroup t={t} ariaHidden />
+      </div>
     </div>
   )
 }
 
-function Commit({
-  repo,
-  msg,
-  sha,
-}: {
-  repo: string
-  msg: string
-  sha: string
-}) {
+/* ── Showcase — tabbed product preview ─────────────────── */
+function Showcase({ t }: { t: TranslateFn }) {
+  const [active, setActive] = useState(0)
+  const tabsRef = useRef<Array<HTMLButtonElement | null>>([])
+  const inkRef = useRef<HTMLSpanElement>(null)
+  const tabs = getShowcaseTabs(t)
+
+  useEffect(() => {
+    const moveInk = () => {
+      const el = tabsRef.current[active]
+      const ink = inkRef.current
+      if (el && ink) {
+        ink.style.width = `${el.offsetWidth}px`
+        ink.style.transform = `translateX(${el.offsetLeft}px)`
+      }
+    }
+    moveInk()
+    window.addEventListener("resize", moveInk)
+    return () => window.removeEventListener("resize", moveInk)
+  }, [active, tabs])
+
+  const tab = tabs[active]
+
   return (
-    <div className="lp-commit">
-      <span className="repo">{repo}</span>
-      <span className="msg">{msg}</span>
-      <span className="sha">{sha}</span>
-    </div>
+    <section id="numbers" className="lp-section lp-snap-screen">
+      <Marquee t={t} />
+
+      <div className="lp-section-head lp-reveal" data-reveal="0" style={{ marginBottom: 36 }}>
+        <p className="lp-eyebrow">Explore the product</p>
+        <h2>{t("landing.showcase.title")}</h2>
+      </div>
+
+      <div className="lp-reveal" data-reveal="1">
+        <div className="lp-tabs">
+          {tabs.map((tb, i) => (
+            <button
+              key={tb.title}
+              type="button"
+              ref={(el) => {
+                tabsRef.current[i] = el
+              }}
+              className="lp-tab"
+              data-active={i === active ? "1" : "0"}
+              onClick={() => setActive(i)}>
+              {tb.title}
+            </button>
+          ))}
+          <span className="lp-tab-ink" ref={inkRef} />
+        </div>
+
+        <div className="lp-showcase-grid">
+          <div className="lp-showcase-copy">
+            <h3>{tab.title}</h3>
+            <p>{tab.body}</p>
+            <button
+              type="button"
+              className="lp-footer-link"
+              style={{ color: "#828fff", fontSize: 14 }}
+              onClick={() =>
+                document
+                  .getElementById("cta")
+                  ?.scrollIntoView({ behavior: "smooth", block: "start" })
+              }>
+              {tab.link} →
+            </button>
+          </div>
+
+          <div className="lp-showcase-visual">
+            {active === 0 ? (
+              <div className="lp-preview">
+                <div className="lp-preview-head">
+                  <p className="m">{t("landing.calendar.monthLabel")}</p>
+                  <span className="lp-mini-seg">
+                    <span>{t("landing.calendar.week")}</span>
+                    <span className="on">{t("landing.calendar.month")}</span>
+                  </span>
+                </div>
+                <MiniCalendar t={t} />
+              </div>
+            ) : null}
+
+            {active === 1 ? (
+              <div className="lp-preview">
+                <div className="lp-preview-kanban">
+                  <div className="lp-kan-col">
+                    <p className="lp-kan-col-h">{t("landing.mock.colNotStarted")}</p>
+                    <div className="lp-kan-card" style={{ opacity: 1 }}>
+                      {t("landing.mock.oauthCheck")}
+                    </div>
+                    <div className="lp-kan-card" style={{ opacity: 1, marginBottom: 0 }}>
+                      {t("landing.mock.darkTokenReview")}
+                    </div>
+                  </div>
+                  <div className="lp-kan-col">
+                    <p className="lp-kan-col-h">{t("landing.mock.colInProgress")}</p>
+                    <div className="lp-kan-card prog" style={{ opacity: 1 }}>
+                      {t("landing.mock.subheaderWork")}
+                    </div>
+                    <div className="lp-kan-card" style={{ opacity: 1, marginBottom: 0 }}>
+                      {t("landing.mock.promptPolish")}
+                    </div>
+                  </div>
+                  <div className="lp-kan-col">
+                    <p className="lp-kan-col-h">{t("landing.mock.colDone")}</p>
+                    <div className="lp-kan-card done" style={{ opacity: 1 }}>
+                      {t("landing.mock.cacheStrategy")}
+                    </div>
+                    <div className="lp-kan-card done" style={{ opacity: 1, marginBottom: 0 }}>
+                      {t("landing.mock.wireframe")}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : null}
+
+            {active === 2 ? (
+              <div className="lp-preview">
+                <div className="lp-preview-retro-head">
+                  <p>{t("landing.mock.retroDateLabel")}</p>
+                  <span>{t("landing.mock.retroDow")}</span>
+                </div>
+                <div className="lp-preview-retro-list">
+                  <div className="row">
+                    <Check size={13} stroke="#27a644" />
+                    <span className="line">{t("landing.mock.cacheStrategy")}</span>
+                  </div>
+                  <div className="row">
+                    <Check size={13} stroke="#27a644" />
+                    <span className="line">{t("landing.mock.wireframeReview")}</span>
+                  </div>
+                </div>
+                <div className="lp-preview-commits">
+                  <div className="row">
+                    <span className="time">{t("landing.mock.log1Time")}</span>
+                    <span className="text">{t("landing.mock.log1Text")}</span>
+                  </div>
+                  <div className="row">
+                    <span className="time">{t("landing.mock.log2Time")}</span>
+                    <span className="text">{t("landing.mock.log2Text")}</span>
+                  </div>
+                </div>
+              </div>
+            ) : null}
+
+            {active === 3 ? (
+              <div className="lp-preview lp-preview-ai">
+                <p className="h">
+                  <i />
+                  {t("landing.mock.weeklySummaryAuto")}
+                </p>
+                <div className="lp-preview-ai-body">
+                  <p className="t">{t("landing.mock.weeklyFlowHeading")}</p>
+                  <p className="d">{t("landing.mock.weeklyFlowBodyFull")}</p>
+                  <p className="meta">{t("landing.mock.showcaseAiMeta")}</p>
+                </div>
+                <div className="lp-preview-ai-foot">
+                  <span className="next">{t("landing.mock.nextAction")}</span>
+                  <svg
+                    viewBox="0 0 140 40"
+                    style={{ flex: 1, height: 36 }}
+                    preserveAspectRatio="none">
+                    <polyline
+                      points="0,32 24,26 48,28 72,16 96,20 120,8 140,5"
+                      fill="none"
+                      stroke="#828fff"
+                      strokeWidth="2"
+                    />
+                  </svg>
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      </div>
+    </section>
   )
 }
 
-/* ── Pillar icons (lucide-style inline stroke SVG) ─────────── */
-const ICON_PROPS = {
-  width: 22,
-  height: 22,
-  viewBox: "0 0 24 24",
-  fill: "none",
-  stroke: "currentColor",
-  strokeWidth: 1.7,
-  strokeLinecap: "round" as const,
-  strokeLinejoin: "round" as const,
-}
-
-function IconCalendar() {
+/* ── Quote ─────────────────────────────────────────────── */
+function Quote({ t }: { t: TranslateFn }) {
   return (
-    <svg {...ICON_PROPS}>
-      <rect x="3" y="4" width="18" height="17" rx="2" />
-      <path d="M3 9h18M8 2v4M16 2v4" />
-    </svg>
+    <section className="lp-quote lp-snap-screen">
+      <blockquote className="lp-reveal" data-reveal="0">
+        &ldquo;{t("landing.quote.part1")}
+        <span className="hl">{t("landing.quote.highlight")}</span>
+        {t("landing.quote.part2")}&rdquo;
+      </blockquote>
+      <cite className="lp-reveal" data-reveal="2">
+        {t("landing.quote.cite")}
+      </cite>
+    </section>
   )
 }
 
-function IconKanban() {
+export function LandingFeatures() {
+  const { t } = useTranslation()
   return (
-    <svg {...ICON_PROPS}>
-      <polyline points="9 11 12 14 22 4" />
-      <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
-    </svg>
-  )
-}
-
-function IconLedger() {
-  return (
-    <svg {...ICON_PROPS}>
-      <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
-    </svg>
+    <>
+      <Pillars t={t} />
+      <Showcase t={t} />
+      <Quote t={t} />
+    </>
   )
 }

@@ -91,6 +91,14 @@
   flex: 1;
 }
 
+/* 카드 드래그 중 열 위로 hover 해도 테두리 색상이 바뀌지 않도록 고정 */
+.kanban-col-body[data-drop-active="true"],
+.kanban-col-body[data-drop-over="true"] {
+  outline: 2px dashed var(--color-primary);
+  outline-offset: -4px;
+  background: transparent;
+}
+
 /* ---------- Kanban card ---------- */
 .kanban-card {
   background: var(--color-tile-2);
@@ -202,6 +210,11 @@
 .quick-capture-date-btn {
   height: 100%;
   padding: 0 16px;
+}
+.quick-capture-date-btn[data-active="true"] {
+  background: var(--color-ink);
+  color: var(--color-canvas);
+  border-color: var(--color-ink);
 }
 .quick-capture-submit {
   flex-shrink: 0;

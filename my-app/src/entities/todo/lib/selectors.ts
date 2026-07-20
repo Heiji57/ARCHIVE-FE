@@ -22,6 +22,11 @@ export function findTodoById(todos: Todo[], id: string) {
   return todos.find((todo) => todo.id === id) ?? null;
 }
 
+/** 반복 시리즈에 속한 항목인지(가상 인스턴스 또는 예외 row). */
+export function isRecurringTodo(todo: Todo): boolean {
+  return todo.isVirtual || todo.seriesId !== null;
+}
+
 /** Filter todos that should appear on the Todo Board (hide done >24h). */
 export function getVisibleBoardTodos(todos: Todo[], now = Date.now()) {
   return todos.filter(

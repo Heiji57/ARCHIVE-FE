@@ -1,6 +1,7 @@
 import { memo } from "react";
-import { AlignLeft, CalendarDays } from "lucide-react";
+import { AlignLeft, CalendarDays, Repeat } from "lucide-react";
 import type { TaskStatus, Todo } from "@/entities/todo/model/types";
+import { isRecurringTodo } from "@/entities/todo/lib/selectors";
 import { StatusIcon } from "@/entities/todo/ui/StatusIcon";
 import { useDraggable } from "@/shared/lib/dnd";
 import { useTranslation } from "@/shared/lib/i18n";
@@ -51,6 +52,13 @@ function KanbanCardImpl({ todo, isDone, onUpdate, onSelect }: KanbanCardProps) {
           >
             {todo.title}
           </p>
+          {isRecurringTodo(todo) ? (
+            <Repeat
+              className="kanban-card-notes"
+              size={13}
+              aria-label={t("todo.card.recurring")}
+            />
+          ) : null}
           {todo.description ? (
             <AlignLeft
               className="kanban-card-notes"

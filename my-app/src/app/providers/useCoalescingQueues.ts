@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type Dispatch } from "react";
+import type { AppAction } from "@/app/model/actions";
 import type { AppSettings } from "@/app/model/settings";
 import type { AppState } from "@/app/model/types";
 import type { JournalEntry } from "@/entities/entry/model/types";
@@ -48,6 +49,7 @@ export interface CoalescingQueues {
 export function useCoalescingQueues(
   state: AppState,
   reportApiError: () => void,
+  dispatch: Dispatch<AppAction>,
 ): CoalescingQueues {
   const reportApiErrorRef = useLatestRef(reportApiError);
   const latestRef = useLatestRef({
@@ -62,7 +64,13 @@ export function useCoalescingQueues(
   const [queues] = useState<CoalescingQueues>(() => ({
     todoQueue: createCoalescingQueue<TodoQueuePatch>({
       delayMs: COALESCE_MS,
-      send: (id, merged) => apiUpdateTodo(id, merged),
+      // 반복 시리즈의 가상 인스턴스를 수정하면 서버가 예외 row 를 실체화해 새 id 를
+      // 발급할 수 있다 — 응답의 id 로 로컬 state 를 교체해 이후 PATCH 가 죽은 가상
+      // id 를 계속 참조하지 않도록 한다(반복 Todo 가이드 에지 케이스 #1).
+      send: (id, merged) =>
+        apiUpdateTodo(id, merged).then((serverTodo) => {
+          dispatch({ type: "todo/replaceId", payload: { localId: id, serverTodo } });
+        }),
       onError: () => reportApiErrorRef.current(),
     }),
     entryQueue: createCoalescingQueue<EntryQueuePatch>({

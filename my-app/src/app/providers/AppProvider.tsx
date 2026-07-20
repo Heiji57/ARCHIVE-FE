@@ -81,6 +81,7 @@ import {
   apiCreateEntry,
   apiCreateTodo,
   apiDeleteTodo,
+  apiUpdateTodo,
   apiLinkCalendarTodo,
   apiUnlinkCalendarTodo,
   apiDeleteNotification,
@@ -589,7 +590,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     settingsQueue,
     profileQueue,
     templateQueue,
-  } = useCoalescingQueues(state, reportApiError);
+  } = useCoalescingQueues(state, reportApiError, dispatch);
 
   // 설정은 전체 교체(PUT)이므로 현재 settings 에 patch 를 합쳐 전송.
   const syncSettings = (patch: Partial<AppSettings>) => {
@@ -906,6 +907,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           endTimeUtc: localTimeToUtcISO(resolvedDateKey, endTime, tz),
           timezone: tz ?? null,
           pushToCalendar: options?.pushToCalendar,
+          recurrenceRule: options?.recurrenceRule,
         })
           .then((todo) => {
             dispatch({ type: "todo/upsert", payload: { todo } });
@@ -925,6 +927,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           description: options?.description,
           startTime,
           endTime,
+          recurrenceRule: options?.recurrenceRule,
         },
       });
       onCreated?.(newId);
@@ -939,14 +942,58 @@ export function AppProvider({ children }: { children: ReactNode }) {
       // updateTodo 와 같은 id 큐를 공유 → 수정+이동이 1회 PATCH 로 머지됨.
       if (apiActive) todoQueue.enqueue(id, { dateKey });
     },
-    removeTodo: (id) => {
+    removeTodo: (id, scope) => {
       // 데모는 로컬에서만 삭제한다(다른 할 일 CRUD 와 동일하게 비영속 로컬 처리).
-      dispatch({ type: "todo/remove", payload: { id } }); // 낙관적
+      const todo = state.todos.find((t) => t.id === id);
+      if (scope && scope !== "this" && todo?.seriesId) {
+        // following/all — 서버가 여러 row 를 지우므로, 로컬도 같은 시리즈의
+        // 일치하는 항목들(가상 인스턴스 포함)을 함께 정리해 재조회 없이 정합을 맞춘다.
+        dispatch({
+          type: "todo/removeSeries",
+          payload: {
+            seriesId: todo.seriesId,
+            fromDateKey: scope === "following" ? (todo.originalDateKey ?? todo.dateKey) : null,
+          },
+        }); // 낙관적
+      } else {
+        dispatch({ type: "todo/remove", payload: { id } }); // 낙관적
+      }
       if (apiActive) {
         // 대기 중 수정 큐를 취소하고 삭제 요청.
         // 연동된 Google Calendar 이벤트는 백엔드가 비동기(best-effort)로 자동 삭제한다.
         todoQueue.cancel(id);
-        void apiDeleteTodo(id).catch(() => reportApiError());
+        void apiDeleteTodo(id, scope).catch(() => reportApiError());
+      }
+    },
+    updateTodoRecurrence: async (id, rule) => {
+      // 데모/mock 은 반복 확장(가상 인스턴스 생성) 로직 자체가 없어 지원하지 않는다.
+      if (!apiActive) return;
+      // 큐를 거치지 않고 즉시 전송 — following 스코프는 서버가 새 시리즈(새 id)를
+      // 만드는 1회성 명시적 액션이라 디바운스 코얼레싱 대상이 아니다.
+      try {
+        const serverTodo = await apiUpdateTodo(id, {
+          recurrenceScope: "following",
+          recurrenceRule: rule,
+        });
+        // 응답은 새 base row 원본 형태 — 우선 반영해 두지만, 목록 모양(가상 인스턴스)과
+        // 다르므로 호출부가 이어서 재조회해 정확한 모양으로 교체한다.
+        dispatch({ type: "todo/replaceId", payload: { localId: id, serverTodo } });
+      } catch {
+        reportApiError();
+      }
+    },
+    convertTodoToRecurring: async (id, rule) => {
+      // 데모/mock 은 반복 확장 로직 자체가 없어 지원하지 않는다.
+      if (!apiActive) return;
+      // scope 를 지정하지 않는다 — 대상이 어떤 시리즈에도 속하지 않은 단독 항목일 때만
+      // 서버가 이 규칙을 받아 그 자리에서 시리즈 base 로 전환한다(recurrence_scope 무관).
+      try {
+        const serverTodo = await apiUpdateTodo(id, { recurrenceRule: rule });
+        // 응답은 base row 원본 형태(is_virtual:false) — 호출부가 이어서 재조회해야
+        // 목록 조회 시의 가상 인스턴스 모양(is_virtual:true)으로 정확히 바뀐다.
+        dispatch({ type: "todo/replaceId", payload: { localId: id, serverTodo } });
+      } catch {
+        reportApiError();
       }
     },
     toggleTodoCalendarLink: (id) => {

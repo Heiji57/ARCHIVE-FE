@@ -936,11 +936,14 @@ export interface paths {
         post?: never;
         /**
          * 할 일 삭제
-         * @description 연동돼 있던 Google Calendar 이벤트가 있으면 best-effort 로 함께 삭제된다 (백그라운드 task, 응답을 지연시키지 않음).
+         * @description 연동돼 있던 Google Calendar 이벤트가 있으면 best-effort 로 함께 삭제된다 (백그라운드 task, 응답을 지연시키지 않음). 반복 시리즈의 경우 `recurrenceScope` 로 삭제 범위를 지정할 수 있다.
          */
         delete: {
             parameters: {
-                query?: never;
+                query?: {
+                    /** @description 반복 시리즈 삭제 범위. `this` = 해당 회차만 취소, `following` = 해당 회차부터 이후 모든 회차 삭제(시리즈 잘라내기), `all` = 시리즈 전체(베이스 + 모든 예외) 삭제. 비반복 todo 에는 무시된다. */
+                    recurrenceScope?: "this" | "following" | "all";
+                };
                 header?: never;
                 path: {
                     /** @example todo_01HXYZ... */
@@ -4066,6 +4069,8 @@ export interface components {
             timezone?: string | null;
             /** @description null(생략) = user_settings.calendarAutoPushTodo 기본값 적용, true/false = 개별 지정(생성 시 Google Calendar push 여부). */
             push_to_calendar?: boolean | null;
+            /** @description 반복 규칙. null 이면 단건 todo. */
+            recurrence_rule?: components["schemas"]["RecurrenceRule"] | null;
         };
         TodoUpdateRequest: {
             title?: string | null;
@@ -4084,6 +4089,14 @@ export interface components {
             end_time?: string | null;
             /** @description IANA timezone. omit = unchanged, null = clear, string = set. Required when start_time or end_time is set to non-null. */
             timezone?: string | null;
+            /**
+             * @description 반복 시리즈 수정 범위. `this` = 해당 회차만 수정(예외 row 생성), `following` = 해당 회차부터 이후 시리즈 분기(새 베이스 생성). 비반복 todo 에는 무시된다.
+             * @default this
+             * @enum {string}
+             */
+            recurrence_scope: "this" | "following";
+            /** @description `recurrence_scope: following` 일 때 새 시리즈에 적용할 규칙. 생략 시 기존 규칙 유지. 대상 todo 가 비반복 단독 항목(series_id 없음, 어떤 시리즈에도 속하지 않음)이면 `recurrence_scope` 값과 무관하게 이 규칙으로 반복 시리즈 base 로 전환된다 (이 회차 자체가 새 시리즈의 첫 회차가 됨). 이미 다른 시리즈의 예외 row 에는 무시된다 — 그 경우는 가상 인스턴스(`{base_id}::{slot_date}`)를 `recurrence_scope: following` 으로 수정해야 한다. */
+            recurrence_rule?: components["schemas"]["RecurrenceRule"] | null;
         };
         TodoResponse: {
             id: string;
@@ -4119,6 +4132,25 @@ export interface components {
              * @enum {string|null}
              */
             calendar_push_status?: "pending" | "syncing" | "synced" | "failed" | "pending_delete" | null;
+            /** @description 반복 시리즈의 가상 인스턴스(DB row 없음). ID 형식: "{base_id}::{slot_date}". */
+            is_virtual?: boolean;
+            /** @description 예외 row의 베이스 todo ID. 비반복 및 베이스는 null. */
+            series_id?: string | null;
+            /** @description 예외 row가 커버하는 원래 슬롯 날짜(YYYY-MM-DD). 시리즈 멤버십 키. */
+            original_date_key?: string | null;
+            /** @description 반복 베이스 row에만 존재. 예외/일반 todo 는 null. */
+            recurrence_rule?: components["schemas"]["RecurrenceRule"] | null;
+        };
+        RecurrenceRule: {
+            /**
+             * @description 반복 단위.
+             * @enum {string}
+             */
+            unit: "day" | "week";
+            /** @description 반복 간격 (예: unit=week, interval=2 → 2주마다). */
+            interval: number;
+            /** @description 반복 종료 날짜(포함, 로컬 날짜 YYYY-MM-DD). null 이면 무기한. */
+            until?: string | null;
         };
         ApiResponseTodo: components["schemas"]["ApiResponseEmpty"] & {
             data?: components["schemas"]["TodoResponse"];

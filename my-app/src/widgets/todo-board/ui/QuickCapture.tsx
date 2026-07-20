@@ -1,11 +1,13 @@
 import { useState } from "react";
-import { CalendarDays, ChevronDown, Plus } from "lucide-react";
+import { CalendarDays, ChevronDown, Plus, Repeat } from "lucide-react";
 import { DatePickerPopover } from "@/entities/todo/ui/DatePickerPopover";
+import { RecurrencePopover } from "@/entities/todo/ui/RecurrencePopover";
+import type { RecurrenceRule } from "@/entities/todo/model/types";
 import { addDays, toDateKey, todayKey } from "@/shared/lib/date";
 import { useTranslation } from "@/shared/lib/i18n";
 
 export interface QuickCaptureProps {
-  onSubmit: (text: string, dateKey: string) => void;
+  onSubmit: (text: string, dateKey: string, recurrenceRule?: RecurrenceRule | null) => void;
 }
 
 /**
@@ -21,6 +23,8 @@ export function QuickCapture({ onSubmit }: QuickCaptureProps) {
   const [input, setInput] = useState("");
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickedDate, setPickedDate] = useState(todayKey);
+  const [recurrencePickerOpen, setRecurrencePickerOpen] = useState(false);
+  const [recurrenceRule, setRecurrenceRule] = useState<RecurrenceRule | null>(null);
 
   const today = new Date();
   const todayK = toDateKey(today);
@@ -33,11 +37,21 @@ export function QuickCapture({ onSubmit }: QuickCaptureProps) {
         ? t("todo.quick.tomorrow")
         : pickedDate;
 
+  const recurrenceLabel = recurrenceRule
+    ? recurrenceRule.interval === 1
+      ? t(recurrenceRule.unit === "day" ? "todo.recurrence.label.daily" : "todo.recurrence.label.weekly")
+      : t("todo.recurrence.label.interval", {
+          n: recurrenceRule.interval,
+          unit: t(`todo.recurrence.unitNoun.${recurrenceRule.unit}`),
+        })
+    : t("todo.recurrence.chipOff");
+
   const submit = (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!input.trim()) return;
-    onSubmit(input.trim(), pickedDate);
+    onSubmit(input.trim(), pickedDate, recurrenceRule);
     setInput("");
+    setRecurrenceRule(null);
   };
 
   return (
@@ -71,6 +85,27 @@ export function QuickCapture({ onSubmit }: QuickCaptureProps) {
               setPickerOpen(false);
             }}
             onClose={() => setPickerOpen(false)}
+          />
+        ) : null}
+      </div>
+
+      <div className="quick-capture-date-wrap">
+        <button
+          type="button"
+          onClick={() => setRecurrencePickerOpen((p) => !p)}
+          className="btn btn-utility quick-capture-date-btn"
+          data-active={recurrenceRule ? "true" : undefined}
+        >
+          <Repeat size={14} />
+          {recurrenceLabel}
+          <ChevronDown size={12} />
+        </button>
+
+        {recurrencePickerOpen ? (
+          <RecurrencePopover
+            value={recurrenceRule}
+            onChange={setRecurrenceRule}
+            onClose={() => setRecurrencePickerOpen(false)}
           />
         ) : null}
       </div>

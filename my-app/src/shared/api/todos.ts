@@ -1,5 +1,5 @@
 /** Todo 도메인 API. 반환은 FE 도메인 타입(camelCase)으로 매핑해 돌려준다. */
-import type { TaskStatus, Todo } from "@/entities/todo/model/types";
+import type { RecurrenceRule, RecurrenceScope, TaskStatus, Todo } from "@/entities/todo/model/types";
 import { request } from "./client";
 import { toTodo } from "./mappers";
 import type { components } from "./schema";
@@ -33,6 +33,8 @@ export async function apiCreateTodo(input: {
    * true/false = 이 할 일에 한해 개별 지정.
    */
   pushToCalendar?: boolean | null;
+  /** 반복 규칙. null/생략 = 단건(비반복) todo. */
+  recurrenceRule?: RecurrenceRule | null;
 }): Promise<Todo> {
   const hasTime = input.startTimeUtc != null || input.endTimeUtc != null;
   const res = await request<TodoResponse>("/todos", {
@@ -47,6 +49,7 @@ export async function apiCreateTodo(input: {
       ...(hasTime && { timezone: input.timezone ?? null }),
       // null/undefined 는 필드 생략 → 서버가 calendarAutoPushTodo 설정으로 처리
       ...(input.pushToCalendar != null && { push_to_calendar: input.pushToCalendar }),
+      ...(input.recurrenceRule !== undefined && { recurrence_rule: input.recurrenceRule }),
     },
   });
   return toTodo(res);
@@ -55,6 +58,7 @@ export async function apiCreateTodo(input: {
 /**
  * Todo 부분 수정. 시간 필드는 UTC ISO datetime + IANA timezone 으로 전송한다
  * (api.yaml TodoUpdateRequest: omit=unchanged, null=clear, string=set).
+ * recurrenceScope 생략 시 서버 기본값 "this"(해당 회차만 수정)로 동작한다.
  */
 export async function apiUpdateTodo(
   id: string,
@@ -66,9 +70,15 @@ export async function apiUpdateTodo(
     endTime?: string | null;
     /** start/end 중 하나라도 non-null 로 설정 시 필수. */
     timezone?: string | null;
+    /** 반복 시리즈 수정 범위. 생략 = "this". */
+    recurrenceScope?: Extract<RecurrenceScope, "this" | "following">;
+    /** recurrenceScope: "following" 일 때 새 시리즈에 적용할 규칙. 생략 시 기존 규칙 유지. */
+    recurrenceRule?: RecurrenceRule | null;
   },
 ): Promise<Todo> {
-  const body: components["schemas"]["TodoUpdateRequest"] = {};
+  const body: components["schemas"]["TodoUpdateRequest"] = {
+    recurrence_scope: patch.recurrenceScope ?? "this",
+  };
   if (patch.title !== undefined) body.title = patch.title;
   if (patch.status !== undefined) body.status = patch.status;
   if (patch.description !== undefined) body.description = patch.description;
@@ -76,6 +86,7 @@ export async function apiUpdateTodo(
   if (patch.startTime !== undefined) body.start_time = patch.startTime;
   if (patch.endTime !== undefined) body.end_time = patch.endTime;
   if (patch.timezone !== undefined) body.timezone = patch.timezone;
+  if (patch.recurrenceRule !== undefined) body.recurrence_rule = patch.recurrenceRule;
   const res = await request<TodoResponse>(`/todos/${id}`, {
     method: "PATCH",
     body,
@@ -83,8 +94,15 @@ export async function apiUpdateTodo(
   return toTodo(res);
 }
 
-export async function apiDeleteTodo(id: string): Promise<void> {
-  await request(`/todos/${id}`, { method: "DELETE" });
+/** recurrenceScope 생략 시 서버 기본값 "this"(해당 회차만 삭제)로 동작한다. */
+export async function apiDeleteTodo(
+  id: string,
+  recurrenceScope?: RecurrenceScope,
+): Promise<void> {
+  await request(`/todos/${id}`, {
+    method: "DELETE",
+    ...(recurrenceScope !== undefined && { query: { recurrenceScope } }),
+  });
 }
 
 /** POST /todos/{id}/calendar-link — 캘린더 연동 추가(비동기 반영). */

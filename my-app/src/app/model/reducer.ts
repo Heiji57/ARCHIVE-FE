@@ -23,6 +23,7 @@ export function appReducer(state: AppState, action: AppAction): AppState {
             action.payload.id,
             action.payload.startTime,
             action.payload.endTime,
+            action.payload.recurrenceRule,
           ),
         ],
       };
@@ -62,6 +63,20 @@ export function appReducer(state: AppState, action: AppAction): AppState {
         ...state,
         todos: state.todos.filter((t) => t.id !== action.payload.id),
       };
+
+    case "todo/removeSeries": {
+      const { seriesId, fromDateKey } = action.payload;
+      return {
+        ...state,
+        todos: state.todos.filter(
+          (t) =>
+            !(
+              t.seriesId === seriesId &&
+              (fromDateKey === null || t.dateKey >= fromDateKey)
+            ),
+        ),
+      };
+    }
 
     case "todo/set-calendar": {
       const { id, calendarLinked, calendarPushStatus } = action.payload;
@@ -552,6 +567,7 @@ function createTodo(
   id?: string,
   startTime?: string,
   endTime?: string,
+  recurrenceRule?: Todo["recurrenceRule"],
 ): Todo {
   const now = new Date().toISOString();
   return {
@@ -567,6 +583,10 @@ function createTodo(
     endTime: endTime ?? null,
     calendarLinked: false,
     calendarPushStatus: null,
+    isVirtual: false,
+    seriesId: null,
+    originalDateKey: null,
+    recurrenceRule: recurrenceRule ?? null,
   };
 }
 

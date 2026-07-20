@@ -74,6 +74,12 @@ export function toTodo(api: TodoResponse): Todo {
     endTime,
     calendarLinked: api.calendar_linked,
     calendarPushStatus: api.calendar_push_status ?? null,
+    isVirtual: api.is_virtual ?? false,
+    seriesId: api.series_id ?? null,
+    originalDateKey: api.original_date_key ?? null,
+    recurrenceRule: api.recurrence_rule
+      ? { ...api.recurrence_rule, until: api.recurrence_rule.until ?? null }
+      : null,
   };
 }
 
