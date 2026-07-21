@@ -19,7 +19,7 @@ import { StatusIcon } from "@/entities/todo/ui/StatusIcon";
 import { formatFullDate, fromDateKey } from "@/shared/lib/date";
 import { useTranslation } from "@/shared/lib/i18n";
 import { DatePickerPopover } from "./DatePickerPopover";
-import { RecurrencePopover } from "./RecurrencePopover";
+import { DEFAULT_RECURRENCE_RULE, RecurrencePopover } from "./RecurrencePopover";
 import { RecurrenceScopeDialog } from "./RecurrenceScopeDialog";
 
 export type TodoPatch = Partial<
@@ -391,8 +391,14 @@ export function TaskDetailPanel({
               <button
                 type="button"
                 onClick={() => {
-                  if (recurrencePopoverOpen) closeRecurrencePopover();
-                  else setRecurrencePopoverOpen(true);
+                  if (recurrencePopoverOpen) {
+                    closeRecurrencePopover();
+                    return;
+                  }
+                  // 기본값(매일 반복, 종료일 없음)으로 미리 채워 둔다 — 아무 것도
+                  // 건드리지 않고 바로 "완료"를 눌러도 그 기본값으로 제출되도록.
+                  setDraftRecurrenceRule(DEFAULT_RECURRENCE_RULE);
+                  setRecurrencePopoverOpen(true);
                 }}
                 style={{
                   width: "100%",

@@ -120,10 +120,11 @@ export interface ArchiveAppContextValue {
    *
    * PATCH 응답은 새로 분리된 시리즈의 base row 원본 형태(is_virtual:false, series_id:null)로
    * 온다 — 목록 조회에서 나오는 가상 인스턴스 모양과 달라 로컬에 그대로 반영해도 반복으로
-   * 인식되지 않는다. 호출부(TodoBoard/CalendarDashboard)가 반환된 Promise 완료 후 현재
-   * 보이는 범위를 재조회해 올바른 모양으로 교체해야 한다.
+   * 인식되지 않는다. 호출부(TodoBoard/CalendarDashboard)가 반환된 새 base 의 id 로 현재
+   * 보이는 범위를 재조회하고, 그 안에서 seriesId 가 일치하는 항목을 찾아 선택을 옮겨야 한다.
+   * 실패/데모 모드는 null.
    */
-  updateTodoRecurrence: (id: string, rule: RecurrenceRule) => Promise<void>;
+  updateTodoRecurrence: (id: string, rule: RecurrenceRule) => Promise<Todo | null>;
   /**
    * 비반복 단독 할 일(isVirtual=false, seriesId=null)을 반복 시리즈로 전환한다.
    * 이 항목 자체가 새 시리즈의 base 가 되어(이 날짜가 첫 회차), recurrence_scope 는
@@ -132,9 +133,9 @@ export interface ArchiveAppContextValue {
    * 데모/mock 모드는 반복 확장 로직이 없어 no-op.
    *
    * PATCH 응답이 base row 원본 형태로 오는 것은 updateTodoRecurrence 와 동일 — 호출부가
-   * 반환된 Promise 완료 후 현재 보이는 범위를 재조회해야 한다.
+   * 반환된 id 로 재조회 후 선택을 옮겨야 한다. 실패/데모 모드는 null.
    */
-  convertTodoToRecurring: (id: string, rule: RecurrenceRule) => Promise<void>;
+  convertTodoToRecurring: (id: string, rule: RecurrenceRule) => Promise<Todo | null>;
   /**
    * 할 일의 시작/종료 시각 설정 (일간 타임라인 블록·드래그 재배치용).
    * null 을 주면 해당 시각을 비운다("HH:mm" 형식).
@@ -214,14 +215,15 @@ export interface ArchiveAppContextValue {
   syncCalendar: (from: string, to: string) => Promise<{ ok: boolean }>;
   /**
    * 현재 뷰 날짜 범위의 할 일 + 캘린더 이벤트를 재조회해 state 를 교체한다.
-   * CalendarDashboard 가 view/cursor 전환 시 호출한다.
+   * CalendarDashboard 가 view/cursor 전환 시 호출한다. 재조회된 목록을 그대로 반환하므로,
+   * 호출부가 재조회 직후 특정 항목을 찾아 선택을 옮기는 등의 후속 처리에 쓸 수 있다.
    */
-  loadTodosForView: (from: string, to: string) => Promise<void>;
+  loadTodosForView: (from: string, to: string) => Promise<Todo[]>;
   /**
    * 할 일 보드 "전체" 보기 로드 — 오늘 기준 앞뒤로 rangeDays 를 나눈 구간의
-   * 할 일을 (필요 시 62일 청크로 나눠) 조회해 state.todos 를 교체한다.
+   * 할 일을 (필요 시 62일 청크로 나눠) 조회해 state.todos 를 교체한다. 반환값은 위와 동일.
    */
-  loadTodosForRange: (rangeDays: number) => Promise<void>;
+  loadTodosForRange: (rangeDays: number) => Promise<Todo[]>;
   /**
    * 회고록 목록 페이지 조회 (GET /entries/paginated). 과거 전체 이력을 최신순으로
    * 페이지 단위 조회하고, 받은 항목을 state.entries 에 병합한다(entries/merge).

@@ -703,24 +703,26 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // 뷰 단위 할 일 로드 — CalendarDashboard 가 view/cursor 전환 시 호출한다.
   // dispatch 가 안정적이므로 useCallback 의존성 배열을 비워 함수를 안정화한다.
-  const loadTodosForView = useCallback(async (from: string, to: string) => {
+  const loadTodosForView = useCallback(async (from: string, to: string): Promise<Todo[]> => {
     // 데모(게스트) 모드는 시드 데이터만 사용 → 서버 호출 금지 (401 반복/불필요 트래픽 방지).
-    if (!USE_API || isDemoMode()) return;
+    if (!USE_API || isDemoMode()) return [];
     try {
       const todos = await apiListTodos({ from, to });
       dispatch({ type: "hydrate/todos", payload: { todos } });
+      return todos;
     } catch {
       /* transient network error — 다음 재시도에서 보정 */
+      return [];
     }
-     
+
   }, []);
 
   // 할 일 보드 "전체" 보기 로드 — 오늘 기준 앞뒤로 rangeDays 를 나눈 구간을 조회한다.
   // 서버가 한 번에 최대 62일까지만 허용하므로(초과 시 422) 62일 이하 청크로 나눠
   // 병렬 조회한 뒤 id 기준으로 병합해 한 번에 hydrate 한다.
-  const loadTodosForRange = useCallback(async (rangeDays: number) => {
+  const loadTodosForRange = useCallback(async (rangeDays: number): Promise<Todo[]> => {
     // 데모(게스트) 모드는 시드 데이터만 사용 → 서버 호출 금지.
-    if (!USE_API || isDemoMode()) return;
+    if (!USE_API || isDemoMode()) return [];
     const today = new Date();
     const back = Math.floor(rangeDays / 2);
     const fwd = rangeDays - back;
@@ -743,11 +745,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
       for (const arr of results) {
         for (const todo of arr) merged.set(todo.id, todo);
       }
-      dispatch({ type: "hydrate/todos", payload: { todos: [...merged.values()] } });
+      const todos = [...merged.values()];
+      dispatch({ type: "hydrate/todos", payload: { todos } });
+      return todos;
     } catch {
       /* transient network error — 다음 재시도에서 보정 */
+      return [];
     }
-     
+
   }, []);
 
   // 회고록 목록 페이지 조회 (GET /entries/paginated) — daily/weekly/monthly/yearly
@@ -967,7 +972,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     },
     updateTodoRecurrence: async (id, rule) => {
       // 데모/mock 은 반복 확장(가상 인스턴스 생성) 로직 자체가 없어 지원하지 않는다.
-      if (!apiActive) return;
+      if (!apiActive) return null;
       // 큐를 거치지 않고 즉시 전송 — following 스코프는 서버가 새 시리즈(새 id)를
       // 만드는 1회성 명시적 액션이라 디바운스 코얼레싱 대상이 아니다.
       try {
@@ -978,13 +983,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
         // 응답은 새 base row 원본 형태 — 우선 반영해 두지만, 목록 모양(가상 인스턴스)과
         // 다르므로 호출부가 이어서 재조회해 정확한 모양으로 교체한다.
         dispatch({ type: "todo/replaceId", payload: { localId: id, serverTodo } });
+        return serverTodo;
       } catch {
         reportApiError();
+        return null;
       }
     },
     convertTodoToRecurring: async (id, rule) => {
       // 데모/mock 은 반복 확장 로직 자체가 없어 지원하지 않는다.
-      if (!apiActive) return;
+      if (!apiActive) return null;
       // scope 를 지정하지 않는다 — 대상이 어떤 시리즈에도 속하지 않은 단독 항목일 때만
       // 서버가 이 규칙을 받아 그 자리에서 시리즈 base 로 전환한다(recurrence_scope 무관).
       try {
@@ -992,8 +999,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         // 응답은 base row 원본 형태(is_virtual:false) — 호출부가 이어서 재조회해야
         // 목록 조회 시의 가상 인스턴스 모양(is_virtual:true)으로 정확히 바뀐다.
         dispatch({ type: "todo/replaceId", payload: { localId: id, serverTodo } });
+        return serverTodo;
       } catch {
         reportApiError();
+        return null;
       }
     },
     toggleTodoCalendarLink: (id) => {

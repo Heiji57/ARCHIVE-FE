@@ -1,7 +1,9 @@
-import type { CSSProperties } from "react";
+import { useState, type CSSProperties } from "react";
+import { CalendarDays, ChevronDown } from "lucide-react";
 import type { RecurrenceRule } from "@/entities/todo/model/types";
 import { toDateKey } from "@/shared/lib/date";
 import { useTranslation } from "@/shared/lib/i18n";
+import { DatePickerPopover } from "./DatePickerPopover";
 
 export interface RecurrencePopoverProps {
   /** null = 반복 안함(단건). */
@@ -17,7 +19,7 @@ export interface RecurrencePopoverProps {
   showOffOption?: boolean;
 }
 
-const DEFAULT_RULE: RecurrenceRule = { unit: "day", interval: 1, until: null };
+export const DEFAULT_RECURRENCE_RULE: RecurrenceRule = { unit: "day", interval: 1, until: null };
 
 const toggleBtnStyle = (active: boolean): CSSProperties => ({
   flex: 1,
@@ -40,7 +42,8 @@ export function RecurrencePopover({
   showOffOption = true,
 }: RecurrencePopoverProps) {
   const { t } = useTranslation();
-  const rule = value ?? DEFAULT_RULE;
+  const rule = value ?? DEFAULT_RECURRENCE_RULE;
+  const [untilPickerOpen, setUntilPickerOpen] = useState(false);
   const hasUntil = rule.until !== null;
 
   const setRule = (patch: Partial<RecurrenceRule>) => onChange({ ...rule, ...patch });
@@ -128,21 +131,42 @@ export function RecurrencePopover({
             {t("todo.recurrence.until.date")}
           </label>
           {hasUntil ? (
-            <input
-              type="date"
-              value={rule.until ?? ""}
-              onChange={(e) => setRule({ until: e.target.value || null })}
-              style={{
-                marginLeft: 24,
-                padding: "6px 8px",
-                borderRadius: "var(--r-sm)",
-                background: "var(--color-tile-3)",
-                border: "1px solid var(--color-divider-soft)",
-                color: "var(--color-ink)",
-                colorScheme: "dark",
-                fontSize: 16,
-              }}
-            />
+            <div style={{ position: "relative", marginLeft: 24 }}>
+              <button
+                type="button"
+                onClick={() => setUntilPickerOpen((o) => !o)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 8,
+                  width: "calc(100% - 0px)",
+                  padding: "6px 8px",
+                  borderRadius: "var(--r-sm)",
+                  background: "var(--color-tile-3)",
+                  border: "1px solid var(--color-divider-soft)",
+                  color: "var(--color-ink)",
+                  fontSize: 16,
+                }}
+              >
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                  <CalendarDays size={13} />
+                  {rule.until ?? toDateKey(new Date())}
+                </span>
+                <ChevronDown size={12} />
+              </button>
+              {untilPickerOpen ? (
+                <DatePickerPopover
+                  value={rule.until ?? toDateKey(new Date())}
+                  anchorRight={false}
+                  onChange={(v) => {
+                    setRule({ until: v });
+                    setUntilPickerOpen(false);
+                  }}
+                  onClose={() => setUntilPickerOpen(false)}
+                />
+              ) : null}
+            </div>
           ) : null}
         </div>
 

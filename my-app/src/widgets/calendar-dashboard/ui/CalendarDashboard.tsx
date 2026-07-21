@@ -5,11 +5,11 @@ import { useTodayKey } from "@/app/providers/useToday";
 import { findTodoById } from "@/entities/todo/lib/selectors";
 import type { Todo } from "@/entities/todo/model/types";
 import {
+  endOfISOWeek,
   endOfMonth,
-  endOfWeek,
   fromDateKey,
+  startOfISOWeek,
   startOfMonth,
-  startOfWeek,
   toDateKey,
 } from "@/shared/lib/date";
 import { useCalendarNav } from "../model/useCalendarNav";
@@ -91,7 +91,9 @@ export function CalendarDashboard({ onNavigate }: CalendarDashboardProps) {
       return { from: k, to: k };
     }
     if (view === "week") {
-      return { from: toDateKey(startOfWeek(cursor)), to: toDateKey(endOfWeek(cursor)) };
+      // WeekGrid 는 월요일 시작(ISO) 주를 그리므로 조회 범위도 동일 기준이어야
+      // 일요일(마지막 칸)이 조회 범위에서 빠지지 않는다.
+      return { from: toDateKey(startOfISOWeek(cursor)), to: toDateKey(endOfISOWeek(cursor)) };
     }
     return { from: toDateKey(startOfMonth(cursor)), to: toDateKey(endOfMonth(cursor)) };
   }, [view, cursor]);
@@ -107,6 +109,22 @@ export function CalendarDashboard({ onNavigate }: CalendarDashboardProps) {
   const selectedTodo = selectedId
     ? findTodoById(state.todos, selectedId)
     : null;
+
+  // 반복 전환/규칙변경 PATCH 응답은 base row 원본 형태라 목록에 나오는 가상 인스턴스
+  // 모양과 다르다 — 재조회 후, 그 새 base 에서 파생된(같은 날짜) 항목을 찾아 선택을
+  // 옮겨야 상세 패널이 갑자기 빈 화면이 되지 않는다.
+  const followRecurrenceMutation = async (
+    mutate: () => Promise<Todo | null>,
+    originalDateKey: string,
+  ) => {
+    const serverTodo = await mutate();
+    if (!serverTodo) return;
+    const todos = await loadTodosForView(viewRange.from, viewRange.to);
+    const match = todos.find(
+      (t) => t.seriesId === serverTodo.id && t.dateKey === originalDateKey,
+    );
+    setSelectedId(match ? match.id : serverTodo.id);
+  };
 
   const byDate = useMemo(() => {
     const m: Record<string, Todo[]> = {};
@@ -206,13 +224,15 @@ export function CalendarDashboard({ onNavigate }: CalendarDashboardProps) {
               setSelectedId(null);
             }}
             onUpdateRecurrence={(rule) =>
-              void updateTodoRecurrence(selectedTodo.id, rule).then(() =>
-                loadTodosForView(viewRange.from, viewRange.to),
+              void followRecurrenceMutation(
+                () => updateTodoRecurrence(selectedTodo.id, rule),
+                selectedTodo.dateKey,
               )
             }
             onConvertToRecurring={(rule) =>
-              void convertTodoToRecurring(selectedTodo.id, rule).then(() =>
-                loadTodosForView(viewRange.from, viewRange.to),
+              void followRecurrenceMutation(
+                () => convertTodoToRecurring(selectedTodo.id, rule),
+                selectedTodo.dateKey,
               )
             }
             onToggleCalendarLink={
