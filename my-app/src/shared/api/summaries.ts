@@ -14,7 +14,7 @@ import type {
   SummaryReadiness,
 } from "@/entities/summary/model/types";
 import { formatSummaryTitle } from "@/entities/entry/lib/summaryTitle";
-import { API_BASE_URL } from "./config";
+import { API_BASE_URL, API_V2_BASE_URL } from "./config";
 import { refreshAccessToken, request } from "./client";
 import { getAccessToken } from "./tokenStore";
 import type { components } from "./schema";
@@ -253,7 +253,10 @@ export async function apiDeleteSummaryTemplate(id: string): Promise<void> {
   await request(`/summaries/templates/${id}`, { method: "DELETE" });
 }
 
-/** type별 활성 AI 요약 템플릿 설정 (null = 해제). */
+/**
+ * type별 활성 AI 요약 템플릿 설정 (null = 해제).
+ * v2 는 weekly/monthly/annual 외 키를 422 VALIDATION_ERROR 로 거부한다(v1 은 무시).
+ */
 export async function apiSetActiveSummaryTemplate(
   type: SummaryType,
   templateId: string | null,
@@ -261,6 +264,7 @@ export async function apiSetActiveSummaryTemplate(
   await request("/settings/auto-summary/active", {
     method: "PUT",
     body: { [type]: templateId },
+    baseUrl: API_V2_BASE_URL,
   });
 }
 

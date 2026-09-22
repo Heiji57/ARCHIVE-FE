@@ -13,6 +13,11 @@ import {
 } from "lucide-react";
 import { useArchiveApp } from "@/app/providers/useArchiveApp";
 import type { AvailableRepository } from "@/entities/github/model/types";
+import {
+  integrationErrorMessageKey,
+  isApiError,
+  oauthErrorMessageKey,
+} from "@/shared/api";
 import { DisconnectBanner } from "@/shared/ui/disconnect-banner/DisconnectBanner";
 import { Pill } from "@/shared/ui/pill/Pill";
 import { useTranslation } from "@/shared/lib/i18n";
@@ -41,6 +46,8 @@ export function GithubCard() {
   const [loadingAvailable, setLoadingAvailable] = useState(false);
   const [busy, setBusy] = useState(false);
   const [connecting, setConnecting] = useState(false);
+  // 저장소 조회가 GITHUB_PERMISSION_DENIED(v2)로 실패 → 재연결 안내를 노출한다.
+  const [permissionDenied, setPermissionDenied] = useState(false);
 
   const handleConnectAccount = async () => {
     if (connecting) return;
@@ -48,6 +55,7 @@ export function GithubCard() {
     const result = await linkGitHubAccount();
     setConnecting(false);
     if (result.ok) {
+      setPermissionDenied(false);
       pushNotification(
         "success",
         t("settings.github.connectAccount"),
@@ -58,12 +66,16 @@ export function GithubCard() {
       const alreadyLinked =
         result.error === "account-already-linked" ||
         result.error === "provider-already-linked";
+      // 콜백이 보낸 세분화 코드(auth v2)는 전용 안내, 그 외는 기존 연결 실패 문구
+      const errorKey = oauthErrorMessageKey(result.error);
       pushNotification(
         "warning",
         t("settings.github.connectAccount"),
         alreadyLinked
           ? t("settings.github.alreadyLinked")
-          : t("settings.github.connectFailed"),
+          : errorKey && errorKey !== "auth.oauth.error.generic"
+            ? t(errorKey)
+            : t("settings.github.connectFailed"),
         { category: "sync", transient: true },
       );
     }
@@ -77,8 +89,19 @@ export function GithubCard() {
     setLoadingAvailable(true);
     try {
       setAvailable(await loadGitHubAvailableRepos());
-    } catch {
+      setPermissionDenied(false);
+    } catch (e) {
       setAvailable([]);
+      const errorKey = isApiError(e) ? integrationErrorMessageKey(e.code) : null;
+      if (isApiError(e) && e.code === "GITHUB_PERMISSION_DENIED") {
+        setPermissionDenied(true);
+      }
+      if (errorKey) {
+        pushNotification("warning", t("settings.section.github"), t(errorKey), {
+          category: "sync",
+          transient: true,
+        });
+      }
     } finally {
       setLoadingAvailable(false);
     }
@@ -141,8 +164,8 @@ export function GithubCard() {
             </p>
           ) : null}
 
-          {/* 이메일 인증 안내 (hasVerifiedEmails = false 인 구 scope 사용자) */}
-          {!hasVerifiedEmails ? (
+          {/* 재연결 안내: 이메일 인증 없는 구 scope 사용자 또는 권한 부족(GITHUB_PERMISSION_DENIED) */}
+          {!hasVerifiedEmails || permissionDenied ? (
             <div
               style={{
                 display: "flex",
@@ -164,7 +187,9 @@ export function GithubCard() {
                 }}
               >
                 <span style={{ color: "var(--color-ink)", fontWeight: 500 }}>
-                  {t("settings.github.reconnectBanner")}
+                  {permissionDenied
+                    ? t("integration.error.githubPermissionDenied")
+                    : t("settings.github.reconnectBanner")}
                 </span>{" "}
                 <button
                   type="button"
@@ -183,7 +208,9 @@ export function GithubCard() {
                 >
                   {connecting
                     ? t("settings.github.connecting")
-                    : t("settings.github.reconnect")}
+                    : permissionDenied
+                      ? t("settings.github.reconnectAccount")
+                      : t("settings.github.reconnect")}
                 </button>
               </p>
             </div>

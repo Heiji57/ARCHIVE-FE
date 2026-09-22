@@ -485,6 +485,7 @@ export const ja: Dict = {
   "settings.github.reconnectBanner":
     "一部のコミット作成者が正しく表示されないことがあります。",
   "settings.github.reconnect": "メール認証を更新",
+  "settings.github.reconnectAccount": "GitHubを再接続",
   "settings.section.region": "地域とタイムゾーン",
   "settings.region.title": "国 / タイムゾーン",
   "settings.region.apply": "国の変更を適用",
@@ -664,8 +665,11 @@ export const ja: Dict = {
   "auth.signup.error.alreadyRegistered": "このメールは既に登録されています。",
   "auth.signup.error.invalidCode": "コードが正しくありません。",
   "auth.signup.error.expired": "コードの有効期限が切れました。再送信してください。",
-  "auth.signup.error.cooldown": "少し待ってから再度お試しください。",
+  "auth.signup.error.cooldown": "コードを送信したばかりです。しばらく待ってから再度リクエストしてください。",
   "auth.signup.error.notVerified": "先にメール認証を完了してください。",
+  "auth.signup.error.deliveryFailed": "認証メールを送信できませんでした。しばらくしてから再度お試しください。",
+  "auth.signup.error.attemptsExceeded": "入力回数の上限を超えました。新しいコードをリクエストしてください。",
+  "auth.signup.error.unavailable": "一時的な問題によりリクエストを処理できませんでした。しばらくしてから再度お試しください。",
 
   "auth.forgot.title": "パスワードのリセット",
   "auth.forgot.subtitle": "登録されたメールに認証コードを送ります",
@@ -695,6 +699,22 @@ export const ja: Dict = {
   "auth.oauth.github": "GitHub で続ける",
   "auth.oauth.google": "Google で続ける",
   "auth.oauth.processing": "処理中…",
+  "auth.oauth.error.popupBlocked": "ポップアップがブロックされました。ポップアップを許可して再度お試しください。",
+  "auth.oauth.error.codeInvalid": "認証の有効期限が切れたか、既に使用されています。もう一度ログインしてください。",
+  "auth.oauth.error.stateInvalid": "ログインセッションの有効期限が切れました。再度お試しください。",
+  "auth.oauth.error.emailNotVerified": "このアカウントには認証済みのメールアドレスがありません。メール認証後に再度お試しください。",
+  "auth.oauth.error.providerUnavailable": "ログインサービスに一時的に接続できません。しばらくしてから再度お試しください。",
+  "auth.oauth.error.providerResponseInvalid": "ログインサービスの応答を処理できませんでした。しばらくしてから再度お試しください。",
+  "auth.oauth.error.accountAlreadyLinked": "このアカウントは既に他のユーザーに連携されています。",
+  "auth.oauth.error.providerAlreadyLinked": "このサービスのアカウントは既に連携されています。",
+  "auth.oauth.error.unavailable": "一時的なサーバーの問題が発生しました。しばらくしてから再度お試しください。",
+  "auth.oauth.error.generic": "ログインに失敗しました。再度お試しください。",
+
+  "integration.error.githubPermissionDenied": "GitHubの権限が不足しています。設定でGitHubを再接続するか、リポジトリ・組織へのアクセス権限を確認してください。",
+  "integration.error.githubRateLimited": "GitHubのリクエスト上限に達しました。しばらくしてから再度お試しください。",
+  "integration.error.githubResponseInvalid": "GitHubの応答を処理できませんでした。しばらくしてから再度お試しください。",
+  "integration.error.calendarRateLimited": "Googleカレンダーへのリクエストが多すぎます。しばらくしてから再度お試しください。",
+  "integration.error.calendarResponseInvalid": "Googleカレンダーの応答を処理できませんでした。しばらくしてから再度お試しください。",
 
   "auth.header.logout": "サインアウト",
 

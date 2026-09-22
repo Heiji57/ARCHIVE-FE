@@ -489,6 +489,7 @@ export const en: Dict = {
   "settings.github.reconnectBanner":
     "Some commit authors may not display correctly.",
   "settings.github.reconnect": "Update email verification",
+  "settings.github.reconnectAccount": "Reconnect GitHub",
   "settings.section.region": "Region & Timezone",
   "settings.region.title": "Country / Timezone",
   "settings.region.apply": "Apply country change",
@@ -669,8 +670,11 @@ export const en: Dict = {
   "auth.signup.error.alreadyRegistered": "This email is already registered.",
   "auth.signup.error.invalidCode": "Invalid code.",
   "auth.signup.error.expired": "Code expired. Please resend.",
-  "auth.signup.error.cooldown": "Please wait a moment and try again.",
+  "auth.signup.error.cooldown": "A code was just sent. Please wait a moment before requesting another.",
   "auth.signup.error.notVerified": "Please verify your email first.",
+  "auth.signup.error.deliveryFailed": "We couldn't send the verification email. Please try again later.",
+  "auth.signup.error.attemptsExceeded": "Too many incorrect attempts. Please request a new code.",
+  "auth.signup.error.unavailable": "We couldn't process your request due to a temporary issue. Please try again later.",
 
   "auth.forgot.title": "Reset password",
   "auth.forgot.subtitle": "We'll send a verification code to your email",
@@ -700,6 +704,22 @@ export const en: Dict = {
   "auth.oauth.github": "Continue with GitHub",
   "auth.oauth.google": "Continue with Google",
   "auth.oauth.processing": "Processing…",
+  "auth.oauth.error.popupBlocked": "The popup was blocked. Please allow popups and try again.",
+  "auth.oauth.error.codeInvalid": "The sign-in request expired or was already used. Please sign in again.",
+  "auth.oauth.error.stateInvalid": "Your sign-in session expired. Please try again.",
+  "auth.oauth.error.emailNotVerified": "This account has no verified email. Verify your email with the provider and try again.",
+  "auth.oauth.error.providerUnavailable": "The sign-in provider is temporarily unavailable. Please try again later.",
+  "auth.oauth.error.providerResponseInvalid": "We couldn't process the sign-in provider's response. Please try again later.",
+  "auth.oauth.error.accountAlreadyLinked": "This account is already linked to another user.",
+  "auth.oauth.error.providerAlreadyLinked": "An account from this provider is already linked.",
+  "auth.oauth.error.unavailable": "A temporary server issue occurred. Please try again later.",
+  "auth.oauth.error.generic": "Sign-in failed. Please try again.",
+
+  "integration.error.githubPermissionDenied": "GitHub permission denied. Reconnect GitHub in Settings or check your repository/organization access.",
+  "integration.error.githubRateLimited": "GitHub rate limit reached. Please try again in a moment.",
+  "integration.error.githubResponseInvalid": "Couldn't process the response from GitHub. Please try again later.",
+  "integration.error.calendarRateLimited": "Too many Google Calendar requests. Please try again in a moment.",
+  "integration.error.calendarResponseInvalid": "Couldn't process the response from Google Calendar. Please try again later.",
 
   "auth.header.logout": "Sign out",
 

@@ -1,6 +1,8 @@
 /**
  * GitHub 저장소 연동 API (api.yaml github 태그).
  * 연결(인증)은 GitHub OAuth 로그인 토큰 재사용 — OAuth 연결 엔드포인트는 별도 없음.
+ * 전 엔드포인트를 v2 로 호출한다(본문 동일, 에러코드만 세분화:
+ * GITHUB_PERMISSION_DENIED / GITHUB_RESPONSE_INVALID / GITHUB_RATE_LIMITED).
  */
 import type {
   AvailableRepository,
@@ -8,6 +10,7 @@ import type {
   LinkedRepository,
 } from "@/entities/github/model/types";
 import { request } from "./client";
+import { API_V2_BASE_URL } from "./config";
 import type { components } from "./schema";
 
 type RepositoryResponse = components["schemas"]["RepositoryResponse"];
@@ -69,7 +72,9 @@ export async function apiGetConnection(): Promise<{
   pushTargetRepositoryId: string | null;
   hasVerifiedEmails: boolean;
 }> {
-  const res = await request<ConnectionStatusResponse>("/github/connection");
+  const res = await request<ConnectionStatusResponse>("/github/connection", {
+    baseUrl: API_V2_BASE_URL,
+  });
   // 진단: 200 인데 본문이 비거나 래핑이 어긋나면 res 가 undefined 일 수 있다.
   // 그 경우 res.connected 접근에서 예외 → 호출측이 not-connected 로 처리하므로,
   // 여기서 실제 수신값을 남겨 원인을 좁힌다.
@@ -89,13 +94,16 @@ export async function apiGetConnection(): Promise<{
 export async function apiListAvailableRepos(): Promise<AvailableRepository[]> {
   const list = await request<AvailableRepositoryResponse[]>(
     "/github/repositories/available",
+    { baseUrl: API_V2_BASE_URL },
   );
   return list.map(toAvailable);
 }
 
 /** DB 에 연결된 저장소 목록 조회. */
 export async function apiListLinkedRepos(): Promise<LinkedRepository[]> {
-  const list = await request<RepositoryResponse[]>("/github/repositories");
+  const list = await request<RepositoryResponse[]>("/github/repositories", {
+    baseUrl: API_V2_BASE_URL,
+  });
   return list.map(toLinked);
 }
 
@@ -106,6 +114,7 @@ export async function apiLinkRepo(
   const res = await request<RepositoryResponse>("/github/repositories", {
     method: "POST",
     body: { githubRepoId },
+    baseUrl: API_V2_BASE_URL,
   });
   return toLinked(res);
 }
@@ -117,26 +126,32 @@ export async function apiUpdateRepo(
 ): Promise<LinkedRepository> {
   const res = await request<RepositoryResponse>(
     `/github/repositories/${repositoryId}`,
-    { method: "PATCH", body },
+    { method: "PATCH", body, baseUrl: API_V2_BASE_URL },
   );
   return toLinked(res);
 }
 
 /** 모든 저장소 연결 해제. */
 export async function apiUnlinkAllRepos(): Promise<void> {
-  await request("/github/repositories", { method: "DELETE" });
+  await request("/github/repositories", {
+    method: "DELETE",
+    baseUrl: API_V2_BASE_URL,
+  });
 }
 
 /** 단일 저장소 연결 해제. */
 export async function apiUnlinkRepo(repositoryId: string): Promise<void> {
-  await request(`/github/repositories/${repositoryId}`, { method: "DELETE" });
+  await request(`/github/repositories/${repositoryId}`, {
+    method: "DELETE",
+    baseUrl: API_V2_BASE_URL,
+  });
 }
 
 /** 현재 GitHub 저장소 목록을 모두 일괄 연결(idempotent upsert)하고 결과 목록 반환. */
 export async function apiSyncAllRepos(): Promise<LinkedRepository[]> {
   const list = await request<RepositoryResponse[]>(
     "/github/repositories/sync-all",
-    { method: "POST" },
+    { method: "POST", baseUrl: API_V2_BASE_URL },
   );
   return list.map(toLinked);
 }
@@ -153,6 +168,7 @@ export async function apiSyncAllRepos(): Promise<LinkedRepository[]> {
 export async function apiGetCommits(date?: string): Promise<GitHubCommit[]> {
   const res = await request<CommitListResponse>("/github/commits", {
     query: date ? { date } : undefined,
+    baseUrl: API_V2_BASE_URL,
   });
   // failedRepositories 는 현재 무시 (부분 실패 — 나머지 커밋은 표시)
   return (res.commits ?? []).map(toCommit);
@@ -178,7 +194,7 @@ export async function apiPushRetrospective(
 ): Promise<PushRetrospectiveResult> {
   const res = await request<components["schemas"]["PushResultResponse"]>(
     "/github/retrospectives/push",
-    { method: "POST", body: payload },
+    { method: "POST", body: payload, baseUrl: API_V2_BASE_URL },
   );
   return {
     commitSha: res.commitSha,
