@@ -485,6 +485,7 @@ export const ko: Dict = {
     "회고 마크다운을 push할 저장소입니다. 연결된 저장소 중 하나를 선택하세요.",
   "settings.github.reconnectBanner": "일부 commit 작성자가 표시되지 않을 수 있어요.",
   "settings.github.reconnect": "이메일 인증 업데이트",
+  "settings.github.reconnectAccount": "GitHub 다시 연결",
   "settings.section.region": "지역 및 시간대",
   "settings.region.title": "국가 / 시간대",
   "settings.region.apply": "국가 변경 적용",
@@ -708,6 +709,12 @@ export const ko: Dict = {
   "auth.oauth.error.providerAlreadyLinked": "이미 같은 서비스의 계정이 연결되어 있어요.",
   "auth.oauth.error.unavailable": "일시적인 서버 문제로 처리하지 못했어요. 잠시 후 다시 시도해주세요.",
   "auth.oauth.error.generic": "로그인에 실패했어요. 다시 시도해주세요.",
+
+  "integration.error.githubPermissionDenied": "GitHub 권한이 부족해요. 설정에서 GitHub 를 다시 연결하거나 저장소·조직 접근 권한을 확인해주세요.",
+  "integration.error.githubRateLimited": "GitHub 요청 한도에 도달했어요. 잠시 후 다시 시도해주세요.",
+  "integration.error.githubResponseInvalid": "GitHub 응답을 처리하지 못했어요. 잠시 후 다시 시도해주세요.",
+  "integration.error.calendarRateLimited": "Google 캘린더 요청이 많아요. 잠시 후 다시 시도해주세요.",
+  "integration.error.calendarResponseInvalid": "Google 캘린더 응답을 처리하지 못했어요. 잠시 후 다시 시도해주세요.",
 
   "auth.header.logout": "로그아웃",
 

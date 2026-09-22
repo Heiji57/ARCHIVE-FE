@@ -189,7 +189,14 @@ function SummaryTemplateTab({ retroType }: SummaryTemplateTabProps) {
     );
     void apiSetActiveSummaryTemplate(summaryType, newActiveId).catch((err: unknown) => {
       const code = isApiError(err) ? err.code : "UNKNOWN";
-      pushRef.current("warning", "설정 실패", `오류 코드: ${code}`);
+      // v2 VALIDATION_ERROR 는 거부된 body 키를 details[].field 로 준다(정상 사용 시 발생 X).
+      const field =
+        isApiError(err) && code === "VALIDATION_ERROR" ? err.details[0]?.field : undefined;
+      pushRef.current(
+        "warning",
+        "설정 실패",
+        field ? `오류 코드: ${code} (${field})` : `오류 코드: ${code}`,
+      );
       void apiListSummaryTemplates(summaryType).then(setTemplates).catch(() => {});
     });
   };

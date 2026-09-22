@@ -6,6 +6,7 @@ import { DisconnectBanner } from "@/shared/ui/disconnect-banner/DisconnectBanner
 import { Pill } from "@/shared/ui/pill/Pill";
 import { ConfirmModal } from "@/shared/ui";
 import { useTranslation } from "@/shared/lib/i18n";
+import { integrationErrorMessageKey } from "@/shared/api";
 import { SettingsCardHeader } from "./SettingsCardHeader";
 
 export function CalendarCard() {
@@ -26,10 +27,12 @@ export function CalendarCard() {
     const result = await connectCalendar();
     setConnecting(false);
     if (!result.ok && result.error && result.error !== "popup-closed") {
+      // connect/init(v2) 의 세분화 코드는 전용 안내, 그 외(콜백 v1 코드 등)는 기존 문구
+      const errorKey = integrationErrorMessageKey(result.error);
       pushNotification(
         "warning",
         t("settings.section.calendar"),
-        t("settings.calendar.connectFailed"),
+        errorKey ? t(errorKey) : t("settings.calendar.connectFailed"),
         { category: "sync", transient: true },
       );
     }

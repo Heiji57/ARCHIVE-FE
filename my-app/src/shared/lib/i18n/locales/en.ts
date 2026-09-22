@@ -489,6 +489,7 @@ export const en: Dict = {
   "settings.github.reconnectBanner":
     "Some commit authors may not display correctly.",
   "settings.github.reconnect": "Update email verification",
+  "settings.github.reconnectAccount": "Reconnect GitHub",
   "settings.section.region": "Region & Timezone",
   "settings.region.title": "Country / Timezone",
   "settings.region.apply": "Apply country change",
@@ -713,6 +714,12 @@ export const en: Dict = {
   "auth.oauth.error.providerAlreadyLinked": "An account from this provider is already linked.",
   "auth.oauth.error.unavailable": "A temporary server issue occurred. Please try again later.",
   "auth.oauth.error.generic": "Sign-in failed. Please try again.",
+
+  "integration.error.githubPermissionDenied": "GitHub permission denied. Reconnect GitHub in Settings or check your repository/organization access.",
+  "integration.error.githubRateLimited": "GitHub rate limit reached. Please try again in a moment.",
+  "integration.error.githubResponseInvalid": "Couldn't process the response from GitHub. Please try again later.",
+  "integration.error.calendarRateLimited": "Too many Google Calendar requests. Please try again in a moment.",
+  "integration.error.calendarResponseInvalid": "Couldn't process the response from Google Calendar. Please try again later.",
 
   "auth.header.logout": "Sign out",
 

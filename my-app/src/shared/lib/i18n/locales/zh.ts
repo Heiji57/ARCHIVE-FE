@@ -481,6 +481,7 @@ export const zh: Dict = {
   "settings.github.pushTargetHint": "将向此仓库 push 回顾 Markdown。",
   "settings.github.reconnectBanner": "部分提交作者可能无法正确显示。",
   "settings.github.reconnect": "更新邮箱验证",
+  "settings.github.reconnectAccount": "重新连接 GitHub",
   "settings.section.region": "地区与时区",
   "settings.region.title": "国家 / 时区",
   "settings.region.apply": "应用国家变更",
@@ -694,6 +695,12 @@ export const zh: Dict = {
   "auth.oauth.error.providerAlreadyLinked": "已关联该服务的账户。",
   "auth.oauth.error.unavailable": "服务器出现临时问题，请稍后重试。",
   "auth.oauth.error.generic": "登录失败，请重试。",
+
+  "integration.error.githubPermissionDenied": "GitHub 权限不足。请在设置中重新连接 GitHub，或检查仓库/组织的访问权限。",
+  "integration.error.githubRateLimited": "已达到 GitHub 请求上限，请稍后重试。",
+  "integration.error.githubResponseInvalid": "无法处理 GitHub 的响应，请稍后重试。",
+  "integration.error.calendarRateLimited": "Google 日历请求过多，请稍后重试。",
+  "integration.error.calendarResponseInvalid": "无法处理 Google 日历的响应，请稍后重试。",
 
   "auth.header.logout": "退出登录",
 

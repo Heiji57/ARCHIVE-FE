@@ -79,6 +79,7 @@ import { ConfirmModal } from "@/shared/ui";
 import {
   USE_API,
   ApiError,
+  integrationErrorMessageKey,
   apiClearNotifications,
   apiCompleteOnboarding,
   apiCompleteSignup,
@@ -597,10 +598,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // ─── API 모드 헬퍼 ──────────────────────────────────────────────────────────
   // 실패 시 일시적 토스트로 알린다 (네트워크 오류 메시지 재사용).
-  const reportApiError = () => {
+  // GitHub/Calendar v2 의 세분화 코드(권한 부족·rate limit·응답 이상)는 전용 문구로 안내하고,
+  // 권한 부족은 설정(GitHub 재연결)으로 가는 액션을 붙인다. 그 외 코드는 기존 generic 문구.
+  const reportApiError = (e?: unknown) => {
+    const locale = state.settings.locale;
+    const key = e instanceof ApiError ? integrationErrorMessageKey(e.code) : null;
+    if (key) {
+      pushNotification("warning", translate(locale, key), "", {
+        transient: true,
+        ...(e instanceof ApiError && e.code === "GITHUB_PERMISSION_DENIED"
+          ? { actionLabel: translate(locale, "nav.settings"), actionHref: "/settings" }
+          : {}),
+      });
+      return;
+    }
     pushNotification(
       "warning",
-      translate(state.settings.locale, "auth.error.network"),
+      translate(locale, "auth.error.network"),
       "",
       { transient: true },
     );
@@ -1294,13 +1308,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
         payload: { repositoryId, commitReadEnabled },
       });
       if (USE_API) {
-        void apiUpdateRepo(repositoryId, { commitReadEnabled }).catch(() => {
+        void apiUpdateRepo(repositoryId, { commitReadEnabled }).catch((e: unknown) => {
           // 롤백
           dispatch({
             type: "github/updateLinked",
             payload: { repositoryId, commitReadEnabled: !commitReadEnabled },
           });
-          reportApiError();
+          reportApiError(e);
         });
       }
     },
@@ -1332,8 +1346,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
             repositories: [...state.github.linkedRepositories, linked],
           },
         });
-      } catch {
-        reportApiError();
+      } catch (e) {
+        reportApiError(e);
       }
     },
     unlinkGitHubRepo: (repositoryId: string) => {
@@ -1345,7 +1359,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         type: "github/setLinked",
         payload: { status: "connected", repositories: next },
       });
-      if (USE_API) void apiUnlinkRepo(repositoryId).catch(() => reportApiError());
+      if (USE_API) void apiUnlinkRepo(repositoryId).catch((e: unknown) => reportApiError(e));
     },
     unlinkAllGitHubRepos: () => {
       if (requireLoginInDemo()) return;
@@ -1353,7 +1367,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         type: "github/setLinked",
         payload: { status: "connected", repositories: [] },
       });
-      if (USE_API) void apiUnlinkAllRepos().catch(() => reportApiError());
+      if (USE_API) void apiUnlinkAllRepos().catch((e: unknown) => reportApiError(e));
     },
     syncAllGitHubRepos: async () => {
       if (requireLoginInDemo()) return;
@@ -1373,8 +1387,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
           type: "github/setLinked",
           payload: { status: "connected", repositories },
         });
-      } catch {
-        reportApiError();
+      } catch (e) {
+        reportApiError(e);
       }
     },
     setPushTarget: (repositoryId: string | null) => {
@@ -1489,8 +1503,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
           payload: { status: "not-connected", googleUserId: null, lastSyncedAt: null },
         });
         return { ok: true };
-      } catch {
-        reportApiError();
+      } catch (e) {
+        reportApiError(e);
         return { ok: false };
       }
     },

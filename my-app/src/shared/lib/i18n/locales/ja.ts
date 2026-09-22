@@ -485,6 +485,7 @@ export const ja: Dict = {
   "settings.github.reconnectBanner":
     "一部のコミット作成者が正しく表示されないことがあります。",
   "settings.github.reconnect": "メール認証を更新",
+  "settings.github.reconnectAccount": "GitHubを再接続",
   "settings.section.region": "地域とタイムゾーン",
   "settings.region.title": "国 / タイムゾーン",
   "settings.region.apply": "国の変更を適用",
@@ -708,6 +709,12 @@ export const ja: Dict = {
   "auth.oauth.error.providerAlreadyLinked": "このサービスのアカウントは既に連携されています。",
   "auth.oauth.error.unavailable": "一時的なサーバーの問題が発生しました。しばらくしてから再度お試しください。",
   "auth.oauth.error.generic": "ログインに失敗しました。再度お試しください。",
+
+  "integration.error.githubPermissionDenied": "GitHubの権限が不足しています。設定でGitHubを再接続するか、リポジトリ・組織へのアクセス権限を確認してください。",
+  "integration.error.githubRateLimited": "GitHubのリクエスト上限に達しました。しばらくしてから再度お試しください。",
+  "integration.error.githubResponseInvalid": "GitHubの応答を処理できませんでした。しばらくしてから再度お試しください。",
+  "integration.error.calendarRateLimited": "Googleカレンダーへのリクエストが多すぎます。しばらくしてから再度お試しください。",
+  "integration.error.calendarResponseInvalid": "Googleカレンダーの応答を処理できませんでした。しばらくしてから再度お試しください。",
 
   "auth.header.logout": "サインアウト",
 

@@ -8,6 +8,7 @@ import { can } from "@/shared/lib/permissions"
 import { ConfirmModal } from "@/shared/ui/confirm-modal/ConfirmModal"
 import { useTodayKey } from "@/app/providers/useToday"
 import { useTranslation } from "@/shared/lib/i18n"
+import { integrationErrorMessageKey } from "@/shared/api"
 import { EditorErrorBoundary } from "@/shared/ui/rich-editor"
 import { RetroCommitsSection } from "./RetroCommitsSection"
 import { RetroCompletedSection } from "./RetroCompletedSection"
@@ -109,9 +110,19 @@ export function RetroEditor({
         category: "sync",
       })
     } else {
-      pushNotification("warning", t("retro.editor.pushFailed"), result.error, {
-        category: "sync",
-      })
+      // v2 세분화 코드(권한 부족·rate limit·응답 이상)는 전용 안내, 그 외는 기존처럼 코드 표시
+      const errorKey = result.error ? integrationErrorMessageKey(result.error) : null
+      pushNotification(
+        "warning",
+        t("retro.editor.pushFailed"),
+        errorKey ? t(errorKey) : result.error,
+        {
+          category: "sync",
+          ...(result.error === "GITHUB_PERMISSION_DENIED"
+            ? { actionLabel: t("nav.settings"), actionHref: "/settings" }
+            : {}),
+        },
+      )
     }
   }
 

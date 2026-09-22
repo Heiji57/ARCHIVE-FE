@@ -498,6 +498,7 @@ export type TranslationKey =
   | "settings.github.pushTargetHint"
   | "settings.github.reconnectBanner"
   | "settings.github.reconnect"
+  | "settings.github.reconnectAccount"
   | "settings.language.label"
   | "settings.language.rowHint"
   | "settings.region.countryHint"
@@ -688,6 +689,12 @@ export type TranslationKey =
   | "auth.oauth.error.providerAlreadyLinked"
   | "auth.oauth.error.unavailable"
   | "auth.oauth.error.generic"
+  // Integrations — GitHub / Google Calendar (v2 error codes)
+  | "integration.error.githubPermissionDenied"
+  | "integration.error.githubRateLimited"
+  | "integration.error.githubResponseInvalid"
+  | "integration.error.calendarRateLimited"
+  | "integration.error.calendarResponseInvalid"
   // Auth — header
   | "auth.header.logout"
   // Onboarding — account type selection

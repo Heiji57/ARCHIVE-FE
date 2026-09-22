@@ -61,3 +61,27 @@ export function oauthErrorMessageKey(error: string): TranslationKey | null {
       return "auth.oauth.error.generic";
   }
 }
+
+/**
+ * GitHub/Google Calendar 연동 API(v2)의 세분화된 에러코드 → i18n 키.
+ * 매핑이 없는 코드(구 v1 코드 GITHUB_API_UNAVAILABLE / GOOGLE_CALENDAR_API_UNAVAILABLE 등)는
+ * null — 호출측이 기존 generic 안내로 처리한다(롤백 대비).
+ */
+export function integrationErrorMessageKey(
+  code: string,
+): TranslationKey | null {
+  switch (code) {
+    case "GITHUB_PERMISSION_DENIED":
+      return "integration.error.githubPermissionDenied";
+    case "GITHUB_RATE_LIMITED":
+      return "integration.error.githubRateLimited";
+    case "GITHUB_RESPONSE_INVALID":
+      return "integration.error.githubResponseInvalid";
+    case "GOOGLE_CALENDAR_RATE_LIMITED":
+      return "integration.error.calendarRateLimited";
+    case "GOOGLE_CALENDAR_RESPONSE_INVALID":
+      return "integration.error.calendarResponseInvalid";
+    default:
+      return null;
+  }
+}
