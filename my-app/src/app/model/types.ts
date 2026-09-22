@@ -541,11 +541,22 @@ export type OAuthResult =
 
 export type RequestCodeResult =
   | { ok: true }
-  | { ok: false; error: "already-registered" | "cooldown" };
+  | {
+      ok: false;
+      error: "already-registered" | "cooldown" | "delivery-failed" | "unavailable";
+    };
 
 export type VerifyCodeResult =
   | { ok: true }
-  | { ok: false; error: "invalid-code" | "expired" | "not-requested" };
+  | {
+      ok: false;
+      error:
+        | "invalid-code"
+        | "expired"
+        | "not-requested"
+        | "attempts-exceeded"
+        | "unavailable";
+    };
 
 export type SignupResult =
   | { ok: true; user: User }

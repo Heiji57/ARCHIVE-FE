@@ -1,5 +1,5 @@
 export { USE_API, API_BASE_URL } from "./config";
-export { ApiError, isApiError } from "./errors";
+export { ApiError, isApiError, oauthErrorMessageKey } from "./errors";
 export {
   request,
   refreshAccessToken,

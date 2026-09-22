@@ -3,7 +3,8 @@ import { Loader2 } from "lucide-react";
 import { useArchiveApp } from "@/app/providers/useArchiveApp";
 import type { AuthRoute } from "@/app/router/authRoute";
 import type { OAuthProvider } from "@/entities/user/model/types";
-import { useTranslation } from "@/shared/lib/i18n";
+import { oauthErrorMessageKey } from "@/shared/api";
+import { useTranslation, type TranslationKey } from "@/shared/lib/i18n";
 
 interface OAuthButtonsProps {
   /** 신규 OAuth 사용자 → 온보딩 페이지로 이동시키기 위한 네비게이터. */
@@ -14,16 +15,21 @@ export function OAuthButtons({ onAuthNavigate }: OAuthButtonsProps = {}) {
   const { oauthLogin } = useArchiveApp();
   const { t } = useTranslation();
   const [processing, setProcessing] = useState<OAuthProvider | null>(null);
+  const [errorKey, setErrorKey] = useState<TranslationKey | null>(null);
 
   const click = async (provider: OAuthProvider) => {
     if (processing) return;
     setProcessing(provider);
+    setErrorKey(null);
     try {
       const result = await oauthLogin(provider);
       // 성공 → AppProvider 가 로그인 dispatch(AuthGate 가 메인으로 이동)
       // 신규 → 온보딩 페이지로 이동
+      // 실패 → 코드별 안내 (사용자가 팝업을 닫은 경우는 표시하지 않음)
       if (result.kind === "onboarding-required") {
         onAuthNavigate?.("onboarding");
+      } else if (result.kind === "error") {
+        setErrorKey(oauthErrorMessageKey(result.error));
       }
     } finally {
       setProcessing(null);
@@ -31,38 +37,45 @@ export function OAuthButtons({ onAuthNavigate }: OAuthButtonsProps = {}) {
   };
 
   return (
-    <div className="auth-oauth-row">
-      <button
-        type="button"
-        className="auth-oauth-btn"
-        onClick={() => void click("github")}
-        disabled={Boolean(processing)}
-      >
-        {processing === "github" ? (
-          <Loader2 size={16} className="spin" />
-        ) : (
-          <GithubLogo />
-        )}
-        <span>
-          {processing === "github" ? t("auth.oauth.processing") : t("auth.oauth.github")}
-        </span>
-      </button>
-      <button
-        type="button"
-        className="auth-oauth-btn"
-        onClick={() => void click("google")}
-        disabled={Boolean(processing)}
-      >
-        {processing === "google" ? (
-          <Loader2 size={16} className="spin" />
-        ) : (
-          <GoogleLogo />
-        )}
-        <span>
-          {processing === "google" ? t("auth.oauth.processing") : t("auth.oauth.google")}
-        </span>
-      </button>
-    </div>
+    <>
+      {errorKey ? (
+        <div className="auth-error-block" role="alert">
+          {t(errorKey)}
+        </div>
+      ) : null}
+      <div className="auth-oauth-row">
+        <button
+          type="button"
+          className="auth-oauth-btn"
+          onClick={() => void click("github")}
+          disabled={Boolean(processing)}
+        >
+          {processing === "github" ? (
+            <Loader2 size={16} className="spin" />
+          ) : (
+            <GithubLogo />
+          )}
+          <span>
+            {processing === "github" ? t("auth.oauth.processing") : t("auth.oauth.github")}
+          </span>
+        </button>
+        <button
+          type="button"
+          className="auth-oauth-btn"
+          onClick={() => void click("google")}
+          disabled={Boolean(processing)}
+        >
+          {processing === "google" ? (
+            <Loader2 size={16} className="spin" />
+          ) : (
+            <GoogleLogo />
+          )}
+          <span>
+            {processing === "google" ? t("auth.oauth.processing") : t("auth.oauth.google")}
+          </span>
+        </button>
+      </div>
+    </>
   );
 }
 

@@ -650,6 +650,9 @@ export type TranslationKey =
   | "auth.signup.error.expired"
   | "auth.signup.error.cooldown"
   | "auth.signup.error.notVerified"
+  | "auth.signup.error.deliveryFailed"
+  | "auth.signup.error.attemptsExceeded"
+  | "auth.signup.error.unavailable"
   // Auth — forgot password
   | "auth.forgot.title"
   | "auth.forgot.subtitle"
@@ -675,6 +678,16 @@ export type TranslationKey =
   | "auth.oauth.github"
   | "auth.oauth.google"
   | "auth.oauth.processing"
+  | "auth.oauth.error.popupBlocked"
+  | "auth.oauth.error.codeInvalid"
+  | "auth.oauth.error.stateInvalid"
+  | "auth.oauth.error.emailNotVerified"
+  | "auth.oauth.error.providerUnavailable"
+  | "auth.oauth.error.providerResponseInvalid"
+  | "auth.oauth.error.accountAlreadyLinked"
+  | "auth.oauth.error.providerAlreadyLinked"
+  | "auth.oauth.error.unavailable"
+  | "auth.oauth.error.generic"
   // Auth — header
   | "auth.header.logout"
   // Onboarding — account type selection

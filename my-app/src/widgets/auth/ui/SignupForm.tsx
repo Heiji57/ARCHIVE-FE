@@ -1,15 +1,26 @@
 import { useState, type FormEvent } from "react";
+import type { RequestCodeResult } from "@/app/model/types";
 import { useArchiveApp } from "@/app/providers/useArchiveApp";
 import type { AuthRoute } from "@/app/router/authRoute";
 import { USE_API } from "@/shared/api";
 import { isMultiTzCountry } from "@/shared/lib/geo";
-import { useTranslation } from "@/shared/lib/i18n";
+import { useTranslation, type TranslationKey } from "@/shared/lib/i18n";
 import { Checkbox, PasswordField, TextField } from "@/shared/ui";
 import { useEmailVerification } from "../model/useEmailVerification";
 import { CountryRegionFields } from "./CountryRegionFields";
 import { OAuthButtons } from "./OAuthButtons";
 
 type Step = "email" | "verify" | "profile";
+
+const REQUEST_CODE_ERROR_KEY: Record<
+  Extract<RequestCodeResult, { ok: false }>["error"],
+  TranslationKey
+> = {
+  "already-registered": "auth.signup.error.alreadyRegistered",
+  cooldown: "auth.signup.error.cooldown",
+  "delivery-failed": "auth.signup.error.deliveryFailed",
+  unavailable: "auth.signup.error.unavailable",
+};
 
 interface SignupFormProps {
   onAuthNavigate: (route: AuthRoute) => void;
@@ -26,6 +37,8 @@ export function SignupForm({ onAuthNavigate }: SignupFormProps) {
     () => new URLSearchParams(window.location.search).get("email") ?? "",
   );
   const [code, setCode] = useState("");
+  // 시도 횟수 초과/만료 → 새 코드를 받기 전까지 코드 입력을 잠근다.
+  const [codeLocked, setCodeLocked] = useState(false);
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -45,11 +58,7 @@ export function SignupForm({ onAuthNavigate }: SignupFormProps) {
     try {
       const result = await requestEmailCode(email);
       if (!result.ok) {
-        if (result.error === "already-registered") {
-          setError(t("auth.signup.error.alreadyRegistered"));
-        } else {
-          setError(t("auth.signup.error.cooldown"));
-        }
+        setError(t(REQUEST_CODE_ERROR_KEY[result.error]));
         return;
       }
       startCooldown();
@@ -68,8 +77,28 @@ export function SignupForm({ onAuthNavigate }: SignupFormProps) {
     try {
       const result = await verifyEmailCode(email, code);
       if (!result.ok) {
-        if (result.error === "expired") setError(t("auth.signup.error.expired"));
-        else setError(t("auth.signup.error.invalidCode"));
+        switch (result.error) {
+          case "expired":
+          case "not-requested":
+          case "attempts-exceeded":
+            // 기존 코드는 더 이상 쓸 수 없음 → 입력을 비우고 잠근 뒤 재전송을 바로 허용
+            setError(
+              t(
+                result.error === "attempts-exceeded"
+                  ? "auth.signup.error.attemptsExceeded"
+                  : "auth.signup.error.expired",
+              ),
+            );
+            setCode("");
+            setCodeLocked(true);
+            resetCooldown();
+            break;
+          case "unavailable":
+            setError(t("auth.signup.error.unavailable"));
+            break;
+          default:
+            setError(t("auth.signup.error.invalidCode"));
+        }
         return;
       }
       setStep("profile");
@@ -85,9 +114,13 @@ export function SignupForm({ onAuthNavigate }: SignupFormProps) {
     try {
       const result = await requestEmailCode(email);
       if (!result.ok) {
-        setError(t("auth.signup.error.cooldown"));
+        setError(t(REQUEST_CODE_ERROR_KEY[result.error]));
+        // 서버 쿨다운 중이면 재전송 버튼을 타이머로 잠근다
+        if (result.error === "cooldown") startCooldown();
         return;
       }
+      setCode("");
+      setCodeLocked(false);
       startCooldown();
     } finally {
       setSubmitting(false);
@@ -181,10 +214,15 @@ export function SignupForm({ onAuthNavigate }: SignupFormProps) {
             }
             hint={email}
             error={error ?? undefined}
+            disabled={codeLocked}
             autoFocus
             required
           />
-          <button type="submit" className="auth-submit" disabled={submitting || code.length !== 6}>
+          <button
+            type="submit"
+            className="auth-submit"
+            disabled={submitting || codeLocked || code.length !== 6}
+          >
             {submitting ? t("auth.login.submitting") : t("auth.signup.codeVerify")}
           </button>
           <button

@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useArchiveApp } from "@/app/providers/useArchiveApp";
 import type { AvailableRepository } from "@/entities/github/model/types";
+import { oauthErrorMessageKey } from "@/shared/api";
 import { DisconnectBanner } from "@/shared/ui/disconnect-banner/DisconnectBanner";
 import { Pill } from "@/shared/ui/pill/Pill";
 import { useTranslation } from "@/shared/lib/i18n";
@@ -58,12 +59,16 @@ export function GithubCard() {
       const alreadyLinked =
         result.error === "account-already-linked" ||
         result.error === "provider-already-linked";
+      // 콜백이 보낸 세분화 코드(auth v2)는 전용 안내, 그 외는 기존 연결 실패 문구
+      const errorKey = oauthErrorMessageKey(result.error);
       pushNotification(
         "warning",
         t("settings.github.connectAccount"),
         alreadyLinked
           ? t("settings.github.alreadyLinked")
-          : t("settings.github.connectFailed"),
+          : errorKey && errorKey !== "auth.oauth.error.generic"
+            ? t(errorKey)
+            : t("settings.github.connectFailed"),
         { category: "sync", transient: true },
       );
     }
