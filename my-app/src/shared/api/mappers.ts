@@ -11,7 +11,7 @@ import type {
   NotificationItem,
 } from "@/entities/notification/model/types";
 import type { RetroTemplate } from "@/entities/template/model/types";
-import type { Todo, TodoStats } from "@/entities/todo/model/types";
+import type { RecurrenceRule, Todo, TodoStats, Weekday } from "@/entities/todo/model/types";
 import type { OAuthProvider, User } from "@/entities/user/model/types";
 import { DEFAULT_SETTINGS, type AccountType, type AppSettings, type Locale } from "@/app/model/settings";
 import { readSpellCheckPref } from "@/shared/lib/spellCheckPrefs";
@@ -27,6 +27,7 @@ type FolderResponse = components["schemas"]["FolderResponse"];
 type SettingsResponse = components["schemas"]["SettingsResponse"];
 type NotificationResponse = components["schemas"]["NotificationResponse"];
 type RetroTemplateResponse = components["schemas"]["RetroTemplateResponse"];
+type RecurrenceRuleApi = components["schemas"]["RecurrenceRule"];
 
 /**
  * API UserResponse({id,email})를 FE User 로 변환.
@@ -79,11 +80,33 @@ export function toTodo(api: TodoResponse): Todo {
     isVirtual: api.is_virtual ?? false,
     seriesId: api.series_id ?? null,
     originalDateKey: api.original_date_key ?? null,
-    recurrenceRule: api.recurrence_rule
-      ? { ...api.recurrence_rule, until: api.recurrence_rule.until ?? null }
-      : null,
+    recurrenceRule: api.recurrence_rule ? toRecurrenceRule(api.recurrence_rule) : null,
+    seriesRule: api.series_rule ? toRecurrenceRule(api.series_rule) : null,
     tags: api.tags ?? [],
     dueDate: api.due_date_key ?? null,
+  };
+}
+
+/** RecurrenceRule(snake) → FE RecurrenceRule(camel). */
+export function toRecurrenceRule(api: RecurrenceRuleApi): RecurrenceRule {
+  return {
+    unit: api.unit,
+    interval: api.interval,
+    until: api.until ?? null,
+    // api.yaml 이 0~6 범위를 보장한다 — 리터럴 유니온으로 좁히기만 한다.
+    weekdays: (api.weekdays as Weekday[] | null | undefined) ?? null,
+    monthWeek: api.month_week ?? null,
+  };
+}
+
+/** FE RecurrenceRule(camel) → 요청 RecurrenceRule(snake). 단위 전용 필드는 해당 단위일 때만 보낸다. */
+export function fromRecurrenceRule(rule: RecurrenceRule): RecurrenceRuleApi {
+  return {
+    unit: rule.unit,
+    interval: rule.interval,
+    until: rule.until,
+    ...(rule.unit === "week" && rule.weekdays ? { weekdays: rule.weekdays } : {}),
+    ...(rule.unit === "month" ? { month_week: rule.monthWeek ?? null } : {}),
   };
 }
 

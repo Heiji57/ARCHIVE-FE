@@ -4,6 +4,7 @@ import { DatePickerPopover } from "@/entities/todo/ui/DatePickerPopover";
 import { RecurrencePopover } from "@/entities/todo/ui/RecurrencePopover";
 import { TagEditor } from "@/entities/todo/ui/TagEditor";
 import type { RecurrenceRule } from "@/entities/todo/model/types";
+import { formatRecurrenceRule, rebaseRecurrenceRule } from "@/entities/todo/lib/recurrence";
 import { addDays, toDateKey, todayKey } from "@/shared/lib/date";
 import { useTranslation } from "@/shared/lib/i18n";
 
@@ -29,7 +30,7 @@ export interface QuickCaptureProps {
  * 개별 할 일의 캘린더 연동 변경은 상세 패널에서 한다.
  */
 export function QuickCapture({ onSubmit, tagSuggestions, recentTags }: QuickCaptureProps) {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const [input, setInput] = useState("");
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickedDate, setPickedDate] = useState(todayKey);
@@ -50,12 +51,7 @@ export function QuickCapture({ onSubmit, tagSuggestions, recentTags }: QuickCapt
         : pickedDate;
 
   const recurrenceLabel = recurrenceRule
-    ? recurrenceRule.interval === 1
-      ? t(recurrenceRule.unit === "day" ? "todo.recurrence.label.daily" : "todo.recurrence.label.weekly")
-      : t("todo.recurrence.label.interval", {
-          n: recurrenceRule.interval,
-          unit: t(`todo.recurrence.unitNoun.${recurrenceRule.unit}`),
-        })
+    ? formatRecurrenceRule(recurrenceRule, pickedDate, t, locale)
     : t("todo.recurrence.chipOff");
 
   const tagLabel =
@@ -102,6 +98,8 @@ export function QuickCapture({ onSubmit, tagSuggestions, recentTags }: QuickCapt
             value={pickedDate}
             onChange={(v) => {
               setPickedDate(v);
+              // 월간 "n번째 요일"은 날짜에서 나오므로 새 날짜 기준으로 다시 맞춘다.
+              setRecurrenceRule((r) => (r ? rebaseRecurrenceRule(r, v) : r));
               setPickerOpen(false);
             }}
             onClose={() => setPickerOpen(false)}
@@ -115,16 +113,18 @@ export function QuickCapture({ onSubmit, tagSuggestions, recentTags }: QuickCapt
           onClick={() => setRecurrencePickerOpen((p) => !p)}
           className="btn btn-utility quick-capture-date-btn"
           data-active={recurrenceRule ? "true" : undefined}
+          title={recurrenceRule ? recurrenceLabel : undefined}
         >
           <Repeat size={14} />
-          {recurrenceLabel}
+          <span className="quick-capture-chip-label">{recurrenceLabel}</span>
           <ChevronDown size={12} />
         </button>
 
         {recurrencePickerOpen ? (
           <RecurrencePopover
+            dateKey={pickedDate}
             value={recurrenceRule}
-            onChange={setRecurrenceRule}
+            onSelect={setRecurrenceRule}
             onClose={() => setRecurrencePickerOpen(false)}
           />
         ) : null}

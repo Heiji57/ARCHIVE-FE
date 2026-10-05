@@ -17,7 +17,8 @@ import { StatusIcon } from "@/entities/todo/ui/StatusIcon";
 import { formatFullDate, fromDateKey } from "@/shared/lib/date";
 import { useTranslation } from "@/shared/lib/i18n";
 import { DatePickerPopover } from "./DatePickerPopover";
-import { DEFAULT_RECURRENCE_RULE, RecurrencePopover } from "./RecurrencePopover";
+import { RecurrencePopover } from "./RecurrencePopover";
+import { formatRecurrenceRule, sameRecurrenceRule } from "@/entities/todo/lib/recurrence";
 import { RecurrenceScopeDialog } from "./RecurrenceScopeDialog";
 import { TagEditor } from "./TagEditor";
 
@@ -28,6 +29,7 @@ export type TodoPatch = Partial<
 function sameTags(a: string[], b: string[]): boolean {
   return a.length === b.length && a.every((tag, i) => tag === b[i]);
 }
+
 
 export interface TaskDetailPanelProps {
   todo: Todo;
@@ -122,10 +124,6 @@ export function TaskDetailPanel({
     endTime: string | null;
   } | null>(null);
   const [recurrencePopoverOpen, setRecurrencePopoverOpen] = useState(false);
-  // 팝오버가 열려 있는 동안의 편집 중 값 — RecurrencePopover 는 매 조작마다 onChange 를
-  // 호출하는 컨트롤드 컴포넌트라, 부모가 draft 로 들고 있다가 닫힐 때만 실제로 전송해야
-  // 종료일 입력 같은 다단계 조작 중간에 조기 제출/닫힘이 일어나지 않는다.
-  const [draftRecurrenceRule, setDraftRecurrenceRule] = useState<RecurrenceRule | null>(null);
   // 제목/설명/태그 로컬 편집 버퍼 — 반복 항목이면 필드를 벗어날 때(commit)까지 전송을
   // 미루고, 그 시점에 범위(this/following)를 물어본다. 타이핑마다 물어보면 방해되므로
   // "편집 완료" 시점(blur)에만 게이트를 건다. todo.id 가 바뀌면(선택 변경) 이 패널은
@@ -167,15 +165,20 @@ export function TaskDetailPanel({
     setFieldScopeOpen(true);
   };
 
-  // 반복 팝오버를 닫는 모든 경로(완료 클릭/바깥 클릭/헤더 버튼 재클릭)가 여길 거친다 —
-  // draft 가 있을 때만(사용자가 실제로 뭔가 편집했을 때만) 전송한다.
-  const closeRecurrencePopover = () => {
-    if (draftRecurrenceRule) {
-      if (todo.isVirtual) onUpdateRecurrence(draftRecurrenceRule);
-      else onConvertToRecurring(draftRecurrenceRule);
+  // 현재 시리즈 규칙 — 가상 인스턴스는 서버가 series_rule 로 실어 준다(구 서버면 없을 수 있음).
+  const currentRecurrenceRule = todo.seriesRule ?? todo.recurrenceRule ?? null;
+
+  // 드롭다운 항목 선택(또는 맞춤 모달 "완료")만 확정이다 — 바깥 클릭은 아무 것도 바꾸지 않는다.
+  // - 비반복 → 반복 전환: 고른 규칙으로 전환.
+  // - 기존 시리즈 규칙 변경(isVirtual): 현재 규칙과 실제로 다를 때만 전송(같은 항목 재선택은 no-op).
+  const selectRecurrence = (rule: RecurrenceRule | null) => {
+    if (!rule) return; // 상세 패널은 "반복 안함" 항목을 노출하지 않는다(showOffOption=false).
+    if (!todo.isVirtual) {
+      onConvertToRecurring(rule);
+      return;
     }
-    setDraftRecurrenceRule(null);
-    setRecurrencePopoverOpen(false);
+    if (currentRecurrenceRule && sameRecurrenceRule(rule, currentRecurrenceRule, todo.dateKey)) return;
+    onUpdateRecurrence(rule);
   };
 
   // 반복 항목이면 범위 선택 다이얼로그를 먼저 띄운다(가이드 권장 UX).
@@ -588,16 +591,9 @@ export function TaskDetailPanel({
                 <div style={{ position: "relative" }}>
                   <button
                     type="button"
-                    onClick={() => {
-                      if (recurrencePopoverOpen) {
-                        closeRecurrencePopover();
-                        return;
-                      }
-                      // 기본값(매일 반복, 종료일 없음)으로 미리 채워 둔다 — 아무 것도
-                      // 건드리지 않고 바로 "완료"를 눌러도 그 기본값으로 제출되도록.
-                      setDraftRecurrenceRule(DEFAULT_RECURRENCE_RULE);
-                      setRecurrencePopoverOpen(true);
-                    }}
+                    onClick={() => setRecurrencePopoverOpen((o) => !o)}
+                    aria-haspopup="listbox"
+                    aria-expanded={recurrencePopoverOpen}
                     style={{
                       width: "100%",
                       display: "flex",
@@ -613,17 +609,23 @@ export function TaskDetailPanel({
                   >
                     <span style={{ display: "inline-flex", gap: 8, alignItems: "center" }}>
                       <Repeat size={15} />
-                      {t(todo.isVirtual ? "todo.recurrence.detail.summary" : "todo.recurrence.detail.convert")}
+                      {todo.isVirtual
+                        ? currentRecurrenceRule
+                          ? formatRecurrenceRule(currentRecurrenceRule, todo.dateKey, t, locale)
+                          : t("todo.recurrence.detail.summary")
+                        : t("todo.recurrence.detail.convert")}
                     </span>
                     <ChevronDown size={14} />
                   </button>
 
                   {recurrencePopoverOpen ? (
                     <RecurrencePopover
-                      value={draftRecurrenceRule}
+                      dateKey={todo.dateKey}
+                      value={todo.isVirtual ? currentRecurrenceRule : null}
                       showOffOption={false}
-                      onChange={setDraftRecurrenceRule}
-                      onClose={closeRecurrencePopover}
+                      fullWidth
+                      onSelect={selectRecurrence}
+                      onClose={() => setRecurrencePopoverOpen(false)}
                     />
                   ) : null}
                 </div>

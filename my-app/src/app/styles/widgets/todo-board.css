@@ -307,6 +307,24 @@
   color: var(--color-canvas);
   border-color: var(--color-ink);
 }
+/* 칩 라벨이 긴 경우(맞춤 반복 문구 등) 입력 박스를 밀어내지 않도록 자른다 — 전체 문구는 title */
+.quick-capture-chip-label {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* 반복 프리셋 드롭다운 항목 (RecurrencePopover) — 선택/hover 배경은 CSS 로 (inline 이면 :hover 불가) */
+.recurrence-menu-item {
+  background: transparent;
+  cursor: pointer;
+}
+.recurrence-menu-item:hover {
+  background: var(--color-tile-4);
+}
+.recurrence-menu-item[aria-selected="true"] {
+  background: var(--color-chip-translucent);
+}
 .quick-capture-submit {
   flex-shrink: 0;
   padding: 0 22px;

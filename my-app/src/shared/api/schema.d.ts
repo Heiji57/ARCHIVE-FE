@@ -4690,6 +4690,8 @@ export interface components {
             original_date_key?: string | null;
             /** @description 반복 베이스 row에만 존재. 예외/일반 todo 는 null. */
             recurrence_rule?: components["schemas"]["RecurrenceRule"];
+            /** @description 가상 인스턴스(`is_virtual: true`)에만 존재 — 소속 시리즈 base 의 현재 반복 규칙. FE 가 회차 상세에서 현재 규칙을 보여주는 용도. 예외/일반/base row 는 null. */
+            series_rule?: components["schemas"]["RecurrenceRule"];
             /** @description 태그 목록 (0~10개, 각 1~20자). 없으면 빈 배열. */
             tags: string[];
             /** @description 마감일 (YYYY-MM-DD). null = 단일 날짜. */
@@ -4697,14 +4699,21 @@ export interface components {
         };
         RecurrenceRule: {
             /**
-             * @description 반복 단위.
+             * @description 반복 단위. 의미는 RFC 5545 RRULE 과 같고 시작일(todo `date_key`)이 항상 첫 회차다. `day` = N일마다, `week` = N주마다 `weekdays` 요일(주 시작 = 월요일), `month` = N개월마다 `month_week` 번째 시작일-요일, `year` = N년마다 시작일의 월/일 (2/29 시작은 윤년에만).
              * @enum {string}
              */
-            unit: "day" | "week";
+            unit: "day" | "week" | "month" | "year";
             /** @description 반복 간격 (예: unit=week, interval=2 → 2주마다). */
             interval: number;
             /** @description 반복 종료 날짜(포함, 로컬 날짜 YYYY-MM-DD). null 이면 무기한. */
             until?: string | null;
+            /** @description `unit: week` 전용 — 반복 요일(0=월 … 6=일). 생략/null 이면 시작일 요일. 다른 unit 에 보내면 422 VALIDATION_ERROR. 응답은 오름차순. */
+            weekdays?: number[] | null;
+            /**
+             * @description `unit: month` 전용·필수 — 그 달의 몇 번째 시작일-요일인지 (1~4, -1 = 마지막). 5번째 요일은 모든 달에 있지 않아 -1 로 표현한다. month 에서 생략하거나 다른 unit 에 보내면 422 VALIDATION_ERROR.
+             * @enum {integer|null}
+             */
+            month_week?: 1 | 2 | 3 | 4 | -1 | null;
         };
         WeeklyTrendDay: {
             /** @description YYYY-MM-DD (로컬 날짜). */
