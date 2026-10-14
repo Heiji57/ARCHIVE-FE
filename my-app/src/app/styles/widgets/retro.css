@@ -227,6 +227,11 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   gap: 16px;
+  /* 행 최소 높이를 회고 카드의 자연 높이(브라우저 실측 ≈ 169.7px)에 맞춘다.
+     폴더 카드는 뱃지 줄이 없어 내용이 더 작으므로, 이게 없으면 행 높이가 회고
+     카드 유무에 따라 154↔170px 로 바뀌어 폴더 카드 크기가 달라진다.
+     내용이 더 커지면(뱃지 줄바꿈 등) auto 로 늘어난다. */
+  grid-auto-rows: minmax(170px, auto);
   /* 그리드를 헤더 아래 고정 지점으로 내린다 — 회고록 개수와 무관하게 "새 회고록
      만들기"/첫 카드 위치를 항상 여기에 고정(페이저만 margin-top:auto 로 하단 유지). */
   margin-top: 96px;
