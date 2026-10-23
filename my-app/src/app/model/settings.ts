@@ -1,4 +1,20 @@
-export type Locale = "ko" | "en" | "zh" | "ja";
+export type Locale =
+  | "ko"
+  | "en"
+  | "zh"
+  | "zh-TW"
+  | "ja"
+  | "es"
+  | "fr"
+  | "de"
+  | "pt"
+  | "it"
+  | "ru"
+  | "vi"
+  | "th"
+  | "id"
+  | "hi"
+  | "tr";
 export type AccountType = "developer" | "user";
 
 export interface AutoSummarySettings {
@@ -55,8 +71,20 @@ export const DEFAULT_SETTINGS: AppSettings = {
 };
 
 export const SUPPORTED_LOCALES: Array<{ code: Locale; label: string; native: string }> = [
-  { code: "ko", label: "Korean", native: "한국어" },
   { code: "en", label: "English", native: "English" },
-  { code: "zh", label: "Chinese (Simplified)", native: "中文" },
+  { code: "ko", label: "Korean", native: "한국어" },
   { code: "ja", label: "Japanese", native: "日本語" },
+  { code: "zh", label: "Chinese (Simplified)", native: "简体中文" },
+  { code: "zh-TW", label: "Chinese (Traditional)", native: "繁體中文" },
+  { code: "es", label: "Spanish", native: "Español" },
+  { code: "fr", label: "French", native: "Français" },
+  { code: "de", label: "German", native: "Deutsch" },
+  { code: "pt", label: "Portuguese", native: "Português" },
+  { code: "it", label: "Italian", native: "Italiano" },
+  { code: "ru", label: "Russian", native: "Русский" },
+  { code: "tr", label: "Turkish", native: "Türkçe" },
+  { code: "vi", label: "Vietnamese", native: "Tiếng Việt" },
+  { code: "th", label: "Thai", native: "ไทย" },
+  { code: "id", label: "Indonesian", native: "Bahasa Indonesia" },
+  { code: "hi", label: "Hindi", native: "हिन्दी" },
 ];

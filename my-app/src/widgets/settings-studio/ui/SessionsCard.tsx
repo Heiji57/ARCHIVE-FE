@@ -4,21 +4,8 @@ import { useArchiveApp } from "@/app/providers/useArchiveApp";
 import type { Session } from "@/entities/session/model/types";
 import { Pill } from "@/shared/ui";
 import { useTranslation } from "@/shared/lib/i18n";
+import { formatRelativeTime } from "@/shared/lib/date";
 import { SettingsCardHeader } from "./SettingsCardHeader";
-
-/** 마지막 사용 시각을 상대 표현으로 (예: "방금 전", "2일 전"). */
-function relativeTime(iso: string, locale: string): string {
-  const diffMs = Date.now() - new Date(iso).getTime();
-  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
-  const sec = Math.round(diffMs / 1000);
-  const min = Math.round(sec / 60);
-  const hr = Math.round(min / 60);
-  const day = Math.round(hr / 24);
-  if (Math.abs(sec) < 60) return rtf.format(-sec, "second");
-  if (Math.abs(min) < 60) return rtf.format(-min, "minute");
-  if (Math.abs(hr) < 24) return rtf.format(-hr, "hour");
-  return rtf.format(-day, "day");
-}
 
 /** 설정 — 활성 세션(로그인된 기기) 목록 + 폐기. */
 export function SessionsCard() {
@@ -130,7 +117,7 @@ export function SessionsCard() {
                   </span>
                   <span style={{ fontSize: 12, color: "var(--color-body-muted)" }}>
                     {s.ipPrefix ? `${s.ipPrefix}.x · ` : ""}
-                    {relativeTime(s.lastUsedAt, locale)}
+                    {formatRelativeTime(s.lastUsedAt, locale)}
                   </span>
                 </span>
               </div>

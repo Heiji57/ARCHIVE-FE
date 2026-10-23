@@ -2,11 +2,13 @@ import { useEffect, useState } from "react";
 import type { Editor } from "@tiptap/react";
 import { CALLOUT_META } from "../model/constants";
 import type { CalloutType } from "../model/types";
+import { useTranslation } from "@/shared/lib/i18n";
 
 /**
  * 콜아웃 노드 안에 커서가 있을 때, 좌측에 작은 emoji 버튼 표시 → 클릭 시 타입 변경 메뉴.
  */
 export function CalloutTypePicker({ editor }: { editor: Editor }) {
+  const { t } = useTranslation();
   const [calloutEl, setCalloutEl] = useState<HTMLElement | null>(null);
   const [rect, setRect] = useState<DOMRect | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -71,7 +73,7 @@ export function CalloutTypePicker({ editor }: { editor: Editor }) {
         className="rich-callout-picker-btn"
         style={{ position: "fixed", left: rect.left - 28, top: rect.top + 8 }}
         onClick={() => setPickerOpen((v) => !v)}
-        title={`${meta.titleKo} (클릭해서 변경)`}
+        title={t("editor.callout.changeType", { type: t(`editor.callout.${currentType}`) })}
       >
         {meta.emoji}
       </button>
@@ -96,7 +98,7 @@ export function CalloutTypePicker({ editor }: { editor: Editor }) {
                 }}
               >
                 <span>{m.emoji}</span>
-                <span>{m.titleKo}</span>
+                <span>{t(`editor.callout.${type}`)}</span>
               </button>
             );
           })}

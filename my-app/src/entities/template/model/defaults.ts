@@ -1,79 +1,70 @@
+import type { Locale } from "@/app/model/settings";
 import type { RetrospectiveType } from "@/entities/entry/model/types";
+import { DICTIONARIES, translate, type TranslationKey } from "@/shared/lib/i18n";
 import type { RetroTemplate } from "./types";
 
-/** 기본값으로 초기화할 때 사용하는 원본 마크다운 */
-export const DEFAULT_TEMPLATE_CONTENT: Record<RetrospectiveType, string> = {
-  daily: [
-    "## 오늘 한 일",
-    "",
-    "",
-    "## 배운 것",
-    "",
-    "",
-    "## 내일 할 일",
-    "",
-    "",
-    "## 느낀 점",
-  ].join("\n"),
-  weekly: [
-    "## 이번 주 성과",
-    "",
-    "",
-    "## 잘한 점",
-    "",
-    "",
-    "## 개선할 점",
-    "",
-    "",
-    "## 다음 주 목표",
-  ].join("\n"),
-  monthly: [
-    "## 이달의 성과",
-    "",
-    "",
-    "## 목표 달성 현황",
-    "",
-    "",
-    "## 배운 것",
-    "",
-    "",
-    "## 다음 달 계획",
-  ].join("\n"),
-  yearly: [
-    "## 올해의 성과",
-    "",
-    "",
-    "## 주요 마일스톤",
-    "",
-    "",
-    "## 성장한 부분",
-    "",
-    "",
-    "## 내년 목표",
-  ].join("\n"),
+const RETRO_TYPES: RetrospectiveType[] = ["daily", "weekly", "monthly", "yearly"];
+
+const CONTENT_KEY: Record<RetrospectiveType, TranslationKey> = {
+  daily: "template.default.daily",
+  weekly: "template.default.weekly",
+  monthly: "template.default.monthly",
+  yearly: "template.default.yearly",
 };
 
-const DEFAULT_TEMPLATE_NAME: Record<RetrospectiveType, string> = {
-  daily: "기본 일간 템플릿",
-  weekly: "기본 주간 템플릿",
-  monthly: "기본 월간 템플릿",
-  yearly: "기본 연간 템플릿",
+const NAME_KEY: Record<RetrospectiveType, TranslationKey> = {
+  daily: "settings.templates.defaultName.daily",
+  weekly: "settings.templates.defaultName.weekly",
+  monthly: "settings.templates.defaultName.monthly",
+  yearly: "settings.templates.defaultName.yearly",
 };
+
+/** 기본값으로 초기화할 때 사용하는 원본 마크다운 (locale 별). */
+export function defaultTemplateContent(type: RetrospectiveType, locale: Locale): string {
+  return translate(locale, CONTENT_KEY[type]);
+}
 
 const EPOCH = "2024-01-01T00:00:00.000Z";
 
-export const DEFAULT_TEMPLATES: RetroTemplate[] = (
-  ["daily", "weekly", "monthly", "yearly"] as RetrospectiveType[]
-).map((type) => ({
+/**
+ * FE 내장 기본 템플릿 (mock/데모 모드용 — 로그인 시 서버 템플릿으로 교체된다).
+ * 본문은 영어로 만들어 두고, 초기 상태에서 `localizeDefaultTemplates` 로
+ * 현재 locale 에 맞춘다.
+ */
+export const DEFAULT_TEMPLATES: RetroTemplate[] = RETRO_TYPES.map((type) => ({
   id: `default-template-${type}`,
-  name: DEFAULT_TEMPLATE_NAME[type],
+  name: translate("en", NAME_KEY[type]),
   retroType: type,
-  content: DEFAULT_TEMPLATE_CONTENT[type],
+  content: defaultTemplateContent(type, "en"),
   isDefault: true,
   isActive: true,
   createdAt: EPOCH,
   updatedAt: EPOCH,
 }));
+
+/**
+ * 사용자가 손대지 않은(어느 언어로든 기본 본문 그대로인) 기본 템플릿만
+ * 주어진 locale 의 기본 본문으로 바꾼다. 편집한 템플릿은 그대로 둔다.
+ */
+export function localizeDefaultTemplates(
+  templates: RetroTemplate[],
+  locale: Locale,
+): RetroTemplate[] {
+  // 에디터가 마크다운을 정규화(빈 줄 수 등)해 다시 저장하므로 공백 차이는 무시한다.
+  const norm = (md: string) => md.replace(/\s+/g, " ").trim();
+  let changed = false;
+  const next = templates.map((tpl) => {
+    if (!tpl.isDefault) return tpl;
+    const key = CONTENT_KEY[tpl.retroType];
+    const current = norm(tpl.content);
+    const untouched = Object.values(DICTIONARIES).some((dict) => norm(dict[key]) === current);
+    const content = defaultTemplateContent(tpl.retroType, locale);
+    if (!untouched || tpl.content === content) return tpl;
+    changed = true;
+    return { ...tpl, content };
+  });
+  return changed ? next : templates;
+}
 
 /** retroType → 기본 활성 템플릿 id (각 타입의 기본 템플릿) */
 export const DEFAULT_ACTIVE_TEMPLATE_IDS: Record<RetrospectiveType, string> = {

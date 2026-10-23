@@ -5,6 +5,7 @@ import type { JournalEntry } from "@/entities/entry/model/types"
 import { useTranslation } from "@/shared/lib/i18n"
 import { EditorErrorBoundary } from "@/shared/ui/rich-editor"
 import { extractMarkdownHeadings } from "../model/extractMarkdownHeadings"
+import { entryDisplayTitle } from "@/entities/entry/lib/summaryTitle"
 
 // RetroEditor 와 동일한 lazy 청크를 공유한다 (중복 로드 없음).
 const RichEditor = lazy(() => import("@/shared/ui/rich-editor/ui/RichEditor"))
@@ -28,7 +29,7 @@ export function RetroExpandOverlay({
   onClose,
   spellCheck = true,
 }: RetroExpandOverlayProps) {
-  const { t } = useTranslation()
+  const { t, locale } = useTranslation()
 
   // 마크다운 헤딩을 뽑아 렌더된 RichEditor DOM 의 h1~h6 와 같은 순서로 매칭한다.
   const headings = useMemo(
@@ -50,20 +51,20 @@ export function RetroExpandOverlay({
       }}>
       <div className="retro-expand-card">
         <div className="retro-expand-toolbar">
-          <span className="retro-expand-hint">Esc 또는 Ctrl+Shift+F 로 닫기</span>
+          <span className="retro-expand-hint">{t("retro.expand.hint")}</span>
           <button
             type="button"
             className="retro-expand-close"
             onClick={onClose}
-            aria-label="확장 닫기"
-            title="닫기 (Esc)">
+            aria-label={t("retro.expand.close")}
+            title={t("retro.expand.closeTitle")}>
             <Minimize2 size={14} />
             <X size={16} />
           </button>
         </div>
         <div className="retro-expand-body">
           <input
-            value={entry.title}
+            value={entryDisplayTitle(entry, locale)}
             onChange={(e) => onUpdate({ title: e.target.value })}
             readOnly={entry.isSummary}
             title={entry.isSummary ? t("retro.summary.titleReadOnly") : undefined}
@@ -84,7 +85,7 @@ export function RetroExpandOverlay({
                       fontFamily: "var(--font-mono, monospace)",
                       whiteSpace: "pre-wrap",
                     }}>
-                    <strong>에디터를 불러오지 못했습니다.</strong>
+                    <strong>{t("editor.loadFailed")}</strong>
                     {"\n"}
                     {error.message}
                   </div>
@@ -98,7 +99,7 @@ export function RetroExpandOverlay({
                         fontSize: 16,
                         color: "var(--color-body-muted)",
                       }}>
-                      에디터 로딩 중...
+                      {t("editor.loading")}
                     </div>
                   }>
                   <RichEditor

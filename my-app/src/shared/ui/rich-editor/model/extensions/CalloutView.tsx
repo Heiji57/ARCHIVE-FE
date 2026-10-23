@@ -2,9 +2,11 @@ import { useEffect, useRef, useState } from "react";
 import { NodeViewContent, NodeViewWrapper, type NodeViewProps } from "@tiptap/react";
 import { CALLOUT_META } from "../constants";
 import type { CalloutType } from "../types";
+import { useTranslation } from "@/shared/lib/i18n";
 
 /** 콜아웃 React NodeView — 내부 아이콘 버튼 클릭으로 타입 변경 피커를 열고 닫는다. */
 export function CalloutView({ node, updateAttributes }: NodeViewProps) {
+  const { t } = useTranslation();
   const [pickerOpen, setPickerOpen] = useState(false);
   const pickerRef = useRef<HTMLDivElement | null>(null);
   const btnRef = useRef<HTMLButtonElement | null>(null);
@@ -38,7 +40,7 @@ export function CalloutView({ node, updateAttributes }: NodeViewProps) {
           e.stopPropagation();
           setPickerOpen((v) => !v);
         }}
-        title="클릭해서 아이콘 변경"
+        title={t("editor.callout.changeIcon")}
       >
         {meta.emoji}
       </button>
@@ -49,23 +51,23 @@ export function CalloutView({ node, updateAttributes }: NodeViewProps) {
           contentEditable={false}
           suppressContentEditableWarning
         >
-          {(Object.keys(CALLOUT_META) as CalloutType[]).map((t) => {
-            const m = CALLOUT_META[t];
+          {(Object.keys(CALLOUT_META) as CalloutType[]).map((ct) => {
+            const m = CALLOUT_META[ct];
             return (
               <button
-                key={t}
+                key={ct}
                 type="button"
                 className="rich-callout-picker-item"
-                data-active={t === type ? "true" : undefined}
+                data-active={ct === type ? "true" : undefined}
                 onMouseDown={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  updateAttributes({ type: t });
+                  updateAttributes({ type: ct });
                   setPickerOpen(false);
                 }}
               >
                 <span>{m.emoji}</span>
-                <span>{m.titleKo}</span>
+                <span>{t(`editor.callout.${ct}`)}</span>
               </button>
             );
           })}

@@ -34,12 +34,4 @@ export const ICONS: Record<string, LucideIcon> = {
   Code2,
 };
 
-/** 카테고리 그룹 라벨 (다국어) */
-export const CATEGORY_LABELS: Record<string, { ko: string; en: string }> = {
-  heading: { ko: "제목", en: "Headings" },
-  list: { ko: "목록", en: "Lists" },
-  block: { ko: "블록", en: "Blocks" },
-  media: { ko: "미디어", en: "Media" },
-};
-
 export { Minus as FallbackIcon };

@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "@/shared/lib/i18n";
+import { LocaleToggle } from "./LocaleToggle";
 
 interface AuthShellProps {
   title: string;
@@ -12,6 +13,7 @@ export function AuthShell({ title, subtitle, children, footer }: AuthShellProps)
   const { t } = useTranslation();
   return (
     <div className="auth-page">
+      <LocaleToggle className="auth-lang-toggle" buttonClassName="auth-lang-btn" />
       <div className="auth-card">
         <div className="auth-card-header">
           <p className="auth-brand">{t("nav.brand")}</p>

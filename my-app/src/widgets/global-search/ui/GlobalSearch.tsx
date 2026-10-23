@@ -5,8 +5,9 @@ import type { JournalEntry } from "@/entities/entry/model/types";
 import type { AppRoute } from "@/app/model/types";
 import type { GlobalSearchResult } from "@/shared/api";
 import type { Todo } from "@/entities/todo/model/types";
-import { useTranslation } from "@/shared/lib/i18n";
+import { useTranslation, type TranslationKey } from "@/shared/lib/i18n";
 import { useDebouncedValue } from "@/shared/lib/useDebouncedValue";
+import { entryDisplayTitle } from "@/entities/entry/lib/summaryTitle";
 
 interface Props {
   onNavigate?: (route: AppRoute) => void;
@@ -267,6 +268,12 @@ export function GlobalSearch({ onNavigate }: Props) {
   );
 }
 
+const TODO_STATUS_KEY: Record<Todo["status"], TranslationKey> = {
+  "not-start": "todo.col.notStart.ko",
+  "in-progress": "todo.col.inProgress.ko",
+  done: "todo.col.done.ko",
+};
+
 function SearchTodoRow({
   todo,
   highlighted,
@@ -276,6 +283,7 @@ function SearchTodoRow({
   highlighted: boolean;
   onClick: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <button
       type="button"
@@ -284,7 +292,7 @@ function SearchTodoRow({
       onClick={onClick}>
       <div>{todo.title}</div>
       <div className="global-search-result-meta">
-        {todo.dateKey} · {todo.status}
+        {todo.dateKey} · {t(TODO_STATUS_KEY[todo.status])}
       </div>
     </button>
   );
@@ -299,15 +307,16 @@ function SearchEntryRow({
   highlighted: boolean;
   onClick: () => void;
 }) {
+  const { t, locale } = useTranslation();
   return (
     <button
       type="button"
       className="global-search-result"
       data-highlighted={highlighted ? "true" : undefined}
       onClick={onClick}>
-      <div>{entry.title}</div>
+      <div>{entryDisplayTitle(entry, locale)}</div>
       <div className="global-search-result-meta">
-        {entry.dateKey} · {entry.retroType}
+        {entry.dateKey} · {t(`retro.filter.${entry.retroType}`)}
       </div>
     </button>
   );
