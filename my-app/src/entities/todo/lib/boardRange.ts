@@ -6,8 +6,14 @@ export interface BoardRangeWindow {
   to: string;
 }
 
+/** 오늘 기준 지난/앞으로 일수. (app 설정의 TodoBoardRange 와 같은 모양) */
+export interface BoardRangeDays {
+  pastDays: number;
+  futureDays: number;
+}
+
 /**
- * 보드 "전체" 보기의 기간 창 — 오늘 기준 앞뒤로 `rangeDays` 를 나눈 구간.
+ * 보드 "전체" 보기의 기간 창 — 오늘 기준 지난 `pastDays` ~ 앞으로 `futureDays` 구간.
  *
  * 서버 조회(`loadTodosForRange`)와 화면 필터(`useTodoListFilter`)가 **반드시 같은 창**을
  * 써야 하므로 계산을 여기 한 곳에 둔다. 예전에는 양쪽이 각자 계산하면서, 조회는
@@ -16,12 +22,11 @@ export interface BoardRangeWindow {
  *
  * 경계 비교는 항상 dateKey 문자열끼리 한다("YYYY-MM-DD" 는 사전순 = 시간순).
  */
-export function boardRangeWindow(rangeDays: number, todayKey: string): BoardRangeWindow {
+export function boardRangeWindow(range: BoardRangeDays, todayKey: string): BoardRangeWindow {
   const base = fromDateKey(todayKey);
-  const back = Math.floor(rangeDays / 2);
   return {
-    from: toDateKey(addDays(base, -back)),
-    to: toDateKey(addDays(base, rangeDays - back)),
+    from: toDateKey(addDays(base, -range.pastDays)),
+    to: toDateKey(addDays(base, range.futureDays)),
   };
 }
 

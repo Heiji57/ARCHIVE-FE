@@ -5,7 +5,7 @@ import type { DateFilter } from "./constants";
  *
  * API 계약(/settings)에 없는 FE 전용 UI 선호도이므로 서버로 동기화하지 않고
  * localStorage 에만 저장한다. 페이지를 다시 열 때 마지막 필터를 복원한다.
- * ([[todoRangePrefs]] 의 rangeDays 저장과 동일한 취지)
+ * ([[todoRangePrefs]] 의 범위 저장과 동일한 취지)
  */
 const KEY = "archive.todoBoardFilter";
 

@@ -192,9 +192,9 @@ export function toSettings(api: SettingsResponse, current?: AppSettings): AppSet
     // FE-only fields — preserve existing local values (not stored server-side)
     accountType: current?.accountType ?? DEFAULT_SETTINGS.accountType,
     accountTypeDetermined: current?.accountTypeDetermined ?? DEFAULT_SETTINGS.accountTypeDetermined,
-    todoBoardRangeDays:
-      current?.todoBoardRangeDays ??
-      readTodoBoardRange(DEFAULT_SETTINGS.todoBoardRangeDays),
+    todoBoardRange:
+      current?.todoBoardRange ??
+      readTodoBoardRange(DEFAULT_SETTINGS.todoBoardRange),
     spellCheck:
       current?.spellCheck ?? readSpellCheckPref(DEFAULT_SETTINGS.spellCheck),
   };

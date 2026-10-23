@@ -413,7 +413,7 @@ export function appReducer(state: AppState, action: AppAction): AppState {
         ...state,
         settings: {
           ...state.settings,
-          todoBoardRangeDays: action.payload.days,
+          todoBoardRange: action.payload.range,
         },
       };
 
@@ -679,8 +679,7 @@ export function ensureSettings(
     notificationRetentionDays:
       partial.notificationRetentionDays ??
       DEFAULT_SETTINGS.notificationRetentionDays,
-    todoBoardRangeDays:
-      partial.todoBoardRangeDays ?? DEFAULT_SETTINGS.todoBoardRangeDays,
+    todoBoardRange: partial.todoBoardRange ?? DEFAULT_SETTINGS.todoBoardRange,
     lastScheduleCheckAt:
       partial.lastScheduleCheckAt ?? DEFAULT_SETTINGS.lastScheduleCheckAt,
     accountType: partial.accountType ?? DEFAULT_SETTINGS.accountType,

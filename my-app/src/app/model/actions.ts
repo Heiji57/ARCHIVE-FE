@@ -14,7 +14,7 @@ import type {
 import type { RetroTemplate } from "@/entities/template";
 import type { RecurrenceRule, Todo } from "@/entities/todo/model/types";
 import type { User } from "@/entities/user/model/types";
-import type { AccountType, AppSettings, Locale } from "@/app/model/settings";
+import type { AccountType, AppSettings, Locale, TodoBoardRange } from "@/app/model/settings";
 
 export type AppAction =
   | {
@@ -134,7 +134,7 @@ export type AppAction =
       payload: { patch: Partial<AppSettings["autoSummary"]> };
     }
   | { type: "settings/retention"; payload: { days: number } }
-  | { type: "settings/todoBoardRange"; payload: { days: number } }
+  | { type: "settings/todoBoardRange"; payload: { range: TodoBoardRange } }
   | { type: "settings/spellCheck"; payload: { value: boolean } }
   | { type: "settings/calendarAutoPushTodo"; payload: { value: boolean } }
   | { type: "settings/calendarAutoDeleteTodo"; payload: { value: boolean } }
