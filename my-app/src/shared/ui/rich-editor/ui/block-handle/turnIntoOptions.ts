@@ -9,11 +9,12 @@ import {
   Type,
 } from "lucide-react";
 import type { Editor } from "@tiptap/react";
+import type { TranslationKey } from "@/shared/lib/i18n";
 
 /** 블록 "전환" 메뉴의 한 옵션 */
 export interface TurnIntoOption {
   id: string;
-  label: string;
+  labelKey: TranslationKey;
   icon: typeof Type;
   apply: (editor: Editor, pos: number) => void;
 }
@@ -21,14 +22,14 @@ export interface TurnIntoOption {
 export const TURN_INTO_OPTIONS: TurnIntoOption[] = [
   {
     id: "p",
-    label: "본문",
+    labelKey: "editor.cmd.paragraph.title",
     icon: Type,
     apply: (e, pos) =>
       e.chain().focus().setNodeSelection(pos).setNode("paragraph").run(),
   },
   {
     id: "h1",
-    label: "제목 1",
+    labelKey: "editor.cmd.h1.title",
     icon: Heading1,
     apply: (e, pos) =>
       e
@@ -40,7 +41,7 @@ export const TURN_INTO_OPTIONS: TurnIntoOption[] = [
   },
   {
     id: "h2",
-    label: "제목 2",
+    labelKey: "editor.cmd.h2.title",
     icon: Heading2,
     apply: (e, pos) =>
       e
@@ -52,7 +53,7 @@ export const TURN_INTO_OPTIONS: TurnIntoOption[] = [
   },
   {
     id: "h3",
-    label: "제목 3",
+    labelKey: "editor.cmd.h3.title",
     icon: Heading3,
     apply: (e, pos) =>
       e
@@ -64,28 +65,28 @@ export const TURN_INTO_OPTIONS: TurnIntoOption[] = [
   },
   {
     id: "bullet",
-    label: "글머리 기호",
+    labelKey: "editor.cmd.bullet.title",
     icon: List,
     apply: (e, pos) =>
       e.chain().focus().setNodeSelection(pos).toggleBulletList().run(),
   },
   {
     id: "ol",
-    label: "번호 매기기",
+    labelKey: "editor.cmd.numbered.title",
     icon: ListOrdered,
     apply: (e, pos) =>
       e.chain().focus().setNodeSelection(pos).toggleOrderedList().run(),
   },
   {
     id: "quote",
-    label: "인용",
+    labelKey: "editor.cmd.quote.title",
     icon: Quote,
     apply: (e, pos) =>
       e.chain().focus().setNodeSelection(pos).toggleBlockquote().run(),
   },
   {
     id: "callout",
-    label: "콜아웃",
+    labelKey: "editor.cmd.callout.title",
     icon: Lightbulb,
     apply: (e, pos) =>
       e.chain().focus().setNodeSelection(pos).setCallout({ type: "NOTE" }).run(),

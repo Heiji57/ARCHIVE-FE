@@ -4,7 +4,11 @@ import type { AppState } from "@/app/model/types";
 import type { JournalEntry } from "@/entities/entry/model/types";
 import { INITIAL_GITHUB_STATE } from "@/entities/github/model/types";
 import type { NotificationItem } from "@/entities/notification/model/types";
-import { DEFAULT_TEMPLATE_CONTENT, defaultTemplateId } from "@/entities/template";
+import {
+  defaultTemplateContent,
+  defaultTemplateId,
+  localizeDefaultTemplates,
+} from "@/entities/template";
 import type { Todo } from "@/entities/todo/model/types";
 import { createId } from "@/shared/lib/id";
 import { readTodoBoardRange } from "@/shared/lib/todoRangePrefs";
@@ -167,6 +171,7 @@ export function appReducer(state: AppState, action: AppAction): AppState {
           accountType: state.settings.accountType,
           accountTypeDetermined: state.settings.accountTypeDetermined,
         },
+        templates: localizeDefaultTemplates(state.templates, action.payload.settings.locale),
       };
 
     case "hydrate/templates":
@@ -386,6 +391,7 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       return {
         ...state,
         settings: { ...state.settings, locale: action.payload.locale },
+        templates: localizeDefaultTemplates(state.templates, action.payload.locale),
       };
 
     case "settings/autoSummary":
@@ -556,7 +562,7 @@ export function appReducer(state: AppState, action: AppAction): AppState {
           t.retroType === action.payload.retroType && t.isDefault
             ? {
                 ...t,
-                content: DEFAULT_TEMPLATE_CONTENT[action.payload.retroType],
+                content: defaultTemplateContent(action.payload.retroType, state.settings.locale),
                 updatedAt: new Date().toISOString(),
               }
             : t,

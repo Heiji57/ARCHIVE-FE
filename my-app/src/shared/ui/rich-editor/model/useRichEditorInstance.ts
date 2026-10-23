@@ -19,6 +19,7 @@ import {
   ToggleNode,
   ToggleSummary,
 } from "./extensions";
+import { useTranslation } from "@/shared/lib/i18n";
 import { htmlToMarkdown, markdownToHtml } from "./markdown";
 
 interface Options {
@@ -42,6 +43,7 @@ export function useRichEditorInstance({
   editable = true,
   spellCheck = true,
 }: Options) {
+  const { t } = useTranslation();
   // Tiptap 은 deps=[] 일 때 매 렌더마다 options 를 이전 값과 얕게 비교해 바뀐 것만
   // setOptions 로 반영한다(object 는 참조 비교) — 매 렌더 새 객체를 넘기면 값이
   // 안 바뀌어도 매번 재적용되므로, spellCheck 가 실제로 바뀔 때만 참조가 바뀌게 memo.
@@ -57,7 +59,7 @@ export function useRichEditorInstance({
         heading: { levels: [1, 2, 3, 4, 5] },
       }),
       Placeholder.configure({
-        placeholder: placeholder ?? "내용을 입력하거나 / 를 눌러 블록 선택...",
+        placeholder: placeholder ?? t("editor.placeholder"),
       }),
       Table.configure({
         resizable: false,

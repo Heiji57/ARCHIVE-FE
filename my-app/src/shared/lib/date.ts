@@ -1,10 +1,23 @@
 import type { Locale } from "@/app/model/settings";
 
-const LOCALE_TAG: Record<Locale, string> = {
+/** 앱 locale → Intl 포맷용 BCP-47 태그. */
+export const LOCALE_TAG: Record<Locale, string> = {
   ko: "ko-KR",
   en: "en-US",
   zh: "zh-CN",
+  "zh-TW": "zh-TW",
   ja: "ja-JP",
+  es: "es-ES",
+  fr: "fr-FR",
+  de: "de-DE",
+  pt: "pt-BR",
+  it: "it-IT",
+  ru: "ru-RU",
+  vi: "vi-VN",
+  th: "th-TH",
+  id: "id-ID",
+  hi: "hi-IN",
+  tr: "tr-TR",
 };
 
 function pad(value: number) {
@@ -198,7 +211,7 @@ export function dateOfISOWeek(year: number, week: number): Date {
   );
 }
 
-export function formatMonthLabel(date: Date, locale: Locale = "ko") {
+export function formatMonthLabel(date: Date, locale: Locale) {
   return new Intl.DateTimeFormat(LOCALE_TAG[locale], {
     year: "numeric",
     month: "long",
@@ -209,7 +222,7 @@ export function formatYearMonth(date: Date) {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}`;
 }
 
-export function formatFullDate(date: Date, locale: Locale = "ko") {
+export function formatFullDate(date: Date, locale: Locale) {
   return new Intl.DateTimeFormat(LOCALE_TAG[locale], {
     year: "numeric",
     month: "long",
@@ -368,4 +381,18 @@ export function computeAutoTodoTime(): { startTime: string; endTime: string } {
  */
 export function formatMonthDayFromDateKey(dateKey: string): string {
   return dateKey.slice(5).replace("-", ".");
+}
+
+/** ISO 시각을 현재 기준 상대 표현으로 (예: "2분 전", "3 hours ago"). */
+export function formatRelativeTime(iso: string, locale: Locale): string {
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
+  const sec = Math.round(diffMs / 1000);
+  const min = Math.round(sec / 60);
+  const hr = Math.round(min / 60);
+  const day = Math.round(hr / 24);
+  if (Math.abs(sec) < 60) return rtf.format(-sec, "second");
+  if (Math.abs(min) < 60) return rtf.format(-min, "minute");
+  if (Math.abs(hr) < 24) return rtf.format(-hr, "hour");
+  return rtf.format(-day, "day");
 }

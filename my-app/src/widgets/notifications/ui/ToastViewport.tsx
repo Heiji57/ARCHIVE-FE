@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { AlertTriangle, Check, Sparkles, X } from "lucide-react";
 import type { NotificationItem } from "@/entities/notification/model/types";
+import { useTranslation } from "@/shared/lib/i18n";
 
 interface ToastViewportProps {
   notifications: NotificationItem[];
@@ -19,6 +20,7 @@ export function ToastViewport({
   notifications,
   onDismiss,
 }: ToastViewportProps) {
+  const { t } = useTranslation();
   const [hiddenIds, setHiddenIds] = useState<Set<string>>(new Set());
 
   // Schedule auto-hide for each visible notification.
@@ -99,7 +101,7 @@ export function ToastViewport({
             type="button"
             className="toast-close"
             onClick={() => handleDismiss(notification.id)}
-            aria-label="알림 닫기"
+            aria-label={t("notif.toast.dismiss")}
           >
             <X size={14} />
           </button>

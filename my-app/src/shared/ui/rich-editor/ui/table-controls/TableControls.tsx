@@ -1,5 +1,6 @@
 import { Plus } from "lucide-react";
 import type { Editor } from "@tiptap/react";
+import { useTranslation } from "@/shared/lib/i18n";
 import { useTableControls } from "./useTableControls";
 
 /**
@@ -10,6 +11,7 @@ import { useTableControls } from "./useTableControls";
  *  - 표 삭제는 BlockHandle 메뉴에서 처리 (별도 휴지통 없음)
  */
 export function TableControls({ editor }: { editor: Editor }) {
+  const { t } = useTranslation();
   const { target, rect, startDrag, onBarClick } = useTableControls(editor);
 
   if (!target || !rect) return null;
@@ -27,7 +29,7 @@ export function TableControls({ editor }: { editor: Editor }) {
         }}
         onMouseDown={(e) => startDrag("col", e)}
         onClick={(e) => onBarClick("col", e)}
-        title="우측으로 드래그=열 추가, 좌측으로 드래그=열 삭제 (클릭=1개 추가)"
+        title={t("editor.table.colHandle")}
       >
         <Plus size={12} />
       </div>
@@ -43,7 +45,7 @@ export function TableControls({ editor }: { editor: Editor }) {
         }}
         onMouseDown={(e) => startDrag("row", e)}
         onClick={(e) => onBarClick("row", e)}
-        title="아래로 드래그=행 추가, 위로 드래그=행 삭제 (클릭=1개 추가)"
+        title={t("editor.table.rowHandle")}
       >
         <Plus size={12} />
       </div>

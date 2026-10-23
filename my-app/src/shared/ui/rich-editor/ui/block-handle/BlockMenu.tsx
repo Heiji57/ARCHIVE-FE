@@ -1,4 +1,5 @@
 import { ChevronRight, Copy, Minus, Trash2, Type } from "lucide-react";
+import { useTranslation } from "@/shared/lib/i18n";
 import { TURN_INTO_OPTIONS, type TurnIntoOption } from "./turnIntoOptions";
 
 interface BlockMenuProps {
@@ -27,6 +28,7 @@ export function BlockMenu({
   cancelHide,
   scheduleHide,
 }: BlockMenuProps) {
+  const { t } = useTranslation();
   return (
     <div
       className="rich-block-menu"
@@ -42,7 +44,7 @@ export function BlockMenu({
         onClick={onToggleTurnInto}
       >
         <Type size={13} />
-        <span>전환</span>
+        <span>{t("editor.block.turnInto")}</span>
         <ChevronRight size={12} className="rich-block-menu-arrow" />
       </button>
       {turnIntoOpen ? (
@@ -57,7 +59,7 @@ export function BlockMenu({
                 onClick={() => onTurnInto(opt)}
               >
                 <Icon size={13} />
-                <span>{opt.label}</span>
+                <span>{t(opt.labelKey)}</span>
               </button>
             );
           })}
@@ -71,7 +73,7 @@ export function BlockMenu({
       >
         <Copy size={13} />
         <span>
-          복제 <kbd className="rich-block-kbd">Ctrl+D</kbd>
+          {t("editor.block.duplicate")} <kbd className="rich-block-kbd">Ctrl+D</kbd>
         </span>
       </button>
       <button
@@ -81,12 +83,12 @@ export function BlockMenu({
       >
         <Trash2 size={13} />
         <span>
-          삭제 <kbd className="rich-block-kbd">Del</kbd>
+          {t("editor.block.delete")} <kbd className="rich-block-kbd">Del</kbd>
         </span>
       </button>
       <div className="rich-block-menu-divider" />
       <div className="rich-block-menu-hint">
-        <Minus size={10} /> 색 지정은 곧 추가 예정
+        <Minus size={10} /> {t("editor.block.colorSoon")}
       </div>
     </div>
   );

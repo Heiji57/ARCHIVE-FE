@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { useDnd } from "@/shared/lib/dnd";
 import { useArchiveApp } from "@/app/providers/useArchiveApp";
 import { RETRO_DRAG_KIND, type RetroDragPayload } from "@/widgets/retrospective-studio/model/constants";
+import { entryDisplayTitle } from "@/entities/entry/lib/summaryTitle";
 
 /** 회고록 카드/폴더 카드를 폴더로 드래그할 때 마우스를 따라다니는 고스트. */
 export function RetroDragGhost() {
@@ -41,7 +42,7 @@ export function RetroDragGhost() {
       className="drag-ghost"
       style={{ left: ghostLeft, top: ghostTop, width: rect?.width, height: rect?.height }}
     >
-      <p className="drag-ghost-title">{entry.title}</p>
+      <p className="drag-ghost-title">{entryDisplayTitle(entry, appState.settings.locale)}</p>
       <div className="drag-ghost-meta">
         <span className="drag-ghost-date">{entry.dateKey}</span>
       </div>

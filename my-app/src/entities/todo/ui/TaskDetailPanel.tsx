@@ -285,7 +285,7 @@ export function TaskDetailPanel({
             <button
               type="button"
               className="btn-icon"
-              aria-label="Close"
+              aria-label={t("calendar.taskDetail.close")}
               onClick={onClose}
             >
               <X size={16} />
