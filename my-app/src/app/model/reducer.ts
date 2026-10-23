@@ -7,6 +7,7 @@ import type { NotificationItem } from "@/entities/notification/model/types";
 import { DEFAULT_TEMPLATE_CONTENT, defaultTemplateId } from "@/entities/template";
 import type { Todo } from "@/entities/todo/model/types";
 import { createId } from "@/shared/lib/id";
+import { readTodoBoardRange } from "@/shared/lib/todoRangePrefs";
 
 export function appReducer(state: AppState, action: AppAction): AppState {
   switch (action.type) {
@@ -679,7 +680,9 @@ export function ensureSettings(
     notificationRetentionDays:
       partial.notificationRetentionDays ??
       DEFAULT_SETTINGS.notificationRetentionDays,
-    todoBoardRange: partial.todoBoardRange ?? DEFAULT_SETTINGS.todoBoardRange,
+    // 지난/앞으로로 나누기 전에 저장된 상태에는 이 필드가 없다 — 예전 값을 이관해 읽는다.
+    todoBoardRange:
+      partial.todoBoardRange ?? readTodoBoardRange(DEFAULT_SETTINGS.todoBoardRange),
     lastScheduleCheckAt:
       partial.lastScheduleCheckAt ?? DEFAULT_SETTINGS.lastScheduleCheckAt,
     accountType: partial.accountType ?? DEFAULT_SETTINGS.accountType,

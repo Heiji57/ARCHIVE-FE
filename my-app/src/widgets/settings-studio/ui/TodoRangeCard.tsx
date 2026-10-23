@@ -15,6 +15,16 @@ const SIDE_KEY: Record<Side, keyof TodoBoardRange> = {
   future: "futureDays",
 };
 
+/** 손잡이를 잡을 수 있는 폭(px). CSS 의 .todo-ruler-handle::before 와 맞춘다. */
+const HANDLE_HIT_PX = 28;
+
+interface DragState {
+  side: Side;
+  range: TodoBoardRange;
+  /** 잡을 때 두 손잡이가 겹쳐 있었는지 — 그러면 끄는 방향으로 손잡이를 정한다. */
+  overlapped: boolean;
+}
+
 /**
  * 할 일 보드 "전체" 보기 범위를 눈금자 위 두 손잡이로 정한다.
  * 왼쪽 손잡이는 지난 일, 오른쪽 손잡이는 앞으로의 일을 며칠까지 보여줄지 정한다.
@@ -27,12 +37,12 @@ export function TodoRangeCard() {
 
   const rulerRef = useRef<HTMLDivElement>(null);
   // 드래그 중인 손잡이와 그 임시 범위. 드래그가 아니면 저장값을 그대로 그린다.
-  const [drag, setDrag] = useState<{ side: Side; range: TodoBoardRange } | null>(null);
+  const [drag, setDrag] = useState<DragState | null>(null);
   // pointermove 는 리렌더 전에 연달아 올 수 있어 state 대신 ref 로 판정한다.
   const dragRef = useRef(drag);
   const draft = drag?.range ?? saved;
 
-  const updateDrag = (next: { side: Side; range: TodoBoardRange } | null) => {
+  const updateDrag = (next: DragState | null) => {
     dragRef.current = next;
     setDrag(next);
   };
@@ -42,27 +52,26 @@ export function TodoRangeCard() {
     setTodoBoardRange(next);
   };
 
-  const daysAtPointer = (side: Side, clientX: number) => {
-    const rect = rulerRef.current?.getBoundingClientRect();
-    if (!rect || rect.width === 0) return draft[SIDE_KEY[side]];
-    const x = (clientX - rect.left) / rect.width;
-    return daysForOffset(side === "past" ? 0.5 - x : x - 0.5);
-  };
-
   const onPointerDown = (side: Side) => (e: PointerEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.currentTarget.setPointerCapture(e.pointerId);
     e.currentTarget.focus();
-    updateDrag({ side, range: saved });
+    // 둘 다 오늘 근처면 손잡이가 겹쳐 위에 그려진 쪽만 잡힌다 — 그때는 끄는 방향을 따른다.
+    const width = rulerRef.current?.getBoundingClientRect().width ?? 0;
+    const gapPx = (offsetForDays(saved.pastDays) + offsetForDays(saved.futureDays)) * width;
+    updateDrag({ side, range: saved, overlapped: gapPx < HANDLE_HIT_PX });
   };
 
-  const onPointerMove = (side: Side) => (e: PointerEvent<HTMLDivElement>) => {
+  // 포인터를 잡은 손잡이가 이벤트를 모두 받으므로 side 는 drag 상태에서 정한다.
+  const onPointerMove = (e: PointerEvent<HTMLDivElement>) => {
     const current = dragRef.current;
-    if (current?.side !== side) return;
-    updateDrag({
-      side,
-      range: { ...current.range, [SIDE_KEY[side]]: daysAtPointer(side, e.clientX) },
-    });
+    const rect = rulerRef.current?.getBoundingClientRect();
+    if (!current || !rect || rect.width === 0) return;
+    const x = (e.clientX - rect.left) / rect.width;
+    const side: Side = current.overlapped ? (x < 0.5 ? "past" : "future") : current.side;
+    const days = daysForOffset(side === "past" ? 0.5 - x : x - 0.5);
+    // 한 번에 한쪽만 움직이므로, 다른 쪽은 저장값을 유지한다.
+    updateDrag({ ...current, side, range: { ...saved, [SIDE_KEY[side]]: days } });
   };
 
   const onPointerUp = (e: PointerEvent<HTMLDivElement>) => {
@@ -120,7 +129,7 @@ export function TodoRangeCard() {
           { n: days },
         )}
         onPointerDown={onPointerDown(side)}
-        onPointerMove={onPointerMove(side)}
+        onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
         onKeyDown={onKeyDown(side)}
