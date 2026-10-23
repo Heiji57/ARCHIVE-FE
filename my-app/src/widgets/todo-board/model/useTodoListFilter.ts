@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { boardRangeWindow } from "@/entities/todo/lib/boardRange";
-import type { BoardRangeWindow } from "@/entities/todo/lib/boardRange";
+import type { BoardRangeDays, BoardRangeWindow } from "@/entities/todo/lib/boardRange";
 import type { TaskStatus, Todo } from "@/entities/todo/model/types";
 import { endOfWeek, fromDateKey, startOfWeek, toDateKey } from "@/shared/lib/date";
 import type { DateFilter, StatusFilter } from "./constants";
@@ -30,7 +30,7 @@ function compareByStatusThenDate(a: Todo, b: Todo): number {
  * flat, status-grouped list of rows (replaces the 3-column kanban grouping
  * from `useKanbanFilter`).
  *
- * `rangeDays` 는 "전체" 필터에서 오늘 기준 앞뒤로 나눠 표시할 기간(일)이다.
+ * `range` 는 "전체" 필터에서 오늘 기준 지난/앞으로 표시할 일수다.
  *
  * Also ticks once a minute so "오늘"/"이번 주" 기준이 자정을 넘길 때
  * 수동 새로고침 없이 갱신된다.
@@ -38,7 +38,8 @@ function compareByStatusThenDate(a: Todo, b: Todo): number {
  * 완료된 할 일은 시간이 지나도 숨기지 않는다 — 기간/상태 필터가 이미 범위를 좁히는
  * 수단이므로, 여기서 한 번 더 감추면 "완료" 필터로도 어제 끝낸 일을 볼 수 없었다.
  */
-export function useTodoListFilter(todos: Todo[], rangeDays: number) {
+export function useTodoListFilter(todos: Todo[], range: BoardRangeDays) {
+  const { pastDays, futureDays } = range;
   // 마지막으로 고른 기간 필터를 localStorage 에서 복원한다(페이지 재진입 시 유지).
   // 상태 필터는 세션 내에서만 유지한다(영속화하지 않음).
   const [filter, setFilterState] = useState<DateFilter>(readTodoBoardFilter);
@@ -71,8 +72,8 @@ export function useTodoListFilter(todos: Todo[], rangeDays: number) {
       const base = fromDateKey(todayK);
       return { from: toDateKey(startOfWeek(base)), to: toDateKey(endOfWeek(base)) };
     }
-    return boardRangeWindow(rangeDays, todayK);
-  }, [filter, todayK, rangeDays]);
+    return boardRangeWindow({ pastDays, futureDays }, todayK);
+  }, [filter, todayK, pastDays, futureDays]);
 
   const dateFiltered = useMemo(
     () =>

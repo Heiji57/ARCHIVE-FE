@@ -249,39 +249,129 @@
   color: var(--color-body-muted);
 }
 
-/* Todo range — drag slider */
-.todo-range-box {
+/* ── Todo range — 두 손잡이 눈금자 ──────────────────────────────────── */
+/* 오늘이 가운데, 양쪽 최대 1년(제곱근 스케일). 손잡이는 4px 막대, 잡는 영역만 넓힌다. */
+.todo-ruler-box {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
   width: 100%;
 }
-.todo-range-slider-row {
-  display: flex;
-  align-items: center;
-  gap: 14px;
+.todo-ruler {
+  position: relative;
+  height: 44px;
+  touch-action: none;
+  user-select: none;
 }
-.todo-range-slider {
-  flex: 1;
-  min-width: 0;
-  accent-color: var(--color-primary);
-  cursor: pointer;
+.todo-ruler-track {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 8px;
+  height: 28px;
+  border-radius: var(--r-sm);
+  background: var(--color-tile-3);
+  border: 1px solid var(--color-hairline);
+  overflow: hidden;
 }
-.todo-range-value {
-  flex-shrink: 0;
-  min-width: 52px;
-  text-align: right;
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--color-ink);
+.todo-ruler-tick {
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  width: 1px;
+  background: var(--color-hairline-strong);
+}
+.todo-ruler-tick--major {
+  top: 4px;
+  bottom: 4px;
+  background: var(--color-ink-muted-32);
+}
+.todo-ruler-fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: var(--color-chip-translucent);
+  box-shadow:
+    inset 1px 0 0 rgba(94, 106, 210, 0.55),
+    inset -1px 0 0 rgba(94, 106, 210, 0.55);
+}
+.todo-ruler-today {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  transform: translateX(-1px);
+  background: var(--color-ink);
+}
+.todo-ruler-handle {
+  position: absolute;
+  top: 6px;
+  width: 4px;
+  height: 32px;
+  margin-left: -2px;
+  border-radius: 2px;
+  background: var(--color-ink);
+  box-shadow: 0 0 0 2px var(--color-tile-1);
+  cursor: ew-resize;
+  transition:
+    width 120ms ease,
+    margin-left 120ms ease;
+}
+/* 보이는 막대는 4px, 잡는 영역은 좌우 12px 씩 넓혀 터치로도 잡히게 한다. */
+.todo-ruler-handle::before {
+  content: "";
+  position: absolute;
+  inset: -6px -12px;
+}
+.todo-ruler-handle:hover,
+.todo-ruler-handle[data-dragging],
+.todo-ruler-handle:focus-visible {
+  width: 6px;
+  margin-left: -3px;
+}
+.todo-ruler-handle:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
+}
+.todo-ruler-scale {
+  position: relative;
+  height: 16px;
+  font-size: 12px;
+  color: var(--color-ink-muted-48);
   font-variant-numeric: tabular-nums;
 }
-.todo-range-scale {
+.todo-ruler-scale span {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+.todo-ruler-scale span:first-child {
+  transform: none;
+}
+.todo-ruler-scale span:last-child {
+  transform: translateX(-100%);
+}
+.todo-ruler-legend {
   display: flex;
   justify-content: space-between;
+  gap: 12px;
   font-size: 12px;
   color: var(--color-body-muted);
   font-variant-numeric: tabular-nums;
+}
+.todo-ruler-legend b {
+  color: var(--color-ink-muted-80);
+  font-weight: 500;
+}
+.todo-ruler-days {
+  color: var(--color-ink-muted-48);
+}
+@media (prefers-reduced-motion: reduce) {
+  .todo-ruler-handle {
+    transition: none;
+  }
 }
 
 /* GitHub card — info table */
@@ -314,74 +404,6 @@
 /* Settings action buttons (Connect / Disconnect) */
 .settings-action-btn {
   padding: 10px 18px;
-}
-
-/* ── Google Calendar 재연결 필요 배너 ──────────────────────────────────
-   토큰 만료로 재인증이 필요할 때 노출. 경고색(amber)은 아이콘 칩과
-   hairline 에만 절제해 쓰고, 본문은 시스템 잉크/뮤티드 색을 따른다. */
-.calendar-reauth {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  margin: 0 0 16px;
-  padding: 14px 16px;
-  border-radius: var(--r-lg);
-  background: linear-gradient(
-    180deg,
-    rgba(217, 162, 58, 0.08),
-    rgba(217, 162, 58, 0.03)
-  );
-  border: 1px solid rgba(217, 162, 58, 0.22);
-}
-.calendar-reauth__icon {
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  border-radius: var(--r-md);
-  background: rgba(217, 162, 58, 0.15);
-  color: var(--color-warn);
-}
-.calendar-reauth__body {
-  flex: 1;
-  min-width: 0;
-  padding-top: 1px;
-}
-.calendar-reauth__title {
-  margin: 0 0 3px;
-  font-size: 16px;
-  font-weight: 600;
-  letter-spacing: -0.1px;
-  color: var(--color-ink);
-}
-.calendar-reauth__msg {
-  margin: 0 0 12px;
-  font-size: 12px;
-  line-height: 1.5;
-  color: var(--color-body-muted);
-}
-.calendar-reauth__btn {
-  gap: 6px;
-  padding: 7px 13px;
-  border-radius: var(--r-sm);
-  font-size: 12px;
-  color: var(--color-warn);
-  background: rgba(217, 162, 58, 0.14);
-  box-shadow: inset 0 0 0 1px rgba(217, 162, 58, 0.3);
-}
-.calendar-reauth__btn:hover:not(:disabled) {
-  background: rgba(217, 162, 58, 0.22);
-}
-.calendar-reauth__btn:disabled {
-  opacity: 0.55;
-  cursor: default;
-}
-
-/* DisconnectBanner spacing override inside Settings cards */
-.settings-disconnect-banner {
-  margin-bottom: 16px;
 }
 
 /* ── GitHub 저장소 연결(서버 모델) ─────────────────────────────────────── */
@@ -463,13 +485,6 @@
   padding: 8px 2px;
   margin: 0;
 }
-.github-connect-hint {
-  font-size: 16px;
-  color: var(--color-body-muted);
-  line-height: 1.5;
-  margin: 0 0 14px;
-}
-
 /* ── Template Card ────────────────────────────────────────────────────── */
 
 /* span full grid width */
@@ -674,4 +689,319 @@
   gap: 4px;
   font-size: 12px;
   color: var(--color-body-muted);
+}
+
+/* ── 연동 카드 공통 (GitHub / Google Calendar) ─────────────────────────── */
+/* 서비스 마크 타일: 둥근 아바타 대신 각진 타일에 서비스 고유 모양을 단색으로. */
+.service-mark {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--color-tile-3);
+  border: 1px solid var(--color-hairline-strong);
+  color: var(--color-ink);
+}
+.service-mark--calendar {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.service-mark-cal-top {
+  height: 9px;
+  flex-shrink: 0;
+  background: var(--color-ink-muted-32);
+  border-bottom: 1px solid var(--color-hairline-strong);
+}
+.service-mark-cal-day {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.pill-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+.integration-meta {
+  margin: 0 0 4px;
+  font-size: 12px;
+  color: var(--color-body-muted);
+  font-variant-numeric: tabular-nums;
+}
+.integration-lead {
+  margin: 0 0 16px;
+  font-size: 16px;
+  line-height: 1.55;
+  color: var(--color-ink-muted-80);
+}
+.integration-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--color-divider-soft);
+}
+
+/* 테두리 없는 보조 버튼 (연결 해제, 취소) */
+.btn.btn-quiet {
+  background: transparent;
+  color: var(--color-body-muted);
+}
+.btn.btn-quiet:hover:not(:disabled) {
+  background: var(--color-tile-3);
+  color: var(--color-ink-muted-80);
+}
+
+/* on/off 설정 행 + 작은 스위치 */
+.toggle-group-label {
+  margin: 18px 0 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-body-muted);
+}
+.toggle-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 14px 0;
+}
+.toggle-row + .toggle-row {
+  border-top: 1px solid var(--color-divider-soft);
+}
+.toggle-row-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.toggle-row--disabled .setting-row-label {
+  color: var(--color-body-muted);
+}
+.setting-switch {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  margin-top: 2px;
+  flex-shrink: 0;
+  padding: 0;
+  border-radius: var(--r-pill);
+  background: var(--color-tile-4);
+  border: 1px solid var(--color-hairline-strong);
+  cursor: pointer;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease;
+}
+.setting-switch::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--color-body-muted);
+  transition:
+    transform 180ms cubic-bezier(0.32, 0.72, 0, 1),
+    background 160ms ease;
+}
+.setting-switch[aria-checked="true"] {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+.setting-switch[aria-checked="true"]::after {
+  transform: translateX(16px);
+  background: var(--color-on-primary);
+}
+.setting-switch:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.setting-switch:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+.flow-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 4px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--color-ink-muted-48);
+}
+.flow-tag-arrow {
+  color: var(--color-body-muted);
+}
+.toggle-row-warn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--color-warn);
+}
+.toggle-row-confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: var(--r-md);
+  background: var(--color-tile-2);
+  border: 1px solid var(--color-hairline-strong);
+  font-size: 12px;
+  color: var(--color-ink-muted-80);
+}
+.toggle-row-confirm-actions {
+  display: inline-flex;
+  gap: 6px;
+}
+.toggle-row-confirm .btn {
+  padding: 5px 10px;
+  font-size: 12px;
+}
+
+/* 재연결 필요: 중립 패널 + 노란 점 하나 */
+.reconnect-panel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+  margin: 0 0 6px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--color-tile-2);
+  border: 1px solid var(--color-hairline-strong);
+}
+.reconnect-panel-text {
+  flex: 1;
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.reconnect-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-ink);
+}
+.reconnect-panel-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color-warn);
+  flex-shrink: 0;
+}
+.reconnect-panel-msg {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--color-body-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 미연결: 연결 버튼 (밝은 단색 + 서비스 마크 + ↗) */
+.connect-cta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+.btn-connect {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 12px 0 11px;
+  border: 0;
+  border-radius: var(--r-md);
+  background: var(--color-ink);
+  color: var(--color-canvas);
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+.btn-connect:hover:not(:disabled) {
+  background: var(--color-inverse-canvas);
+}
+.btn-connect:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.btn-connect:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+.btn-connect-ext {
+  color: var(--color-ink-muted-48);
+  margin-left: 2px;
+}
+.btn-connect-cal {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  border-radius: 3px;
+  border: 1.5px solid currentColor;
+  border-top-width: 4px;
+}
+.connect-cta-note {
+  font-size: 12px;
+  color: var(--color-ink-muted-48);
+}
+
+/* 미연결 GitHub: 연결하면 채워질 저장소 목록 자리 */
+.github-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.github-preview-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: var(--r-md);
+  border: 1px dashed var(--color-hairline-strong);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--color-ink-muted-48);
+}
+.github-preview-caption {
+  margin: 0 0 16px;
+  font-size: 12px;
+  color: var(--color-ink-muted-48);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .setting-switch,
+  .setting-switch::after,
+  .btn-connect {
+    transition: none;
+  }
 }

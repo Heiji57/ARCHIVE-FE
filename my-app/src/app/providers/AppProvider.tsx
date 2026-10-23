@@ -24,7 +24,7 @@ import {
 } from "@/app/lib/summaryFactory";
 import { getInitialAppState } from "@/app/model/initialState";
 import { appReducer } from "@/app/model/reducer";
-import type { AppSettings, Locale } from "@/app/model/settings";
+import type { AppSettings, Locale, TodoBoardRange } from "@/app/model/settings";
 import type {
   AppFocusTarget,
   ArchiveAppContextValue,
@@ -756,7 +756,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   }, []);
 
-  // 할 일 보드 "전체" 보기 로드 — 오늘 기준 앞뒤로 rangeDays 를 나눈 구간을 조회한다.
+  // 할 일 보드 "전체" 보기 로드 — 오늘 기준 지난 pastDays ~ 앞으로 futureDays 구간을 조회한다.
   // 서버가 한 번에 최대 62일까지만 허용하므로(초과 시 422) 62일 이하 청크로 나눠
   // 병렬 조회한 뒤 id 기준으로 병합해 한 번에 hydrate 한다.
   //
@@ -767,10 +767,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // 교체하므로(삭제/이동된 항목이 남지 않게 하는 의도) 그 날짜만 따로 조회하면 창이
   // 날아간다 — 같은 응답 집합에 실어 한 번에 hydrate 해야 한다.
   const loadTodosForRange = useCallback(
-    async (rangeDays: number, extraDateKey?: string): Promise<Todo[]> => {
+    async (range: TodoBoardRange, extraDateKey?: string): Promise<Todo[]> => {
     // 데모(게스트) 모드는 시드 데이터만 사용 → 서버 호출 금지.
     if (!USE_API || isDemoMode()) return [];
-    const { from, to } = boardRangeWindow(rangeDays, todayKey());
+    const { from, to } = boardRangeWindow(range, todayKey());
     const start = fromDateKey(from);
     const end = fromDateKey(to);
 
@@ -1661,10 +1661,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       dispatch({ type: "settings/retention", payload: { days } });
       if (apiActive) void syncSettings({ notificationRetentionDays: days });
     },
-    setTodoBoardRange: (days) => {
+    setTodoBoardRange: (range) => {
       // FE 전용 선호도 — 서버(/settings)로 동기화하지 않고 localStorage 에만 저장한다.
-      dispatch({ type: "settings/todoBoardRange", payload: { days } });
-      writeTodoBoardRange(days);
+      dispatch({ type: "settings/todoBoardRange", payload: { range } });
+      writeTodoBoardRange(range);
     },
     setSpellCheck: (value) => {
       // FE 전용 선호도 — 서버(/settings)로 동기화하지 않고 localStorage 에만 저장한다.

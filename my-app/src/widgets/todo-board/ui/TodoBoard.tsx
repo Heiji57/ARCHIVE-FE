@@ -28,9 +28,9 @@ export function TodoBoard() {
     clearTodoIdReplacement,
   } = useArchiveApp();
   const { t } = useTranslation();
-  const rangeDays = state.settings.todoBoardRangeDays;
+  const range = state.settings.todoBoardRange;
   const { filter, setFilter, statusFilter, setStatusFilter, todayK, counts, entries } =
-    useTodoListFilter(state.todos, rangeDays);
+    useTodoListFilter(state.todos, range);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const allTags = useMemo(() => collectAllTags(state.todos), [state.todos]);
   const recentTags = useMemo(() => collectRecentTags(state.todos), [state.todos]);
@@ -40,16 +40,16 @@ export function TodoBoard() {
   // 아래 effect 의 deps 가 바뀌지 않고, 불필요한 재조회도 일어나지 않는다.
   const extraDateKey =
     filter.kind === "specific" &&
-    !isWithinWindow(filter.dateKey, boardRangeWindow(rangeDays, todayK))
+    !isWithinWindow(filter.dateKey, boardRangeWindow(range, todayK))
       ? filter.dateKey
       : null;
 
   // 보드 진입 시 + 기간 설정 변경 시 "전체" 보기 범위의 할 일을 로드한다.
   // (loadTodosForRange 는 useCallback([]) 으로 안정화되어 있어 deps 에서 제외한다.)
   useEffect(() => {
-    void loadTodosForRange(rangeDays, extraDateKey ?? undefined);
+    void loadTodosForRange(range, extraDateKey ?? undefined);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rangeDays, extraDateKey]);
+  }, [range.pastDays, range.futureDays, extraDateKey]);
 
   const selectedTodo = selectedId
     ? findTodoById(state.todos, selectedId)
@@ -74,7 +74,7 @@ export function TodoBoard() {
   ) => {
     const serverTodo = await mutate();
     if (!serverTodo) return;
-    const todos = await loadTodosForRange(rangeDays, extraDateKey ?? undefined);
+    const todos = await loadTodosForRange(range, extraDateKey ?? undefined);
     const match = todos.find(
       (t) => t.seriesId === serverTodo.id && t.dateKey === originalDateKey,
     );
@@ -98,7 +98,7 @@ export function TodoBoard() {
         // 반복 생성 응답은 base row 원본 형태라 목록 조회의 가상 인스턴스 모양과 다르다 —
         // 재조회해야 반복 배지·이후 회차가 즉시 보이고, 선택도 새 가상 인스턴스로 옮겨간다.
         if (recurrenceRule) {
-          void loadTodosForRange(rangeDays, extraDateKey ?? undefined).then((todos) => {
+          void loadTodosForRange(range, extraDateKey ?? undefined).then((todos) => {
             const match = todos.find((t) => t.seriesId === id && t.dateKey === dateKey);
             if (match) setSelectedId(match.id);
           });

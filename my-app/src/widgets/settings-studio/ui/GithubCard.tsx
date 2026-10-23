@@ -2,8 +2,6 @@ import { useState } from "react";
 import {
   Eye,
   EyeOff,
-  FolderGit2,
-  Info,
   Link2,
   Link2Off,
   Lock,
@@ -18,9 +16,11 @@ import {
   isApiError,
   oauthErrorMessageKey,
 } from "@/shared/api";
-import { DisconnectBanner } from "@/shared/ui/disconnect-banner/DisconnectBanner";
 import { Pill } from "@/shared/ui/pill/Pill";
 import { useTranslation } from "@/shared/lib/i18n";
+import { ConnectButton } from "./ConnectButton";
+import { ReconnectPanel } from "./ReconnectPanel";
+import { ServiceMark } from "./ServiceMark";
 import { SettingsCardHeader } from "./SettingsCardHeader";
 
 export function GithubCard() {
@@ -132,18 +132,20 @@ export function GithubCard() {
 
   const trailing =
     status === "connected" ? (
-      <Pill tone="green">{t("settings.github.connected")}</Pill>
+      <Pill tone="green">
+        <span className="pill-dot" aria-hidden="true" />
+        {t("settings.github.connected")}
+      </Pill>
     ) : status === "unknown" ? (
       <Pill tone="ghost">{t("settings.github.checking")}</Pill>
     ) : (
-      <Pill tone="ghost">{t("settings.github.notConnected")}</Pill>
+      <Pill tone="outline">{t("settings.github.notConnected")}</Pill>
     );
 
   return (
     <section className="settings-card">
       <SettingsCardHeader
-        icon={<FolderGit2 size={20} />}
-        iconVariant="ink"
+        mark={<ServiceMark service="github" />}
         eyebrow={t("settings.section.github")}
         title="GitHub"
         trailing={trailing}
@@ -153,67 +155,35 @@ export function GithubCard() {
         <>
           {/* 연결된 계정 표시 */}
           {login ? (
-            <p
-              style={{
-                margin: "0 0 12px",
-                fontSize: 12,
-                color: "var(--color-body-muted)",
-              }}
-            >
+            <p className="integration-meta">
               {t("settings.github.connectedAsLogin", { login })}
             </p>
           ) : null}
 
+          {/* 이메일 인증 안내 (hasVerifiedEmails = false 인 구 scope 사용자) */}
           {/* 재연결 안내: 이메일 인증 없는 구 scope 사용자 또는 권한 부족(GITHUB_PERMISSION_DENIED) */}
           {!hasVerifiedEmails || permissionDenied ? (
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                margin: "0 0 14px",
-              }}
-            >
-              <Info
-                size={14}
-                style={{ color: "var(--color-warn)", flexShrink: 0 }}
-              />
-              <p
-                style={{
-                  margin: 0,
-                  fontSize: 12,
-                  color: "var(--color-body-muted)",
-                  lineHeight: 1.5,
-                }}
-              >
-                <span style={{ color: "var(--color-ink)", fontWeight: 500 }}>
-                  {permissionDenied
-                    ? t("integration.error.githubPermissionDenied")
-                    : t("settings.github.reconnectBanner")}
-                </span>{" "}
-                <button
-                  type="button"
-                  onClick={() => void handleConnectAccount()}
-                  disabled={connecting}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    padding: 0,
-                    font: "inherit",
-                    color: "var(--color-primary)",
-                    textDecoration: "underline",
-                    textUnderlineOffset: 2,
-                    cursor: connecting ? "default" : "pointer",
-                  }}
-                >
-                  {connecting
-                    ? t("settings.github.connecting")
-                    : permissionDenied
-                      ? t("settings.github.reconnectAccount")
-                      : t("settings.github.reconnect")}
-                </button>
-              </p>
-            </div>
+            <ReconnectPanel
+              title={
+                permissionDenied
+                  ? t("settings.github.permissionDeniedTitle")
+                  : t("settings.github.reconnectBanner")
+              }
+              message={
+                permissionDenied
+                  ? t("settings.github.permissionDeniedMsg")
+                  : t("settings.github.reconnectBannerMsg")
+              }
+              actionLabel={
+                connecting
+                  ? t("settings.github.connecting")
+                  : permissionDenied
+                    ? t("settings.github.reconnectAccount")
+                    : t("settings.github.reconnect")
+              }
+              onAction={() => void handleConnectAccount()}
+              disabled={connecting}
+            />
           ) : null}
 
           {/* 연결된 저장소 목록 */}
@@ -412,24 +382,28 @@ export function GithubCard() {
         <p className="github-empty">{t("settings.github.checking")}</p>
       ) : (
         <>
-          <DisconnectBanner
-            message={t("retro.github.notConnected")}
-            className="settings-disconnect-banner"
-          />
-          <p className="github-connect-hint">
-            {t("settings.github.connectAccountHint")}
-          </p>
-          <button
-            type="button"
-            className="btn btn-primary settings-action-btn"
+          <p className="integration-lead">{t("settings.github.connectAccountHint")}</p>
+          {/* 연결하면 채워질 저장소 목록 자리를 미리 보여준다. */}
+          <div className="github-preview" aria-hidden="true">
+            <div className="github-preview-row">
+              <span>{t("settings.github.previewRepoA")}</span>
+              <span>main</span>
+            </div>
+            <div className="github-preview-row">
+              <span>{t("settings.github.previewRepoB")}</span>
+              <span>develop</span>
+            </div>
+          </div>
+          <p className="github-preview-caption">{t("settings.github.previewCaption")}</p>
+          <ConnectButton
+            service="github"
+            label={
+              connecting ? t("settings.github.connecting") : t("settings.github.connectButton")
+            }
+            note={t("settings.github.connectNote")}
             onClick={() => void handleConnectAccount()}
             disabled={connecting}
-          >
-            <Link2 size={14} />{" "}
-            {connecting
-              ? t("settings.github.connecting")
-              : t("settings.github.connectAccount")}
-          </button>
+          />
         </>
       )}
     </section>

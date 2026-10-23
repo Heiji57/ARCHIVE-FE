@@ -177,7 +177,7 @@ export const seedState: PersistedAppState = {
   notifications: [],
   settings: {
     ...DEFAULT_SETTINGS,
-    todoBoardRangeDays: readTodoBoardRange(DEFAULT_SETTINGS.todoBoardRangeDays),
+    todoBoardRange: readTodoBoardRange(DEFAULT_SETTINGS.todoBoardRange),
     spellCheck: readSpellCheckPref(DEFAULT_SETTINGS.spellCheck),
   },
   pendingSummary: null,

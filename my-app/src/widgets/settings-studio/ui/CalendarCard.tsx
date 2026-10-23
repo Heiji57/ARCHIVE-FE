@@ -1,13 +1,15 @@
 import { useState } from "react";
-import { CalendarDays, Link2, Link2Off, RefreshCw, TriangleAlert } from "lucide-react";
+import { Link2Off, RefreshCw, TriangleAlert } from "lucide-react";
 import { useArchiveApp } from "@/app/providers/useArchiveApp";
 import { endOfMonth, startOfMonth, toDateKey } from "@/shared/lib/date";
-import { DisconnectBanner } from "@/shared/ui/disconnect-banner/DisconnectBanner";
 import { Pill } from "@/shared/ui/pill/Pill";
-import { ConfirmModal } from "@/shared/ui";
 import { useTranslation } from "@/shared/lib/i18n";
 import { integrationErrorMessageKey } from "@/shared/api";
+import { ConnectButton } from "./ConnectButton";
+import { ReconnectPanel } from "./ReconnectPanel";
+import { ServiceMark } from "./ServiceMark";
 import { SettingsCardHeader } from "./SettingsCardHeader";
+import { FlowTag, ToggleRow } from "./ToggleRow";
 
 export function CalendarCard() {
   const { state, connectCalendar, disconnectCalendar, syncCalendar, pushNotification, setCalendarAutoPushTodo, setCalendarAutoDeleteTodo } =
@@ -73,26 +75,106 @@ export function CalendarCard() {
     }
   };
 
+  const formatShort = (iso: string) =>
+    new Date(iso).toLocaleString(locale, {
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    });
   const lastSyncedLabel = lastSyncedAt
-    ? new Date(lastSyncedAt).toLocaleString(locale)
+    ? formatShort(lastSyncedAt)
     : t("settings.calendar.lastSyncedNever");
 
   const trailing =
     status === "connected" ? (
-      <Pill tone="green">{t("settings.calendar.connected")}</Pill>
+      <Pill tone="green">
+        <span className="pill-dot" aria-hidden="true" />
+        {t("settings.calendar.connected")}
+      </Pill>
     ) : status === "needs-reauth" ? (
-      <Pill tone="warn">{t("settings.calendar.needsReauth")}</Pill>
+      <Pill tone="warn">
+        <span className="pill-dot" aria-hidden="true" />
+        {t("settings.calendar.needsReauth")}
+      </Pill>
     ) : status === "unknown" ? (
       <Pill tone="ghost">{t("settings.calendar.checking")}</Pill>
     ) : (
-      <Pill tone="ghost">{t("settings.calendar.notConnected")}</Pill>
+      <Pill tone="outline">{t("settings.calendar.notConnected")}</Pill>
     );
+
+  const isLinked = status === "connected" || status === "needs-reauth";
+
+  // 연결 전에는 같은 옵션을 꺼진 상태로 미리 보여준다(연결하면 쓸 수 있는 것).
+  const options = (
+    <>
+      <p className="toggle-group-label">{t("settings.calendar.syncGroup")}</p>
+      <ToggleRow
+        id="calendar-auto-push"
+        label={t("settings.calendar.autoPushTodo")}
+        description={isLinked ? t("settings.calendar.autoPushTodoDesc") : undefined}
+        checked={isLinked && calendarAutoPushTodo}
+        onChange={setCalendarAutoPushTodo}
+        disabled={!isLinked}
+      >
+        <FlowTag from="ARCHIVE" to="Google" label={t("settings.calendar.flowToGoogle")} />
+      </ToggleRow>
+      <ToggleRow
+        id="calendar-auto-delete"
+        label={t("settings.calendar.autoDeleteTodo")}
+        description={isLinked ? t("settings.calendar.autoDeleteTodoDesc") : undefined}
+        checked={isLinked && calendarAutoDeleteTodo}
+        onChange={(next) => {
+          if (next) {
+            setAutoDeleteConfirmOpen(true);
+          } else {
+            setAutoDeleteConfirmOpen(false);
+            setCalendarAutoDeleteTodo(false);
+          }
+        }}
+        disabled={!isLinked}
+      >
+        <FlowTag from="Google" to="ARCHIVE" label={t("settings.calendar.flowFromGoogle")} />
+        {isLinked && calendarAutoDeleteTodo ? (
+          <p className="toggle-row-warn">
+            <TriangleAlert size={12} aria-hidden="true" />
+            {t("settings.calendar.autoDeleteTodoOn")}
+          </p>
+        ) : null}
+        {isLinked && autoDeleteConfirmOpen && !calendarAutoDeleteTodo ? (
+          <div className="toggle-row-confirm" role="group" aria-labelledby="calendar-auto-delete-confirm">
+            <span id="calendar-auto-delete-confirm">
+              {t("settings.calendar.autoDeleteTodoConfirmMsg")}
+            </span>
+            <span className="toggle-row-confirm-actions">
+              <button
+                type="button"
+                className="btn btn-utility btn-quiet"
+                onClick={() => setAutoDeleteConfirmOpen(false)}
+              >
+                {t("settings.calendar.autoDeleteTodoConfirmCancel")}
+              </button>
+              <button
+                type="button"
+                className="btn btn-utility"
+                onClick={() => {
+                  setCalendarAutoDeleteTodo(true);
+                  setAutoDeleteConfirmOpen(false);
+                }}
+              >
+                {t("settings.calendar.autoDeleteTodoConfirmOk")}
+              </button>
+            </span>
+          </div>
+        ) : null}
+      </ToggleRow>
+    </>
+  );
 
   return (
     <section className="settings-card">
       <SettingsCardHeader
-        icon={<CalendarDays size={20} />}
-        iconVariant="ink"
+        mark={<ServiceMark service="calendar" />}
         eyebrow={t("settings.section.integrations")}
         title="Google Calendar"
         trailing={trailing}
@@ -100,140 +182,56 @@ export function CalendarCard() {
 
       {status === "unknown" ? (
         <p className="github-empty">{t("settings.calendar.checking")}</p>
-      ) : status === "connected" || status === "needs-reauth" ? (
+      ) : isLinked ? (
         <>
           {/* 연결 상태는 헤더 Pill 로 표시. 내부 Google 계정 식별자는 노출하지 않는다. */}
-          <p
-            style={{
-              margin: "0 0 14px",
-              fontSize: 12,
-              color: "var(--color-body-muted)",
-            }}
-          >
-            {t("settings.calendar.lastSynced")} · {lastSyncedLabel}
-          </p>
-
-          {/* 재인증 필요 배너 */}
           {status === "needs-reauth" ? (
-            <div className="calendar-reauth" role="status">
-              <span className="calendar-reauth__icon" aria-hidden="true">
-                <TriangleAlert size={17} strokeWidth={2} />
-              </span>
-              <div className="calendar-reauth__body">
-                <p className="calendar-reauth__title">
-                  {t("settings.calendar.reauthBanner")}
-                </p>
-                <p className="calendar-reauth__msg">
-                  {t("settings.calendar.reauthBannerMsg")}
-                </p>
-                <button
-                  type="button"
-                  className="btn calendar-reauth__btn"
-                  onClick={() => void handleConnect()}
-                  disabled={connecting}
-                >
-                  <Link2 size={13} />
-                  {connecting
-                    ? t("settings.calendar.connecting")
-                    : t("settings.calendar.reconnect")}
-                </button>
-              </div>
-            </div>
-          ) : null}
-
-          {/* 신규 할 일 자동 push 설정 */}
-          <label
-            style={{
-              display: "flex",
-              alignItems: "flex-start",
-              gap: 12,
-              padding: "12px 0",
-              cursor: "pointer",
-            }}
-          >
-            <input
-              type="checkbox"
-              checked={calendarAutoPushTodo}
-              onChange={(e) => setCalendarAutoPushTodo(e.target.checked)}
-              style={{ marginTop: 2, accentColor: "var(--color-primary)" }}
+            <ReconnectPanel
+              title={t("settings.calendar.reauthBanner")}
+              message={
+                lastSyncedAt
+                  ? t("settings.calendar.reauthBannerMsg", { date: formatShort(lastSyncedAt) })
+                  : t("settings.calendar.reauthBannerMsgNever")
+              }
+              actionLabel={
+                connecting ? t("settings.calendar.connecting") : t("settings.calendar.reconnect")
+              }
+              onAction={() => void handleConnect()}
+              disabled={connecting}
             />
-            <div>
-              <p style={{ margin: 0, fontSize: 16, fontWeight: 500 }}>
-                {t("settings.calendar.autoPushTodo")}
-              </p>
-              <p style={{ margin: "2px 0 0", fontSize: 12, color: "var(--color-body-muted)", lineHeight: 1.5 }}>
-                {t("settings.calendar.autoPushTodoDesc")}
-              </p>
-            </div>
-          </label>
+          ) : (
+            <p className="integration-meta">
+              {t("settings.calendar.lastSynced")} · {lastSyncedLabel}
+            </p>
+          )}
 
-          {/* Google Calendar 삭제 시 할 일 함께 삭제 설정 */}
-          <label
-            style={{
-              display: "flex",
-              alignItems: "flex-start",
-              gap: 12,
-              padding: "12px 0",
-              cursor: "pointer",
-            }}
-          >
-            <input
-              type="checkbox"
-              checked={calendarAutoDeleteTodo}
-              onChange={(e) => {
-                if (e.target.checked) {
-                  setAutoDeleteConfirmOpen(true);
-                } else {
-                  setCalendarAutoDeleteTodo(false);
-                }
-              }}
-              style={{ marginTop: 2, accentColor: "var(--color-primary)" }}
-            />
-            <div>
-              <p style={{ margin: 0, fontSize: 16, fontWeight: 500 }}>
-                {t("settings.calendar.autoDeleteTodo")}
-              </p>
-              <p style={{ margin: "2px 0 0", fontSize: 12, color: "var(--color-body-muted)", lineHeight: 1.5 }}>
-                {t("settings.calendar.autoDeleteTodoDesc")}
-              </p>
-            </div>
-          </label>
+          {options}
 
-          <ConfirmModal
-            open={autoDeleteConfirmOpen}
-            title={t("settings.calendar.autoDeleteTodoConfirmTitle")}
-            message={t("settings.calendar.autoDeleteTodoConfirmMsg")}
-            confirmLabel={t("settings.calendar.autoDeleteTodoConfirmOk")}
-            cancelLabel={t("settings.calendar.autoDeleteTodoConfirmCancel")}
-            onConfirm={() => {
-              setCalendarAutoDeleteTodo(true);
-              setAutoDeleteConfirmOpen(false);
-            }}
-            onCancel={() => setAutoDeleteConfirmOpen(false)}
-            onDismiss={() => setAutoDeleteConfirmOpen(false)}
-          />
-
-          {/* 액션 버튼 */}
-          <div className="github-actions">
+          <div className="integration-foot">
+            {/* 재인증이 필요하면 동기화는 실패하므로 숨긴다. */}
+            {status === "connected" ? (
+              <button
+                type="button"
+                className="btn btn-utility settings-action-btn"
+                onClick={() => void handleSync()}
+                disabled={busy}
+              >
+                <RefreshCw
+                  size={13}
+                  style={
+                    busy
+                      ? { animation: "summary-spin 900ms linear infinite" }
+                      : undefined
+                  }
+                />{" "}
+                {busy ? t("settings.calendar.syncing") : t("settings.calendar.sync")}
+              </button>
+            ) : (
+              <span />
+            )}
             <button
               type="button"
-              className="btn btn-utility settings-action-btn"
-              onClick={() => void handleSync()}
-              disabled={busy}
-            >
-              <RefreshCw
-                size={13}
-                style={
-                  busy
-                    ? { animation: "summary-spin 900ms linear infinite" }
-                    : undefined
-                }
-              />{" "}
-              {busy ? t("settings.calendar.syncing") : t("settings.calendar.sync")}
-            </button>
-            <button
-              type="button"
-              className="btn btn-utility settings-action-btn"
+              className="btn btn-utility btn-quiet settings-action-btn"
               onClick={() => void handleDisconnect()}
               disabled={busy}
             >
@@ -243,24 +241,19 @@ export function CalendarCard() {
         </>
       ) : (
         <>
-          <DisconnectBanner
-            message={t("settings.calendar.notConnected")}
-            className="settings-disconnect-banner"
-          />
-          <p className="github-connect-hint">
-            {t("settings.calendar.connectHint")}
-          </p>
-          <button
-            type="button"
-            className="btn btn-primary settings-action-btn"
-            onClick={() => void handleConnect()}
-            disabled={connecting}
-          >
-            <Link2 size={14} />{" "}
-            {connecting
-              ? t("settings.calendar.connecting")
-              : t("settings.calendar.connect")}
-          </button>
+          <p className="integration-lead">{t("settings.calendar.connectHint")}</p>
+          {options}
+          <div className="integration-foot">
+            <ConnectButton
+              service="calendar"
+              label={
+                connecting ? t("settings.calendar.connecting") : t("settings.calendar.connect")
+              }
+              note={t("settings.calendar.connectNote")}
+              onClick={() => void handleConnect()}
+              disabled={connecting}
+            />
+          </div>
         </>
       )}
     </section>

@@ -20,7 +20,7 @@ import type { Session } from "@/entities/session/model/types";
 import type { RetroTemplate } from "@/entities/template";
 import type { RecurrenceRule, RecurrenceScope, TaskStatus, Todo } from "@/entities/todo/model/types";
 import type { OAuthProvider, User } from "@/entities/user/model/types";
-import type { AppSettings, Locale } from "@/app/model/settings";
+import type { AppSettings, Locale, TodoBoardRange } from "@/app/model/settings";
 
 export type AppRoute = "dashboard" | "calendar" | "todos" | "retrospectives" | "settings";
 
@@ -264,11 +264,11 @@ export interface ArchiveAppContextValue {
    */
   loadTodosForView: (from: string, to: string) => Promise<Todo[]>;
   /**
-   * 할 일 보드 "전체" 보기 로드 — 오늘 기준 앞뒤로 rangeDays 를 나눈 구간의
+   * 할 일 보드 "전체" 보기 로드 — 오늘 기준 지난 pastDays ~ 앞으로 futureDays 구간의
    * 할 일을 (필요 시 62일 청크로 나눠) 조회해 state.todos 를 교체한다. 반환값은 위와 동일.
    */
   loadTodosForRange: (
-    rangeDays: number,
+    range: TodoBoardRange,
     /** 창 밖의 특정 날짜를 함께 조회한다(날짜 선택 필터가 창을 벗어난 경우). */
     extraDateKey?: string,
   ) => Promise<Todo[]>;
@@ -371,8 +371,8 @@ export interface ArchiveAppContextValue {
   setCalendarAutoPushTodo: (value: boolean) => void;
   setCalendarAutoDeleteTodo: (value: boolean) => void;
   setNotificationRetention: (days: number) => void;
-  /** 할 일 보드 "전체" 보기 기간(일). FE 전용 — localStorage 에만 저장. */
-  setTodoBoardRange: (days: number) => void;
+  /** 할 일 보드 "전체" 보기 범위. FE 전용 — localStorage 에만 저장. */
+  setTodoBoardRange: (range: TodoBoardRange) => void;
   /** 리치 에디터 맞춤법 검사 표시 여부. FE 전용 — localStorage 에만 저장. */
   setSpellCheck: (value: boolean) => void;
   setAccountType: (accountType: import("@/app/model/settings").AccountType) => void;
