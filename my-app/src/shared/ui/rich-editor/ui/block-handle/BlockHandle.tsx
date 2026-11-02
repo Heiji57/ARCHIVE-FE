@@ -2,6 +2,7 @@ import { GripVertical, Plus } from "lucide-react";
 import { useRef } from "react";
 import type { Editor } from "@tiptap/react";
 import { NodeSelection } from "@tiptap/pm/state";
+import { useTranslation } from "@/shared/lib/i18n";
 import { BlockMenu } from "./BlockMenu";
 import { useBlockHandle } from "./useBlockHandle";
 
@@ -13,6 +14,7 @@ const HANDLE_SIZE = 22;
  *  ⋮⋮  드래그: 블록 위치 이동 / 클릭: 블록 선택 + 메뉴
  */
 export function BlockHandle({ editor }: { editor: Editor }) {
+  const { t } = useTranslation();
   const {
     hover,
     menuOpen,
@@ -83,7 +85,7 @@ export function BlockHandle({ editor }: { editor: Editor }) {
         onMouseEnter={cancelHide}
         onMouseLeave={() => scheduleHide()}
         onClick={insertAfter}
-        title="아래에 블록 추가"
+        title={t("editor.block.addBelow")}
       >
         <Plus size={14} />
       </button>
@@ -104,7 +106,7 @@ export function BlockHandle({ editor }: { editor: Editor }) {
         onClick={handleClick}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
-        title="드래그: 블록 이동  /  클릭: 메뉴"
+        title={t("editor.block.handle")}
       >
         <GripVertical size={14} />
       </button>

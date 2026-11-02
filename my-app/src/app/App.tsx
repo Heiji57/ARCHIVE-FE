@@ -315,26 +315,27 @@ function PageRenderer({
 }
 
 function DemoBanner() {
+  const { t } = useTranslation();
   const [hidden, setHidden] = useState(false);
   if (hidden) return null;
   return (
     <div className="lp-demo-banner">
       <span className="lp-demo-banner-label">
         <span className="lp-demo-banner-dot" />
-        데모 모드 — 변경사항은 저장되지 않습니다
+        {t("demo.banner.label")}
       </span>
       <a
         href="/signup"
         className="btn btn-primary"
         style={{ fontSize: 12, padding: "6px 14px" }}
       >
-        무료로 시작 →
+        {t("demo.banner.cta")}
       </a>
       <button
         type="button"
         className="btn-icon"
         onClick={() => setHidden(true)}
-        aria-label="닫기"
+        aria-label={t("common.close")}
         style={{ fontSize: 16 }}
       >
         ✕

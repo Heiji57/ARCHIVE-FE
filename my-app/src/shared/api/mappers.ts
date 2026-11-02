@@ -13,10 +13,11 @@ import type {
 import type { RetroTemplate } from "@/entities/template/model/types";
 import type { RecurrenceRule, Todo, TodoStats, Weekday } from "@/entities/todo/model/types";
 import type { OAuthProvider, User } from "@/entities/user/model/types";
-import { DEFAULT_SETTINGS, type AccountType, type AppSettings, type Locale } from "@/app/model/settings";
+import { DEFAULT_SETTINGS, type AccountType, type AppSettings } from "@/app/model/settings";
 import { readSpellCheckPref } from "@/shared/lib/spellCheckPrefs";
 import { readTodoBoardRange } from "@/shared/lib/todoRangePrefs";
 import { utcISOToLocalTime } from "@/shared/lib/date";
+import { toSupportedLocale } from "@/shared/lib/i18n";
 import type { components } from "./schema";
 
 type UserResponse = components["schemas"]["UserResponse"];
@@ -179,7 +180,8 @@ export function toFolder(api: FolderResponse): Folder {
 // ─── Settings ────────────────────────────────────────────────────────────────
 export function toSettings(api: SettingsResponse, current?: AppSettings): AppSettings {
   return {
-    locale: api.locale as Locale,
+    // 서버는 BCP-47 문자열을 그대로 저장하므로 지원하지 않는 값은 영어로 맞춘다.
+    locale: toSupportedLocale(api.locale) ?? "en",
     autoSummary: {
       weekly: api.autoSummaryWeekly,
       monthly: api.autoSummaryMonthly,

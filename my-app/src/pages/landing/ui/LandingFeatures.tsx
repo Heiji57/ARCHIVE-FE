@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react"
+import { SUPPORTED_LOCALES } from "@/app/model/settings"
 import { useTranslation } from "@/shared/lib/i18n"
 import type { TranslateFn } from "@/shared/lib/i18n"
 import { calDays, getShowcaseTabs } from "./landingData"
@@ -165,8 +166,8 @@ function Pillars({ t }: { t: TranslateFn }) {
 
         {/* LANGUAGES */}
         <div className="lp-card lp-card--lang lp-reveal" data-reveal="6">
-          <span className="ey">4 LANGUAGES</span>
-          {["한국어", "English", "中文", "日本語"].map((l) => (
+          <span className="ey">{SUPPORTED_LOCALES.length} LANGUAGES</span>
+          {SUPPORTED_LOCALES.map(({ native: l }) => (
             <span key={l} className="lp-lang-pill">
               {l}
             </span>
@@ -186,7 +187,7 @@ function MarqueeGroup({ t, ariaHidden }: { t: TranslateFn; ariaHidden?: boolean 
     t("landing.marquee.yearly"),
     t("landing.marquee.githubSync"),
     t("landing.marquee.globalSearch"),
-    "한국어 · English · 中文 · 日本語",
+    SUPPORTED_LOCALES.map((l) => l.native).join(" · "),
   ]
   return (
     <span className="lp-marquee-group" aria-hidden={ariaHidden}>

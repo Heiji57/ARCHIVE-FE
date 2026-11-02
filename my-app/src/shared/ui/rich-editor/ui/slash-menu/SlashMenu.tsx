@@ -7,8 +7,8 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "@/shared/lib/i18n";
-import type { SlashCommandItem, SlashMenuRef } from "../../model/types";
-import { CATEGORY_LABELS, FallbackIcon, ICONS } from "./constants";
+import type { SlashCommandId, SlashCommandItem, SlashMenuRef } from "../../model/types";
+import { FallbackIcon, ICONS } from "./constants";
 import { useSlashMenuScroll } from "./useSlashMenuScroll";
 
 interface SlashMenuProps {
@@ -21,7 +21,7 @@ interface SlashMenuProps {
  */
 export const SlashMenu = forwardRef<SlashMenuRef, SlashMenuProps>(
   function SlashMenu({ items, command }, ref) {
-    const { locale } = useTranslation();
+    const { t } = useTranslation();
     const [selectedIndex, setSelectedIndex] = useState(0);
     const containerRef = useRef<HTMLDivElement | null>(null);
     const itemRefs = useRef<Array<HTMLButtonElement | null>>([]);
@@ -61,7 +61,7 @@ export const SlashMenu = forwardRef<SlashMenuRef, SlashMenuProps>(
     if (items.length === 0) {
       return (
         <div className="slash-menu">
-          <div className="slash-menu-empty">검색 결과 없음</div>
+          <div className="slash-menu-empty">{t("editor.slash.empty")}</div>
         </div>
       );
     }
@@ -76,8 +76,7 @@ export const SlashMenu = forwardRef<SlashMenuRef, SlashMenuProps>(
         {Object.entries(grouped).map(([category, list]) => (
           <div key={category} className="slash-menu-group">
             <div className="slash-menu-group-label">
-              {CATEGORY_LABELS[category]?.[locale === "ko" ? "ko" : "en"] ??
-                category}
+              {t(`editor.category.${category as SlashCommandItem["category"]}`)}
             </div>
             {list.map((item) => {
               flatIndex += 1;
@@ -104,10 +103,10 @@ export const SlashMenu = forwardRef<SlashMenuRef, SlashMenuProps>(
                   </span>
                   <span className="slash-menu-body">
                     <span className="slash-menu-title">
-                      {locale === "ko" ? item.titleKo : item.titleEn}
+                      {t(`editor.cmd.${item.id as SlashCommandId}.title`)}
                     </span>
                     <span className="slash-menu-desc">
-                      {locale === "ko" ? item.descKo : item.descEn}
+                      {t(`editor.cmd.${item.id as SlashCommandId}.desc`)}
                     </span>
                   </span>
                 </button>

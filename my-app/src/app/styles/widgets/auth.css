@@ -1,5 +1,6 @@
 /* ---------- Auth (login / signup / forgot-password) ---------- */
 .auth-page {
+  position: relative;
   min-height: 100vh;
   display: grid;
   place-items: center;
@@ -19,6 +20,31 @@
   flex-direction: column;
   gap: 22px;
 }
+.auth-lang-toggle {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  display: inline-flex;
+  padding: 3px;
+  background: var(--color-tile-1);
+  border: 1px solid var(--color-divider-soft);
+  border-radius: 9999px;
+}
+.auth-lang-btn {
+  padding: 5px 12px;
+  border: 0;
+  border-radius: 9999px;
+  background: none;
+  font: inherit;
+  font-size: 12px;
+  color: var(--color-body-muted);
+  cursor: pointer;
+}
+.auth-lang-btn[data-active="1"] {
+  background: var(--color-divider-soft);
+  color: var(--color-ink);
+}
+.auth-lang-btn:hover { color: var(--color-ink); }
 .auth-card-header { display: flex; flex-direction: column; gap: 6px; text-align: center; }
 .auth-brand {
   font-size: 12px;

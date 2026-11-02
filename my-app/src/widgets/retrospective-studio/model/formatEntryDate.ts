@@ -3,16 +3,10 @@ import type { Locale } from "@/app/model/settings";
 import {
   endOfISOWeek,
   formatMonthLabel,
+  LOCALE_TAG,
   fromDateKey,
   startOfISOWeek,
 } from "@/shared/lib/date";
-
-const LOCALE_TAG: Record<Locale, string> = {
-  ko: "ko-KR",
-  en: "en-US",
-  zh: "zh-CN",
-  ja: "ja-JP",
-};
 
 /**
  * 갤러리 카드의 날짜 라벨을 회고 종류에 맞춰 만든다 (표시 전용).

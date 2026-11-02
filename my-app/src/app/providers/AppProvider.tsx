@@ -74,7 +74,7 @@ import {
 import { writeSpellCheckPref } from "@/shared/lib/spellCheckPrefs";
 import { writeTodoBoardRange } from "@/shared/lib/todoRangePrefs";
 import { createId } from "@/shared/lib/id";
-import { translate } from "@/shared/lib/i18n";
+import { translate, writeLocaleChoice } from "@/shared/lib/i18n";
 import { ConfirmModal } from "@/shared/ui";
 import {
   USE_API,
@@ -336,6 +336,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         todos,
         entries,
         existing,
+        state.settings.locale,
       );
 
       dispatch({ type: "entry/upsert", payload: { entry } });
@@ -1250,7 +1251,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const entry: JournalEntry = {
         id: localId,
         dateKey,
-        title: `${dateKey} 일일 회고`,
+        title: translate(state.settings.locale, "retro.title.default.daily", { date: dateKey }),
         content: template?.content ?? "",
         retroType: "daily",
         githubPush: null,
@@ -1640,6 +1641,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     dismissNotification,
     setLocale: (locale: Locale) => {
       dispatch({ type: "settings/locale", payload: { locale } });
+      writeLocaleChoice(locale);
       if (apiActive) void syncSettings({ locale });
     },
     setAutoSummary: (patch: Partial<AppSettings["autoSummary"]>) => {

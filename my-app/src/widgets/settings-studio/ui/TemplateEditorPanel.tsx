@@ -70,7 +70,7 @@ export function TemplateEditorPanel({
               fontFamily: "var(--font-mono, monospace)",
               whiteSpace: "pre-wrap",
             }}>
-            <strong>에디터를 불러오지 못했습니다.</strong>
+            <strong>{t("editor.loadFailed")}</strong>
             {"\n"}
             {error.message}
           </div>
@@ -84,7 +84,7 @@ export function TemplateEditorPanel({
                 fontSize: 16,
                 color: "var(--color-body-muted)",
               }}>
-              에디터 로딩 중...
+              {t("editor.loading")}
             </div>
           }>
           <RichEditor

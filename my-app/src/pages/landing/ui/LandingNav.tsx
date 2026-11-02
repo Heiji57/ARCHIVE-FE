@@ -1,37 +1,10 @@
 import type { AuthRoute } from "@/app/router/authRoute"
-import type { Locale } from "@/app/model/settings"
-import { useArchiveApp } from "@/app/providers/useArchiveApp"
 import { ArchiveLogo } from "@/shared/ui"
 import { useTranslation } from "@/shared/lib/i18n"
+import { LocaleToggle } from "@/widgets/auth"
 
 interface LandingNavProps {
   onNavigateAuth: (route: AuthRoute) => void
-}
-
-/** 랜딩 페이지는 4개 언어 중 영어/한국어만 노출한다 */
-const LANDING_LOCALES: Array<{ code: Locale; native: string }> = [
-  { code: "en", native: "English" },
-  { code: "ko", native: "한국어" },
-]
-
-/** 상단 언어 토글 — 전역 settings.locale 을 그대로 읽고 쓴다 (로그인 후에도 유지) */
-function LandingLangToggle() {
-  const { state, setLocale } = useArchiveApp()
-
-  return (
-    <div className="lp-lang-toggle" role="group" aria-label="Language">
-      {LANDING_LOCALES.map((opt) => (
-        <button
-          key={opt.code}
-          type="button"
-          className="lp-lang-btn"
-          data-active={state.settings.locale === opt.code ? "1" : "0"}
-          onClick={() => setLocale(opt.code)}>
-          {opt.native}
-        </button>
-      ))}
-    </div>
-  )
 }
 
 const scrollToId = (id: string) =>
@@ -67,7 +40,7 @@ export function LandingNav({ onNavigateAuth }: LandingNavProps) {
         </button>
 
         <div className="lp-nav-actions">
-          <LandingLangToggle />
+          <LocaleToggle className="lp-lang-toggle" buttonClassName="lp-lang-btn" />
           <button
             type="button"
             className="lp-btn lp-btn-ghost"

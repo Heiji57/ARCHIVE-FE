@@ -78,6 +78,7 @@ function SummaryTemplateTab({ retroType }: SummaryTemplateTabProps) {
   // pushNotification은 매 렌더마다 새 참조가 생성되므로 latest-ref로 보관해
   // useEffect/큐 콜백 의존성에서 제외한다(콜백에서만 읽음).
   const pushRef = useLatestRef(pushNotification);
+  const tRef = useLatestRef(t);
 
   const [templates, setTemplates] = useState<SummaryTemplate[]>([]);
   const [loading, setLoading] = useState(true);
@@ -99,7 +100,7 @@ function SummaryTemplateTab({ retroType }: SummaryTemplateTabProps) {
         }),
       onError: (_id, err) => {
         const code = isApiError(err) ? err.code : "UNKNOWN";
-        pushRef.current("warning", "템플릿 저장 실패", `오류 코드: ${code}`);
+        pushRef.current("warning", tRef.current("settings.templates.error.save"), tRef.current("common.errorCode", { code }));
       },
     }),
   );
@@ -131,13 +132,13 @@ function SummaryTemplateTab({ retroType }: SummaryTemplateTabProps) {
         if (cancelled) return;
         setLoading(false);
         const code = isApiError(err) ? err.code : "UNKNOWN";
-        pushRef.current("warning", "템플릿 로드 실패", `오류 코드: ${code}`);
+        pushRef.current("warning", tRef.current("settings.templates.error.load"), tRef.current("common.errorCode", { code }));
       });
     return () => {
       cancelled = true;
     };
     // pushRef 는 안정적 ref(useLatestRef)라 재실행에 영향 없음 — summaryType 변경 시에만 재조회.
-  }, [summaryType, pushRef]);
+  }, [summaryType, pushRef, tRef]);
 
   const scheduleUpdate = (id: string, patch: UpdatePatch) => {
     setTemplates((prev) =>
@@ -158,11 +159,11 @@ function SummaryTemplateTab({ retroType }: SummaryTemplateTabProps) {
       .catch((err: unknown) => {
         const code = isApiError(err) ? err.code : "UNKNOWN";
         if (code === "RETRO_SUMMARY_TEMPLATE_LIMIT_REACHED") {
-          pushRef.current("warning", "템플릿 한도 초과", "이 유형의 템플릿을 더 추가할 수 없습니다.");
+          pushRef.current("warning", t("settings.templates.error.limit"), t("settings.templates.error.limitMessage"));
         } else if (code === "RETRO_SUMMARY_TEMPLATE_NAME_DUPLICATED") {
-          pushRef.current("warning", "이름 중복", "같은 이름의 템플릿이 이미 있습니다.");
+          pushRef.current("warning", t("settings.templates.error.duplicate"), t("settings.templates.error.duplicateMessage"));
         } else {
-          pushRef.current("warning", "템플릿 생성 실패", `오류 코드: ${code}`);
+          pushRef.current("warning", t("settings.templates.error.create"), t("common.errorCode", { code }));
         }
       })
       .finally(() => setCreating(false));
@@ -176,7 +177,7 @@ function SummaryTemplateTab({ retroType }: SummaryTemplateTabProps) {
     setTemplates((prev) => prev.filter((tpl) => tpl.id !== id));
     void apiDeleteSummaryTemplate(id).catch((err: unknown) => {
       const code = isApiError(err) ? err.code : "UNKNOWN";
-      pushRef.current("warning", "삭제 실패", `오류 코드: ${code}`);
+      pushRef.current("warning", t("settings.templates.error.delete"), t("common.errorCode", { code }));
       void apiListSummaryTemplates(summaryType).then(setTemplates).catch(() => {});
     });
   };
@@ -194,8 +195,8 @@ function SummaryTemplateTab({ retroType }: SummaryTemplateTabProps) {
         isApiError(err) && code === "VALIDATION_ERROR" ? err.details[0]?.field : undefined;
       pushRef.current(
         "warning",
-        "설정 실패",
-        field ? `오류 코드: ${code} (${field})` : `오류 코드: ${code}`,
+        t("settings.templates.error.setActive"),
+        t("common.errorCode", { code: field ? `${code} (${field})` : code }),
       );
       void apiListSummaryTemplates(summaryType).then(setTemplates).catch(() => {});
     });
@@ -209,7 +210,7 @@ function SummaryTemplateTab({ retroType }: SummaryTemplateTabProps) {
       <div className="template-card-body">
         <div className="template-list-panel">
           <p className="template-list-caption" style={{ color: "var(--color-body-muted)" }}>
-            로딩 중…
+            {t("common.loading")}
           </p>
         </div>
         <div className="template-editor-panel" />
@@ -274,7 +275,7 @@ function SummaryTemplateTab({ retroType }: SummaryTemplateTabProps) {
           disabled={creating}
         >
           <Plus size={14} />
-          {creating ? "생성 중…" : t("settings.templates.add")}
+          {creating ? t("settings.templates.creating") : t("settings.templates.add")}
         </button>
       </div>
 

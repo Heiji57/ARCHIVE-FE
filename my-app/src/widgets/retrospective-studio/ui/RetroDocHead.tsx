@@ -1,3 +1,4 @@
+import { entryDisplayTitle } from "@/entities/entry/lib/summaryTitle"
 import type { JournalEntry } from "@/entities/entry/model/types"
 import type { Folder } from "@/entities/folder/model/types"
 import { formatFullDate, fromDateKey } from "@/shared/lib/date"
@@ -24,7 +25,7 @@ export function RetroDocHead({
   onTitleChange,
   onFolderChange,
 }: RetroDocHeadProps) {
-  const { t } = useTranslation()
+  const { t, locale } = useTranslation()
   const defaultTitle = formatDefaultEntryTitle(t, entry.dateKey, entry.retroType)
 
   return (
@@ -37,13 +38,13 @@ export function RetroDocHead({
           onChange={onFolderChange}
         />
         <span className="retro-doc-date">
-          {formatFullDate(fromDateKey(entry.dateKey))}
+          {formatFullDate(fromDateKey(entry.dateKey), locale)}
         </span>
       </div>
 
       <input
         className="retro-doc-title"
-        value={entry.title}
+        value={entryDisplayTitle(entry, locale)}
         readOnly={entry.isSummary}
         title={entry.isSummary ? t("retro.summary.titleReadOnly") : undefined}
         placeholder={defaultTitle}

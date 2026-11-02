@@ -5,6 +5,7 @@ import type {
   NoticeType,
   NotificationItem,
 } from "@/entities/notification/model/types";
+import { formatRelativeTime } from "@/shared/lib/date";
 import { useTranslation } from "@/shared/lib/i18n";
 
 interface Props {
@@ -17,17 +18,6 @@ const ICON_BY_TYPE: Record<NoticeType, typeof CheckCircle> = {
   info: Info,
   warning: TriangleAlert,
 };
-
-function formatRelative(ts: string): string {
-  const diff = Date.now() - new Date(ts).getTime();
-  const m = Math.floor(diff / 60000);
-  if (m < 1) return "방금";
-  if (m < 60) return `${m}분 전`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}시간 전`;
-  const d = Math.floor(h / 24);
-  return `${d}일 전`;
-}
 
 export function NotificationPanel({ open, onClose }: Props) {
   const {
@@ -142,6 +132,7 @@ function NotifRow({
   onMarkRead: (id: string) => void;
   onClear: (id: string) => void;
 }) {
+  const { t, locale } = useTranslation();
   const Icon = ICON_BY_TYPE[notif.type];
   return (
     <div
@@ -156,7 +147,7 @@ function NotifRow({
       <div className="notif-item-content">
         <p className="notif-item-title">{notif.title}</p>
         <p className="notif-item-message">{notif.message}</p>
-        <p className="notif-item-time">{formatRelative(notif.timestamp)}</p>
+        <p className="notif-item-time">{formatRelativeTime(notif.timestamp, locale)}</p>
       </div>
       <button
         type="button"
@@ -165,7 +156,7 @@ function NotifRow({
           e.stopPropagation();
           onClear(notif.id);
         }}
-        aria-label="삭제"
+        aria-label={t("common.delete")}
       >
         <X size={12} />
       </button>

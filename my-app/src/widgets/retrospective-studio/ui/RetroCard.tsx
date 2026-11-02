@@ -6,6 +6,7 @@ import { useDraggable } from "@/shared/lib/dnd";
 import { useTranslation } from "@/shared/lib/i18n";
 import { RETRO_DRAG_KIND, RETRO_LABEL_KEY, type RetroDragPayload } from "../model/constants";
 import { formatEntryDateRange } from "../model/formatEntryDate";
+import { entryDisplayTitle } from "@/entities/entry/lib/summaryTitle";
 
 export interface RetroCardProps {
   entry: JournalEntry;
@@ -78,7 +79,7 @@ function RetroCardImpl({
         </span>
       </div>
 
-      <p className="retro-card-title">{entry.title}</p>
+      <p className="retro-card-title">{entryDisplayTitle(entry, locale)}</p>
 
       <div className="retro-card-meta">
         <span className="retro-card-date">

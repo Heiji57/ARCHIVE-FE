@@ -378,7 +378,7 @@ export function MonthGrid({
                               cursor: "default",
                               flexShrink: 0,
                             }}
-                            title="할일 추가"
+                            title={t("calendar.addTodo")}
                           >
                             <Plus size={11} color="#fff" strokeWidth={2.5} />
                           </button>

@@ -14,8 +14,25 @@ export type CalloutType = "NOTE" | "TIP" | "IMPORTANT" | "WARNING" | "CAUTION";
  * - icon: lucide 아이콘 이름 (UI에서 동적 import)
  * - execute: 에디터 명령
  */
+/** 슬래시 커맨드 id — 표시명/설명은 i18n 키 `editor.cmd.<id>.title|desc` 로 찾는다. */
+export type SlashCommandId =
+  | "h1"
+  | "h2"
+  | "h3"
+  | "h4"
+  | "h5"
+  | "bullet"
+  | "task"
+  | "numbered"
+  | "toggle"
+  | "quote"
+  | "callout"
+  | "table"
+  | "code"
+  | "divider";
+
 export interface SlashCommandItem {
-  id: string;
+  id: SlashCommandId;
   /** 한국어 표시명 */
   titleKo: string;
   /** 영어 표시명 */
