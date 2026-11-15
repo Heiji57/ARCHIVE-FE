@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>빗금 칸 시안</title>
+<meta name="description" content="AI를 캘린더의 빗금 칸 모양으로 만든 다섯 가지를 표정, 크기, 실제 화면에서 비교한다.">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="shared/shared.css">
+<link rel="stylesheet" href="shared/pet.css">
+<style>
+  /* Hallmark · scope: app screen (시안 비교 페이지) · genre: atmospheric · theme: project tokens (ARCHIVE dark, shared.css) · signature: 확정 전 일정 칸이 그대로 AI가 됨 · states: 8 · mode: fast · v2.0.0 */
+  /* critique: the hatched cell only earns its place if it survives every state and 16px, so those two tables come before the live screens. */
+  body{height:auto;min-height:100%}
+  .wrap{padding:28px 24px 64px;max-width:1480px;margin:0 auto}
+  h1{margin:0 0 6px;font-size:18px;font-weight:600;text-wrap:balance}
+  .lead{margin:0 0 24px;color:var(--ink3);font-size:13px;max-width:92ch;line-height:1.6}
+  section{margin:0 0 40px}
+  .hd{display:flex;align-items:baseline;gap:12px;margin:0 0 8px}
+  h2{margin:0;font-size:14px;font-weight:600;white-space:nowrap}
+  .hd p{margin:0;flex:1;font-size:12px;color:var(--ink3);line-height:1.5}
+  .scroll{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
+  table{width:100%;min-width:820px;border-collapse:collapse}
+  th,td{padding:12px 16px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle;font-weight:400}
+  tr:last-child td,tr:last-child th{border-bottom:0}
+  thead th{font-size:12px;color:var(--ink3)}
+  tbody th b{display:block;font-size:14px;font-weight:600}
+  tbody th small{display:block;max-width:32ch;margin-top:2px;font-size:12px;line-height:1.5;color:var(--ink3)}
+  .st{display:flex;gap:4px;flex-wrap:wrap;margin:0 0 8px}
+  .st button{height:32px;padding:0 12px;border-radius:6px;border:1px solid var(--line2);font-size:12px;color:var(--ink3)}
+  .st button:hover{background:var(--s3);color:var(--ink)}
+  .st button[aria-pressed="true"]{border-color:var(--primary);color:var(--ink);background:var(--primary-a)}
+  .st button:focus-visible,.st a:focus-visible{outline:2px solid var(--primary-h);outline-offset:2px}
+  .st a{margin-left:auto;font-size:12px;color:var(--primary-h);align-self:center}
+  iframe{display:block;width:100%;height:780px;border:1px solid var(--line);border-radius:10px;background:var(--canvas)}
+  iframe:focus,iframe.kf{outline:2px solid var(--primary-h);outline-offset:2px}
+  @media (max-width:640px){.hd{flex-direction:column;gap:4px}h2{white-space:normal}.wrap{padding:20px 16px 48px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>빗금 칸</h1>
+  <p class="lead">AI를 캘린더의 "아직 확정되지 않은 칸"으로 만들었습니다. 입과 팔다리 없이 눈만 있고, 제자리에서 빗금과 눈으로만 반응합니다. 처리할 일이 있어도 먼저 말을 걸지 않고 빗금 색만 바뀝니다.</p>
+  <section><div class="hd"><h2>다섯 형태와 상태</h2><p>마감이 지난 일이 있으면 빨강, 빈 시간이나 제안이면 노랑입니다.</p></div><div class="scroll"><table id="sheet"></table></div></section>
+  <section><div class="hd"><h2>크기 시험</h2><p>24px 아래에서는 빗금을 2~3줄로 줄이고 눈을 키웁니다.</p></div><div class="scroll"><table id="sizes"></table></div></section>
+  <div id="list"></div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/roughjs@4.6.6/bundled/rough.js"></script>
+<script src="shared/pet.js"></script>
+<script>
+  const IDS = [6, 7, 8, 9, 10], INFO = { 6: ['손으로 그은 칸 (기본)', 'Rough.js로 그은 삐뚤한 선입니다. 생각할 때 선이 계속 다시 그려지며 떨립니다.'], 7: ['캘린더 그대로', '캘린더 추천 칸과 같은 곧은 빗금과 점선입니다. 생각할 때 빗금이 흐릅니다.'], 8: ['시간 조각', '세로로 긴 일정 칸입니다. 옆에 시간 눈금이 있고, 생각할 때 길이가 줄었다 늘어납니다.'], 9: ['세 칸 묶음', '칸 세 개가 쌓여 있습니다. 생각할 때 위부터 차례로 찹니다.'], 10: ['빗금 속 눈', '테두리 없이 빗금만 있고, 빗금이 끊긴 자리가 눈입니다.'] };
+  const ST = [['idle', '듣기'], ['think', '생각'], ['note', '제안 있음'], ['done', '완료'], ['sleep', '쉬기']], SZ = [16, 20, 24, 32, 48, 96], $ = (q) => document.querySelector(q);
+  $('#sheet').innerHTML = `<thead><tr><th scope="col">형태</th>${ST.map(([, l]) => `<th scope="col">${l}</th>`).join('')}</tr></thead><tbody>${IDS.map((n) => `<tr><th scope="row"><b>${n} ${INFO[n][0]}</b><small>${INFO[n][1]}</small></th>${ST.map(([s]) => `<td data-st="${s}" style="--k:var(--warn)">${PET.face(n, s, 64)}</td>`).join('')}</tr>`).join('')}</tbody>`;
+  $('#sizes').innerHTML = `<thead><tr><th scope="col">형태</th>${SZ.map((p) => `<th scope="col">${p}px</th>`).join('')}</tr></thead><tbody>${IDS.map((n) => `<tr><th scope="row"><b>${n} ${INFO[n][0]}</b></th>${SZ.map((p) => `<td data-st="idle">${PET.face(n, 'idle', p)}</td>`).join('')}</tr>`).join('')}</tbody>`;
+  const G = [['cal', '캘린더', 'd-calendar.html', '오른쪽 아래 칸을 누르면 카드가 열립니다.'], ['todo', '할 일', 'd-todos.html', '"마감 지난 일 내일로 옮겨줘"를 눌러 제안, 완료 상태를 볼 수 있습니다.']];
+  const url = (p, n) => `${p}?pet=${n}`;
+  $('#list').innerHTML = G.map(([k, t, p, d]) => `<section><div class="hd"><h2>${t}</h2><p>${d}</p></div><div class="st" role="group" aria-label="${t}">${IDS.map((n, i) => `<button type="button" data-k="${k}" data-u="${url(p, n)}" aria-pressed="${i === 0}">${n} ${INFO[n][0]}</button>`).join('')}<a id="a${k}" href="${url(p, 6)}" target="_blank" rel="noopener">이걸로 보기</a></div><iframe id="f${k}" title="${t}" loading="lazy" src="${url(p, 6)}"></iframe></section>`).join('');
+  document.addEventListener('click', (e) => { const b = e.target.closest('.st button'); if (!b) return; b.parentNode.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', x === b)); const f = $('#f' + b.dataset.k); $('#a' + b.dataset.k).href = b.dataset.u; f.src = 'about:blank'; setTimeout(() => { f.src = b.dataset.u; }, 30); });
+  const mark = () => document.querySelectorAll('iframe').forEach((f) => f.classList.toggle('kf', document.activeElement === f));
+  window.addEventListener('blur', () => setTimeout(mark, 0)); window.addEventListener('focus', mark);
+</script>
+</body>
+</html>

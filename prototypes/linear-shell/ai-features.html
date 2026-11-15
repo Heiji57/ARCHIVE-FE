@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI 기능 진입점</title>
+<meta name="description" content="AI 비서의 기능을 어디서 켜는지 다섯 가지 방식으로 나눠 비교한다.">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="shared/shared.css">
+<style>
+  body{height:auto;min-height:100%}
+  .wrap{padding:28px 24px 64px;max-width:1480px}
+  h1{margin:0 0 6px;font-size:18px;font-weight:600}
+  .lead{margin:0 0 20px;color:var(--ink3);font-size:13px;max-width:90ch;line-height:1.6}
+  .map{overflow-x:auto;margin:0 0 36px;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;min-width:1000px;font-size:13px}
+  th,td{padding:9px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;line-height:1.5}
+  thead th{background:var(--s1);font-weight:600;color:var(--ink2);white-space:nowrap}
+  thead th span{display:block;font-weight:400;color:var(--ink4);font-size:12px}
+  tbody th{font-weight:600;color:var(--ink);white-space:nowrap;background:var(--s1)}
+  td{color:var(--ink2)}
+  td em{font-style:normal;color:var(--ink4)}
+  tr.sh td{color:var(--ink3);background:var(--canvas)}
+  tbody tr:last-child th,tbody tr:last-child td{border-bottom:0}
+  .tabs{position:sticky;top:0;z-index:2;display:flex;gap:4px;flex-wrap:wrap;padding:10px 0;background:var(--canvas);border-bottom:1px solid var(--line);margin-bottom:20px}
+  .tabs a{padding:5px 10px;border-radius:6px;font-size:13px;color:var(--ink3)}
+  .tabs a:hover{background:var(--s3);color:var(--ink)}
+  section{margin:0 0 40px;scroll-margin-top:60px}
+  .hd{display:flex;align-items:baseline;gap:12px;margin:0 0 8px}
+  h2{margin:0;font-size:14px;font-weight:600;white-space:nowrap}
+  h2 span{font-family:var(--mono);color:var(--ink4);font-weight:400;margin-right:8px}
+  .hd p{margin:0;flex:1;font-size:12px;color:var(--ink3);line-height:1.5}
+  .st{display:flex;gap:4px;flex-wrap:wrap;margin:0 0 8px}
+  .st button{height:28px;padding:0 10px;border-radius:6px;border:1px solid var(--line2);font-size:12px;color:var(--ink3)}
+  .st button:hover{background:var(--s3);color:var(--ink)}
+  .st button[aria-pressed="true"]{border-color:var(--primary);color:var(--ink);background:var(--primary-a)}
+  .st button:focus-visible{outline:2px solid var(--primary-h);outline-offset:2px}
+  .st a{margin-left:auto;font-size:12px;color:var(--primary-h);align-self:center}
+  iframe{display:block;width:100%;height:780px;border:1px solid var(--line);border-radius:10px;background:var(--canvas)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>AI 기능 진입점</h1>
+  <p class="lead">같은 기능을 어디서 켜는지만 다르게 했습니다. 화면 모양은 ChatGPT 참고 1번(가운데 질문)으로 맞췄고, 비서 설정(연결된 도구, 답하는 방식, 알려 둔 것, 예약한 일)과 결과물 화면은 모든 방식이 함께 씁니다. 아래 표에서 기능별 위치를 보고, 각 시안의 버튼으로 그 상태를 바로 열어 볼 수 있습니다.</p>
+  <div class="map"><table id="map"></table></div>
+  <nav class="tabs" id="tabs"></nav>
+  <div id="list"></div>
+</div>
+<script>
+  const EPS = [
+    [6, '+ 메뉴와 사이드바', '1번과 3번을 합쳤습니다. 입력창 + 에서 만들기, 자료, 답하는 방식을 고르고, 사이드바의 결과물, 예약한 일, 비서 설정은 오른쪽 서랍으로 열립니다. 대화는 폴더로 묶고, ⋯ 메뉴나 끌어다 놓기로 옮깁니다.',
+      [['시작 화면', ''], ['+ 메뉴', 'pop=plus'], ['결과물', 'drawer=results'], ['예약한 일', 'drawer=sched'], ['비서 설정', 'drawer=set'], ['대화 메뉴', 'fm=c:c1'], ['폴더 메뉴', 'fm=f:f1'], ['새 폴더', 'nfold=1']]],
+    [1, '+ 메뉴', '입력창 왼쪽 + 하나에 만들기, 자료 붙이기, 답하는 방식을 모두 넣었습니다. 비서 설정과 예약한 일은 사이드바 아래.',
+      [['시작 화면', ''], ['+ 메뉴 열기', 'pop=plus'], ['비서 설정', 'drawer=tools'], ['예약한 일', 'drawer=sched'], ['부탁 보내 보기', 'demo=retro']]],
+    [2, '/ 와 @', '입력창에 / 를 치면 기능, @ 를 치면 자료가 뜹니다. 키보드만으로 끝나고, /설정 /예약 으로 설정도 엽니다.',
+      [['시작 화면', ''], ['/ 기능 목록', 'slash=1'], ['/설정 서랍', 'drawer=how'], ['부탁 보내 보기', 'demo=retro']]],
+    [3, '사이드바 메뉴', '사이드바에 대화 · 결과물 · 예약한 일 · 비서 설정을 두고 각각 한 화면으로 엽니다. 입력창은 비워 둠.',
+      [['시작 화면', ''], ['결과물', 'view=results'], ['예약한 일', 'view=sched'], ['비서 설정', 'view=set']]],
+    [4, '입력창 아래 줄', '입력창 바로 아래 한 줄에 만들기 · 자료 · 꼼꼼히 · 답 길이 버튼과 오른쪽 비서 설정. 지금 켜진 상태가 늘 보입니다.',
+      [['시작 화면', ''], ['자료 메뉴', 'pop=ctx'], ['만들기 메뉴', 'pop=make'], ['비서 설정', 'drawer=tools'], ['부탁 보내 보기', 'demo=retro']]],
+    [5, '이어서 제안', '처음엔 큰 타일로 기능을 보여 주고, 결과 아래에 "매일 오후 6시에 자동으로?" 같은 다음 할 일을 제안합니다. 비서 설정은 위쪽 오른쪽.',
+      [['시작 화면', ''], ['결과와 제안', 'demo=retro'], ['답하는 방식', 'drawer=how'], ['알려 둔 것', 'drawer=memo']]],
+  ];
+  const MAP = [
+    ['할 일 만들기', ['+ 메뉴 › 만들기', '+ 메뉴 › 만들기', '/할', '입력창에 바로 부탁', '만들기 ▾', '시작 타일']],
+    ['회고 쓰기', ['+ 메뉴 › 만들기', '+ 메뉴 › 만들기', '/회고', '입력창에 바로 부탁', '만들기 ▾', '시작 타일']],
+    ['일정 옮기기', ['+ 메뉴 › 만들기', '+ 메뉴 › 만들기', '/일정', '입력창에 바로 부탁', '만들기 ▾', '시작 타일']],
+    ['주간 요약', ['+ 메뉴 › 만들기', '+ 메뉴 › 만들기', '/주간', '입력창에 바로 부탁', '만들기 ▾', '입력창에 바로 부탁']],
+    ['자료 붙이기', ['+ 메뉴 › 자료 붙이기', '+ 메뉴 › 자료 붙이기', '@오늘 할 일 등', '입력창 위 칩', '자료 N ▾', '따로 없음, 비서가 알아서 읽음']],
+    ['꼼꼼히 찾기', ['+ 메뉴, 비서 설정 서랍', '+ 메뉴 › 답하는 방식', '/꼼꼼히', '비서 설정 › 답하는 방식', '꼼꼼히 켬/끔', '비서 설정 › 답하는 방식']],
+    ['답 길이', ['+ 메뉴, 비서 설정 서랍', '+ 메뉴 › 답하는 방식', '/짧게 /자세히', '비서 설정 › 답하는 방식', '답 짧게/자세히 ▾', '비서 설정 › 답하는 방식']],
+    ['예약한 일', ['사이드바 › 오른쪽 서랍', '사이드바 아래 › 서랍', '/예약 › 서랍', '사이드바 › 한 화면', '비서 설정 › 서랍', '결과 뒤 "매일 자동으로?" › 서랍']],
+    ['연결된 도구', ['사이드바 비서 설정 › 서랍', '사이드바 아래 › 서랍', '/설정 › 서랍', '사이드바 › 비서 설정', '비서 설정 › 서랍', '위쪽 비서 설정 › 서랍']],
+    ['알려 둔 것', ['사이드바 비서 설정 › 서랍', '사이드바 아래 › 서랍', '/설정 › 서랍', '사이드바 › 비서 설정', '비서 설정 › 서랍', '결과 뒤 "이 형식을 기억해 둘까요?"']],
+    ['결과물', ['사이드바 › 오른쪽 서랍', '답 안에서 열기', '답 안에서 열기', '사이드바 › 결과물', '답 안에서 열기', '답 안에서 열기']],
+    ['지난 대화', ['사이드바 폴더 (만들기, 옮기기, 끌어다 놓기)', '사이드바', '사이드바', '사이드바', '사이드바', '사이드바']],
+    ['대화 폴더', ['사이드바 "대화" 옆 폴더 버튼, ⋯ 메뉴', '없음', '없음', '없음', '없음', '없음']],
+  ];
+  const $ = (q) => document.querySelector(q);
+  $('#map').innerHTML = `<thead><tr><th>기능</th>${EPS.map(([n, t]) => `<th>${n === 6 ? "6. 합친 안" : n + ". " + t}</th>`).join('')}</tr></thead><tbody>${MAP.map(([f, c]) => `<tr><th>${f}</th>${c.map((x) => `<td>${x}</td>`).join('')}</tr>`).join('')}</tbody>`;
+  $('#tabs').innerHTML = EPS.map(([n, t]) => `<a href="#ep${n}">${n}. ${t}</a>`).join('');
+  $('#list').innerHTML = EPS.map(([n, t, d, st]) => `<section id="ep${n}"><div class="hd"><h2><span>${n}</span>${t}</h2><p>${d}</p></div>
+    <div class="st" role="group" aria-label="${t} 상태">${st.map(([l, q], i) => `<button type="button" data-ep="${n}" data-q="${q}" aria-pressed="${i === 0}">${l}</button>`).join('')}<a href="d-ai.html?ep=${n}" target="_blank" rel="noopener">이걸로 보기</a></div>
+    <iframe id="f${n}" title="${t}" loading="lazy" src="d-ai.html?ep=${n}"></iframe></section>`).join('');
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest('.st button'); if (!b) return;
+    b.parentNode.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', x === b));
+    $('#f' + b.dataset.ep).src = `d-ai.html?ep=${b.dataset.ep}${b.dataset.q ? '&' + b.dataset.q : ''}&t=${Date.now()}`;
+  });
+</script>
+</body>
+</html>

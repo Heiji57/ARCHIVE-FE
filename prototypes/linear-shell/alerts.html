@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>경고 디자인 템플릿</title>
+<meta name="description" content="ARCHIVE 전체에서 쓸 경고, 알림 모양 다섯 가지를 연동 카드, 화면 위 알림, 입력 오류, 지우기 확인, 잠깐 알림에 똑같이 적용해 비교한다.">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="shared/shared.css">
+<link rel="stylesheet" href="shared/ai.css">
+<style>
+/* Hallmark · scope: component (경고 템플릿 다섯 가지) · genre: atmospheric · theme: project tokens (ARCHIVE dark, --ag-*) · signature: 같은 다섯 상황에 다섯 모양을 그대로 끼워 보는 판 · mode: fast · v2.0.0 */
+/* critique: warnings were drawn one by one with a yellow triangle and coloured text; this page fixes one family of shapes for every kind of message, so the choice is made once for the whole service. */
+:root {
+  --al-info: oklch(78% 0.12 278); --al-info-bg: oklch(22% 0.04 278); --al-info-line: oklch(40% 0.09 278); --al-info-bar: oklch(30% 0.07 278);
+  --al-warn: oklch(80% 0.13 75); --al-warn-bg: oklch(23% 0.04 75); --al-warn-line: oklch(44% 0.08 75); --al-warn-bar: oklch(32% 0.07 75);
+  --al-err: oklch(70% 0.16 28); --al-err-bg: oklch(22% 0.05 28); --al-err-line: oklch(42% 0.1 28); --al-err-bar: oklch(32% 0.09 28);
+  --al-ok: oklch(76% 0.14 152); --al-ok-bg: oklch(22% 0.04 152); --al-ok-line: oklch(40% 0.08 152); --al-ok-bar: oklch(30% 0.07 152);
+}
+html, body { overflow-x: clip; }
+body { height: auto; min-height: 100%; background: var(--ag-canvas); color: var(--ag-ink); font-family: var(--ag-font); }
+.pg { display: grid; grid-template-columns: 340px minmax(0, 1fr); min-height: 100vh; }
+.l { position: sticky; top: 0; height: 100vh; overflow: auto; padding: var(--ag-s5) var(--ag-s4) var(--ag-s6); border-right: 1px solid var(--ag-rule); }
+h1 { margin: 0 0 var(--ag-s2); font-size: 18px; font-weight: 600; }
+.lead { margin: 0 0 var(--ag-s5); font-size: 13px; line-height: 1.6; color: var(--ag-ink-3); }
+.opts { display: flex; flex-direction: column; gap: var(--ag-s2); }
+.op { display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: var(--ag-s3); padding: var(--ag-s3); border: 1px solid var(--ag-rule); border-radius: 10px; text-align: left; }
+.op:hover { border-color: var(--ag-rule-strong); background: var(--ag-surface); }
+.op:focus-visible { outline: 2px solid var(--ag-focus); outline-offset: 2px; }
+.op[aria-checked="true"] { border-color: var(--ag-accent); background: var(--ag-accent-soft); }
+.op > span { font: 12px var(--ag-num); color: var(--ag-ink-4); padding-top: 2px; }
+.op b { display: block; font-size: 14px; font-weight: 600; color: var(--ag-ink); margin-bottom: var(--ag-s1); }
+.op p { margin: 0; font-size: 12px; line-height: 1.5; color: var(--ag-ink-3); }
+.rules { margin: var(--ag-s5) 0 0; padding: var(--ag-s3) var(--ag-s4); border-radius: 10px; background: var(--ag-surface); font-size: 12px; line-height: 1.7; color: var(--ag-ink-3); }
+.rules b { color: var(--ag-ink-2); font-weight: 500; }
+.rules ul { margin: var(--ag-s1) 0 0; padding-left: var(--ag-s4); }
+.r { padding: var(--ag-s5) var(--ag-s5) 96px; min-width: 0; }
+.r > header { display: flex; align-items: baseline; gap: var(--ag-s3); margin: 0 0 var(--ag-s4); }
+.r > header h2 { margin: 0; font-size: 16px; font-weight: 600; }
+.r > header p { margin: 0; font-size: 13px; color: var(--ag-ink-3); }
+.board { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--ag-s4); max-width: 1180px; }
+.fr { min-width: 0; display: flex; flex-direction: column; gap: var(--ag-s2); }
+.fr.w { grid-column: 1 / -1; }
+.fr > h3 { margin: 0; font-size: 13px; font-weight: 500; color: var(--ag-ink-3); }
+.stage { position: relative; padding: var(--ag-s4); border: 1px solid var(--ag-rule); border-radius: 12px; background: var(--s1); min-height: 120px; }
+
+/* 상황 목업 */
+.m-card { display: flex; flex-direction: column; border: 1px solid var(--ag-rule); border-radius: 12px; background: var(--ag-surface); overflow: hidden; }
+.m-row { display: flex; align-items: center; gap: var(--ag-s3); padding: var(--ag-s4); }
+.m-row svg.al-gh { width: 22px; height: 22px; fill: var(--ag-ink); flex: none; }
+.m-row .n { flex: 1; display: flex; flex-direction: column; }
+.m-row .n b { font-size: 14px; font-weight: 600; }
+.m-row .n small { font-size: 13px; }
+.m-b { display: inline-flex; align-items: center; justify-content: center; height: 30px; padding: 0 var(--ag-s3); border: 1px solid var(--ag-rule-strong); border-radius: var(--ag-r); background: var(--ag-surface-2); font-size: 13px; color: var(--ag-ink-2); white-space: nowrap; }
+.m-b:hover { background: var(--ag-surface-3); color: var(--ag-ink); }
+.m-b:focus-visible, .al-a button:focus-visible, .al-x:focus-visible { outline: 2px solid var(--ag-focus); outline-offset: 2px; }
+.m-b.p { background: var(--ag-accent); border-color: var(--ag-accent); color: var(--ag-accent-ink); }
+.m-b.d { background: var(--al-err-bar); border-color: var(--al-err-line); color: var(--ag-ink); }
+.m-page { display: flex; flex-direction: column; border: 1px solid var(--ag-rule); border-radius: 12px; background: var(--ag-canvas); overflow: hidden; }
+.m-top { display: flex; align-items: center; gap: var(--ag-s3); height: 40px; padding: 0 var(--ag-s4); border-bottom: 1px solid var(--ag-rule); font-size: 13px; color: var(--ag-ink-2); }
+.m-top b { font-weight: 600; color: var(--ag-ink); }
+.m-body { padding: var(--ag-s4); display: flex; flex-direction: column; gap: var(--ag-s2); }
+.m-body i { display: block; height: 10px; border-radius: 4px; background: var(--ag-surface-3); }
+.m-body i:nth-child(2) { width: 70%; } .m-body i:nth-child(3) { width: 85%; }
+.m-field { display: flex; flex-direction: column; gap: var(--ag-s1); font-size: 13px; color: var(--ag-ink-2); }
+.m-field .in { display: flex; align-items: center; height: 36px; padding: 0 var(--ag-s3); border: 1px solid var(--ag-ink-4); border-radius: var(--ag-r); background: var(--ag-surface-2); color: var(--ag-ink); }
+.m-field.bad .in { border-color: var(--al-err); }
+.m-fields { display: grid; grid-template-columns: 1fr 1fr; gap: var(--ag-s3); }
+.m-dlg { width: min(400px, 100%); margin: 0 auto; border: 1px solid var(--ag-rule-strong); border-radius: 14px; background: var(--ag-surface-2); box-shadow: 0 16px 40px var(--ag-shadow); overflow: hidden; }
+.m-dlg .db { padding: var(--ag-s4) var(--ag-s5); }
+.m-dlg .db h4 { margin: 0 0 var(--ag-s2); font-size: 16px; font-weight: 600; }
+.m-dlg .db > p { margin: 0 0 var(--ag-s3); font-size: 13px; line-height: 1.6; color: var(--ag-ink-2); }
+.m-dlg .df { display: flex; justify-content: flex-end; gap: var(--ag-s2); padding: var(--ag-s3) var(--ag-s5); border-top: 1px solid var(--ag-rule); }
+.m-toasts { display: flex; flex-direction: column; align-items: center; gap: var(--ag-s2); padding: var(--ag-s4) 0; }
+.m-sev { display: flex; flex-direction: column; gap: var(--ag-s2); }
+
+/* ---------- 경고 공통 뼈대 ---------- */
+.al { --c: var(--al-info); --bg: var(--al-info-bg); --ln: var(--al-info-line); --bar: var(--al-info-bar);
+  display: flex; align-items: flex-start; gap: var(--ag-s3); font-size: 13px; line-height: 1.5; color: var(--ag-ink-2); }
+.al.s-warn { --c: var(--al-warn); --bg: var(--al-warn-bg); --ln: var(--al-warn-line); --bar: var(--al-warn-bar); }
+.al.s-err { --c: var(--al-err); --bg: var(--al-err-bg); --ln: var(--al-err-line); --bar: var(--al-err-bar); }
+.al.s-ok { --c: var(--al-ok); --bg: var(--al-ok-bg); --ln: var(--al-ok-line); --bar: var(--al-ok-bar); }
+.al-mk { display: none; flex: none; }
+.al-mk svg { width: 16px; height: 16px; }
+.al-c { flex: 1; min-width: 0; }
+.al-c b { display: block; font-weight: 600; color: var(--ag-ink); }
+.al-c p { margin: 0; }
+.al-w { display: none; }
+.al-a { display: flex; flex-wrap: wrap; align-items: center; gap: var(--ag-s2); flex: none; }
+.al-a button { font-size: 13px; white-space: nowrap; }
+.al-x { flex: none; display: grid; place-items: center; width: 24px; height: 24px; border-radius: 6px; color: var(--ag-ink-3); }
+.al-x:hover { background: var(--ag-surface-3); color: var(--ag-ink); }
+.al-x svg { width: 14px; height: 14px; }
+.al.k-toast { width: min(420px, 100%); padding: var(--ag-s3) var(--ag-s4); border-radius: 10px; background: var(--ag-surface-3); box-shadow: 0 12px 32px var(--ag-shadow); align-items: center; }
+.al.k-field { font-size: 13px; }
+.al.k-card { margin: 0 var(--ag-s4) var(--ag-s4); }
+.al.k-page { margin: 0; }
+
+/* T1 왼쪽 줄: 바탕 없이 색 줄 하나, 할 일은 밑줄 글자 */
+.T1 .al:not(.k-field):not(.k-toast) { padding: var(--ag-s1) 0 var(--ag-s1) var(--ag-s3); border-left: 3px solid var(--c); }
+.T1 .al.k-page { margin: var(--ag-s3) var(--ag-s4) 0; }
+.T1 .al-a button { padding: 0; border: 0; background: none; height: auto; color: var(--ag-ink); text-decoration: underline; text-underline-offset: 3px; }
+.T1 .al-a button:hover { color: var(--c); }
+.T1 .al.k-toast { border-left: 3px solid var(--c); }
+.T1 .al.k-field { color: var(--c); }
+.T1 .al.k-field::before { content: ""; width: 3px; align-self: stretch; border-radius: 2px; background: var(--c); }
+
+/* T2 옅은 바탕: 색 바탕과 테두리, 작은 아이콘, 버튼 */
+.T2 .al:not(.k-field) { padding: var(--ag-s3) var(--ag-s4); border: 1px solid var(--ln); border-radius: var(--ag-r); background: var(--bg); }
+.T2 .al-mk { display: block; color: var(--c); padding-top: 2px; }
+.T2 .al.k-page { margin: var(--ag-s3) var(--ag-s4) 0; }
+.T2 .al.k-toast { border-radius: 10px; }
+.T2 .al.k-field { color: var(--c); }
+.T2 .al.k-field .al-mk { padding-top: 1px; }
+.T2 .al.k-field .al-mk svg { width: 14px; height: 14px; }
+
+/* T3 글자 표시: 상자 없음, 앞에 상태 글자, 할 일은 글자 버튼 */
+.T3 .al-w { display: inline; margin-right: var(--ag-s2); font-weight: 600; color: var(--c); }
+.T3 .al-c b { display: inline; margin-right: var(--ag-s1); }
+.T3 .al-c p { display: inline; }
+.T3 .al-a button { padding: 0; border: 0; background: none; height: auto; font-weight: 500; color: var(--ag-accent-text); }
+.T3 .al-a button.d { color: var(--al-err); }
+.T3 .al.k-card { padding-top: var(--ag-s3); border-top: 1px solid var(--ag-rule); margin: 0 var(--ag-s4) var(--ag-s4); }
+.T3 .al.k-page { padding: var(--ag-s3) var(--ag-s4); border-bottom: 1px solid var(--ag-rule); }
+.T3 .al.k-field .al-w { margin-right: var(--ag-s1); }
+
+/* T4 띠: 가장자리까지 꽉 찬 한 줄 띠, 진한 바탕 */
+.T4 .al:not(.k-field):not(.k-toast) { align-items: center; padding: var(--ag-s2) var(--ag-s4); background: var(--bar); color: var(--ag-ink); }
+.T4 .al.k-card { margin: 0; border-top: 1px solid var(--ln); order: 2; }
+.T4 .al.k-page { border-bottom: 1px solid var(--ln); }
+.T4 .al-c b { display: inline; margin-right: var(--ag-s2); }
+.T4 .al-c p { display: inline; color: var(--ag-ink-2); }
+.T4 .al-a .m-b { height: 26px; background: transparent; border-color: var(--ln); color: var(--ag-ink); }
+.T4 .al.k-toast { background: var(--bar); border: 1px solid var(--ln); }
+.T4 .al.k-field { padding: var(--ag-s1) var(--ag-s2); border-radius: 6px; background: var(--bar); color: var(--ag-ink); }
+.T4 .m-sev .al { border-radius: var(--ag-r); }
+.T4 .m-dlg .al { margin: 0 calc(var(--ag-s5) * -1) var(--ag-s3); }
+
+/* T5 카드에 붙임: 관련 카드의 머리가 상태를 띠고, 알림은 그 카드 안 첫 줄 */
+.T5 .m-card.has { border-color: var(--ln); }
+.T5 .al.k-card { order: -1; margin: 0; padding: var(--ag-s2) var(--ag-s4); border-bottom: 1px solid var(--ln); background: var(--bg); }
+.T5 .al-w { display: block; margin-bottom: 2px; font-size: 12px; font-weight: 600; color: var(--c); }
+.T5 .al:not(.k-field):not(.k-card) { flex-direction: column; gap: var(--ag-s2); padding: var(--ag-s3) var(--ag-s4); border: 1px solid var(--ln); border-top: 3px solid var(--c); border-radius: var(--ag-r); background: var(--ag-surface); }
+.T5 .al.k-page { margin: var(--ag-s3) var(--ag-s4) 0; flex-direction: row !important; align-items: center; }
+.T5 .al.k-toast { flex-direction: row !important; align-items: center; }
+.T5 .al.k-card .al-a { align-self: center; }
+.T5 .al.k-field { flex-direction: row; color: var(--c); }
+.T5 .al.k-field .al-w { display: inline; margin: 0 var(--ag-s1) 0 0; font-size: 13px; }
+.T5 .al.k-card { align-items: center; }
+.T5 .al.k-field .al-c p { display: inline; }
+
+@media (max-width: 1000px) { .pg { grid-template-columns: minmax(0, 1fr); } .l { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--ag-rule); } .board { grid-template-columns: minmax(0, 1fr); } .r { padding: var(--ag-s4) var(--ag-s4) 64px; } }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="pg">
+  <aside class="l">
+    <h1>경고 디자인 템플릿</h1>
+    <p class="lead">ARCHIVE 전체에서 쓸 경고, 알림 모양 다섯 가지입니다. 고르면 오른쪽의 다섯 상황(연동 카드, 화면 위 알림, 입력 오류, 지우기 확인, 잠깐 알림)과 네 단계(알림, 주의, 오류, 완료)가 한꺼번에 그 모양으로 바뀝니다. 하나를 고르시면 연동 경고부터 이걸로 다시 그립니다.</p>
+    <div class="opts" id="opts" role="radiogroup" aria-label="경고 템플릿"></div>
+    <div class="rules"><b>다섯 가지 모두 같은 규칙</b><ul><li>제목은 무슨 일인지 한 줄, 설명은 그래서 어떻게 되는지 한 줄</li><li>할 일 버튼은 하나, 이름은 동사로 ("권한 다시 받기")</li><li>관련된 자리 가까이에 붙임 (카드 안, 입력칸 아래)</li><li>색만으로 구분하지 않음 (제목, 글자, 아이콘이 함께)</li></ul></div>
+  </aside>
+  <main class="r">
+    <header><h2 id="tn"></h2><p id="td"></p></header>
+    <div class="board" id="board"></div>
+  </main>
+</div>
+<script>
+  const T = [
+    ['왼쪽 줄', '바탕 없이 왼쪽에 색 줄 하나. 할 일은 밑줄 글자. 가장 조용하고 화면을 덜 가립니다.'],
+    ['옅은 바탕', '옅은 색 바탕과 테두리, 작은 아이콘, 오른쪽 버튼. 개발 도구에서 흔한 모양으로 가장 눈에 잘 띕니다.'],
+    ['글자 표시', '상자 없이 "주의", "오류" 같은 글자를 앞에 붙이고 할 일은 글자 버튼. 문장처럼 읽힙니다.'],
+    ['띠', '놓인 곳의 가장자리까지 꽉 찬 한 줄 띠, 진한 바탕. 카드 아래나 화면 맨 위에 붙어 상태를 알립니다.'],
+    ['카드에 붙임', '관련된 카드의 머리가 상태 색을 띠고 알림이 그 카드 첫 줄이 됩니다. 따로 뜨는 알림은 위쪽 색 줄이 있는 작은 카드.'],
+  ];
+  const I = (p) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
+  const MK = { info: I('<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>'), warn: I('<path d="M12 8v5M12 16h.01"/><circle cx="12" cy="12" r="9"/>'), err: I('<circle cx="12" cy="12" r="9"/><path d="m9 9 6 6M15 9l-6 6"/>'), ok: I('<circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/>') };
+  const WORD = { info: '알림', warn: '주의', err: '오류', ok: '완료' };
+  const X = I('<path d="M6 6l12 12M18 6 6 18"/>');
+  const GH = '<svg class="al-gh" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>';
+  const b = (t, cls = '') => `<button type="button" class="m-b ${cls}">${t}</button>`;
+  const al = ({ sev, kind, title, body, acts = '', close }) => `<div class="al s-${sev} k-${kind}" role="${sev === 'err' ? 'alert' : 'status'}"><span class="al-mk">${MK[sev]}</span><div class="al-c"><span class="al-w">${WORD[sev]}</span>${title ? `<b>${title}</b>` : ''}${body ? `<p>${body}</p>` : ''}</div>${acts ? `<div class="al-a">${acts}</div>` : ''}${close ? `<button type="button" class="al-x" aria-label="닫기">${X}</button>` : ''}</div>`;
+  const FR = [
+    ['연동 카드: 권한이 모자랄 때', '', () => `<div class="m-card has"><div class="m-row">${GH}<span class="n"><b>GitHub</b><small style="color:var(--al-warn)">권한 필요</small></span>${b('지금 동기화')}${b('연결 해제')}</div>
+      ${al({ sev: 'warn', kind: 'card', title: '이메일 권한이 필요해요', body: '지금은 커밋 작성자 일부가 보이지 않아요. 권한을 다시 받으면 바로 보여요.', acts: b('GitHub 권한 다시 받기') })}</div>`],
+    ['화면 위 알림: 인터넷이 끊겼을 때', '', () => `<div class="m-page"><div class="m-top"><b>회고</b><span>11월 3일 회고</span></div>${al({ sev: 'info', kind: 'page', title: '인터넷 연결이 끊겼어요', body: '바꾼 내용은 이 기기에 저장해 두고, 다시 연결되면 보낼게요.', acts: b('다시 연결해 보기'), close: true })}<div class="m-body"><i></i><i></i><i></i></div></div>`],
+    ['입력 오류: 칸 바로 아래', '', () => `<div class="m-fields"><label class="m-field"><span>시작</span><span class="in">오후 6시</span></label><label class="m-field bad"><span>끝</span><span class="in">오후 3시</span>${al({ sev: 'err', kind: 'field', body: '끝 시각이 시작보다 빨라요' })}</label></div>`],
+    ['지우기 확인: 되돌릴 수 없는 일', '', () => `<div class="m-dlg"><div class="db"><h4>"주간 KPT" 템플릿을 지울까요?</h4><p>이 템플릿으로 쓴 회고는 그대로 남아요.</p>${al({ sev: 'err', kind: 'dlg', title: '주간 기본 템플릿이에요', body: '지우면 주간 회고와 AI 주간 요약이 "주간 돌아보기" 틀로 바뀌어요.' })}</div><div class="df">${b('취소')}${b('템플릿 지우기', 'd')}</div></div>`],
+    ['잠깐 알림: 화면 아래에 몇 초', 'w', () => `<div class="m-toasts">${al({ sev: 'ok', kind: 'toast', body: '회고를 저장했어요', acts: b('되돌리기'), close: true })}${al({ sev: 'err', kind: 'toast', body: '저장하지 못했어요. 인터넷 연결을 확인해 주세요', acts: b('다시 시도'), close: true })}</div>`],
+    ['네 단계', 'w', () => `<div class="m-sev">${al({ sev: 'info', kind: 'page', title: '새 기능이 생겼어요', body: 'AI 탭에서 회고 초안을 예약해 둘 수 있어요.', acts: b('보러 가기'), close: true })}${al({ sev: 'warn', kind: 'page', title: 'Google 로그인이 곧 만료돼요', body: '3일 안에 다시 로그인하지 않으면 일정을 가져오지 못해요.', acts: b('다시 로그인') })}${al({ sev: 'err', kind: 'page', title: 'GitHub 연결이 끊겼어요', body: '11월 1일부터 커밋을 가져오지 못했어요. 설정은 그대로 남아 있어요.', acts: b('다시 연결') })}${al({ sev: 'ok', kind: 'page', title: '내보내기 파일이 준비됐어요', body: 'archive-2026-11-03.zip', acts: b('받기'), close: true })}</div>`],
+  ];
+  let cur = 1;
+  try { cur = +(new URLSearchParams(location.search).get('t') || localStorage.getItem('archive.alert') || 3); } catch (e) {}
+  if (!(cur >= 1 && cur <= 5)) cur = 3;
+  const $ = (q) => document.querySelector(q);
+  function draw() {
+    $('#opts').innerHTML = T.map(([n, d], i) => `<button type="button" class="op" role="radio" aria-checked="${cur === i + 1}" data-t="${i + 1}"><span>${i + 1}</span><span style="font:inherit;color:inherit;padding:0"><b>${n}</b><p>${d}</p></span></button>`).join('');
+    $('#tn').textContent = `${cur}. ${T[cur - 1][0]}`; $('#td').textContent = T[cur - 1][1];
+    const bd = $('#board'); bd.className = 'board T' + cur;
+    bd.innerHTML = FR.map(([t, w, f]) => `<section class="fr ${w}"><h3>${t}</h3><div class="stage">${f()}</div></section>`).join('');
+  }
+  document.addEventListener('click', (e) => { const o = e.target.closest('.op'); if (!o) return; cur = +o.dataset.t; try { localStorage.setItem('archive.alert', cur); } catch (err) {} draw(); });
+  document.addEventListener('keydown', (e) => { if (!e.target.closest || !e.target.closest('.op')) return; if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); cur = ((cur - 1 + (e.key === 'ArrowDown' ? 1 : -1) + 5) % 5) + 1; draw(); $(`.op[data-t="${cur}"]`).focus(); } });
+  draw();
+</script>
+</body>
+</html>

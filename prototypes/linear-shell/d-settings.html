@@ -1,0 +1,813 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ARCHIVE 설정</title>
+<meta name="description" content="왼쪽 아래 사용자 메뉴로 들어가는 설정. ?sv=1~5 로 배치를 바꿔 본다 (1 목록과 내용, 2 한 페이지, 3 창, 4 설정 홈, 5 검색과 펼치기).">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="shared/shared.css">
+<link rel="stylesheet" href="shared/planner.css">
+<link rel="stylesheet" href="shared/pickers.css">
+<link rel="stylesheet" href="shared/ai.css">
+<link rel="stylesheet" href="shared/usermenu.css">
+<link rel="stylesheet" href="shared/logo.css">
+<link rel="stylesheet" href="shared/rest.css">
+<link rel="stylesheet" href="shared/pet.css">
+<link rel="stylesheet" href="shared/settings.css">
+</head>
+<body>
+<div class="app ag sx" id="app">
+  <main class="ag-main sx-main" id="sm" aria-label="설정"></main>
+</div>
+<dialog id="detail" aria-label="할 일 상세"></dialog>
+<script src="shared/shared.js"></script>
+<script src="shared/planner.js"></script>
+<script src="shared/logo.js"></script>
+<script src="shared/rest.js"></script>
+<script src="shared/usermenu.js"></script>
+<script src="shared/pickers.js"></script>
+<script>
+  const $ = (q, r = document) => r.querySelector(q), A = ARC, P = PL, U = UM;
+  const Q = new URLSearchParams(location.search);
+  const EMBED = Q.get('embed') === '1';
+  const SV = (() => { const q = Q.get('sv'); try { if (q != null && window.top === window) localStorage.setItem('archive.sview', q); const v = +(q ?? localStorage.getItem('archive.sview') ?? 3); return v >= 1 && v <= 5 ? v : 3; } catch (e) { return +(q || 3); } })();
+  const SVN = ['', '목록과 내용', '한 페이지', '창으로 열기', '설정 홈', '검색과 펼치기'];
+  if (EMBED) document.body.classList.add('sx-embed');
+  document.body.classList.add('sxv' + SV);
+
+  const I = (p) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
+  const ic = {
+    acct: I('<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>'), gen: I('<path d="M4 7h10M4 17h6M18 7h2M14 17h6"/><circle cx="16" cy="7" r="2"/><circle cx="12" cy="17" r="2"/>'),
+    work: I('<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/>'), retro: I('<path d="M6 3h9l3 3v15H6z"/><path d="M9 11h6M9 15h4"/>'),
+    ai: A.ico.sparkle, link: I('<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>'),
+    noti: I('<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 21h4"/>'), data: I('<path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z"/>'),
+    back: I('<path d="M15 6l-6 6 6 6"/>'), chev: I('<path d="m9 6 6 6-6 6"/>'), down: I('<path d="m6 9 6 6 6-6"/>'), search: I('<circle cx="11" cy="11" r="6.5"/><path d="m20 20-4-4"/>'),
+    check: I('<path d="m5 12 5 5 9-10"/>'), repo: I('<path d="M5 4a2 2 0 0 1 2-2h12v16H7a2 2 0 0 0-2 2z"/><path d="M5 20a2 2 0 0 0 2 2h12v-4"/><path d="M9 6h6"/>'), more: I('<circle cx="6" cy="12" r="1.3" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/><circle cx="18" cy="12" r="1.3" fill="currentColor"/>'), copy: I('<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/>'), cut: I('<path d="M5 12h14"/><path d="M12 5v3M12 16v3"/>'), zoom: I('<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>'), minus: I('<path d="M5 12h14"/>'), up: I('<path d="m6 15 6-6 6 6"/>'), sync: I('<path d="M20 12a8 8 0 0 1-14 5.3M4 12a8 8 0 0 1 14-5.3"/><path d="M18 3v4h-4M6 21v-4h4"/>'), x: I('<path d="M6 6l12 12M18 6 6 18"/>'), plus: I('<path d="M12 5v14M5 12h14"/>'), gh: I('<circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="8" r="2.5"/><path d="M6 8.5v7M18 10.5c0 4-6 3-11 5.5"/>'),
+    cal: A.ico.cal, dev: I('<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/>'), phone: I('<rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/>'),
+    warn: I('<path d="M12 4 2.5 20h19z"/><path d="M12 10v4M12 17h.01"/>'), out: I('<path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4M10 16l-4-4 4-4M6 12h10"/>'),
+  };
+
+  /* ---------- 값 ---------- */
+  const V = {
+    pet: (() => { try { return localStorage.getItem('archive.petOff') !== '1'; } catch (e) { return true; } })(),
+    name: 'developer', del: '', lang: 'ko', country: 'KR', tz: 'Asia/Seoul', pend: null, ask: false, weekStart: 'mon', startTab: 'ai', timeFmt: '12',
+    past: 30, future: 30, days: [1, 2, 3, 4, 5], wFrom: '09:00', wTo: '18:00', dur: '60', done: 'dim',
+    sumW: true, sumM: true, sumY: true, tpl: 'basic', aiTpl: 'basic',
+    tpls: [{ id: 'basic', per: 'day', b: 1, name: '하루 회고', secs: [['오늘 한 일', '끝낸 일, 하다 만 일'], ['배운 점', ''], ['내일 할 일', '']] }, { id: 'kpt', per: 'day', b: 1, name: 'KPT', secs: [['Keep', '계속할 것'], ['Problem', '막힌 것'], ['Try', '다음에 해 볼 것']] }, { id: 'three', per: 'day', b: 1, name: '세 줄', secs: [['가장 잘한 일', ''], ['아쉬운 일', ''], ['내일 한 가지', '']] },
+      { id: 'wk', per: 'week', b: 1, name: '주간 돌아보기', secs: [['이번 주 한 일', ''], ['잘된 것', ''], ['막힌 것', ''], ['다음 주 목표', '']] }, { id: 'wkkpt', per: 'week', b: 1, name: '주간 KPT', secs: [['Keep', ''], ['Problem', ''], ['Try', '']] },
+      { id: 'mo', per: 'month', b: 1, name: '월간 정리', secs: [['이번 달 큰 일', ''], ['배운 것', ''], ['다음 달에 할 것', '']] }, { id: 'yr', per: 'year', b: 1, name: '한 해 돌아보기', secs: [['올해 한 일', ''], ['가장 큰 변화', ''], ['내년 목표', '']] }],
+    tplFor: { day: 'basic', week: 'wk', month: 'mo', year: 'yr' }, expRange: 'all', expFrom: '2026-10-01', expTo: '2026-11-03',
+    dT0f: '10:00', dT0t: '14:00', dT1f: '09:00', dT1t: '18:00', dT2f: '09:00', dT2t: '18:00', dT3f: '09:00', dT3t: '18:00', dT4f: '09:00', dT4t: '18:00', dT5f: '09:00', dT5t: '16:00', dT6f: '10:00', dT6t: '14:00', spell: true, dayEnd: true, dayEndAt: '21:00', folder: 'dev',
+    tCal: true, tTodo: true, tRetro: true, tGh: true, deep: true, len: 'quick', memo: '회고는 한 일, 배운 점, 내일 순서로 짧게 써 줘.\n회의는 길이를 말하지 않으면 1시간으로 잡아 줘.', confirm: 'always', aiKeep: '90', aiWipe: false,
+    sched: [['매일 오후 6시', '오늘 회고 초안 쓰기', true], ['매주 일요일 오후 9시', '다음 주 할 일 정리', false]],
+    gh: A.ghOn(), rFe: true, rDocs: true, rBe: false, push: 'none', gcal: true, gPush: false, gDel: false, gDelAsk: false,
+    keep: '30', nDue: true, nSum: true, nSched: true, nLink: true, browser: 'ask', dnd: true, dndFrom: '22:00', dndTo: '08:00', mail: false,
+    devices: [['Chrome, Linux', '이 기기', '지금', true], ['Safari, iPhone', '서울', '어제 오후 11:40', false], ['Chrome, macOS', '서울', '10월 28일', false]],
+    xRetro: true, xTodo: true, xAi: false, fmt: 'md',
+    trash: [['회고', '10월 30일 회고', '4일 전 지움', 26], ['할 일', '배포 체크리스트 정리', '6일 전 지움', 24]], lastExp: null,
+    log: [['오늘 오후 2시 3분', 'Chrome, Linux', '서울', '로그인', 0], ['어제 오후 11시 40분', 'Safari, iPhone', '서울', '로그인', 1], ['10월 28일 오전 9시 12분', 'Chrome, macOS', '서울', '로그인', 2], ['10월 20일 오후 6시', 'Firefox, Windows', '부산', '다른 기기에서 로그아웃함', -1]],
+    ghPerm: true,
+  };
+  /* GitHub 연결 여부가 개발자 기능(커밋, 저장소, AI의 GitHub 도구)을 정함 */
+  { let on = V.gh; Object.defineProperty(V, 'gh', { get: () => on, set: (v) => { on = v; if (!Q.has('gh')) try { localStorage.setItem('archive.gh', v ? '1' : '0'); } catch (e) {} } }); }
+  const LANGS = [['ko', '한국어'], ['en', 'English'], ['ja', '日本語'], ['zh', '简体中文'], ['zh-TW', '繁體中文'], ['es', 'Español'], ['fr', 'Français'], ['de', 'Deutsch'], ['pt', 'Português'], ['it', 'Italiano'], ['ru', 'Русский'], ['vi', 'Tiếng Việt'], ['th', 'ไทย'], ['id', 'Bahasa Indonesia'], ['hi', 'हिन्दी'], ['tr', 'Türkçe']];
+  const COUNTRY = { KR: ['대한민국', ['Asia/Seoul']], JP: ['일본', ['Asia/Tokyo']], US: ['미국', ['America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles']], GB: ['영국', ['Europe/London']], DE: ['독일', ['Europe/Berlin']] };
+  const TZN = { 'Asia/Seoul': '서울 (UTC+9)', 'Asia/Tokyo': '도쿄 (UTC+9)', 'America/New_York': '뉴욕 (UTC-5)', 'America/Chicago': '시카고 (UTC-6)', 'America/Denver': '덴버 (UTC-7)', 'America/Los_Angeles': '로스앤젤레스 (UTC-8)', 'Europe/London': '런던 (UTC+0)', 'Europe/Berlin': '베를린 (UTC+1)' };
+  const TPLS = [['basic', '한 일, 배운 점, 내일', '오늘 한 일\n배운 점\n내일 할 일'], ['kpt', 'KPT', 'Keep\nProblem\nTry'], ['three', '세 줄', '오늘 가장 잘한 일\n아쉬운 일\n내일 한 가지']];
+  const FOLD = [['', '폴더 없음'], ['dev', 'ARCHIVE 개발'], ['study', '스터디']];
+  const DOWS = ['일', '월', '화', '수', '목', '금', '토'];
+  const hm = (v) => { if (!v) return ''; const [h, m] = v.split(':').map(Number); if (V.timeFmt === '24') return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`; return `${h < 12 ? '오전' : '오후'} ${h % 12 || 12}시${m ? ` ${m}분` : ''}`; };
+  const md = (d) => `${d.getMonth() + 1}월 ${d.getDate()}일`;
+  const on = (b) => (b ? '켬' : '끔');
+
+  /* ---------- 컨트롤 조각 ---------- */
+  const tog = (k, label) => `<button type="button" class="sx-tg" role="switch" aria-checked="${!!V[k]}" aria-label="${label}" data-sxt="${k}"></button>`;
+  const seg = (k, opts, label) => `<span class="sx-seg" role="radiogroup" aria-label="${label}">${opts.map(([v, t]) => `<button type="button" role="radio" aria-checked="${String(V[k]) === String(v)}" data-sxs="${k}" data-v="${v}">${t}</button>`).join('')}</span>`;
+  /* 고르기: 기본 select 대신. opts = [값, 이름, 설명?, 앞 아이콘?]. act 로 고른 뒤 할 일을 바꿈 */
+  function sel(k, opts, label, act = 'sxs', cur = V[k]) {
+    const dd = 'sel:' + k, o = S.dd === dd, it = opts.find((x) => String(x[0]) === String(cur)) || opts[0];
+    return `<span class="sxs ${o ? 'open' : ''}"><button type="button" class="sxs-b" data-sxdd="${dd}" aria-haspopup="listbox" aria-expanded="${o}" aria-label="${label}: ${A.esc(String(it[1]))}">${it[3] || ''}<span>${it[1]}</span>${ic.down}</button>
+      ${o ? `<span class="sxa5-m sxs-m" role="listbox" aria-label="${label}">${opts.map(([v, t, d, i2]) => `<button type="button" role="option" aria-selected="${String(v) === String(cur)}" data-${act}="${act === 'sxs' ? k : v}" data-v="${v}">${i2 || ''}<span><b>${t}</b>${d ? `<small>${d}</small>` : ''}</span>${String(v) === String(cur) ? ic.check : ''}</button>`).join('')}</span>` : ''}</span>`;
+  }
+  const tim = (k, label) => `<input type="time" data-sxv="${k}" value="${V[k]}" aria-label="${label}">`;
+  const btn = (t, a, cls = '') => `<button type="button" class="sx-b ${cls}" ${a}>${t}</button>`;
+  const line = (ico, t, d, ctl) => `<li><span class="sx-li">${ico || ''}<span><b>${t}</b>${d ? `<small>${d}</small>` : ''}</span></span>${ctl}</li>`;
+
+  const REPOS = [['archive-fe', 'rFe', '비공개'], ['archive-docs', 'rDocs', '공개'], ['archive-be', 'rBe', '비공개']];
+  const repoRow = ([n, k, vis]) => `<li class="sxrp"><span class="sxrp-i" aria-hidden="true">${ic.repo}</span><span class="sxrp-n"><b><span class="sx-mu">developer/</span>${n}</b><small>${vis} 저장소</small></span><span class="sx-tr"><small class="sxrp-s">${V[k] ? '커밋 읽음' : '안 읽음'}</small>${tog(k, n + ' 커밋 읽기')}</span></li>`;
+  /* ---------- 항목 ---------- */
+  const R = [
+    /* 계정 */
+    { id: 'I2', sec: 'acct', vis: 'show', t: '이름과 프로필 사진', d: '사이드바와 메뉴에 보여요', kw: '이름 닉네임 사진 아바타', wide: true,
+      ctl: () => `<div class="sx-prof"><span class="av sx-av">${A.esc(V.name.slice(0, 1).toUpperCase() || 'D')}</span><input class="sx-in" data-sxv="name" value="${A.esc(V.name)}" maxlength="30" aria-label="이름">${btn('사진 바꾸기', 'data-sxtoast="사진 올리기는 시안에서 생략했어요"')}</div>` },
+    { id: 'A1', sec: 'acct', vis: 'show', t: '로그인 계정', d: 'Google 계정으로 로그인했어요', kw: '이메일 메일 구글 로그인',
+      ctl: () => `<span class="sx-val">developer@archive.dev</span>` },
+    { id: 'A7', sec: 'acct', vis: 'show', t: '로그아웃', d: '이 기기에서만 로그아웃돼요', kw: '로그아웃 나가기',
+      ctl: () => btn('로그아웃', 'data-sxtoast="로그아웃했어요 (시안이라 화면은 그대로예요)"') },
+    { id: 'I6', sec: 'acct', vis: 'more', t: '계정 삭제', d: '회고, 할 일, AI 대화가 모두 지워지고 되돌릴 수 없어요', kw: '탈퇴 삭제 지우기', danger: true,
+      sum: () => '', ctl: () => `<div class="sx-danger"><label>확인을 위해 이름 <b>${A.esc(V.name)}</b> 을 그대로 적어 주세요<input class="sx-in" data-sxv="del" value="${A.esc(V.del)}" autocomplete="off"></label>${btn('계정 삭제', `data-sxdel ${V.del === V.name ? '' : 'disabled'}`, 'danger')}</div>` },
+
+    /* 일반 */
+    { id: 'B1', sec: 'gen', vis: 'show', t: '언어', d: '화면에 보이는 언어', kw: 'language 언어 한국어 영어', ctl: () => sel('lang', LANGS, '언어') },
+    { id: 'B2', sec: 'gen', vis: 'show', t: '국가와 시간대', d: '날짜와 AI 요약이 이 시간대 기준으로 돌아요', kw: '국가 지역 시간대 timezone', wide: true,
+      ctl: () => { const c = V.pend || V.country, tzs = COUNTRY[c][1];
+        return `<div class="sx-geo">${sel('country', Object.entries(COUNTRY).map(([k, [n, z]]) => [k, n, z.length > 1 ? `시간대 ${z.length}개` : TZN[z[0]]]), '국가', 'sxgeov', c)}
+          ${tzs.length > 1 ? sel('tz', tzs.map((z) => [z, TZN[z]]), '시간대', 'sxtzv', V.tz) : `<span class="sx-val">${TZN[tzs[0]]}</span>`}
+          ${V.pend && !V.ask ? btn('적용', 'data-sxgeoapply', 'p') : ''}</div>
+          ${V.ask ? `<div class="sx-ask"><p><b>AI 요약 시간도 바꿀까요?</b>주간, 월간 요약이 지금은 ${TZN[V.tz] || V.tz} 기준으로 돌아요.</p><div>${btn('기존 시간대 유지', 'data-sxgeook="keep"')}${btn('새 국가 기준으로', 'data-sxgeook="new"', 'p')}</div></div>` : ''}`; } },
+    { id: 'I4', sec: 'gen', vis: 'show', t: '주 시작 요일', d: '달력과 주간 회고가 이 요일부터 시작해요', kw: '월요일 일요일 주', ctl: () => seg('weekStart', [['mon', '월요일'], ['sun', '일요일']], '주 시작 요일') },
+    { id: 'I3', sec: 'gen', vis: 'more', t: '처음 열 화면', d: 'ARCHIVE를 열면 먼저 보이는 탭', kw: '시작 탭 첫 화면',
+      sum: () => ({ ai: 'AI', cal: '캘린더', todo: '할 일', retro: '회고' })[V.startTab], ctl: () => seg('startTab', [['ai', 'AI'], ['cal', '캘린더'], ['todo', '할 일'], ['retro', '회고']], '처음 열 화면') },
+    { id: 'I5', sec: 'gen', vis: 'more', t: '시간 표시', d: '', kw: '24시간 오전 오후', sum: () => (V.timeFmt === '12' ? '오후 6시' : '18:00'), ctl: () => seg('timeFmt', [['12', '오후 6시'], ['24', '18:00']], '시간 표시') },
+
+    /* 할 일과 캘린더 */
+    { id: 'J2', sec: 'work', vis: 'show', t: '일하는 시간', d: 'AI가 일정을 잡거나 옮길 때 이 시간 안에서 찾아요', kw: '근무 시간 업무 시간 요일', wide: true,
+      ctl: () => `<div class="sx-work"><span class="sx-days" role="group" aria-label="일하는 요일">${[1, 2, 3, 4, 5, 6, 0].map((d) => `<button type="button" aria-pressed="${V.days.includes(d)}" data-sxday="${d}">${DOWS[d]}</button>`).join('')}</span>
+        <span class="sx-tr">${tim('wFrom', '시작 시각')}<span>부터</span>${tim('wTo', '끝 시각')}<span>까지</span></span></div>` },
+    { id: 'J1', sec: 'work', vis: 'show', t: '기본 할 일 길이', d: '길이를 정하지 않고 만든 할 일', kw: '길이 시간 기본',
+      sum: () => ({ 30: '30분', 60: '1시간', 90: '1시간 30분', 120: '2시간' })[V.dur], ctl: () => seg('dur', [['30', '30분'], ['60', '1시간'], ['90', '1시간 30분'], ['120', '2시간']], '기본 할 일 길이') },
+    { id: 'J3', sec: 'work', vis: 'show', t: '완료한 일 보이기', d: '', kw: '완료 끝낸 숨기기 흐리게',
+      sum: () => ({ keep: '그대로', dim: '흐리게', hide: '숨기기' })[V.done], ctl: () => seg('done', [['keep', '그대로'], ['dim', '흐리게'], ['hide', '숨기기']], '완료한 일 보이기') },
+    { id: 'J4', sec: 'work', vis: 'show', t: '캘린더와 태그 관리', d: '사이드바의 캘린더와 태그 이름, 색, 순서', kw: '캘린더 태그 채널 색 이름 순서', wide: true,
+      sum: () => `캘린더 ${A.cals.length}개, 태그 ${Object.keys(A.TAG).length}개`,
+      ctl: () => `<ul class="sx-list">${Object.entries(A.TAG).map(([k, n], i) => line(`<span class="sx-sw" style="background:${(P.TAGC || {})[k] || 'var(--ink3)'}"></span>`, `# ${A.esc(n)}`, '태그', `<span class="sx-ord">${btn('위로', `data-sxtoast="순서 바꾸기는 시안에서 생략했어요" ${i ? '' : 'disabled'}`, 'q')}${btn('이름 바꾸기', 'data-sxtoast="이름 바꾸기는 사이드바에서도 할 수 있어요"', 'q')}</span>`)).join('')}</ul>${btn(`${ic.plus}새 태그`, 'data-sxtoast="새 태그는 시안에서 생략했어요"')}` },
+
+    /* 회고 */
+    { id: 'D1', sec: 'retro', vis: 'show', t: '자동 회고 요약', d: '기간이 끝나면 AI가 요약을 만들어 둬요', kw: '주간 월간 연간 요약 자동',
+      sum: () => [V.sumW && '주간', V.sumM && '월간', V.sumY && '연간'].filter(Boolean).join(', ') || '모두 끔',
+      ctl: () => `<ul class="sx-list">${line('', '주간 요약', '월요일 아침에', tog('sumW', '주간 요약'))}${line('', '월간 요약', '매달 1일에', tog('sumM', '월간 요약'))}${line('', '연간 요약', '1월 1일에', tog('sumY', '연간 요약'))}</ul>` },
+    { id: 'D2', sec: 'retro', vis: 'show', t: '회고 템플릿', d: '일간, 주간, 월간, 연간마다 따로 정해요. AI 요약도 같은 기간 템플릿을 따라요', kw: '템플릿 틀 양식 KPT AI 요약 템플릿 일간 주간 월간 연간',
+      ctl: () => btn('기간별 템플릿 보기', 'data-sxgo="retro"') },
+    { id: 'D4', sec: 'retro', vis: 'show', t: '맞춤법 밑줄', d: '편집기의 빨간 밑줄', kw: '맞춤법 철자', sum: () => on(V.spell), ctl: () => tog('spell', '맞춤법 밑줄') },
+    { id: 'K1', sec: 'retro', vis: 'show', t: '하루 마무리 알림', d: '정한 시각에 "오늘 회고 쓸까요?"', kw: '알림 마무리 리마인더',
+      sum: () => (V.dayEnd ? hm(V.dayEndAt) : '끔'), ctl: () => `<span class="sx-tr">${tog('dayEnd', '하루 마무리 알림')}${V.dayEnd ? tim('dayEndAt', '알림 시각') : ''}</span>${V.dayEnd && V.sched[0][2] ? `<p class="sx-note">AI 예약 "매일 오후 6시, 오늘 회고 초안 쓰기"가 켜져 있어요. 초안이 있으면 알림에 함께 붙여요.</p>` : ''}` },
+    { id: 'K2', sec: 'retro', vis: 'show', t: '새 회고 기본 폴더', d: '새 회고 창에서 처음 골라져 있는 폴더', kw: '폴더 기본', sum: () => FOLD.find((x) => x[0] === V.folder)[1], ctl: () => sel('folder', FOLD, '새 회고 기본 폴더') },
+
+    /* AI 비서 */
+    { id: 'L0', sec: 'ai', vis: 'show', t: '빗금이', d: '어느 화면에서나 AI를 부르는 칸. 끄면 AI 탭에서만 쓸 수 있어요', kw: '펫 빗금이 캐릭터 끄기 숨기기', sum: () => on(V.pet), ctl: () => tog('pet', '빗금이 보이기') },
+    { id: 'L1', sec: 'ai', vis: 'show', t: '연결된 도구', d: '비서가 읽고 바꿀 수 있는 곳. 꺼 둔 곳은 쓰지 않아요', kw: '도구 권한 연결 캘린더 할 일 회고 GitHub', wide: true,
+      ctl: () => `<ul class="sx-list">${line(ic.cal, '캘린더', '일정 읽기, 새 일정 만들기', tog('tCal', '캘린더'))}${line(A.ico.check || ic.work, '할 일', '읽기, 만들기, 날짜 옮기기', tog('tTodo', '할 일'))}${line(ic.retro, '회고', '읽기, 초안 저장', tog('tRetro', '회고'))}${V.gh ? line(BR.gh, 'GitHub 커밋', '읽기만', tog('tGh', 'GitHub 커밋')) : ''}</ul>` },
+    { id: 'L5', sec: 'ai', vis: 'more', t: '바꾸기 전 확인', d: '비서가 할 일, 일정을 바꾸기 전에', kw: '확인 승인 묻기', sum: () => (V.confirm === 'always' ? '늘 묻기' : '작은 것은 바로'),
+      ctl: () => `${choose('confirm', '바꾸기 전 확인')}<p class="sx-note">지우기와 여러 개 옮기기는 어느 쪽이든 늘 물어요.</p>` },
+    { id: 'L2', sec: 'ai', vis: 'more', t: '답하는 방식 기본값', d: '새 대화를 시작할 때', kw: '꼼꼼히 답 길이 짧게 자세히', sum: () => `꼼꼼히 ${on(V.deep)}, ${V.len === 'quick' ? '짧게' : '자세히'}`,
+      ctl: () => `<div class="sxa-pair"><p class="sxa-q">어디까지 찾을까요</p>${choose('deep', '찾는 범위')}<p class="sxa-q">얼마나 길게 답할까요</p>${choose('len', '답 길이')}</div>` },
+    { id: 'L3', sec: 'ai', vis: 'more', t: '알려 둔 것', d: '비서가 모든 대화에서 기억할 메모', kw: '메모 기억 지침', wide: true, sum: () => `${V.memo.split('\n').filter(Boolean).length}줄`,
+      ctl: () => `<textarea class="sx-ta" data-sxv="memo" rows="4" aria-label="알려 둔 것">${A.esc(V.memo)}</textarea>` },
+    { id: 'L4', sec: 'ai', vis: 'more', t: '예약한 일', d: '정한 시간에 비서가 알아서 하는 일', kw: '예약 자동 반복', wide: true, sum: () => `${V.sched.filter((x) => x[2]).length}개 켜짐`,
+      ctl: () => `<ul class="sx-list">${V.sched.map(([w, t, o], i) => line('', A.esc(t), w, `<button type="button" class="sx-tg" role="switch" aria-checked="${o}" aria-label="${A.esc(t)}" data-sxsched="${i}"></button>`)).join('')}</ul><a class="sx-b" href="d-ai.html?ep=6&drawer=sched">AI 탭에서 새로 예약</a>` },
+    { id: 'L6', sec: 'ai', vis: 'more', t: 'AI 대화 기록', d: '지난 대화를 얼마나 남길지', kw: '대화 기록 보관 지우기', sum: () => ({ 30: '30일', 90: '90일', ever: '계속' })[V.aiKeep],
+      ctl: () => `${choose('aiKeep', '보관 기간')}<span class="sx-tr">${V.aiWipe ? `<span class="sx-tr">${btn('취소', 'data-sxwipe="0"')}${btn('정말 지우기', 'data-sxwipe="go"', 'danger')}</span>` : btn('대화 모두 지우기', 'data-sxwipe="1"')}</span>` },
+
+    /* 연동 */
+    { id: 'F1', sec: 'link', vis: 'show', t: 'GitHub', d: '회고를 쓸 때 그날 커밋을 불러와요', kw: '깃허브 github 커밋 저장소 연결', wide: true, dev: true,
+      ctl: () => V.gh ? `<div class="sx-svc">${BR.gh}<span><b>@developer 로 연결됨</b><small>마지막 동기화 10분 전, 저장소 ${[V.rFe, V.rDocs, V.rBe].filter(Boolean).length}개</small></span>${btn('동기화', 'data-sxtoast="동기화했어요"')}${btn('연결 해제', 'data-sxconn="gh"')}</div>`
+        : `<div class="sx-svc">${BR.gh}<span><b>연결 안 됨</b><small>새 창에서 GitHub에 로그인해요</small></span>${btn('GitHub 연결', 'data-sxconn="gh"', 'p')}</div>` },
+    { id: 'G1', sec: 'link', vis: 'show', t: 'Google Calendar', d: 'Google 일정이 ARCHIVE 캘린더에 함께 보여요', kw: '구글 캘린더 google calendar 일정 연결', wide: true,
+      ctl: () => V.gcal ? `<div class="sx-svc">${BR.gcal}<span><b>developer@archive.dev 로 연결됨</b><small>마지막 동기화 오후 2시 10분</small></span>${btn('동기화', 'data-sxtoast="캘린더를 동기화했어요"')}${btn('연결 해제', 'data-sxconn="gcal"')}</div>`
+        : `<div class="sx-svc">${BR.gcal}<span><b>연결 안 됨</b><small>새 창에서 Google에 로그인해요</small></span>${btn('Google Calendar 연결', 'data-sxconn="gcal"', 'p')}</div>` },
+    { id: 'F2', sec: 'link', vis: 'more', t: '커밋 읽을 저장소', d: '회고와 AI가 커밋을 읽을 저장소', kw: '저장소 repo 커밋', wide: true, dev: true, sum: () => `${[V.rFe, V.rDocs, V.rBe].filter(Boolean).length}개 포함`,
+      ctl: () => `<ul class="sxrp-l">${REPOS.map(repoRow).join('')}</ul>${btn(`${ic.plus}저장소 추가`, 'data-sxtoast="저장소 추가는 시안에서 생략했어요"', 'q')}` },
+    { id: 'F3', sec: 'link', vis: 'more', t: 'Push 대상 저장소', d: '회고를 Markdown으로 올릴 저장소. 회고 화면에서 GitHub 저장을 뺐으니 지금은 쓰이지 않아요', kw: 'push 저장소', dev: true, sum: () => (V.push === 'none' ? '선택 안 함' : V.push),
+      ctl: () => sel('push', [['none', '선택 안 함', '회고를 저장소에 올리지 않아요', ic.x], ...REPOS.map(([n, , vis]) => [n, `developer/${n}`, `${vis} 저장소`, ic.repo])], 'Push 대상 저장소') },
+    { id: 'F4', sec: 'link', vis: 'more', t: 'GitHub 권한', d: '커밋 작성자를 정확히 보려면 이메일 권한이 필요해요', kw: '권한 이메일 다시 연결', dev: true, sum: () => (V.ghPerm ? '이메일 권한 없음' : '모두 있음'),
+      ctl: () => V.ghPerm ? `<div class="sxn"><p><span class="sxn-w">주의</span><b>이메일 권한이 필요해요</b> 지금은 커밋 작성자 일부가 보이지 않아요.</p><button type="button" class="sxn-a" data-sxperm>권한 다시 받기</button></div>` : `<span class="sx-val">필요한 권한이 모두 있어요</span>` },
+    { id: 'G2', sec: 'link', vis: 'more', t: '새 할 일을 캘린더에도', d: '할 일을 만들면 Google Calendar에도 올려요', kw: '캘린더 올리기 push 동기화', sum: () => on(V.gPush), ctl: () => tog('gPush', '새 할 일을 캘린더에도') },
+    { id: 'G3', sec: 'link', vis: 'more', t: '캘린더에서 지우면 할 일도', d: 'Google에서 일정을 지우면 연결된 할 일도 지워요', kw: '삭제 같이 지우기', sum: () => on(V.gDel),
+      ctl: () => V.gDelAsk ? `<div class="sx-ask"><p><b>켜면 Google에서 지운 일정의 할 일도 함께 지워져요.</b>지운 할 일은 휴지통에 30일 남아요.</p><div>${btn('취소', 'data-sxgdel="0"')}${btn('켜기', 'data-sxgdel="1"', 'p')}</div></div>` : `<button type="button" class="sx-tg" role="switch" aria-checked="${V.gDel}" aria-label="캘린더에서 지우면 할 일도" data-sxgdel="t"></button>` },
+
+    /* 알림 */
+    { id: 'M1', sec: 'noti', vis: 'show', t: '알림 종류', d: '받을 알림만 켜 두세요', kw: '알림 종류 마감 요약 예약 연동', wide: true,
+      ctl: () => `<ul class="sx-list">${line('', '마감 임박', '마감 하루 전, 한 시간 전', tog('nDue', '마감 임박'))}${line('', 'AI 요약 완료', '주간, 월간, 연간 요약이 만들어지면', tog('nSum', 'AI 요약 완료'))}${line('', '예약한 일 실행', '비서가 예약한 일을 끝내면', tog('nSched', '예약한 일 실행'))}${line('', '연동 끊김', 'GitHub, Google 로그인이 만료되면', tog('nLink', '연동 끊김'))}</ul>` },
+    { id: 'E1', sec: 'noti', vis: 'show', t: '알림 보관 기간', d: '지난 알림은 자동으로 지워져요', kw: '보관 삭제 기간', ctl: () => seg('keep', [['7', '7일'], ['30', '30일'], ['90', '90일']], '알림 보관 기간') },
+    { id: 'M2', sec: 'noti', vis: 'more', t: '브라우저 알림', d: 'ARCHIVE를 보고 있지 않을 때도 알려요', kw: '푸시 브라우저 데스크톱', sum: () => ({ ask: '허용 안 함', on: '허용됨', off: '막힘' })[V.browser],
+      ctl: () => V.browser === 'on' ? `<span class="sx-val">이 브라우저에서 허용됐어요</span>` : btn('이 브라우저에서 허용', 'data-sxbrowser', 'p') },
+    { id: 'M3', sec: 'noti', vis: 'more', t: '방해 금지 시간', d: '이 시간에는 알림을 모아 두었다가 끝나면 보여요', kw: '방해 금지 밤 조용히', sum: () => (V.dnd ? `${hm(V.dndFrom)}부터 ${hm(V.dndTo)}까지` : '끔'),
+      ctl: () => `<span class="sx-tr">${tog('dnd', '방해 금지 시간')}${V.dnd ? `${tim('dndFrom', '시작')}<span>부터</span>${tim('dndTo', '끝')}<span>까지</span>` : ''}</span>` },
+    { id: 'M4', sec: 'noti', vis: 'more', t: '이메일 요약', d: '주간 회고 요약을 월요일 아침 메일로', kw: '메일 이메일 요약', sum: () => on(V.mail), ctl: () => tog('mail', '이메일 요약') },
+
+    /* 데이터와 보안 */
+    { id: 'H1', sec: 'data', vis: 'show', t: '로그인한 기기', d: '모르는 기기가 있으면 로그아웃하세요', kw: '세션 기기 로그아웃 보안', wide: true,
+      ctl: () => `<ul class="sx-list">${V.devices.map(([n, w, t, me], i) => line(/iPhone/.test(n) ? ic.phone : ic.dev, n, `${w}, ${t}`, me ? `<span class="sx-on">이 기기</span>` : btn('로그아웃', `data-sxdev="${i}"`))).join('')}</ul>${V.devices.length > 1 ? btn('다른 기기 모두 로그아웃', 'data-sxdev="all"') : ''}` },
+    { id: 'N1', sec: 'data', vis: 'show', t: '내보내기', d: '내 기록을 파일로 받아요', kw: '내보내기 백업 다운로드 export markdown json', wide: true,
+      ctl: () => `<div class="sx-exp"><span class="sx-checks" role="group" aria-label="내보낼 것">${[['xRetro', '회고'], ['xTodo', '할 일'], ['xAi', 'AI 대화']].map(([k, t]) => `<label><input type="checkbox" data-sxchk="${k}" ${V[k] ? 'checked' : ''}>${t}</label>`).join('')}</span>
+        ${seg('fmt', [['md', 'Markdown'], ['json', 'JSON']], '파일 형식')}${btn('내보내기', `data-sxexport ${V.xRetro || V.xTodo || V.xAi ? '' : 'disabled'}`, 'p')}</div>` },
+    { id: 'N3', sec: 'data', vis: 'more', t: '휴지통', d: '지운 회고와 할 일은 30일 뒤 완전히 지워져요', kw: '휴지통 되살리기 복구 삭제', wide: true, sum: () => `${V.trash.length}개`,
+      ctl: () => V.trash.length ? `<ul class="sx-list">${V.trash.map(([k, t, w], i) => line('', A.esc(t), `${k}, ${w}`, btn('되살리기', `data-sxrestore="${i}"`))).join('')}</ul>` : `<span class="sx-val">비어 있어요</span>` },
+  ];
+  const SEC = [['acct', '계정', ic.acct, '이름, 로그인 계정'], ['gen', '일반', ic.gen, '언어, 시간대'], ['work', '할 일과 캘린더', ic.work, '보기 기간, 일하는 시간'], ['retro', '회고', ic.retro, '요약, 템플릿, 마무리 알림'],
+    ['ai', 'AI 비서', ic.ai, '도구, 확인, 기억'], ['link', '연동', ic.link, 'GitHub, Google Calendar'], ['noti', '알림', ic.noti, '종류, 보관, 방해 금지'], ['data', '데이터와 보안', ic.data, '기기, 내보내기, 휴지통']];
+  const secName = (id) => (SEC.find((s) => s[0] === id) || [])[1];
+  const rowsOf = (id) => R.filter((r) => r.sec === id && (!r.dev || V.gh || r.id === 'F1'));
+
+  /* ---------- 시안 고르기: ax = AI 세부 선택, lk = 연동, dt = 데이터와 보안 (각 1~5) ---------- */
+  const pickV = (name, def) => { const q = Q.get(name); try { if (q != null && window.top === window) localStorage.setItem('archive.s' + name, q); const v = +(q ?? localStorage.getItem('archive.s' + name) ?? def); return v >= 1 && v <= 5 ? v : def; } catch (e) { return +(q || def); } };
+  const AX = pickV('ax', 1), LK = pickV('lk', 1), DT = pickV('dt', 1);
+  const ago = (n) => { const d = A.s2d(A.TODAY); d.setDate(d.getDate() - n); return md(d); };
+
+  /* AI 세부 설정: 펼쳤을 때 고르는 모양 다섯 가지 */
+  const CH = {
+    confirm: [['always', '늘 묻기', '할 일, 일정, 회고를 바꾸기 전에 매번 물어요', '"내일 오전 10시에 회의를 추가할까요?"', '추가하기|취소'], ['small', '작은 것은 바로', '되돌리기 쉬운 일은 바로 하고 알려 드려요', '"내일 오전 10시에 회의를 추가했어요."', '되돌리기']],
+    deep: [['true', '꼼꼼히 찾기', '할 일, 커밋, 지난 회고를 넓게 읽어요. 조금 느려요', '할 일 12개, 커밋 9개, 지난 회고 3편을 읽고 답했어요.'], ['false', '빠르게', '오늘 기록만 보고 바로 답해요', '오늘 할 일 5개만 보고 답했어요.']],
+    len: [['quick', '짧게', '한두 문장으로', '회의 두 개를 내일 10시, 2시에 잡았어요.'], ['deep', '자세히', '이유와 다음 할 일까지', '회의 두 개를 내일 10시, 2시에 잡았어요. 오전엔 코드 리뷰가 있어 10시로 두었고, 2시 회의 뒤 30분은 비워 두었어요.']],
+    aiKeep: [['30', '30일', '한 달 지난 대화는 지워져요', `${ago(30)} 전 대화는 지워져요.`], ['90', '90일', '석 달 지난 대화는 지워져요', `${ago(90)} 전 대화는 지워져요.`], ['ever', '계속', '직접 지우기 전까지 남겨요', '모든 대화를 남겨요.']],
+  };
+  function choose(k, label) {
+    const o = CH[k], cur = String(V[k]), sel = o.find((x) => x[0] === cur) || o[0];
+    const r = (x, inner, cls = '') => `<button type="button" class="${cls}" role="radio" aria-checked="${x[0] === cur}" data-sxs="${k}" data-v="${x[0]}">${inner}</button>`;
+    if (AX === 1) return `<div class="sxa1" role="radiogroup" aria-label="${label}" style="--n:${o.length}">${o.map((x) => r(x, `<span><b>${x[1]}</b>${x[0] === cur ? ic.check : ''}</span><small>${x[2]}</small>`)).join('')}</div>`;
+    if (AX === 2) return `<div class="sxa2" role="radiogroup" aria-label="${label}">${o.map((x) => r(x, `<i aria-hidden="true"></i><span><b>${x[1]}</b><small>${x[2]}</small></span>`)).join('')}</div>`;
+    if (AX === 3) return `<div class="sxa3"><span class="sx-seg" role="radiogroup" aria-label="${label}">${o.map((x) => r(x, x[1])).join('')}</span><div class="sxa3-pv" aria-live="polite"><small>이렇게 돼요</small><p>${sel[3]}</p>${sel[4] ? `<span>${sel[4].split('|').map((b) => `<em>${b}</em>`).join('')}</span>` : ''}</div></div>`;
+    if (AX === 4) { const i = o.indexOf(sel); return `<div class="sxa4" style="--n:${o.length};--i:${i}"><div class="sxa4-t" role="radiogroup" aria-label="${label}"><span class="sxa4-f" aria-hidden="true"></span>${o.map((x) => r(x, `<span>${x[1]}</span>`)).join('')}</div><p>${sel[2]}</p></div>`; }
+    return `<div class="sxa5"><button type="button" class="sxa5-b" data-sxdd="${k}" aria-haspopup="true" aria-expanded="${S.dd === k}"><span><b>${sel[1]}</b><small>${sel[2]}</small></span>${ic.down}</button>${S.dd === k ? `<div class="sxa5-m" role="radiogroup" aria-label="${label}">${o.map((x) => r(x, `<span><b>${x[1]}</b><small>${x[2]}</small></span>${x[0] === cur ? ic.check : ''}`)).join('')}</div>` : ''}</div>`;
+  }
+
+  /* 할 일과 캘린더 */
+  const blk = (t, d, body, act = '') => `<section class="sx-blk"><header><div><h3>${t}</h3>${d ? `<p>${d}</p>` : ''}</div>${act}</header>${body}</section>`;
+  const hNum = (v) => { const [a, b] = v.split(':').map(Number); return a + b / 60; };
+  const hStr = (x) => `${String(Math.floor(x)).padStart(2, '0')}:${x % 1 ? '30' : '00'}`;
+  const nice = (x) => (Number.isInteger(x) ? `${x}` : x.toFixed(1));
+  const order = () => (V.weekStart === 'sun' ? [0, 1, 2, 3, 4, 5, 6] : [1, 2, 3, 4, 5, 6, 0]);
+  const dayT = (d) => (WK === 2 ? [V['dT' + d + 'f'], V['dT' + d + 't']] : [V.wFrom, V.wTo]);
+  function dayHours(d) { if (WK !== 2) { const [a, b] = dayT(d); return Math.max(0, hNum(b) - hNum(a)); } return (V.rng[d] || []).reduce((s2, [a, b]) => s2 + Math.max(0, hNum(b) - hNum(a)), 0); }
+  function wkBad(d) { const r = (V.rng[d] || []).map(([a, b]) => [hNum(a), hNum(b)]).sort((x, y) => x[0] - y[0]); if (r.some(([a, b]) => b <= a)) return '끝 시각이 시작보다 빨라요'; for (let i = 1; i < r.length; i++) if (r[i][0] < r[i - 1][1]) return '겹치는 시간이 있어요'; return ''; }
+  function workSum() { const hs = V.days.map(dayHours); const tot = hs.reduce((a, b) => a + b, 0), same = hs.every((x) => x === hs[0]);
+    return `<p class="sxw-sum"><b>주 ${V.days.length}일${hs.length && same ? `, 하루 ${nice(hs[0])}시간` : ''}</b><span>한 주 ${nice(tot)}시간</span></p>`; }
+  const WY = (() => { const q = Q.get('wy'); try { if (q != null && window.top === window) localStorage.setItem('archive.swy', q); const v = +(q ?? localStorage.getItem('archive.swy') ?? 1); return v >= 1 && v <= 10 ? v : 1; } catch (e) { return +(q || 1); } })();
+  const WYP = [['wd', '평일', [1, 2, 3, 4, 5]], ['sat', '월요일부터 토요일', [1, 2, 3, 4, 5, 6]], ['all', '매일', [0, 1, 2, 3, 4, 5, 6]], ['d4', '주 4일 (월요일부터 목요일)', [1, 2, 3, 4]]];
+  const wyPre = () => (WYP.find((p) => p[2].length === V.days.length && p[2].every((d) => V.days.includes(d))) || [])[0] || 'own';
+  const runOf = () => { const o = order(), idx = o.map((d, i) => (V.days.includes(d) ? i : -1)).filter((i) => i >= 0); if (!idx.length) return null; const a = idx[0], b = idx[idx.length - 1]; return idx.length === b - a + 1 ? [a, b] : null; };
+  const thisWeek = () => { const t = A.s2d(A.TODAY), ws = V.weekStart === 'sun' ? 0 : 1, s0 = new Date(t); s0.setDate(t.getDate() - ((7 + t.getDay() - ws) % 7)); return order().map((d, i) => { const x = new Date(s0); x.setDate(s0.getDate() + i); return [d, x]; }); };
+  const dayHrs = (d) => { const [a, b] = dayT(d); return nice(Math.max(0, hNum(b) - hNum(a))); };
+  function dayChips() {
+    const on = (d) => V.days.includes(d), wk = (d) => (d === 0 || d === 6 ? 'we' : ''), bt = (d, inner, cls = '') => `<button type="button" class="${cls} ${wk(d)}" aria-pressed="${on(d)}" data-sxday="${d}" aria-label="${DOWS[d]}요일 ${on(d) ? '일함' : '쉼'}">${inner}</button>`;
+    const quick = `<span class="sxy-q">${[['wd', '평일'], ['sat', '토요일까지'], ['all', '매일']].map(([k, l]) => `<button type="button" data-sxq5="days" data-v="${k}">${l}</button>`).join('')}</span>`;
+    if (WY === 1) return `<span class="sxy1" role="group" aria-label="일하는 요일">${order().map((d) => bt(d, DOWS[d])).join('')}</span>`;
+    if (WY === 2) return `<span class="sxy2-w"><span class="sxy2" role="group" aria-label="일하는 요일">${order().map((d) => bt(d, `<b>${DOWS[d]}</b>`)).join('')}</span><small>${daysTxt()}, 주 ${V.days.length}일</small></span>`;
+    if (WY === 3) return `<span class="sxy3-w"><small>이번 주로 보면</small><span class="sxy3" role="group" aria-label="일하는 요일">${thisWeek().map(([d, x]) => bt(d, `<small>${DOWS[d]}</small><b>${x.getDate()}</b>${A.d2s(x) === A.TODAY ? '<em>오늘</em>' : ''}`)).join('')}</span></span>`;
+    if (WY === 6) { const o = S.wyOpen;
+      return `<span class="sxy6"><button type="button" class="sxy6-b" data-sxwyo aria-expanded="${o}" aria-haspopup="true"><span><small>일하는 요일</small><b>${V.days.length ? daysTxt() : '고른 요일 없음'}</b></span><em>주 ${V.days.length}일</em>${ic.down}</button>
+        ${o ? `<span class="sxy6-m" role="group" aria-label="일하는 요일">${order().map((d) => `<button type="button" aria-pressed="${on(d)}" data-sxday="${d}"><span>${DOWS[d]}요일</span><i aria-hidden="true"></i></button>`).join('')}<span class="sxy6-f">${btn('다 됐어요', 'data-sxwyo', 'q')}</span></span>` : ''}</span>`; }
+    if (WY === 7) { const r = runOf(), o = order(), a = r ? r[0] : 0, b = r ? r[1] : 4;
+      return `<span class="sxy7" style="--a:${a / 6};--b:${b / 6}"><span class="sxy7-t" aria-hidden="true"><i></i></span>
+        <input type="range" class="sxy7-r" min="0" max="6" step="1" value="${a}" data-sxwyr="a" aria-label="첫 요일" aria-valuetext="${DOWS[o[a]]}요일">
+        <input type="range" class="sxy7-r" min="0" max="6" step="1" value="${b}" data-sxwyr="b" aria-label="마지막 요일" aria-valuetext="${DOWS[o[b]]}요일">
+        <span class="sxy7-s" aria-hidden="true">${o.map((d, i) => `<span style="--x:${i / 6}" class="${i >= a && i <= b && r ? 'on' : ''}">${DOWS[d]}</span>`).join('')}</span></span>
+        <span class="sxy7-v">${r ? `<b>${DOWS[o[a]]}요일부터 ${DOWS[o[b]]}요일까지</b>, 주 ${b - a + 1}일` : `<b>${daysTxt()}</b>. 사이에 쉬는 날이 있어 막대로는 못 그려요`}</span>`; }
+    if (WY === 8) { const grp = (k, l, ds) => { const n = ds.filter(on).length, all = n === ds.length; return `<span class="sxy8-g"><span class="sxy8-h"><b>${l}</b><button type="button" class="sx-b lnk" data-sxwyg="${k}">${all ? '모두 빼기' : '모두 넣기'}</button></span><span class="sxy8-c" role="group" aria-label="${l}">${ds.map((d) => bt(d, DOWS[d])).join('')}</span><small>${n ? `${ds.length}일 중 ${n}일` : '쉼'}</small></span>`; };
+      return `<span class="sxy8">${grp('wd', '평일', [1, 2, 3, 4, 5])}${grp('we', '주말', V.weekStart === 'sun' ? [0, 6] : [6, 0])}</span>`; }
+    if (WY === 9) { const pr = S.wyOwn ? 'own' : wyPre();
+      return `<span class="sxy9-w"><span class="sxy9" role="radiogroup" aria-label="자주 쓰는 요일">${[...WYP.map(([k, l]) => [k, l.replace(/ \(.*\)/, '')]), ['own', '직접 고르기']].map(([k, l]) => `<button type="button" role="radio" aria-checked="${pr === k}" data-sxwyp="${k}">${l}</button>`).join('')}</span>
+        ${pr === 'own' ? `<span class="sxy9-c" role="group" aria-label="일하는 요일">${order().map((d) => bt(d, DOWS[d])).join('')}</span>` : `<small>${daysTxt()}, 주 ${V.days.length}일</small>`}</span>`; }
+    if (WY === 10) { const o = order(), R0 = 72;
+      return `<span class="sxy10" role="group" aria-label="일하는 요일">${o.map((d, i) => { const t = (i / 7) * Math.PI * 2 - Math.PI / 2; return `<button type="button" class="${wk(d)}" style="--x:${(Math.cos(t) * R0).toFixed(1)}px;--y:${(Math.sin(t) * R0).toFixed(1)}px" aria-pressed="${on(d)}" data-sxday="${d}" aria-label="${DOWS[d]}요일 ${on(d) ? '일함' : '쉼'}">${DOWS[d]}</button>`; }).join('')}
+        <span class="sxy10-c"><b>주 ${V.days.length}일</b><small>${V.days.length ? daysTxt() : '없음'}</small></span></span>`; }
+    if (WY === 4) return `<span class="sxy4-w"><span class="sxy4" role="group" aria-label="일하는 요일">${order().map((d) => bt(d, DOWS[d])).join('')}</span>${quick}</span>`;
+    return `<span class="sxy5" role="group" aria-label="일하는 요일">${order().map((d) => bt(d, `<b>${DOWS[d]}요일</b><small>${on(d) ? `${dayHrs(d)}시간` : '쉼'}</small>`)).join('')}</span>`;
+  }
+  const PRESETS = [['wd96', '평일', '오전 9시부터 오후 6시까지', [1, 2, 3, 4, 5], '09:00', '18:00'], ['wd107', '평일 늦게', '오전 10시부터 오후 7시까지', [1, 2, 3, 4, 5], '10:00', '19:00'], ['d4', '주 4일', '월요일부터 목요일, 오전 10시부터 오후 7시까지', [1, 2, 3, 4], '10:00', '19:00'], ['sat', '토요일까지', '월요일부터 토요일, 오전 9시부터 오후 6시까지', [1, 2, 3, 4, 5, 6], '09:00', '18:00']];
+  const presetOf = () => (PRESETS.find((p) => p[3].length === V.days.length && p[3].every((d) => V.days.includes(d)) && p[4] === V.wFrom && p[5] === V.wTo) || [])[0] || 'own';
+  /* 할 일과 캘린더: 일하는 시간 + 새 할 일과 끝낸 일, 다섯 가지 (wd=1~5) */
+  const WD = pickV('wd', 2), WK = WD === 2 ? 2 : 1;
+  if (!V.rng) { V.rng = {}; [0, 1, 2, 3, 4, 5, 6].forEach((d) => { V.rng[d] = [[V['dT' + d + 'f'], V['dT' + d + 't']]]; }); }
+  const durL = (m) => { m = +m; const h = Math.floor(m / 60), r = m % 60; return h && r ? `${h}시간 ${r}분` : h ? `${h}시간` : `${r}분`; };
+  const DONE = { keep: ['그대로', '끝낸 일도 다른 할 일과 똑같이 보여요'], dim: ['흐리게', '끝낸 일은 흐리게, 줄을 그어 그 자리에 남겨 둬요'], hide: ['접어 두기', '끝낸 일은 목록에서 빼고 맨 아래 "끝낸 일"로 접어 둬요'] };
+  const DURS = [['30', '30분'], ['60', '1시간'], ['90', '1시간 30분'], ['120', '2시간']];
+  const daysTxt = () => { const o = order().filter((d) => V.days.includes(d)); if (!o.length) return '일하는 요일 없음'; const idx = o.map((d) => order().indexOf(d)), run = idx.every((x, i) => !i || x === idx[i - 1] + 1);
+    return run && o.length > 2 ? `${DOWS[o[0]]}요일부터 ${DOWS[o[o.length - 1]]}요일` : o.map((d) => DOWS[d]).join(', ') + '요일'; };
+  const timeTxt = () => `${hm(V.wFrom)}부터 ${hm(V.wTo)}까지`;
+  const step = (k, d) => { const v = Math.min(24, Math.max(0, hNum(V[k]) + d)); return hStr(v); };
+  function sampleCards() {
+    const base = A.todos.filter((t) => t.status !== 'done').slice(0, 2), done = A.todos.find((t) => t.status === 'done') || { ...A.todos[2], status: 'done' };
+    const list = [base[0], { ...done, id: 'pv-done' }, base[1]].filter(Boolean).map((t) => ({ ...t, id: 'pv-' + t.id }));
+    const show = V.done === 'hide' ? list.filter((t) => t.status !== 'done') : list;
+    return `<div class="sxv-cards ${V.done}" aria-hidden="true">${P.list(show, 6)}${V.done === 'hide' ? `<p class="sxv-fold">${ic.down}끝낸 일 1개</p>` : ''}</div>`;
+  }
+  const calBlock = () => { const m = +V.dur, top = 1, h = m / 60; return `<div class="sxv-day" aria-hidden="true">${[9, 10, 11, 12].map((x, i) => `<span style="--y:${i}">${x}시</span>`).join('')}<i style="--t:${top - 1};--h:${h}"><b>새 할 일</b><small>${durL(m)}</small></i></div>`; };
+  function workPart() {
+    const f = hNum(V.wFrom), t = hNum(V.wTo);
+    if (WD === 1) { const H0 = 6, H1 = 22, sp = H1 - H0;
+      return `<div class="sxv-week" aria-hidden="true"><span></span>${order().map((d) => `<b>${DOWS[d]}</b>`).join('')}
+        <div class="sxv-hr">${[6, 9, 12, 15, 18, 21].map((x) => `<span style="--y:${(x - H0) / sp}">${x}시</span>`).join('')}</div>
+        ${order().map((d) => `<div class="sxv-col">${V.days.includes(d) ? `<i style="--a:${Math.max(0, (f - H0) / sp)};--b:${Math.min(1, (t - H0) / sp)}"></i>` : ''}</div>`).join('')}</div>
+        <div class="sxv-ctl">${dayChips()}<span class="sx-tr">${tim('wFrom', '시작 시각')}<span>부터</span>${tim('wTo', '끝 시각')}<span>까지</span></span></div>${workSum()}`; }
+    if (WD === 2) { const tot = V.days.reduce((a, d) => a + dayHours(d), 0), t2 = (d, i, j, l) => `<input type="time" data-sxrg="${d}|${i}|${j}" value="${V.rng[d][i][j]}" aria-label="${DOWS[d]}요일 ${i + 1}번째 ${l}">`;
+      const cp = (d) => { if (S.dd !== 'cp:' + d) return ''; const tg = S.cpT || [];
+        return `<div class="sxa5-m sxw2-cp" role="dialog" aria-label="${DOWS[d]}요일 시간 복사"><p><b>${DOWS[d]}요일 시간</b>을 어디에 붙일까요?</p><span class="sxw2-cpd" role="group" aria-label="붙일 요일">${order().filter((x) => x !== d).map((x) => `<button type="button" aria-pressed="${tg.includes(x)}" data-sxcpt="${x}">${DOWS[x]}</button>`).join('')}</span>
+          <span class="sxw2-cpq">${btn('평일', 'data-sxcpq="wd"', 'lnk')}${btn('주말', 'data-sxcpq="we"', 'lnk')}${btn('모든 날', 'data-sxcpq="all"', 'lnk')}</span><span class="sxw2-cpf">${btn('취소', 'data-sxcpx')}${btn(tg.length ? `${tg.length}일에 붙이기` : '붙이기', `data-sxcpgo="${d}" ${tg.length ? '' : 'disabled'}`, 'p')}</span></div>`; };
+      return `<div class="sxw2t"><table><thead><tr><th scope="col">요일</th><th scope="col">일하는 시간</th><th scope="col" class="n">하루</th><th scope="col"><span class="sx-sr">복사</span></th></tr></thead><tbody>${order().map((d) => { const o = V.days.includes(d), bad = o ? wkBad(d) : '';
+        return `<tr class="${o ? '' : 'off'} ${bad ? 'bad' : ''}"><th scope="row"><span class="sxw2-d"><button type="button" class="sx-tg" role="switch" aria-checked="${o}" aria-label="${DOWS[d]}요일 일함" data-sxday="${d}"></button><b>${DOWS[d]}요일</b></span></th>
+          <td>${o ? `<span class="sxw2-rs">${V.rng[d].map((r, i) => `<span class="sxw2-r">${t2(d, i, 0, '시작')}<span class="sxw2-til">~</span>${t2(d, i, 1, '끝')}${V.rng[d].length > 1 ? `<button type="button" class="sx-ib" data-sxrgx="${d}|${i}" aria-label="${DOWS[d]}요일 ${i + 1}번째 시간 빼기">${ic.x}</button>` : ''}</span>`).join('')}<button type="button" class="sxw2-add" data-sxrga="${d}">${ic.plus}시간 추가</button></span>${bad ? `<p class="sxw2-err" role="alert"><span class="sxn-w e">오류</span>${bad}</p>` : ''}`
+            : `<span class="sxw2-off">쉬는 날<button type="button" class="sx-b lnk" data-sxday="${d}">시간 넣기</button></span>`}</td>
+          <td class="n">${o ? nice(dayHours(d)) + '시간' : ''}</td><td class="a">${o ? `<span class="sxw2-cpw"><button type="button" class="sx-ib" data-sxdd="cp:${d}" aria-expanded="${S.dd === 'cp:' + d}" aria-label="${DOWS[d]}요일 시간을 다른 날에 복사" title="다른 날에 복사">${ic.copy}</button>${cp(d)}</span>` : ''}</td></tr>`; }).join('')}</tbody>
+        <tfoot><tr><th scope="row">한 주</th><td><span class="sxw2-qa">${btn(`${ic.cut}모든 날 점심시간 빼기 (12시~1시)`, 'data-sxlunch', 'q')}</span></td><td class="n">${nice(tot)}시간</td><td></td></tr></tfoot></table></div>`; }
+    if (WD === 3) return S.wdEdit === 'work' ? `<div class="sxv-edit">${dayChips()}<span class="sx-tr">${tim('wFrom', '시작 시각')}<span>부터</span>${tim('wTo', '끝 시각')}<span>까지</span></span><div class="sxv-ef">${workSum()}${btn('다 됐어요', 'data-sxwde=""', 'p')}</div></div>`
+      : `<div class="sxv-sumline"><p><b>${daysTxt()}, ${timeTxt()}</b><span>주 ${V.days.length}일, 한 주 ${nice(V.days.length * Math.max(0, hNum(V.wTo) - hNum(V.wFrom)))}시간</span></p>${btn('바꾸기', 'data-sxwde="work"')}</div>`;
+    if (WD === 4) { const H0 = 0;
+      return `<div class="sxv-gantt"><div class="sxv-gs" aria-hidden="true"><span></span>${[0, 6, 12, 18, 24].map((x) => `<em style="--x:${x / 24}">${x}시</em>`).join('')}</div>${order().map((d) => { const o = V.days.includes(d); return `<div class="sxv-gr"><button type="button" aria-pressed="${o}" data-sxday="${d}" aria-label="${DOWS[d]}요일 ${o ? '일함' : '쉼'}">${DOWS[d]}</button><span class="sxv-gt">${o ? `<i style="--a:${(f - H0) / 24};--b:${t / 24}"></i>` : ''}</span></div>`; }).join('')}</div>
+        <div class="sxv-steps">${[['wFrom', '시작'], ['wTo', '끝']].map(([k, l]) => `<span class="sxv-st"><small>${l}</small><b>${hm(V[k])}</b><span><button type="button" class="sx-ib" data-sxstep="${k}|-0.5" aria-label="${l} 30분 앞당기기">${ic.minus}</button><button type="button" class="sx-ib" data-sxstep="${k}|0.5" aria-label="${l} 30분 늦추기">${ic.plus}</button></span></span>`).join('')}${workSum()}</div>`; }
+    const q = (t2, k, opts, own) => `<div class="sxv-q"><p>${t2}</p><div class="sxv-ch" role="radiogroup" aria-label="${t2}">${opts.map(([v, l]) => `<button type="button" role="radio" aria-checked="${own(v)}" data-sxq5="${k}" data-v="${v}">${l}</button>`).join('')}</div></div>`;
+    const dk = V.days.length === 5 && [1, 2, 3, 4, 5].every((d) => V.days.includes(d)) ? 'wd' : V.days.length === 6 && !V.days.includes(0) ? 'sat' : V.days.length === 7 ? 'all' : 'own';
+    const ownT = (k, list) => !list.includes(V[k]);
+    return `${q('어느 요일에 일하나요?', 'days', [['wd', '평일'], ['sat', '월요일부터 토요일'], ['all', '매일'], ['own', '직접 고르기']], (v) => (S.q5own ? v === 'own' : v === dk))}${S.q5own || dk === 'own' ? dayChips() : ''}
+      ${q('보통 몇 시에 시작하나요?', 'wFrom', [['08:00', '오전 8시'], ['09:00', '오전 9시'], ['10:00', '오전 10시'], ['own', '다른 시각']], (v) => (v === 'own' ? ownT('wFrom', ['08:00', '09:00', '10:00']) : V.wFrom === v))}${ownT('wFrom', ['08:00', '09:00', '10:00']) ? `<p class="sxv-own">${tim('wFrom', '시작 시각')}</p>` : ''}
+      ${q('몇 시에 끝내나요?', 'wTo', [['17:00', '오후 5시'], ['18:00', '오후 6시'], ['19:00', '오후 7시'], ['own', '다른 시각']], (v) => (v === 'own' ? ownT('wTo', ['17:00', '18:00', '19:00']) : V.wTo === v))}${ownT('wTo', ['17:00', '18:00', '19:00']) ? `<p class="sxv-own">${tim('wTo', '끝 시각')}</p>` : ''}${workSum()}`;
+  }
+  function todoPart() {
+    if (WD === 1) return `<div class="sxv-two"><div class="sxv-ctlc"><div><p class="sxw-lab">기본 길이</p>${seg('dur', DURS, '기본 길이')}</div><div><p class="sxw-lab">끝낸 일</p>${seg('done', Object.entries(DONE).map(([k, [l]]) => [k, l]), '끝낸 일')}<p class="sx-note">${DONE[V.done][1]}</p></div></div>
+      <div class="sxv-pv"><div><small>캘린더에서</small>${calBlock()}</div><div><small>할 일 목록에서</small>${sampleCards()}</div></div></div>`;
+    if (WD === 2) return `<div class="sxv-dl">${[['기본 길이', '길이를 안 정하고 만든 할 일을 캘린더에 이만큼 놓아요', sel('dur', DURS, '기본 길이')], ['끝낸 일', DONE[V.done][1], sel('done', Object.entries(DONE).map(([k, [l]]) => [k, l]), '끝낸 일')]].map(([a, b, c]) => `<div><span><b>${a}</b><small>${b}</small></span>${c}</div>`).join('')}</div>`;
+    if (WD === 3) { const pop = (k, opts, cur) => S.dd === 'wd:' + k ? `<div class="sxa5-m sxv-pop" role="radiogroup" aria-label="${k === 'dur' ? '기본 길이' : '끝낸 일'}">${opts.map(([v, l, d]) => `<button type="button" role="radio" aria-checked="${cur === v}" data-sxs="${k}" data-v="${v}"><span><b>${l}</b>${d ? `<small>${d}</small>` : ''}</span>${cur === v ? ic.check : ''}</button>`).join('')}</div>` : '';
+      return `<div class="sx-card sxv-rows">${[['dur', '기본 길이', durL(V.dur), DURS.map(([v, l]) => [v, l, ''])], ['done', '끝낸 일', DONE[V.done][0], Object.entries(DONE).map(([k, [l, d]]) => [k, l, d])]].map(([k, l, val, opts]) => `<div class="sxv-r"><button type="button" class="sxv-rb" data-sxdd="wd:${k}" aria-haspopup="true" aria-expanded="${S.dd === 'wd:' + k}"><b>${l}</b><span>${val}</span>${ic.chev}</button>${pop(k, opts, V[k])}</div>`).join('')}</div>`; }
+    if (WD === 4) return `<div class="sxv-two"><div><p class="sxw-lab">기본 길이</p><span class="sxv-st big"><b>${durL(V.dur)}</b><span><button type="button" class="sx-ib" data-sxdurs="-15" aria-label="15분 줄이기" ${+V.dur <= 15 ? 'disabled' : ''}>${ic.minus}</button><button type="button" class="sx-ib" data-sxdurs="15" aria-label="15분 늘리기" ${+V.dur >= 240 ? 'disabled' : ''}>${ic.plus}</button></span></span><p class="sx-note">15분씩 바꿔요</p></div>
+      <div><p class="sxw-lab">끝낸 일</p><div class="sxa2" role="radiogroup" aria-label="끝낸 일">${Object.entries(DONE).map(([k, [l, d]]) => `<button type="button" role="radio" aria-checked="${V.done === k}" data-sxs="done" data-v="${k}"><i aria-hidden="true"></i><span><b>${l}</b><small>${d}</small></span></button>`).join('')}</div></div></div>`;
+    const q = (t2, k, opts) => `<div class="sxv-q"><p>${t2}</p><div class="sxv-ch" role="radiogroup" aria-label="${t2}">${opts.map(([v, l]) => `<button type="button" role="radio" aria-checked="${String(V[k]) === v}" data-sxs="${k}" data-v="${v}">${l}</button>`).join('')}</div></div>`;
+    return `${q('길이를 안 정하면 얼마로 잡을까요?', 'dur', DURS)}${q('끝낸 일은 어떻게 둘까요?', 'done', [['keep', '그대로 두기'], ['dim', '흐리게 남기기'], ['hide', '접어 두기']])}<p class="sx-note">${DONE[V.done][1]}</p>`;
+  }
+  function workHTML() {
+    const cnt = (id) => A.todos.filter((x) => x.cal === id).length;
+    return `${blk('일하는 시간', 'AI가 일정을 잡거나 옮길 때 이 안에서 빈 시간을 찾아요', workPart())}${blk('새 할 일과 끝낸 일', '', todoPart())}
+      <h3 class="sx-sub">캘린더와 태그</h3><div class="sxw-two sx-card sxw-ct">
+        <div><ul class="sx-list">${A.cals.map((c) => line(`<span class="sx-sw" style="background:${c.color}"></span>`, `${A.esc(c.name)}${c.def ? ' <span class="sxw-tag">기본</span>' : ''}`, `할 일 ${cnt(c.id)}개`, btn('고치기', 'data-sxtoast="캘린더 이름, 색 바꾸기는 시안에서 생략했어요"', 'q'))).join('')}</ul>${btn(`${ic.plus}새 캘린더`, 'data-sxtoast="새 캘린더는 시안에서 생략했어요"', 'q')}</div>
+        <div><ul class="sx-list">${Object.entries(A.TAG).map(([k, nm]) => line('<span class="sxw-hash">#</span>', A.esc(nm), `할 일 ${A.todos.filter((x) => P.tags(x).includes(k)).length}개`, btn('고치기', 'data-sxtoast="태그 이름 바꾸기는 시안에서 생략했어요"', 'q'))).join('')}</ul>${btn(`${ic.plus}새 태그`, 'data-sxtoast="새 태그는 시안에서 생략했어요"', 'q')}</div></div>`;
+  }
+
+  /* 회고: 기간마다 템플릿을 따로 등록, 카드로 보기. 그 기간 기본 템플릿을 AI 요약도 따름 */
+  const PER = [['day', '일간', '일간 회고는 직접 써요'], ['week', '주간', 'AI 주간 요약도 기본 템플릿대로 써요'], ['month', '월간', 'AI 월간 요약도 기본 템플릿대로 써요'], ['year', '연간', 'AI 연간 요약도 기본 템플릿대로 써요']];
+  const perName = (k) => PER.find((p) => p[0] === k)[1];
+  const tplOf = (id) => V.tpls.find((x) => x.id === id) || V.tpls[0];
+  const ofPer = (k) => V.tpls.filter((t) => t.per === k);
+  const toMd = (secs) => secs.map(([h, x]) => `## ${h}\n${x ? `> ${x}\n` : ''}`).join('\n');
+  V.tpls.forEach((t) => { if (t.md == null) t.md = toMd(t.secs); });
+  const heads = (md) => md.split('\n').filter((l) => /^#{1,3}\s+\S/.test(l)).map((l) => l.replace(/^#{1,3}\s+/, ''));
+  const cardDoc = (t) => { const hs = heads(t.md); return `<span class="sxr-doc">${hs.slice(0, 4).map((h) => `<span><b>${A.esc(h)}</b><i></i><i></i></span>`).join('')}${hs.length > 4 ? `<em>항목 ${hs.length - 4}개 더</em>` : ''}</span>`; };
+  /* 아주 작은 마크다운 보기: 제목, 목록, 할 일, 인용, 문단 */
+  function mdHTML(md) { const out = []; let list = null, code = null, tbl = null;
+    const inl = (x) => A.esc(x).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/`(.+?)`/g, '<code>$1</code>');
+    const close = () => { if (list) { out.push(list === 'ol' ? '</ol>' : '</ul>'); list = null; } if (tbl) { out.push(`<table>${tbl.map((r, i) => `<tr>${r.map((c) => (i ? `<td>${inl(c)}</td>` : `<th>${inl(c)}</th>`)).join('')}</tr>`).join('')}</table>`); tbl = null; } };
+    const CO = { NOTE: '정보', TIP: '팁', IMPORTANT: '중요', WARNING: '경고', CAUTION: '위험' };
+    md.split('\n').forEach((l) => { let m;
+      if (code != null) { if (/^```/.test(l)) { out.push(`<pre><code>${A.esc(code)}</code></pre>`); code = null; } else code += (code ? '\n' : '') + l; return; }
+      if (/^```/.test(l)) { close(); code = ''; return; }
+      if ((m = l.match(/^\|(.*)\|\s*$/))) { if (/^\|[\s:|-]+\|\s*$/.test(l)) return; if (list) { out.push(list === 'ol' ? '</ol>' : '</ul>'); list = null; } (tbl = tbl || []).push(m[1].split('|').map((c) => c.trim())); return; }
+      if ((m = l.match(/^(#{1,3})\s+(.*)$/))) { close(); out.push(`<h${m[1].length + 1}>${inl(m[2]) || '&nbsp;'}</h${m[1].length + 1}>`); }
+      else if (/^(---|\*\*\*)\s*$/.test(l)) { close(); out.push('<hr>'); }
+      else if ((m = l.match(/^>>\s?(.*)$/))) { close(); out.push(`<p class="tg">${inl(m[1]) || '&nbsp;'}</p>`); }
+      else if ((m = l.match(/^>\s?\[!(\w+)\]\s?(.*)$/))) { close(); out.push(`<div class="co"><b>${CO[m[1].toUpperCase()] || m[1]}</b>${inl(m[2])}</div>`); }
+      else if ((m = l.match(/^\s*[-*]\s+\[( |x)\]\s*(.*)$/i))) { if (list !== 'td') { close(); out.push('<ul class="td">'); list = 'td'; } out.push(`<li><span class="cb ${m[1] === ' ' ? '' : 'on'}" aria-hidden="true"></span>${inl(m[2]) || '&nbsp;'}</li>`); }
+      else if ((m = l.match(/^\s*[-*]\s+(.*)$/))) { if (list !== 'ul') { close(); out.push('<ul>'); list = 'ul'; } out.push(`<li>${inl(m[1]) || '&nbsp;'}</li>`); }
+      else if ((m = l.match(/^\s*\d+\.\s+(.*)$/))) { if (list !== 'ol') { close(); out.push('<ol>'); list = 'ol'; } out.push(`<li>${inl(m[1]) || '&nbsp;'}</li>`); }
+      else if ((m = l.match(/^>\s?(.*)$/))) { close(); out.push(`<blockquote>${inl(m[1]) || '&nbsp;'}</blockquote>`); }
+      else if (!l.trim()) { close(); }
+      else { close(); out.push(`<p>${inl(l)}</p>`); } });
+    if (code != null) out.push(`<pre><code>${A.esc(code)}</code></pre>`); close(); return out.join('') || '<p class="sx-mu">본문을 쓰면 여기에 보여요</p>'; }
+  /* / 명령: 회고 편집기와 같은 목록 (my-app 리치 에디터 기준) */
+  const SL = [
+    ['기본', [['h1', '제목 1', '큰 섹션 제목', 'H1', '# ', 'heading 제목 h1'], ['h2', '제목 2', '중간 섹션 제목', 'H2', '## ', 'heading 제목 h2'], ['h3', '제목 3', '작은 섹션 제목', 'H3', '### ', 'heading 제목 h3']]],
+    ['목록', [['bullet', '글머리 기호', '점으로 구분된 목록', '•', '- ', 'bullet list 목록 글머리'], ['task', '할 일 체크박스', '체크박스로 표시하는 목록', '☐', '- [ ] ', 'todo task 할일 체크'], ['numbered', '번호 매기기', '1, 2, 3 순서 목록', '1.', '1. ', 'number 번호 순서'], ['toggle', '토글 목록', '펼치고 접을 수 있는 목록', '▸', '>> ', 'toggle 토글 접기']]],
+    ['블록', [['quote', '인용', '인용문 블록', '❝', '> ', 'quote 인용'], ['callout', '콜아웃', '강조 카드 (정보, 팁, 경고)', '!', '> [!NOTE] ', 'callout 콜아웃 강조 경고 팁'], ['table', '표', '2×2 표', '▦', '| 열 1 | 열 2 |\n| --- | --- |\n|  |  |\n', 'table 표'], ['code', '코드 블록', '코드 작성 영역', '{}', '```\n\n```\n', 'code 코드'], ['divider', '구분선', '수평 구분선', '—', '---\n', 'divider 구분선 줄']]],
+  ];
+  const slFind = (q) => { q = q.toLowerCase().replace(/\s+/g, ''); return SL.map(([g, it]) => [g, it.filter((x) => !q || [x[0], x[1], x[5]].join(' ').toLowerCase().replace(/\s+/g, '').includes(q))]).filter(([, it]) => it.length); };
+  const mdPane = (zoom) => `<div class="sxt-md ${zoom ? 'z' : ''}"><label class="sxt-in2"><span class="sx-sr">마크다운 본문</span><textarea class="sxt-ta" data-sxtmd spellcheck="false" aria-describedby="sxt-hint" placeholder="/ 를 입력해 제목, 목록, 할 일을 넣어 보세요">${A.esc(S.draft.md)}</textarea></label><div class="sxt-out" data-sxtout aria-label="미리보기">${mdHTML(S.draft.md)}</div></div>`;
+  const TE = (() => { const v = +(Q.get('te') || 1); return v >= 1 && v <= 5 ? v : 1; })();
+  /* 3: 구문 강조 — 같은 글꼴, 색만 바꿔 글자 위치가 어긋나지 않게 */
+  const hl = (md) => md.split('\n').map((l) => { let m;
+    if ((m = l.match(/^(#{1,3})(\s.*)?$/))) return `<span class="h${m[1].length}"><i>${m[1]}</i>${A.esc(m[2] || '')}</span>`;
+    if ((m = l.match(/^(\s*[-*]\s+\[[ xX]\])(.*)$/))) return `<i class="m">${A.esc(m[1])}</i>${A.esc(m[2])}`;
+    if ((m = l.match(/^(\s*(?:[-*]|\d+\.)\s)(.*)$/))) return `<i class="m">${A.esc(m[1])}</i>${A.esc(m[2])}`;
+    if (/^(>|---|```|\|)/.test(l)) return `<span class="q">${A.esc(l)}</span>`;
+    return A.esc(l); }).join('\n') + '\n';
+  /* 4: 제목으로 나눈 묶음 */
+  const secsOf = (md) => { const out = []; let cur = { h: null, lines: [] }; md.split('\n').forEach((l) => { if (/^#{1,3}\s/.test(l)) { if (cur.h != null || cur.lines.some((x) => x.trim())) out.push(cur); cur = { h: l, lines: [] }; } else cur.lines.push(l); }); out.push(cur); return out; };
+  const joinSecs = (ss) => ss.map((x) => [x.h, ...x.lines].filter((y) => y != null).join('\n')).join('\n');
+  const taHTML = (cls = '', extra = '') => `<label class="sxt-in2"><span class="sx-sr">마크다운 본문</span><textarea class="sxt-ta ${cls}" data-sxtmd spellcheck="false" aria-describedby="sxt-hint" placeholder="/ 를 입력해 제목, 목록, 할 일을 넣어 보세요" ${extra}>${A.esc(S.draft.md)}</textarea></label>`;
+  const hint = (d) => `<small class="sxt-note">새 ${perName(d.per)} 회고에 이 본문이 그대로 들어가요. ## 로 시작하는 줄은 항목 제목이 돼요.${d.per === 'day' ? '' : ` AI ${perName(d.per)} 요약도 이 제목 순서대로 써요.`}</small>`;
+  const kh = `<span class="sxt-kh" id="sxt-hint"><kbd>/</kbd> 를 입력하면 회고 편집기처럼 블록을 넣을 수 있어요</span>`;
+  const zoomBtn = `<button type="button" class="sx-b q sxt-zb" data-sxtzoom="1">${ic.zoom}크게 보기</button>`;
+  /* 템플릿 작성 화면 5가지: 화면 전체(위치, 이름, 기간, 기본, 시작점, 본문, 미리보기, 저장)를 각각 다르게 */
+  const STARTS = [['blank', '빈 본문', '제목 두 줄만 두고 시작해요', '## \n\n## \n'], ['kpt', 'KPT', '계속할 것, 문제, 해 볼 것', '## Keep\n> 계속할 것\n\n## Problem\n> 막혔던 것\n\n## Try\n> 다음에 해 볼 것\n'], ['4l', '4L', '좋았던 것, 배운 것, 아쉬운 것, 바라는 것', '## Liked\n\n## Learned\n\n## Lacked\n\n## Longed for\n'], ['goal', '목표 점검', '목표, 실제로 한 것, 다음 행동', '## 목표\n- [ ] \n\n## 실제로 한 것\n\n## 다음 행동\n- [ ] \n']];
+  const startMd = (k) => (k.startsWith('tpl:') ? tplOf(k.slice(4)).md : (STARTS.find((x) => x[0] === k) || STARTS[0])[3]);
+  const isBlank = (md) => !md.replace(/#/g, '').trim();
+  const PERO = () => PER.map(([k, l]) => [k, l, k === 'day' ? '직접 쓰는 하루 회고' : `AI ${l} 요약도 이 순서를 따라요`]);
+  const PERD = { day: ['11월 3일 화요일', '11월 3일 회고'], week: ['11월 2일부터 8일까지', '11월 첫째 주 회고'], month: ['11월 1일부터 30일까지', '11월 회고'], year: ['2026년 1월 1일부터 12월 31일까지', '2026년 회고'] };
+  const aiLine = (per) => (per === 'day' ? '하루 회고는 직접 써요. AI는 쓰지 않아요.' : `${perName(per)} 기간이 끝나면 AI가 이 제목 순서대로 요약을 채워요.`);
+  const defSw = (d, isDef) => `<button type="button" class="sx-tg" role="switch" aria-checked="${d.def}" aria-label="${perName(d.per)} 기본 템플릿으로 쓰기" data-sxtdefd ${isDef ? 'disabled' : ''}></button>`;
+  const hlBox = (cls = '') => `<div class="sxt-md one sxt-hl ${cls}"><pre class="sxt-hlp" aria-hidden="true">${hl(S.draft.md)}</pre>${taHTML('hl')}</div>`;
+  const outline = (md) => { const ss = secsOf(md); let n = 0; return ss.map((x, i) => (x.h == null ? '' : `<li><button type="button" data-sxtj="${i}"><span class="n">${++n}</span><span>${A.esc(x.h.replace(/^#{1,3}\s*/, '')) || '제목 없음'}</span></button></li>`)).join('') || '<li class="sx-mu">## 로 제목을 넣으면 여기 보여요</li>'; };
+  const zoomLayer = (d) => (S.zoom ? `<div class="sxt-zoom" role="dialog" aria-modal="true" aria-label="본문 크게 보기"><header><b>${A.esc(d.name) || '이름 없는 템플릿'}</b><small>${perName(d.per)} 템플릿 본문</small><span class="sp"></span><span class="sxt-kh"><kbd>/</kbd> 블록 넣기</span>${btn('작게 보기', 'data-sxtzoom="0"')}</header>${mdPane(true)}</div>` : '');
+  const moreMenu2 = (d, canDel) => { const o = S.dd === 'tmore'; return `<span class="sxs ${o ? 'open' : ''}"><button type="button" class="sx-ib" data-sxdd="tmore" aria-haspopup="menu" aria-expanded="${o}" aria-label="템플릿 메뉴">${ic.more}</button>${o ? `<span class="sxa5-m sxs-m sxe-more" role="menu"><button type="button" role="menuitem" data-sxtzoom="1"><span><b>본문 크게 보기</b></span></button>${canDel ? `<button type="button" role="menuitem" class="dz" data-sxtdel><span><b>템플릿 지우기</b><small>이 템플릿으로 쓴 회고는 그대로 남아요</small></span></button>` : ''}</span>` : ''}</span>`; };
+  const startChips = () => `<div class="sxe-chips" role="group" aria-label="시작점"><span>이걸로 시작하기</span>${STARTS.slice(1).map(([k, l]) => `<button type="button" data-sxtstart="${k}">${l}</button>`).join('')}${V.tpls.filter((t) => t.per === S.draft.per && t.id !== S.draft.id).slice(0, 2).map((t) => `<button type="button" data-sxtstart="tpl:${t.id}">${A.esc(t.name)} 복사</button>`).join('')}</div>`;
+
+  function editorHTML() {
+    const d = S.draft, isNew = !V.tpls.some((x) => x.id === d.id), isDef = !isNew && V.tplFor[d.per] === d.id, last = !isNew && ofPer(d.per).length === 1, canDel = !isNew && !last;
+    const save = btn(isNew ? '등록하기' : '저장', 'data-sxtsave', 'p'), cancel = btn('취소', 'data-sxtplx');
+    const crumb = `<nav class="sx-crumb" aria-label="위치"><button type="button" data-sxtplx>회고</button>${ic.chev}<button type="button" data-sxtplx>${perName(d.per)} 템플릿</button>${ic.chev}<span aria-current="page">${isNew ? '새 템플릿' : A.esc(d.name) || '고치기'}</span></nav>`;
+
+    /* 1. 문서처럼: 큰 제목, 속성 한 줄, 테두리 없는 본문, 위쪽 막대에 저장 */
+    if (TE === 1) return `<div class="sxe1">
+      <header class="sxe1-bar"><button type="button" class="sx-b q sxe1-back" data-sxtplx>${ic.back}${perName(d.per)} 템플릿</button><span class="sp"></span>${moreMenu2(d, canDel)}${cancel}${save}</header>
+      <input class="sxe1-title" data-sxtd="name" value="${A.esc(d.name)}" maxlength="30" placeholder="템플릿 이름" aria-label="템플릿 이름" autocomplete="off">
+      <div class="sxe1-props"><span class="sxe1-p"><small>기간</small>${sel('tperd', PERO(), '기간', 'sxtperd', d.per)}</span><span class="sxe1-p"><small>${perName(d.per)} 기본으로 쓰기</small>${defSw(d, isDef)}</span><span class="sxe1-p"><small>항목</small><b data-sxtcnt>${heads(d.md).length}개</b></span></div>
+      ${hlBox('sxe1-body')}${isBlank(d.md) ? startChips() : ''}
+      <p class="sxe1-foot">${kh}<span>${aiLine(d.per)}</span></p></div>${zoomLayer(d)}`;
+
+    /* 2. 왼쪽 입력, 오른쪽에 "새 회고가 이렇게 시작해요" 실제 화면 미리보기 */
+    if (TE === 2) return `${crumb}<div class="sxe2"><div class="sxe2-form"><h3 class="sxe2-h">${isNew ? `새 ${perName(d.per)} 템플릿` : '템플릿 고치기'}</h3>
+        <div class="sxe2-f"><span id="sxe2-per">기간</span><span class="sx-seg" role="radiogroup" aria-labelledby="sxe2-per">${PER.map(([k, l]) => `<button type="button" role="radio" aria-checked="${d.per === k}" data-sxtperd="${k}">${l}</button>`).join('')}</span></div>
+        <label class="sxe2-f"><span>이름</span><input class="sx-in" data-sxtd="name" value="${A.esc(d.name)}" maxlength="30" placeholder="예: 스프린트 ${perName(d.per)} 회고" autocomplete="off"></label>
+        <div class="sxe2-f"><span class="sxe2-fh"><span>본문</span><span class="sp"></span>${sel('tstart', [['', '다른 틀에서 가져오기'], ...STARTS.slice(1).map(([k, l, ds]) => [k, l, ds]), ...V.tpls.filter((t) => t.id !== d.id).map((t) => ['tpl:' + t.id, t.name, perName(t.per) + ' 템플릿'])], '시작점', 'sxtstart', '')}${btn(ic.zoom, 'data-sxtzoom="1" aria-label="본문 크게 보기"', 'q sxe2-z')}</span>
+          <div class="sxt-md one">${taHTML()}</div>${kh}</div>
+        <div class="sxt-defrow"><span class="sxt-dl"><b>${perName(d.per)} 기본 템플릿으로 쓰기</b><small>${isDef ? '지금 기본이에요' : '켜면 오른쪽 모습으로 새 회고가 열려요'}</small></span>${defSw(d, isDef)}</div></div>
+      <aside class="sxe2-pv" aria-label="새 회고 미리보기"><p class="sxe2-cap">새 ${perName(d.per)} 회고는 이렇게 시작해요</p>
+        <div class="sxe2-page"><header><small>${PERD[d.per][0]}</small><b>${PERD[d.per][1]}</b></header>${d.per === 'day' ? '' : `<p class="sxe2-ai">${ic.ai}<span>기간이 끝나면 AI가 아래 제목 순서대로 채워요</span></p>`}<div class="sxt-out" data-sxtout>${mdHTML(d.md)}</div></div></aside></div>
+      <div class="sxt-ft">${canDel ? btn('템플릿 지우기', 'data-sxtdel', 'danger') : ''}<span class="sp"></span>${cancel}${save}</div>${zoomLayer(d)}`;
+
+    /* 3. 단계: 시작점 고르기, 본문 쓰기, 이름과 기본 */
+    if (TE === 3) { const steps = (isNew ? [['start', '시작점']] : []).concat([['body', '본문'], ['meta', '이름과 기본']]), cur = steps.some((s) => s[0] === S.tstep) ? S.tstep : steps[0][0], ci = steps.findIndex((s) => s[0] === cur);
+      const bar = `<ol class="sxe3-steps" aria-label="단계">${steps.map(([k, l], i) => `<li><button type="button" data-sxtstep="${k}" ${i === ci ? 'aria-current="step"' : ''} class="${i < ci ? 'done' : ''}" ${isNew && i > ci ? 'disabled' : ''}><small>${i + 1}단계</small>${l}</button></li>`).join('')}</ol>`;
+      let body = '';
+      if (cur === 'start') body = `<p class="sxe3-q">어떤 틀로 시작할까요?</p><div class="sxe3-grid">${STARTS.map(([k, l, ds, m]) => `<button type="button" class="sxe3-start" data-sxtstart="${k}"><b>${l}</b><small>${ds}</small><span class="hs">${heads(m).map((h) => `<span>${A.esc(h)}</span>`).join('') || '<span>제목 없음</span>'}</span></button>`).join('')}</div>
+        <p class="sxe3-q">내 템플릿을 복사해서</p><div class="sxe3-list">${V.tpls.map((t) => `<button type="button" data-sxtstart="tpl:${t.id}"><em>${perName(t.per)}</em><b>${A.esc(t.name)}</b><small>${heads(t.md).slice(0, 3).map(A.esc).join(', ')}</small></button>`).join('')}</div>`;
+      else if (cur === 'body') body = `<div class="sxt-bh"><span>본문</span>${kh}${btn(`${ic.zoom}크게 보기`, 'data-sxtzoom="1"', 'q sxt-zb')}</div>${mdPane(false)}<small class="sxt-note">## 로 시작하는 줄이 항목 제목이 돼요.</small>`;
+      else body = `<div class="sxe3-meta"><label class="sxe2-f"><span>이름</span><input class="sx-in" data-sxtd="name" value="${A.esc(d.name)}" maxlength="30" placeholder="예: 스프린트 ${perName(d.per)} 회고" autocomplete="off"></label>
+        <div class="sxe2-f"><span id="sxe3-per">어느 기간 회고에 쓸까요?</span><div class="sxe3-pers" role="radiogroup" aria-labelledby="sxe3-per">${PERO().map(([k, l, ds]) => `<button type="button" role="radio" aria-checked="${d.per === k}" data-sxtperd="${k}"><b>${l}</b><small>${ds}</small></button>`).join('')}</div></div>
+        <div class="sxt-defrow"><span class="sxt-dl"><b>${perName(d.per)} 기본 템플릿으로 쓰기</b><small>${isDef ? '지금 기본이에요' : `새 ${perName(d.per)} 회고${d.per === 'day' ? '' : '와 AI 요약'}이 이 틀로 시작해요`}</small></span>${defSw(d, isDef)}</div>
+        <p class="sxe3-sum"><b>항목 ${heads(d.md).length}개</b><span>${heads(d.md).map(A.esc).join(', ') || '아직 없어요'}</span></p></div>`;
+      const nxt = steps[ci + 1], prv = steps[ci - 1];
+      return `${crumb}<div class="sxe3">${bar}<div class="sxe3-b">${body}</div></div>
+        <div class="sxt-ft">${prv ? btn('이전', `data-sxtstep="${prv[0]}"`) : ''}${canDel ? btn('템플릿 지우기', 'data-sxtdel', 'danger') : ''}<span class="sp"></span>${cancel}${nxt && cur !== 'start' ? btn('다음', `data-sxtstep="${nxt[0]}"`, isNew ? 'p' : '') : ''}${nxt && cur === 'start' ? btn('빈 본문으로 넘어가기', 'data-sxtstart="blank"') : ''}${!isNew || !nxt ? save : ''}</div>${zoomLayer(d)}`; }
+
+    /* 5. 편집기 + 오른쪽 속성 칸 (설정 창 전체를 씀) */
+    if (TE === 5) { const pv = S.tview === 'p', tools = [['h2', '제목'], ['bullet', '목록'], ['task', '할 일'], ['quote', '인용'], ['callout', '콜아웃'], ['divider', '구분선']];
+      const SLf = SL.flatMap(([, it]) => it);
+      return `<div class="sxe5" role="dialog" aria-modal="true" aria-label="템플릿 편집"><header class="sxe5-bar">${crumb}<span class="sp"></span>${cancel}${save}</header>
+        <div class="sxe5-g"><div class="sxe5-main"><input class="sxe1-title sxe5-title" data-sxtd="name" value="${A.esc(d.name)}" maxlength="30" placeholder="템플릿 이름" aria-label="템플릿 이름" autocomplete="off">
+          <div class="sxe5-tools" role="toolbar" aria-label="블록 넣기">${tools.map(([k, l]) => `<button type="button" data-sxtins="${k}"><span class="ic" aria-hidden="true">${SLf.find((x) => x[0] === k)[3]}</span>${l}</button>`).join('')}<span class="sp"></span><span class="sxt-tab2" role="tablist" aria-label="보기"><button type="button" role="tab" aria-selected="${!pv}" data-sxtv="w">쓰기</button><button type="button" role="tab" aria-selected="${pv}" data-sxtv="p">미리보기</button></span></div>
+          ${pv ? `<div class="sxt-out sxe5-out" data-sxtout>${mdHTML(d.md)}</div>` : hlBox('sxe5-body')}${pv ? '' : `<p class="sxe5-kh">${kh}</p>`}</div>
+        <aside class="sxe5-props" aria-label="템플릿 속성"><dl><div><dt>기간</dt><dd>${sel('tperd', PERO(), '기간', 'sxtperd', d.per)}</dd></div><div><dt>${perName(d.per)} 기본</dt><dd>${defSw(d, isDef)}</dd></div></dl>
+          <section class="sxe5-sec"><p><span>항목 순서</span>${btn(`${ic.plus}추가`, 'data-sxtnh', 'q')}</p><ol class="sxe5-ol">${outline(d.md)}</ol></section>
+          <section class="sxe5-sec"><p><span>시작점</span></p>${sel('tstart', [['', '다른 틀에서 가져오기'], ...STARTS.slice(1).map(([k, l, ds]) => [k, l, ds]), ...V.tpls.filter((t) => t.id !== d.id).map((t) => ['tpl:' + t.id, t.name, perName(t.per) + ' 템플릿'])], '시작점', 'sxtstart', '')}</section>
+          <section class="sxe5-sec"><p><span>AI 요약</span></p><small>${aiLine(d.per)}</small></section>
+          <span class="sp"></span>${canDel ? btn('템플릿 지우기', 'data-sxtdel', 'danger') : ''}</aside></div></div>`; }
+    return '';
+  }
+  /* 4. 카드 그대로 펼치기: 목록을 떠나지 않고 그 카드 자리에서 고침 */
+  function cardEditor() { const d = S.draft, isNew = !V.tpls.some((x) => x.id === d.id), isDef = !isNew && V.tplFor[d.per] === d.id, last = !isNew && ofPer(d.per).length === 1;
+    return `<article class="sxt-card sxe4" aria-label="${isNew ? '새 템플릿' : '템플릿 고치기'}"><header class="sxe4-h"><input class="sxe4-name" data-sxtd="name" value="${A.esc(d.name)}" maxlength="30" placeholder="템플릿 이름" aria-label="템플릿 이름" autocomplete="off">
+        <button type="button" class="sxe4-def" role="switch" aria-checked="${d.def}" data-sxtdefd ${isDef ? 'disabled' : ''}>${d.def ? `${ic.check}${perName(d.per)} 기본` : `${perName(d.per)} 기본으로 쓰기`}</button></header>
+      ${hlBox('sxe4-body')}${isBlank(d.md) ? startChips() : ''}
+      <p class="sxe4-note">${kh}${btn(`${ic.zoom}크게 보기`, 'data-sxtzoom="1"', 'q')}</p>
+      <footer>${!isNew && !last ? btn('지우기', 'data-sxtdel', 'q dz') : ''}<span class="sp"></span>${btn('취소', 'data-sxtplx', 'q')}${btn(isNew ? '등록하기' : '저장', 'data-sxtsave', 'p')}</footer></article>${zoomLayer(d)}`; }
+  function retroHTML() {
+    if (S.draft && TE !== 4) return editorHTML();
+    const k = S.tper, P1 = PER.find((p) => p[0] === k), list = ofPer(k), E4 = S.draft && TE === 4, E4new = E4 && !V.tpls.some((x) => x.id === S.draft.id);
+    const tabs = `<div class="sxt-tabs" role="tablist" aria-label="기간" ${E4 ? 'inert' : ''}>${PER.map(([pk, pl]) => `<button type="button" role="tab" aria-selected="${pk === k}" data-sxtper="${pk}">${pl}<span>${ofPer(pk).length}</span></button>`).join('')}</div>`;
+    const cards = `<div class="sxr-tpl sxt-cards" role="tabpanel" aria-label="${P1[1]} 템플릿">${E4new ? cardEditor() : ''}${list.map((t) => { const def = V.tplFor[k] === t.id; if (E4 && S.draft.id === t.id) return cardEditor(); return `<article class="sxt-card ${def ? 'def' : ''} ${E4 ? 'dim' : ''}" ${E4 ? 'inert' : ''}><header><b>${A.esc(t.name)}</b>${def ? '<span class="sx-on">기본</span>' : ''}</header>${cardDoc(t)}
+        <footer>${def ? '' : btn('기본으로', `data-sxtdef="${t.id}"`, 'q')}<span class="sp"></span>${btn('고치기', `data-sxtpledit="${t.id}"`, 'q')}${btn('복제', `data-sxtpldup="${t.id}"`, 'q')}</footer></article>`; }).join('')}
+      ${E4 ? '' : `<button type="button" class="sxr-new" data-sxtpledit="new:${k}">${ic.plus}<span>새 ${P1[1]} 템플릿</span></button>`}</div>`;
+    const per = blk('회고 템플릿', '기간마다 템플릿을 따로 등록하고, 하나를 기본으로 정해요', `${tabs}<p class="sxt-ai">${P1[2]}</p>${cards}`);
+    const nx = (() => { const d = A.s2d(A.TODAY), ws = V.weekStart === 'sun' ? 0 : 1, w = new Date(d); w.setDate(d.getDate() + ((7 + ws - d.getDay()) % 7 || 7)); const m = new Date(d.getFullYear(), d.getMonth() + 1, 1); return [`${md(w)} ${DOWS[w.getDay()]}요일 아침`, `${md(m)} 아침`, `${d.getFullYear() + 1}년 1월 1일`]; })();
+    const sum = blk('자동 회고 요약', '기간이 끝나면 AI가 그 기간 기본 템플릿대로 요약을 써 둬요', `<div class="sxr-sum">${[['sumW', '주간', 'week'], ['sumM', '월간', 'month'], ['sumY', '연간', 'year']].map(([kk, n, p], i) => `<div class="${V[kk] ? 'on' : ''}"><span class="sxr-sh"><b>${n} 요약</b>${tog(kk, n + ' 요약')}</span><small>${V[kk] ? `다음 요약 ${nx[i]}` : '만들지 않아요'}</small><button type="button" class="sx-lnk sxr-tp" data-sxtper="${p}">${A.esc(tplOf(V.tplFor[p]).name)} 틀</button></div>`).join('')}</div>`);
+    const end = blk('하루 마무리 알림', '정한 시각에 "오늘 회고 쓸까요?"를 띄워요', `<div class="sxr-end">${tog('dayEnd', '하루 마무리 알림')}${V.dayEnd ? `<span class="sx-tr"><span>매일</span>${tim('dayEndAt', '알림 시각')}</span>` : `<span class="sx-val">꺼져 있어요</span>`}</div>${V.dayEnd && V.sched[0][2] ? `<p class="sx-note">AI 예약 "매일 오후 6시, 오늘 회고 초안 쓰기"가 켜져 있어요. 초안이 있으면 알림에 함께 붙여요.</p>` : ''}`);
+    const etc = `<div class="sx-card">${['K2', 'D4'].map((id) => { const r = R.find((x) => x.id === id); return `<div class="sx-row" id="r-${id}"><div class="sx-l"><b>${r.t}</b><p>${r.d}</p></div><div class="sx-c">${id === 'K2' ? sel('folder', FOLD, r.t) : tog('spell', r.t)}</div></div>`; }).join('')}</div>`;
+    return `${per}${sum}${end}${etc}`;
+  }
+
+  /* 연동: 실제 서비스 아이콘, 상태와 버튼만. 경고는 카드 안 알림 줄 */
+  const BR = {
+    gh: '<svg class="br-gh" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>',
+    gcal: '<svg class="br-gc" viewBox="0 0 24 24" aria-hidden="true"><path class="w" d="M6 6h12v12H6z"/><path class="b" d="M3 0h15v6H6v12H0V3a3 3 0 0 1 3-3z"/><path class="y" d="M18 0h3a3 3 0 0 1 3 3v15h-6z"/><path class="g" d="M6 18h12v6H6z"/><path class="d" d="M0 18h6v6H3a3 3 0 0 1-3-3z"/><path class="r" d="M18 18h6l-6 6z"/><text class="t" x="12" y="15.4" text-anchor="middle">31</text></svg>',
+  };
+  const SVC = () => [
+    { k: 'gh', n: 'GitHub', i: BR.gh, on: V.gh, off: '연결하면 회고를 쓸 때 그날 커밋을 불러와요', note: V.ghPerm ? ['이메일 권한이 필요해요', '지금은 커밋 작성자 일부가 보이지 않아요. 권한을 다시 받으면 바로 보여요.', 'GitHub 권한 다시 받기'] : null, sub: ['F2', 'F3'] },
+    { k: 'gcal', n: 'Google Calendar', i: BR.gcal, on: V.gcal, off: '연결하면 Google 일정이 ARCHIVE 캘린더에 함께 보여요', note: null, sub: ['G2', 'G3'] },
+  ];
+  const WH = (() => { const v = +(Q.get('wh') || 4); return v >= 1 && v <= 5 ? v : 4; })();
+  const WHY = { gh: { t: '이메일 권한이 필요해요', what: '커밋 작성자 일부가 "알 수 없음"으로 보여요. 회고와 AI가 누가 한 커밋인지 구분하지 못해요.', cause: 'GitHub를 연결할 때 이메일 확인 권한을 받지 않았어요.', steps: ['"권한 다시 받기"를 누르면 GitHub 창이 새로 열려요', '이메일 주소 읽기 권한을 허용해요', '돌아오면 ARCHIVE가 바로 다시 확인해요'], act: 'GitHub 권한 다시 받기', keep: '다른 기능(커밋 불러오기, 저장소 목록)은 그대로 돼요.' } };
+  function whyBody(k, cls = '') { const w = WHY[k];
+    return `<div class="sxwh ${cls}"><section><h4>무엇이 안 되나요</h4><p>${w.what}</p></section><section><h4>왜 그런가요</h4><p>${w.cause}</p></section><section><h4>이렇게 고쳐요</h4><ol>${w.steps.map((x) => `<li>${x}</li>`).join('')}</ol></section><p class="sxwh-k">${w.keep}</p></div>`; }
+  function whyLayer(L) { const s = L.find((x) => x.k === S.why); if (!s || !s.note) return ''; const w = WHY[s.k];
+    if (WH === 3) return `<div class="sxwh-scrim" data-sxwhx></div><aside class="sxwh-dr" role="dialog" aria-modal="true" aria-labelledby="sxwh-t"><header><span class="sxl-i">${s.i}</span><span><small>${s.n}</small><b id="sxwh-t">${w.t}</b></span><button type="button" class="sx-ib" data-sxwhx aria-label="닫기">${ic.x}</button></header>${whyBody(s.k)}<footer>${btn('나중에', 'data-sxwhx')}${btn(w.act, 'data-sxperm', 'p')}</footer></aside>`;
+    if (WH === 4) return `<div class="sxwh-scrim c" data-sxwhx><div class="sxwh-md" role="dialog" aria-modal="true" aria-labelledby="sxwh-t"><header><span class="sxl-i">${s.i}</span><b id="sxwh-t">${w.t}</b></header><p class="sxwh-lead">${w.what}</p><ol class="sxwh-steps">${w.steps.map((x, i) => `<li><span>${i + 1}</span>${x}</li>`).join('')}</ol><footer>${btn('나중에', 'data-sxwhx')}${btn(w.act, 'data-sxperm', 'p')}</footer></div></div>`;
+    return ''; }
+  function svcPageHTML(s) { const w = WHY[s.k];
+    return `<nav class="sx-crumb" aria-label="위치"><button type="button" data-sxwhx>연동</button>${ic.chev}<span aria-current="page">${s.n}</span></nav>
+      <div class="sxwh-pg"><header><span class="sxl6-i">${s.i}</span><span class="sxl-nm"><b>${s.n}</b>${s.note ? `<span class="sxl-sl warn"><span class="sxn-w">주의</span><span class="sxl-st1">${w.t}</span></span>` : '<span class="sxl-sl ok">연결됨</span>'}</span>${moreMenu(s)}</header>
+      ${s.note ? `<div class="sxwh-pgb">${whyBody(s.k, 'row')}<div class="sxwh-pga">${btn(w.act, 'data-sxperm', 'p')}</div></div>` : `<p class="sx-note">문제가 없어요. 모든 기능이 잘 돌아가고 있어요.</p>`}</div>
+      <h3 class="sx-sub">${s.n} 세부 설정</h3><div class="sx-card">${subRows(s.sub)}</div>`; }
+  const stOf = (s) => (!s.on ? ['off', '연결 안 됨'] : s.note ? ['warn', '권한 필요'] : ['ok', '연결됨']);
+  /* 상태 줄: 정상이면 "연결됨", 경고면 같은 한 줄에 "주의 + 제목"과 "자세히". 설명은 자세히를 눌러 위에 띄움 */
+  const statusLine = (s) => { const why = 'why:' + s.k;
+    if (!s.on) return `<span class="sxl-sl off">연결 안 됨</span>`;
+    if (!s.note) return `<span class="sxl-sl ok">${S.sync === s.k ? '동기화 중' : '연결됨'}</span>`;
+    return `<span class="sxl-sl warn"><span class="sxn-w">주의</span><span class="sxl-st1">${s.note[0]}</span>${WH === 1 ? `<button type="button" class="sxl-why" data-sxdd="${why}" aria-expanded="${S.dd === why}" aria-haspopup="dialog">자세히</button>` : `<button type="button" class="sxl-why" data-sxwh="${s.k}" aria-expanded="${S.why === s.k}" aria-haspopup="dialog">자세히</button>`}
+      ${WH === 1 && S.dd === why ? `<span class="sxa5-m sxl-wp" role="dialog" aria-label="${s.note[0]}"><b>${s.note[0]}</b><span>${s.note[1]}</span>${btn(s.note[2], 'data-sxperm', 'p')}</span>` : ''}</span>`; };
+  /* 2: 카드 위에 덮는 판. 카드 크기 그대로 */
+  const cover = (s) => (WH === 2 && S.why === s.k && s.note ? `<div class="sxwh-cv" role="dialog" aria-label="${WHY[s.k].t}"><header><b>${WHY[s.k].t}</b><button type="button" class="sx-ib" data-sxwhx aria-label="닫기">${ic.x}</button></header><p>${WHY[s.k].what.split('. ')[0]}.</p><footer>${btn(WHY[s.k].act, 'data-sxperm', 'p')}${btn('나중에', 'data-sxwhx', 'q')}</footer></div>` : '');
+  /* 오른쪽 위 ⋯: 지금 동기화, 연결 해제는 늘 같은 자리 */
+  const moreMenu = (s) => { if (!s.on) return ''; const dd = 'svc:' + s.k;
+    return `<span class="sxl-more"><button type="button" class="sx-ib" data-sxdd="${dd}" aria-expanded="${S.dd === dd}" aria-haspopup="menu" aria-label="${s.n} 메뉴">${ic.more}</button>${S.dd === dd ? `<span class="sxa5-m sxl-mm" role="menu"><button type="button" role="menuitem" data-sxsync="${s.k}" ${S.sync === s.k ? 'disabled' : ''}>${ic.sync}<span><b>지금 동기화</b></span></button><button type="button" role="menuitem" class="d" data-sxconn="${s.k}"><span><b>연결 해제</b><small>설정은 그대로 남아요</small></span></button></span>` : ''}</span>`; };
+  /* 할 일 자리 하나: 끊김이면 연결, 경고면 권한 다시 받기, 정상이면 지금 동기화 */
+  const primary = (s) => (!s.on ? btn(`${s.n} 연결`, `data-sxconn="${s.k}"`, 'p') : s.note ? btn(s.note[2], 'data-sxperm', 'w') : S.sync === s.k ? `<button type="button" class="sx-b q" disabled>${ic.sync}동기화 중</button>` : btn(`${ic.sync}지금 동기화`, `data-sxsync="${s.k}"`, 'q'));
+  const svcBtns = primary;
+  const notice = () => '';
+  const subRows = (ids) => ids.map((id) => R.find((r) => r.id === id)).filter((r) => !r.dev || V.gh || r.id === 'F1').map((r) => rowHTML(r)).join('');
+  function linkHTML() {
+    const L = SVC(), allSub = L.flatMap((s) => (s.on ? s.sub : [])), rest = allSub.length ? `<h3 class="sx-sub">세부 설정</h3><div class="sx-card">${subRows(allSub)}</div>` : '';
+    if (WH === 5 && S.why) { const s = L.find((x) => x.k === S.why); if (s) return svcPageHTML(s); }
+    const name = (s) => `<span class="sxl-nm"><b>${s.n}</b>${statusLine(s)}</span>`, layer = whyLayer(L);
+    if (LK === 1) return `<div class="sxl1">${L.map((s) => `<article class="sxl1-c ${stOf(s)[0]}"><div class="sxl1-h"><span class="sxl-i">${s.i}</span>${name(s)}${moreMenu(s)}</div><div class="sxl1-f">${primary(s)}</div>${cover(s)}</article>`).join('')}</div>${rest}${layer}`;
+    if (LK === 2) return `<div class="sx-card sxl2">${L.map((s) => `<div class="sxl2-r ${stOf(s)[0]}"><div class="sxl2-h"><span class="sxl-i">${s.i}</span>${name(s)}<span class="sxl2-b">${primary(s)}${moreMenu(s)}</span>${cover(s)}</div></div>`).join('')}</div>${rest}${layer}`;
+    if (LK === 3) return `${L.map((s) => `<article class="sxl4 ${stOf(s)[0]}"><div class="sxl4-h"><span class="sxl-i">${s.i}</span>${name(s)}<span class="sxl4-b">${primary(s)}${moreMenu(s)}</span>${cover(s)}</div>${s.on ? `<div class="sxl4-sub">${subRows(s.sub)}</div>` : ''}</article>`).join('')}${layer}`;
+    if (LK === 4) return `<div class="sxl6">${L.map((s) => `<article class="sxl6-c ${stOf(s)[0]}">${moreMenu(s)}<span class="sxl6-i">${s.i}</span>${name(s)}<div class="sxl6-f">${primary(s)}</div>${cover(s)}</article>`).join('')}</div>${rest}${layer}`;
+    return `<div class="sx-card sxl7">${L.map((s) => `<div class="sxl7-r ${stOf(s)[0]}"><div class="sxl7-h"><span class="sxl-i">${s.i}</span>${name(s)}${s.on && s.note ? btn(s.note[2], 'data-sxperm', 'w') : ''}
+      ${S.unlink === s.k ? `<span class="sx-tr">${btn('취소', 'data-sxunlink=""')}${btn('연결 해제', `data-sxconn="${s.k}"`, 'danger')}</span>` : `<button type="button" class="sx-tg" role="switch" aria-checked="${s.on}" aria-label="${s.n} 연결" data-sxsw="${s.k}"></button>`}${cover(s)}</div></div>`).join('')}</div>${rest}${layer}`;
+  }
+
+  /* 데이터와 보안: 내보내기는 고르는 칸 없이 판으로 */
+  const devAct = (i, me) => (me ? `<span class="sx-on">이 기기</span>` : btn('로그아웃', `data-sxdev="${i}"`));
+  const devIco = (n) => (/iPhone/.test(n) ? ic.phone : ic.dev);
+  const allOut = () => (V.devices.length > 1 ? btn('다른 기기 모두 로그아웃', 'data-sxdev="all"') : '');
+  const EXP = [['xRetro', '회고', '일간, 주간, 월간, 연간 회고'], ['xTodo', '할 일', '할 일, 태그, 캘린더'], ['xAi', 'AI 대화', 'AI 비서와 나눈 대화']];
+  const RNG = [['all', '전체 기간', '처음 기록부터 오늘까지'], ['year', '올해', `${A.TODAY.slice(0, 4)}년 1월 1일부터`], ['d30', '최근 30일', `${ago(30)}부터 오늘까지`], ['own', '직접 정하기', '시작과 끝 날짜를 골라요']];
+  const FMT = [['md', 'Markdown', '회고마다 .md 파일 하나. 노트 앱에서 바로 열려요'], ['json', 'JSON', '모든 기록을 그대로. 다른 도구로 옮길 때']];
+  const dl = (v) => { const d = A.s2d(v); return `${d.getFullYear() === +A.TODAY.slice(0, 4) ? '' : d.getFullYear() + '년 '}${md(d)}`; };
+  const rngBad = () => V.expRange === 'own' && V.expFrom > V.expTo;
+  const rngTxt = () => (V.expRange === 'own' ? `${dl(V.expFrom)}부터 ${dl(V.expTo)}까지` : RNG.find((x) => x[0] === V.expRange)[1]);
+  function exportHTML() {
+    const picked = EXP.filter(([k]) => V[k]), rng = rngTxt(), fmt = V.fmt === 'md' ? 'Markdown' : 'JSON', bad = rngBad(), file = `archive-${A.TODAY}.zip`;
+    const disc = (k, label, val, body) => { const o = S.ed.has(k); return `<div class="sxe-d ${o ? 'open' : ''}"><button type="button" class="sxe-dh" data-sxed="${k}" aria-expanded="${o}" aria-controls="sxe-${k}"><span>${label}</span><b>${val}</b>${ic.down}</button>${o ? `<div class="sxe-db" id="sxe-${k}">${body}</div>` : ''}</div>`; };
+    const radios = (k, opts) => `<div class="sxa2" role="radiogroup">${opts.map(([v, l, d]) => `<button type="button" role="radio" aria-checked="${V[k] === v}" data-sxs="${k}" data-v="${v}"><i aria-hidden="true"></i><span><b>${l}</b><small>${d}</small></span></button>`).join('')}</div>`;
+    const own = V.expRange === 'own' ? `<div class="sxe-own"><label><span>시작</span><input type="date" data-sxv="expFrom" value="${V.expFrom}" max="${A.TODAY}"></label><span class="sxe-til">부터</span><label><span>끝</span><input type="date" data-sxv="expTo" value="${V.expTo}" max="${A.TODAY}"></label><span class="sxe-til">까지</span></div>${bad ? `<p class="sxe-err" role="alert"><span class="sxn-w e">오류</span>끝 날짜가 시작보다 빨라요</p>` : ''}` : '';
+    const foot = S.exp === 'making' ? `<div class="sxe-f"><span class="sxe-s">파일을 만드는 중이에요</span><span class="sxl5-bar"><i></i></span></div>`
+      : S.exp === 'ready' ? `<div class="sxe-f"><span class="sxe-s"><b>${file}</b>${picked.map((x) => x[1]).join(', ')}, ${rng}, ${fmt}</span><span class="sx-tr">${btn('다시 만들기', 'data-sxexport')}${btn('받기', 'data-sxdown', 'p')}</span></div>`
+      : `<div class="sxe-f"><span class="sxe-s">${picked.length ? `${picked.map((x) => x[1]).join(', ')}${picked[picked.length - 1][0] === 'xTodo' ? '을' : '를'} ${V.expRange === 'own' ? rng : rng + '만큼'} ${fmt} 파일로 담아요` : '담을 것을 하나 이상 골라 주세요'}</span>${btn('파일 만들기', `data-sxexport ${picked.length && !bad ? '' : 'disabled'}`, 'p')}</div>`;
+    return `<div class="sxe"><div class="sxe-pick" role="group" aria-label="담을 것">${EXP.map(([k, t, d]) => `<button type="button" aria-pressed="${V[k]}" data-sxt="${k}"><b>${t}</b><small>${d}</small><span>${V[k] ? '담음' : '안 담음'}</span></button>`).join('')}</div>
+      <div class="sxe-ds">${disc('range', '기간', rng, radios('expRange', RNG) + own)}${disc('fmt', '파일', fmt, radios('fmt', FMT))}</div>${foot}
+      ${V.lastExp && S.exp !== 'ready' ? `<p class="sx-note">마지막으로 ${V.lastExp} 내보냈어요</p>` : ''}</div>`;
+  }
+  const trashList = () => (V.trash.length ? `<ul class="sx-list">${V.trash.map(([k, t, w, d], i) => line('', A.esc(t), `${k}, ${w}, ${d}일 뒤 완전히 지워져요`, btn('되살리기', `data-sxrestore="${i}"`))).join('')}</ul>` : `<p class="sx-val">휴지통이 비어 있어요</p>`);
+  function dataHTML() {
+    const trashRow = `<div class="sx-card">${rowHTML(R.find((r) => r.id === 'N3'))}</div>`, ex = blk('내보내기', '내 기록을 파일로 받아요', exportHTML());
+    if (DT === 1) return `${blk('로그인한 기기', '모르는 기기가 있으면 로그아웃하세요', `<div class="sxd1-g">${V.devices.map(([n, w, t, me], i) => `<article class="${me ? 'me' : ''}"><span class="sxd-i">${devIco(n)}</span><b>${n}</b><small>${w}, ${t}</small>${devAct(i, me)}</article>`).join('')}</div>`, allOut())}${ex}${trashRow}`;
+    if (DT === 2) { const soon = V.trash.length ? Math.min(...V.trash.map((x) => x[3])) : null;
+      return `<div class="sxd2-sum"><button type="button" data-sxjump="dev"><small>로그인한 기기</small><b>${V.devices.length}대</b><span>이 기기 포함</span></button><button type="button" data-sxjump="exp"><small>마지막 내보내기</small><b>${V.lastExp || '없음'}</b><span>${V.lastExp ? '' : '한 번 받아 두면 안심이에요'}</span></button><button type="button" data-sxjump="trash"><small>휴지통</small><b>${V.trash.length}개</b><span>${soon != null ? `가장 빨리 ${soon}일 뒤 지워져요` : '비어 있어요'}</span></button></div>
+      <div id="j-dev">${blk('로그인한 기기', '', `<ul class="sx-list">${V.devices.map(([n, w, t, me], i) => line(devIco(n), n, `${w}, ${t}`, devAct(i, me))).join('')}</ul>`, allOut())}</div><div id="j-exp">${ex}</div><div id="j-trash">${blk('휴지통', '지운 회고와 할 일은 30일 뒤 완전히 지워져요', trashList())}</div>`; }
+    if (DT === 3) return `${blk('최근 로그인 활동', '지금 로그인된 기기는 여기서 바로 로그아웃할 수 있어요', `<ol class="sxd3-tl">${V.log.map(([when, n, w, what, di]) => { const d = di >= 0 ? V.devices.findIndex((x) => x[0] === n) : -1, live = d >= 0;
+        return `<li class="${live ? 'live' : ''}"><time>${when}</time><span class="sxd-i">${devIco(n)}</span><span class="sxd3-t"><b>${n}</b><small>${w}, ${what}${live ? '' : di >= 0 ? ', 지금은 로그아웃됨' : ''}</small></span>${live ? devAct(d, V.devices[d][3]) : ''}</li>`; }).join('')}</ol>`, allOut())}${ex}${trashRow}`;
+    if (DT === 4) return `${blk('로그인한 기기', '', `<div class="sxd4"><table><thead><tr><th scope="col">기기</th><th scope="col">위치</th><th scope="col">마지막 활동</th><th scope="col"><span class="sx-sr">동작</span></th></tr></thead><tbody>${V.devices.map(([n, w, t, me], i) => `<tr><th scope="row"><span class="sxd-i">${devIco(n)}</span>${n}</th><td>${w}</td><td>${t}</td><td>${devAct(i, me)}</td></tr>`).join('')}</tbody></table></div>`, allOut())}${ex}
+      ${blk('휴지통', '30일 뒤 완전히 지워져요', V.trash.length ? `<div class="sxd4"><table><thead><tr><th scope="col">이름</th><th scope="col">종류</th><th scope="col">지운 때</th><th scope="col">남은 날</th><th scope="col"><span class="sx-sr">동작</span></th></tr></thead><tbody>${V.trash.map(([k, t, w, d], i) => `<tr><th scope="row">${A.esc(t)}</th><td>${k}</td><td>${w}</td><td>${d}일</td><td>${btn('되살리기', `data-sxrestore="${i}"`)}</td></tr>`).join('')}</tbody></table></div>` : `<p class="sx-val">휴지통이 비어 있어요</p>`)}`;
+    return `<div class="sxd5"><section><h3>내 기록</h3>${ex}${blk('휴지통', '30일 뒤 완전히 지워져요', trashList())}</section>
+      <section><h3>로그인</h3>${blk('로그인한 기기', '', `<ul class="sx-list">${V.devices.map(([n, w, t, me], i) => line(devIco(n), n, `${w}, ${t}`, devAct(i, me))).join('')}</ul>`)}${allOut()}</section></div>`;
+  }
+  const CUSTOM = { work: workHTML, retro: retroHTML, link: linkHTML, data: dataHTML };
+
+
+  /* ---------- 상태 ---------- */
+  function TEV0() { return null; }
+  const S = { sec: null, q: '', open: new Set(), seen: false, dd: null, sync: null, draft: null, exp: null, unlink: null, wkOwn: false, tper: Q.get('tper') || 'day', tview: TEV0(), why: Q.get('why') || null, svcPage: null, wdEdit: Q.get('wde') || null, ed: new Set(), sl: null, q5own: false };
+  const fromHash = () => { const h = location.hash.slice(1); return SEC.some((s) => s[0] === h) ? h : null; };
+  S.sec = fromHash() || (SV === 4 ? null : 'acct');
+  if (Q.get('open')) Q.get('open').split(',').forEach((x) => S.open.add(x));
+  const match = (r) => { const q = S.q.trim().toLowerCase(); if (!q) return true; return [r.t, r.d, r.kw, secName(r.sec)].join(' ').toLowerCase().includes(q); };
+
+  /* ---------- 그리기 ---------- */
+  function rowHTML(r, force) {
+    if (r.vis === 'show') return `<div class="sx-row ${r.wide ? 'w' : ''}" id="r-${r.id}"><div class="sx-l"><b>${r.t}</b>${r.d ? `<p>${r.d}</p>` : ''}</div><div class="sx-c">${r.ctl()}</div></div>`;
+    const o = force || S.open.has(r.id), s = r.sum ? r.sum() : '';
+    return `<div class="sx-row sx-more ${r.danger ? 'sx-dz' : ''} ${o ? 'open' : ''}" id="r-${r.id}"><button type="button" class="sx-mh" data-sxx="${r.id}" aria-expanded="${o}" aria-controls="b-${r.id}"><span class="sx-l"><b>${r.t}</b>${r.d && !o ? `<p>${r.d}</p>` : ''}</span>${s && !o ? `<span class="sx-sum">${A.esc(s)}</span>` : ''}${ic.down}</button>
+      ${o ? `<div class="sx-mb" id="b-${r.id}">${r.d ? `<p class="sx-md">${r.d}</p>` : ''}<div class="sx-c">${r.ctl()}</div></div>` : ''}</div>`;
+  }
+  function groupHTML(id, opts = {}) {
+    if (!S.q.trim() && CUSTOM[id]) return `<section class="sx-sec" id="s-${id}" aria-labelledby="h-${id}">${opts.head === false ? '' : `<header class="sx-sh"><h2 id="h-${id}">${opts.icon ? SEC.find((s) => s[0] === id)[2] : ''}${secName(id)}</h2></header>`}${CUSTOM[id]()}</section>`;
+    const rs = rowsOf(id).filter(match); if (!rs.length) return '';
+    const sh = rs.filter((r) => r.vis === 'show'), mo = rs.filter((r) => r.vis === 'more'), q = !!S.q.trim();
+    const aiNote = id === 'ai' ? `<p class="sx-note">AI 탭 오른쪽 서랍의 비서 설정과 같은 값이에요.</p>` : '';
+    return `<section class="sx-sec" id="s-${id}" aria-labelledby="h-${id}">${opts.head === false ? '' : `<header class="sx-sh"><h2 id="h-${id}">${opts.icon ? SEC.find((s) => s[0] === id)[2] : ''}${secName(id)}</h2></header>`}${aiNote}
+      ${sh.length ? `<div class="sx-card">${sh.map((r) => rowHTML(r)).join('')}</div>` : ''}
+      ${mo.length ? `${sh.length ? `<h3 class="sx-sub">세부 설정</h3>` : ''}<div class="sx-card">${mo.map((r) => rowHTML(r, q)).join('')}</div>` : ''}</section>`;
+  }
+  const search = (ph = '설정 찾기') => `<label class="sx-q">${ic.search}<input type="search" data-sxq value="${A.esc(S.q)}" placeholder="${ph}" aria-label="설정 찾기" autocomplete="off">${S.q ? `<button type="button" data-sxqx aria-label="지우기">${ic.x}</button>` : ''}</label>`;
+  const nav = (spy) => `<nav class="sx-nav" aria-label="설정 목록">${SEC.map(([k, n, i]) => `<button type="button" class="ch" data-sxgo="${k}" aria-current="${S.sec === k && !S.q ? (spy ? 'true' : 'page') : 'false'}">${i}${n}</button>`).join('')}</nav>`;
+  const results = () => { const out = SEC.map(([k]) => groupHTML(k, { icon: true })).join(''); return out || `<div class="sx-empty"><b>"${A.esc(S.q)}"에 맞는 설정이 없어요</b><p>다른 말로 찾아보세요. 예: 시간대, 알림, 템플릿</p></div>`; };
+  const backTo = () => { try { return sessionStorage.getItem('archive.from') || 'd-ai.html'; } catch (e) { return 'd-ai.html'; } };
+
+  const LAY = {
+    1: () => `<div class="sx-page"><div class="sx-wrap">${S.q ? `<h1 class="sx-h">검색 결과</h1>${results()}` : `<h1 class="sx-h">${secName(S.sec)}</h1>${groupHTML(S.sec, { head: false })}`}</div></div>`,
+    2: () => `<div class="sx-page" data-sxscroll><div class="sx-wrap"><div class="sx-stick">${search()}</div>${S.q ? results() : SEC.map(([k]) => groupHTML(k, { icon: true })).join('')}</div></div>`,
+    3: () => `${EMBED ? '' : `<div class="sx-behind"><p>실제로는 지금 보던 화면 위에 창으로 열려요. 다른 탭에서 사용자 메뉴의 "설정"을 눌러 보세요.</p></div>`}
+      <div class="sx-dlg-w" data-sxclose><div class="sx-dlg" role="dialog" aria-modal="true" aria-label="설정"><aside class="sx-dnav"><p class="sx-dt">설정</p>${search('찾기')}${nav()}</aside>
+        <div class="sx-dbody"><header class="sx-dh"><h1 class="sx-h">${S.q ? '검색 결과' : secName(S.sec)}</h1><button type="button" class="sx-ib" data-sxclose aria-label="설정 닫기">${ic.x}</button></header><div class="sx-dsc">${S.q ? results() : groupHTML(S.sec, { head: false })}</div></div></div></div>`,
+    4: () => `<div class="sx-page"><div class="sx-wrap">${S.sec && !S.q ? `<nav class="sx-crumb" aria-label="위치"><button type="button" data-sxhome>설정</button>${ic.chev}<span aria-current="page">${secName(S.sec)}</span></nav><h1 class="sx-h">${secName(S.sec)}</h1>${groupHTML(S.sec, { head: false })}`
+      : `<h1 class="sx-h">설정</h1>${search('무엇을 바꿀까요? 예: 시간대, 알림')}${S.q ? results() : `<div class="sx-home">${SEC.map(([k, n, i, d]) => { const rs = rowsOf(k), v = rs.filter((r) => r.sum).slice(0, 2).map((r) => `${r.t} ${r.sum()}`);
+          return `<button type="button" class="sx-tile" data-sxgo="${k}">${i}<b>${n}</b><small>${d}</small>${v.length ? `<span class="sx-tv">${v.map((x) => `<span>${A.esc(x)}</span>`).join('')}</span>` : ''}</button>`; }).join('')}</div>`}`}</div></div>`,
+    5: () => `<div class="sx-page"><div class="sx-wrap n"><h1 class="sx-h">설정</h1>${search('설정 찾기')}
+      ${S.q ? results() : SEC.map(([k, n, i, d]) => { const o = S.sec === k; return `<section class="sx-acc ${o ? 'open' : ''}" id="s-${k}"><button type="button" class="sx-ah" data-sxacc="${k}" aria-expanded="${o}">${i}<span><b>${n}</b><small>${d}</small></span>${ic.down}</button>${o ? `<div class="sx-ab">${groupHTML(k, { head: false })}</div>` : ''}</section>`; }).join('')}</div></div>`,
+  };
+
+  function sidebar() {
+    const side = $('.side'); if (!side) return;
+    side.querySelectorAll('section').forEach((x) => x.remove());
+    const back = `<a class="ch sx-back" href="${backTo()}">${ic.back}앱으로 돌아가기</a>`;
+    const inner = SV === 1 ? `${back}<section aria-label="설정"><h2>설정</h2>${search()}${nav()}</section>`
+      : SV === 2 ? `${back}<section aria-label="설정"><h2>설정</h2>${nav(true)}</section>`
+      : SV === 3 ? `${back}` : SV === 4 ? `${back}<section aria-label="설정"><h2>설정</h2>${nav()}</section>` : `${back}`;
+    side.querySelector('.ws').insertAdjacentHTML('afterend', `<section class="sx-sidebar">${inner}</section>`);
+  }
+  function render() {
+    const f = document.activeElement, fq = f && f.matches && f.matches('[data-sxq]'), pos = fq ? f.selectionStart : 0;
+    const sc = $('[data-sxscroll]'), y = sc ? sc.scrollTop : 0, dsc = $('.sx-dsc'), y2 = dsc ? dsc.scrollTop : 0;
+    if (!EMBED) { P.frame(); sidebar(); $('#ttl').innerHTML = '설정'; $('#topx').innerHTML = ''; }
+    $('#sm').innerHTML = LAY[SV]();
+    const sc2 = $('[data-sxscroll]'); if (sc2) sc2.scrollTop = y; const d2 = $('.sx-dsc'); if (d2) d2.scrollTop = y2;
+    if (fq) { const q = $(f.closest('.side') ? '.side [data-sxq]' : '.sx-main [data-sxq]') || $('[data-sxq]'); if (q) { q.focus({ preventScroll: true }); q.setSelectionRange(pos, pos); } }
+    if (SV === 2) spy();
+    /* 고르기 메뉴가 창 오른쪽을 넘으면 반대쪽으로 */
+    document.querySelectorAll('.sxs-m').forEach((m) => { const box = (m.closest('.sx-dsc, .sx-page') || document.body).getBoundingClientRect(), r = m.getBoundingClientRect(); if (r.right > box.right - 8) m.classList.add('flip'); m.querySelector('[aria-selected="true"]')?.focus({ preventScroll: true }); });
+  }
+  window.SX = { go: (sec) => go(sec), cur: () => S.sec };
+  function go(sec, openId) {
+    S.q = ''; if (openId) S.open.add(openId);
+    if (SV === 2) { S.sec = sec; S.hold = Date.now() + 700; render(); const el = $(`#s-${sec}`); el && el.scrollIntoView({ block: 'start' }); }
+    else if (SV === 5) { S.sec = S.sec === sec && !openId ? null : sec; render(); }
+    else { S.sec = sec; render(); $('.sx-page, .sx-dsc') && ($('.sx-page') || $('.sx-dsc')).scrollTo(0, 0); }
+    if (openId) requestAnimationFrame(() => { const r = $('#r-' + openId); r && r.scrollIntoView({ block: 'center' }); r && r.querySelector('button, input, select')?.focus({ preventScroll: true }); });
+    try { if (sec && window.top === window) history.replaceState(null, '', '#' + sec); } catch (e) {}
+  }
+  function spy() {
+    const sc = $('[data-sxscroll]'); if (!sc || sc.dataset.spy) return; sc.dataset.spy = '1';
+    sc.addEventListener('scroll', () => { if (S.hold && Date.now() < S.hold) return; const t = sc.getBoundingClientRect().top + 120; let cur = SEC[0][0];
+      SEC.forEach(([k]) => { const el = $(`#s-${k}`); if (el && el.getBoundingClientRect().top <= t) cur = k; });
+      if (cur !== S.sec) { S.sec = cur; document.querySelectorAll('.sx-nav [data-sxgo]').forEach((b) => b.setAttribute('aria-current', b.dataset.sxgo === cur)); } }, { passive: true });
+  }
+  const closeSheet = () => { if (EMBED) parent.postMessage('um:close', '*'); else location.href = backTo(); };
+
+  /* ---------- / 명령 동작 ---------- */
+  function caretXY(ta) { const m = document.createElement('div'), cs = getComputedStyle(ta);
+    ['fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'letterSpacing', 'paddingTop', 'paddingLeft', 'paddingRight', 'borderLeftWidth', 'borderTopWidth', 'boxSizing', 'whiteSpace', 'wordWrap', 'tabSize'].forEach((k) => { m.style[k] = cs[k]; });
+    Object.assign(m.style, { position: 'absolute', visibility: 'hidden', whiteSpace: 'pre-wrap', wordWrap: 'break-word', width: ta.clientWidth + 'px', top: 0, left: 0 });
+    m.textContent = ta.value.slice(0, ta.selectionStart); const sp = document.createElement('span'); sp.textContent = '\u200b'; m.append(sp); document.body.append(m);
+    const r = { x: sp.offsetLeft, y: sp.offsetTop + sp.offsetHeight - ta.scrollTop }; m.remove(); return r; }
+  function slCheck(ta) { const v = ta.value.slice(0, ta.selectionStart), ln = v.slice(v.lastIndexOf('\n') + 1), m = ln.match(/(^|\s)\/([^\s/]*)$/);
+    if (!m) { slClose(); return; } S.sl = { ta, q: m[2], start: ta.selectionStart - m[2].length - 1, i: S.sl && S.sl.q === m[2] ? S.sl.i : 0, lineStart: !ln.slice(0, ln.length - m[2].length - 1).trim() }; slDraw(); }
+  function slDraw() { const old = document.querySelector('.sxt-sl'); if (old) old.remove(); if (!S.sl) return; const { ta, q } = S.sl, g = slFind(q), flat = g.flatMap(([, it]) => it);
+    if (S.sl.i >= flat.length) S.sl.i = 0; let n = -1;
+    const html = flat.length ? g.map(([gl, it]) => `<div class="sxt-slg"><p>${gl}</p>${it.map((x) => { n++; return `<button type="button" role="option" aria-selected="${n === S.sl.i}" data-sxsl="${x[0]}" tabindex="-1"><span class="ic">${x[3]}</span><span><b>${x[1]}</b><small>${x[2]}</small></span></button>`; }).join('')}</div>`).join('') : '<p class="sxt-sle">검색 결과 없음</p>';
+    const host = ta.closest('.sxt-md'), xy = caretXY(ta), tr = ta.getBoundingClientRect(), hr = host.getBoundingClientRect();
+    host.insertAdjacentHTML('beforeend', `<div class="sxt-sl" role="listbox" aria-label="넣을 블록">${html}</div>`);
+    const el = host.querySelector('.sxt-sl'), top = tr.top - hr.top + xy.y + 4, left = Math.min(tr.left - hr.left + xy.x, hr.width - 308);
+    el.style.left = Math.max(8, left) + 'px'; el.style.top = (top + el.offsetHeight > hr.height && top - el.offsetHeight - 28 > 0 ? top - el.offsetHeight - 28 : top) + 'px';
+    el.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: 'nearest' }); }
+  function slClose() { S.sl = null; document.querySelector('.sxt-sl')?.remove(); }
+  function slPick(id) { if (!S.sl) return; const { ta, start, lineStart } = S.sl, x = SL.flatMap(([, it]) => it).find((y) => y[0] === id), v = ta.value, end = ta.selectionStart;
+    const ins = (lineStart ? '' : '\n') + x[4], nv = v.slice(0, start) + ins + v.slice(end); let pos = start + ins.length;
+    if (id === 'code') pos = start + ins.indexOf('\n') + 1; if (id === 'table') pos = start + ins.lastIndexOf('\n|  |') + 3;
+    slClose(); ta.value = nv; ta.focus(); ta.setSelectionRange(pos, pos); ta.dispatchEvent(new Event('input', { bubbles: true })); }
+  document.addEventListener('scroll', (e) => { const t = e.target; if (t.matches && t.matches('.sxt-ta.hl')) { const pr = t.closest('.sxt-hl')?.querySelector('.sxt-hlp'); if (pr) pr.scrollTop = t.scrollTop; } }, true);
+  document.addEventListener('mousedown', (e) => { if (S.sl && !(e.target.closest && e.target.closest('.sxt-sl, [data-sxtmd]'))) slClose(); if (e.target.closest && e.target.closest('[data-sxsl]')) e.preventDefault(); });
+
+  /* ---------- 이벤트 ---------- */
+  document.addEventListener('click', (e) => {
+    if (!(e.target instanceof Element)) return;
+    const g = (a) => e.target.closest(`[${a}]`); let el;
+    if (S.dd && !g('data-sxdd') && !e.target.closest('.sxa5-m')) { S.dd = null; render(); if (!g('data-sxs')) return; }
+    if ((el = g('data-sxclose')) && (el.classList.contains('sx-ib') || e.target === el)) { closeSheet(); return; }
+    if ((el = g('data-sxgo'))) { go(el.dataset.sxgo, el.dataset.sxopen); return; }
+    if (g('data-sxhome')) { S.sec = null; S.q = ''; render(); return; }
+    if ((el = g('data-sxacc'))) { go(el.dataset.sxacc); return; }
+    if (g('data-sxqx')) { S.q = ''; render(); $('[data-sxq]')?.focus(); return; }
+    if ((el = g('data-sxx'))) { const id = el.dataset.sxx; S.open.has(id) ? S.open.delete(id) : S.open.add(id); render(); $(`[data-sxx="${id}"]`)?.focus({ preventScroll: true }); return; }
+    if ((el = g('data-sxt'))) { const k = el.dataset.sxt; V[k] = !V[k]; if (k === 'pet') { try { localStorage.setItem('archive.petOff', V.pet ? '0' : '1'); } catch (x) {} if (window.PET && PET.setOff) PET.setOff(!V.pet); else if (V.pet && !EMBED) location.reload(); } render(); return; }
+    if ((el = g('data-sxtper'))) { S.tper = el.dataset.sxtper; S.draft = null; render(); $(`[data-sxtper="${S.tper}"][role=tab]`)?.focus({ preventScroll: true }); return; }
+    if ((el = g('data-sxtdef'))) { const t = tplOf(el.dataset.sxtdef); V.tplFor[t.per] = t.id; A.toast(`${perName(t.per)} 기본 템플릿을 "${t.name}"(으)로 바꿨어요`); render(); return; }
+    if ((el = g('data-sxtpledit'))) { const v = el.dataset.sxtpledit; S.dd = null; S.zoom = false; S.tstep = null; S.tview = null;
+      if (v.startsWith('new:')) { const k = v.slice(4) || S.tper; S.draft = { id: 't' + Date.now(), per: k, name: '', md: '## \n\n## \n', def: false }; }
+      else { const t = tplOf(v); S.draft = { id: t.id, per: t.per, name: t.name, md: t.md, def: V.tplFor[t.per] === t.id }; }
+      render(); const f = TE === 3 && v.startsWith('new:') ? $('.sxe3-start') : $('[data-sxtd="name"]'); f?.focus({ preventScroll: TE !== 4 }); if (TE === 4) $('.sxe4')?.scrollIntoView({ block: 'nearest' }); return; }
+    if ((el = g('data-sxtpldup'))) { const t = tplOf(el.dataset.sxtpldup); V.tpls.push({ id: 't' + Date.now(), per: t.per, name: t.name + ' 사본', md: t.md }); A.toast(`"${t.name} 사본"을 만들었어요`); render(); return; }
+    if (g('data-sxtdefd')) { S.draft.def = !S.draft.def; render(); $('[data-sxtdefd]')?.focus({ preventScroll: true }); return; }
+    if ((el = g('data-sxtperd'))) { S.draft.per = el.dataset.sxtperd; S.dd = null; render(); ($(`[data-sxtperd="${S.draft.per}"]`) || $('[data-sxdd="sel:tperd"]'))?.focus({ preventScroll: true }); return; }
+    if ((el = g('data-sxtstart'))) { const v = el.dataset.sxtstart; S.dd = null; if (v) { S.draft.md = startMd(v); if (TE === 3) S.tstep = 'body'; if (TE === 5) S.tview = null; A.toast(v === 'blank' ? '빈 본문으로 시작해요' : `"${v.startsWith('tpl:') ? tplOf(v.slice(4)).name : STARTS.find((x) => x[0] === v)[1]}" 본문을 가져왔어요`); } render(); const ta = $('[data-sxtmd]'); if (ta && v) { ta.focus({ preventScroll: true }); ta.setSelectionRange(0, 0); } return; }
+    if ((el = g('data-sxtstep'))) { const ta = $('[data-sxtmd]'); if (ta) S.draft.md = ta.value; S.tstep = el.dataset.sxtstep; render(); $(S.tstep === 'meta' ? '[data-sxtd="name"]' : S.tstep === 'body' ? '[data-sxtmd]' : '.sxe3-start')?.focus({ preventScroll: true }); return; }
+    if ((el = g('data-sxtins'))) { let ta = $('[data-sxtmd]'); if (!ta) { S.tview = null; render(); ta = $('[data-sxtmd]'); ta.setSelectionRange(ta.value.length, ta.value.length); }
+      const x = SL.flatMap(([, it]) => it).find((y) => y[0] === el.dataset.sxtins), v = ta.value, p = ta.selectionStart, ls = v.lastIndexOf('\n', p - 1) + 1, le = v.indexOf('\n', p) === -1 ? v.length : v.indexOf('\n', p), empty = !v.slice(ls, le).replace(/^#+\s*$/, '').trim();
+      const nv = empty ? v.slice(0, ls) + x[4] + v.slice(le) : v.slice(0, le) + '\n' + x[4] + v.slice(le), pos = (empty ? ls : le + 1) + x[4].length;
+      ta.value = nv; ta.focus(); ta.setSelectionRange(pos, pos); ta.dispatchEvent(new Event('input', { bubbles: true })); return; }
+    if (g('data-sxtplx')) { S.draft = null; S.zoom = false; render(); return; }
+    if ((el = g('data-sxtmv'))) { const [i, d] = el.dataset.sxtmv.split('|').map(Number), a = S.draft.secs; [a[i], a[i + d]] = [a[i + d], a[i]]; render(); $(`[data-sxtmv="${i + d}|${d}"]`)?.focus(); return; }
+    if ((el = g('data-sxtrm'))) { S.draft.secs.splice(+el.dataset.sxtrm, 1); render(); return; }
+    if (g('data-sxtadd')) { S.draft.secs.push(['', '']); render(); $(`[data-sxth="${S.draft.secs.length - 1}"]`)?.focus(); return; }
+    if ((el = g('data-sxtzoom'))) { const src = $(S.zoom ? '.sxt-zoom .sxt-ta' : '.sxt-ta'), pos = src ? src.selectionStart : S.draft.md.length; S.zoom = el.dataset.sxtzoom === '1'; render();
+      const ta = S.zoom ? $('.sxt-zoom .sxt-ta') : $('[data-sxtmd]'); if (ta) { ta.focus(); ta.setSelectionRange(pos, pos); } return; }
+    if ((el = g('data-sxtv'))) { const ta = $('.sxt-ta'); if (ta) S.draft.md = ta.value; S.tview = el.dataset.sxtv; render(); return; }
+    if ((el = g('data-sxtj'))) { const ss = secsOf(S.draft.md), i = +el.dataset.sxtj, pos = joinSecs(ss.slice(0, i)).length + (i ? 1 : 0), ta = $('[data-sxtmd]'); if (ta) { ta.focus(); ta.setSelectionRange(pos, pos + (ss[i].h || '').length); const lh = parseFloat(getComputedStyle(ta).lineHeight) || 22; ta.scrollTop = Math.max(0, (S.draft.md.slice(0, pos).split('\n').length - 2) * lh); } return; }
+    if ((el = g('data-sxtsm'))) { const [i, dd] = el.dataset.sxtsm.split('|').map(Number), ss = secsOf(S.draft.md); [ss[i], ss[i + dd]] = [ss[i + dd], ss[i]]; S.draft.md = joinSecs(ss); render(); $(`[data-sxtsm="${i + dd}|${dd}"]`)?.focus({ preventScroll: true }); return; }
+    if (g('data-sxtnh')) { S.draft.md = S.draft.md.replace(/\s*$/, '') + '\n\n## 새 항목\n'; render(); const ta = $('.sxt-ta'); if (ta) { const e2 = ta.value.length - 1; ta.focus(); ta.setSelectionRange(e2 - 5, e2); } return; }
+    if ((el = g('data-sxsl'))) { e.preventDefault(); slPick(el.dataset.sxsl); return; }
+    if (g('data-sxtsave')) { const d = S.draft;
+      if (!d.name.trim()) { A.toast('템플릿 이름을 적어 주세요'); $('[data-sxtd="name"]')?.focus(); return; }
+      if (!d.md.trim()) { A.toast('본문을 적어 주세요'); $('.sxt-ta')?.focus(); return; }
+      let t = V.tpls.find((x) => x.id === d.id); const isNew = !t; if (!t) { t = { id: d.id, per: d.per }; V.tpls.push(t); } t.name = d.name.trim(); t.md = d.md.replace(/\s+$/, '') + '\n'; t.secs = heads(t.md).map((h) => [h, '']); S.zoom = false;
+      if (d.def) V.tplFor[d.per] = t.id; S.tper = d.per; S.draft = null; A.toast(isNew ? `${perName(t.per)} 템플릿 "${t.name}"을 등록했어요` : `"${t.name}"을 저장했어요`); render(); return; }
+    if (g('data-sxtdel')) { const d = S.draft, t = tplOf(d.id); V.tpls = V.tpls.filter((x) => x.id !== d.id); if (V.tplFor[d.per] === d.id) V.tplFor[d.per] = ofPer(d.per)[0].id; S.draft = null; A.toast(`"${t.name}"을 지웠어요`); render(); return; }
+    if ((el = g('data-sxed'))) { const k = el.dataset.sxed; S.ed.has(k) ? S.ed.delete(k) : S.ed.add(k); render(); $(`[data-sxed="${k}"]`)?.focus({ preventScroll: true }); return; }
+    if ((el = g('data-sxwde'))) { S.wdEdit = el.dataset.sxwde || null; render(); return; }
+    if ((el = g('data-sxstep'))) { const [k, d] = el.dataset.sxstep.split('|'); const v = step(k, +d); if ((k === 'wFrom' && hNum(v) < hNum(V.wTo)) || (k === 'wTo' && hNum(v) > hNum(V.wFrom))) V[k] = v; render(); $(`[data-sxstep="${el.dataset.sxstep}"]`)?.focus({ preventScroll: true }); return; }
+    if ((el = g('data-sxdurs'))) { V.dur = String(Math.min(240, Math.max(15, +V.dur + +el.dataset.sxdurs))); render(); $(`[data-sxdurs="${el.dataset.sxdurs}"]`)?.focus({ preventScroll: true }); return; }
+    if (g('data-sxwyo')) { S.wyOpen = !S.wyOpen; render(); $('[data-sxwyo]')?.focus({ preventScroll: true }); return; }
+    if ((el = g('data-sxwyg'))) { const ds = el.dataset.sxwyg === 'wd' ? [1, 2, 3, 4, 5] : [0, 6], all = ds.every((d) => V.days.includes(d)); V.days = all ? V.days.filter((d) => !ds.includes(d)) : [...new Set([...V.days, ...ds])]; render(); return; }
+    if ((el = g('data-sxwyp'))) { const k = el.dataset.sxwyp; if (k === 'own') S.wyOwn = true; else { S.wyOwn = false; V.days = [...WYP.find((x) => x[0] === k)[2]]; } render(); return; }
+    if ((el = g('data-sxq5'))) { const k = el.dataset.sxq5, v = el.dataset.v;
+      if (k === 'days') { S.q5own = v === 'own'; if (v !== 'own') V.days = v === 'wd' ? [1, 2, 3, 4, 5] : v === 'sat' ? [1, 2, 3, 4, 5, 6] : [0, 1, 2, 3, 4, 5, 6]; }
+      else if (v === 'own') { V[k] = k === 'wFrom' ? '08:30' : '18:30'; } else V[k] = v; render(); return; }
+    if ((el = g('data-sxrga'))) { const d = +el.dataset.sxrga, r = V.rng[d], last = r[r.length - 1], e0 = last ? hNum(last[1]) : 9; const a = Math.min(23, e0 + 1), b = Math.min(24, a + 2); r.push([hStr(a), hStr(b === 24 ? 23.5 : b)]); render(); $(`[data-sxrg="${d}|${r.length - 1}|0"]`)?.closest('.sxw2-r')?.querySelector('button, input')?.focus(); return; }
+    if ((el = g('data-sxrgx'))) { const [d, i] = el.dataset.sxrgx.split('|').map(Number); V.rng[d].splice(i, 1); render(); return; }
+    if ((el = g('data-sxcpt'))) { const x = +el.dataset.sxcpt, t = S.cpT || []; S.cpT = t.includes(x) ? t.filter((y) => y !== x) : [...t, x]; render(); $(`[data-sxcpt="${x}"]`)?.focus({ preventScroll: true }); return; }
+    if ((el = g('data-sxcpq'))) { const d = +S.dd.split(':')[1], k = el.dataset.sxcpq; S.cpT = (k === 'wd' ? [1, 2, 3, 4, 5] : k === 'we' ? [0, 6] : [0, 1, 2, 3, 4, 5, 6]).filter((x) => x !== d); render(); return; }
+    if (g('data-sxcpx')) { S.dd = null; S.cpT = []; render(); return; }
+    if ((el = g('data-sxcpgo'))) { const d = +el.dataset.sxcpgo, t = S.cpT || []; t.forEach((x) => { V.rng[x] = V.rng[d].map((r) => [...r]); if (!V.days.includes(x)) V.days.push(x); }); A.toast(`${DOWS[d]}요일 시간을 ${t.map((x) => DOWS[x]).join(', ')}요일에 붙였어요`); S.dd = null; S.cpT = []; render(); return; }
+    if (g('data-sxlunch')) { let n = 0; V.days.forEach((d) => { const out = []; V.rng[d].forEach(([a, b]) => { const x = hNum(a), y = hNum(b); if (x < 12 && y > 13) { out.push([a, '12:00'], ['13:00', b]); n++; } else out.push([a, b]); }); V.rng[d] = out; }); A.toast(n ? `${n}일에서 점심시간을 뺐어요` : '점심시간이 걸친 날이 없어요'); render(); return; }
+    if (g('data-sxcopyday')) { [0, 2, 3, 4, 5, 6].forEach((d) => { V['dT' + d + 'f'] = V.dT1f; V['dT' + d + 't'] = V.dT1t; }); A.toast('월요일 시간을 모든 날에 맞췄어요'); render(); return; }
+    if ((el = g('data-sxwp'))) { const k = el.dataset.sxwp; if (k === 'own') S.wkOwn = true; else { const p = PRESETS.find((x) => x[0] === k); V.days = [...p[3]]; V.wFrom = p[4]; V.wTo = p[5]; S.wkOwn = false; } render(); return; }
+    if ((el = g('data-sxsw'))) { const k = el.dataset.sxsw; if (V[k]) { S.unlink = k; render(); $('[data-sxunlink]')?.focus(); } else { V[k] = true; A.toast('연결했어요'); render(); } return; }
+    if (g('data-sxunlink')) { S.unlink = null; render(); return; }
+    if (g('data-sxdown')) { A.toast(`archive-${A.TODAY}.zip 을 받았어요 (시안이라 실제 파일은 없어요)`); return; }
+    if ((el = g('data-sxgeov'))) { const v = el.dataset.sxgeov; V.pend = v === V.country ? null : v; V.ask = false; S.dd = null; render(); $('[data-sxdd="sel:country"]')?.focus({ preventScroll: true }); return; }
+    if ((el = g('data-sxtzv'))) { V.tz = el.dataset.sxtzv; S.dd = null; render(); return; }
+    if ((el = g('data-sxdd'))) { if (el.dataset.sxdd.startsWith('cp:')) S.cpT = [];  S.dd = S.dd === el.dataset.sxdd ? null : el.dataset.sxdd; render(); $(`[data-sxdd="${el.dataset.sxdd}"]`)?.focus({ preventScroll: true }); return; }
+    if ((el = g('data-sxpre'))) { V[el.dataset.sxpre] = +el.dataset.v; render(); return; }
+    if ((el = g('data-sxsync'))) { const k = el.dataset.sxsync; S.sync = k; S.dd = null; render(); setTimeout(() => { S.sync = null; A.toast(k === 'gh' ? 'GitHub 커밋을 새로 불러왔어요' : '캘린더를 동기화했어요'); render(); }, 1400); return; }
+    if ((el = g('data-sxjump'))) { $('#j-' + el.dataset.sxjump)?.scrollIntoView({ block: 'start', behavior: 'smooth' }); return; }
+    if ((el = g('data-sxs'))) { const k = el.dataset.sxs; V[k] = typeof V[k] === 'boolean' ? el.dataset.v === 'true' : el.dataset.v; S.dd = null; render(); return; }
+    if ((el = g('data-sxday'))) { const d = +el.dataset.sxday; if (WK === 2 && !(V.rng[d] || []).length) V.rng[d] = [['09:00', '18:00']]; V.days = V.days.includes(d) ? V.days.filter((x) => x !== d) : [...V.days, d]; render(); return; }
+    if ((el = g('data-sxpick'))) { V[el.dataset.sxpick] = el.dataset.v; render(); return; }
+    if ((el = g('data-sxsched'))) { const i = +el.dataset.sxsched; V.sched[i][2] = !V.sched[i][2]; render(); return; }
+    if ((el = g('data-sxwipe'))) { const v = el.dataset.sxwipe; if (v === 'go') { V.aiWipe = false; A.toast('AI 대화 기록을 모두 지웠어요'); } else V.aiWipe = v === '1'; render(); return; }
+    if ((el = g('data-sxconn'))) { const k = el.dataset.sxconn; S.dd = null; V[k] = !V[k]; S.unlink = null; A.toast(V[k] ? '연결했어요' : '연결을 해제했어요. 설정은 그대로 남아 있어요'); render(); return; }
+    if ((el = g('data-sxwh'))) { S.why = S.why === el.dataset.sxwh ? null : el.dataset.sxwh; render(); (WH === 2 ? $('.sxwh-cv [data-sxperm]') : WH === 5 ? $('.sxwh-pga [data-sxperm]') : $('.sxwh-dr [data-sxperm], .sxwh-md [data-sxperm]'))?.focus({ preventScroll: true }); return; }
+    if ((el = g('data-sxwhx')) && (el.classList.contains('sx-b') || el.classList.contains('sx-ib') || e.target === el || el.tagName === 'BUTTON')) { const k = S.why; S.why = null; render(); $(`[data-sxwh="${k}"]`)?.focus({ preventScroll: true }); return; }
+    if (g('data-sxperm')) { S.dd = null; S.why = WH === 5 ? S.why : null; V.ghPerm = false; A.toast('권한을 다시 받았어요'); render(); return; }
+    if ((el = g('data-sxgdel'))) { const v = el.dataset.sxgdel; if (v === 't') { if (V.gDel) V.gDel = false; else V.gDelAsk = true; } else { V.gDelAsk = false; if (v === '1') V.gDel = true; } render(); return; }
+    if (g('data-sxbrowser')) { V.browser = 'on'; A.toast('브라우저 알림을 허용했어요'); render(); return; }
+    if ((el = g('data-sxdev'))) { const v = el.dataset.sxdev; if (v === 'all') { const n = V.devices.length - 1; V.devices = V.devices.filter((d) => d[3]); A.toast(`${n}개 기기에서 로그아웃했어요`); } else { A.toast(`${V.devices[+v][0]} 에서 로그아웃했어요`); V.devices.splice(+v, 1); } render(); return; }
+    if (g('data-sxexport')) { S.exp = 'making'; render(); setTimeout(() => { S.exp = 'ready'; V.lastExp = '오늘'; render(); }, 1200); return; }
+    if (false) { const w = [V.xRetro && '회고', V.xTodo && '할 일', V.xAi && 'AI 대화'].filter(Boolean).join(', '); A.toast(`${w}를 ${V.fmt === 'md' ? 'Markdown' : 'JSON'} 파일로 준비했어요 (시안이라 받기는 생략)`); return; }
+    if ((el = g('data-sxrestore'))) { const [k, t] = V.trash[+el.dataset.sxrestore]; V.trash.splice(+el.dataset.sxrestore, 1); A.toast(`"${t}"을 되살렸어요`); render(); return; }
+    if (g('data-sxdel')) { A.toast('시안이라 계정은 지우지 않았어요'); V.del = ''; render(); return; }
+    if (g('data-sxgeoapply')) { V.ask = true; render(); return; }
+    if ((el = g('data-sxgeook'))) { const c = V.pend; V.country = c; V.tz = COUNTRY[c][1].includes(V.tz) ? V.tz : COUNTRY[c][1][0]; V.pend = null; V.ask = false; A.toast(el.dataset.sxgeook === 'new' ? `국가를 ${COUNTRY[c][0]}(으)로 바꾸고 AI 요약 시간도 맞췄어요` : `국가를 ${COUNTRY[c][0]}(으)로 바꿨어요. AI 요약 시간은 그대로예요`); render(); return; }
+    if ((el = g('data-sxtoast'))) { A.toast(el.dataset.sxtoast); return; }
+  });
+  document.addEventListener('input', (e) => {
+    const t = e.target;
+    if (t.matches('[data-sxq]')) { S.q = t.value; render(); return; }
+    if (t.matches('[data-sxtmd]')) slCheck(t);
+    if (t.matches('.sxt-ta.hl')) { const pr = t.closest('.sxt-hl')?.querySelector('.sxt-hlp'); if (pr) pr.innerHTML = hl(t.value); }
+    if (S.draft && t.matches('[data-sxtd], [data-sxtmd]')) { if (t.dataset.sxtd) S.draft.name = t.value; else { S.draft.md = t.value; document.querySelectorAll('[data-sxtmd]').forEach((x) => { if (x !== t) x.value = t.value; }); document.querySelectorAll('[data-sxtout]').forEach((o) => { o.innerHTML = mdHTML(t.value); }); const ol = $('.sxt-st-o ol'); if (ol) ol.innerHTML = heads(t.value).map((h) => `<li>${A.esc(h)}</li>`).join('') || '<li class="sx-mu">아직 없어요</li>'; const cn = $('[data-sxtcnt]'); if (cn) cn.textContent = heads(t.value).length + '개'; const o5 = $('.sxe5-ol'); if (o5) o5.innerHTML = outline(t.value); } return; }
+    if (t.matches('[data-sxwyr]')) { const box = t.closest('.sxy7'), rs = box.querySelectorAll('[data-sxwyr]'); let a = +rs[0].value, b = +rs[1].value; if (a > b) { if (t.dataset.sxwyr === 'a') { a = b; rs[0].value = a; } else { b = a; rs[1].value = b; } }
+      V.days = order().slice(a, b + 1); box.style.setProperty('--a', a / 6); box.style.setProperty('--b', b / 6); box.querySelectorAll('.sxy7-s span').forEach((x, i) => x.classList.toggle('on', i >= a && i <= b)); const o = order();
+      rs[0].setAttribute('aria-valuetext', DOWS[o[a]] + '요일'); rs[1].setAttribute('aria-valuetext', DOWS[o[b]] + '요일'); box.nextElementSibling.innerHTML = `<b>${DOWS[o[a]]}요일부터 ${DOWS[o[b]]}요일까지</b>, 주 ${b - a + 1}일`; return; }
+    if (t.matches('[data-sxwr]')) { const k = t.dataset.sxwr; let v = +t.value / 2; if (k === 'wFrom') v = Math.min(v, hNum(V.wTo) - 0.5); else v = Math.max(v, hNum(V.wFrom) + 0.5); V[k] = hStr(v); t.value = v * 2;
+      const box = t.closest('.sxw3'); box.style.setProperty('--a', hNum(V.wFrom) / 24); box.style.setProperty('--b', hNum(V.wTo) / 24); t.setAttribute('aria-valuetext', hm(V[k])); const pv = box.nextElementSibling; if (pv) pv.innerHTML = `<b>${hm(V.wFrom)}부터 ${hm(V.wTo)}까지</b>${workSum().replace(/<\/?p[^>]*>/g, '')}`; return; }
+    if (t.matches('[data-sxrange]')) { const k = t.dataset.sxrange; V[k] = k === 'past' ? 365 - +t.value : +t.value; V[k] = Math.round(V[k] / 5) * 5 === 0 && V[k] < 3 ? 0 : V[k];
+      const box = t.closest('.sx-range'); box.style.setProperty('--a', `${50 - (V.past / 365) * 50}%`); box.style.setProperty('--b', `${50 + (V.future / 365) * 50}%`);
+      const a = A.s2d(A.TODAY), b = A.s2d(A.TODAY); a.setDate(a.getDate() - V.past); b.setDate(b.getDate() + V.future);
+      box.querySelector('.sx-rv').innerHTML = `<b>${V.past ? `지난 ${V.past}일` : '지난 일 숨김'}, ${V.future ? `앞으로 ${V.future}일` : '오늘까지'}</b><span>${md(a)}부터 ${md(b)}까지</span>`; t.setAttribute('aria-valuetext', k === 'past' ? `지난 ${V.past}일` : `앞으로 ${V.future}일`); return; }
+    if (t.matches('[data-sxv]')) { const k = t.dataset.sxv; V[k] = t.value; if (k === 'del') { const b = $('[data-sxdel]'); b && (b.disabled = V.del !== V.name); } if (k === 'name') { document.querySelectorAll('.sx-av, .um-who b, .side .foot .av').forEach((x) => { x.textContent = x.matches('.um-who b') ? V.name || 'developer' : (V.name || 'D').slice(0, 1).toUpperCase(); }); } }
+  });
+  document.addEventListener('change', (e) => {
+    const t = e.target;
+    if (t.matches('input[type=time][data-sxrg]')) { const [d, i, j] = t.dataset.sxrg.split('|').map(Number); V.rng[d][i][j] = t.value; render(); return; }
+    if (t.matches('select[data-sxv], input[type=time][data-sxv], input[type=date][data-sxv]')) { V[t.dataset.sxv] = t.value; render(); return; }
+    if (t.matches('[data-sxdpre]')) { const v = t.value; if (v !== 'own') { V.days = v === 'wd' ? [1, 2, 3, 4, 5] : v === 'sat' ? [1, 2, 3, 4, 5, 6] : [0, 1, 2, 3, 4, 5, 6]; S.wkOwn = false; } else S.wkOwn = true; render(); return; }
+    if (t.matches('[data-sxwr], [data-sxwyr]')) { render(); return; }
+    if (false) { V.pend = t.value === V.country ? null : t.value; V.ask = false; render(); return; }
+    if (t.matches('[data-sxtz]')) { V.tz = t.value; return; }
+    if (t.matches('[data-sxchk]')) { V[t.dataset.sxchk] = t.checked; render(); return; }
+    if (t.matches('[data-sxrange]')) render();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (S.sl && e.target.matches && e.target.matches('[data-sxtmd]')) { const it = [...document.querySelectorAll('.sxt-sl [data-sxsl]')];
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); S.sl.i = (S.sl.i + (e.key === 'ArrowDown' ? 1 : -1) + it.length) % Math.max(1, it.length); slDraw(); return; }
+      if ((e.key === 'Enter' || e.key === 'Tab') && it.length && !e.isComposing) { e.preventDefault(); slPick(it[S.sl.i].dataset.sxsl); return; }
+      if (e.key === 'Escape') { e.preventDefault(); slClose(); return; } }
+    if (e.key === 'Escape' && S.why && WH !== 5) { const k = S.why; S.why = null; render(); $(`[data-sxwh="${k}"]`)?.focus({ preventScroll: true }); return; }
+    if (e.key === 'Escape' && S.dd) { const k = S.dd; S.dd = null; render(); $(`[data-sxdd="${k}"]`)?.focus({ preventScroll: true }); return; }
+    if (e.key === 'Escape' && S.zoom) { const z = $('.sxt-zoom .sxt-ta'), pos = z ? z.selectionStart : 0; S.zoom = false; render(); const ta = $('[data-sxtmd]'); if (ta) { ta.focus(); ta.setSelectionRange(pos, pos); } return; }
+    if (e.key === 'Escape' && SV === 3 && !document.querySelector('.um-layer, .um-keys-w')) { closeSheet(); return; }
+    if (e.key === '/' && !(e.target.matches && e.target.matches('input, textarea, select'))) { const q = $('[data-sxq]'); if (q) { e.preventDefault(); q.focus(); } }
+  });
+  window.addEventListener('hashchange', () => { const h = fromHash(); if (h && h !== S.sec) go(h); });
+
+  P.todayBtn = () => '';
+  if (!EMBED) $('#app').insertAdjacentHTML('afterbegin', P.shell('settings'));
+  A.init(render);
+  render();
+  if (S.sec && SV === 2 && location.hash) requestAnimationFrame(() => $(`#s-${S.sec}`)?.scrollIntoView({ block: 'start' }));
+  if (Q.get('tedit')) { const v = Q.get('tedit'); if (v.startsWith('new:')) { S.tper = v.slice(4) || 'day'; S.draft = { id: 't' + Date.now(), per: S.tper, name: '', md: '## \n\n## \n', def: false }; } else { const t = tplOf(v); S.tper = t.per; S.draft = { id: t.id, per: t.per, name: t.name, md: t.md, def: V.tplFor[t.per] === t.id }; } render(); }
+  if (Q.get('ed')) { Q.get('ed').split(',').forEach((x) => S.ed.add(x)); render(); }
+  if (Q.get('q')) { S.q = Q.get('q'); render(); }
+</script>
+<script src="shared/pet.js"></script>
+</body>
+</html>

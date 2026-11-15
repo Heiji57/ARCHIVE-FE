@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>시간 지정 시안</title>
+<meta name="description" content="할 일 · 캘린더의 시간 지정을 다섯 가지로 고르고 실제 화면에서 바로 본다.">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="shared/shared.css">
+<style>
+  html, body { height: 100%; }
+  body { overflow: hidden; }
+  .pg { display: grid; grid-template-columns: 400px minmax(0, 1fr); height: 100vh; }
+  .l { overflow: auto; padding: 24px 20px 48px; border-right: 1px solid var(--line); }
+  h1 { margin: 0 0 6px; font-size: 18px; font-weight: 600; }
+  .lead { margin: 0 0 20px; font-size: 13px; color: var(--ink3); line-height: 1.6; }
+  h2 { margin: 26px 0 10px; font-size: 13px; font-weight: 600; display: flex; align-items: baseline; gap: 8px; }
+  h2 small { font-weight: 400; color: var(--ink4); font-size: 12px; }
+  .opts { display: flex; flex-direction: column; gap: 6px; }
+  .op { display: grid; grid-template-columns: 22px 1fr; gap: 10px; align-items: start; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; cursor: pointer; text-align: left; width: 100%; }
+  .op:hover { border-color: var(--line2); background: var(--s1); }
+  .op:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+  .op[aria-checked="true"] { border-color: var(--primary); background: var(--primary-a); }
+  .op > span { font: 500 12px var(--mono); color: var(--ink4); padding-top: 1px; }
+  .op b { display: block; font-size: 13px; font-weight: 600; margin-bottom: 3px; color: var(--ink); }
+  .op p { margin: 0; font-size: 12px; color: var(--ink3); line-height: 1.5; }
+  .r { display: flex; flex-direction: column; min-width: 0; }
+  .cbar { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--line); font-size: 12px; color: var(--ink3); flex: none; }
+  .cbar code { font-family: var(--mono); color: var(--ink2); }
+  .cbar .sp { flex: 1; }
+  .cbar button { height: 28px; padding: 0 10px; border-radius: 6px; border: 1px solid var(--line2); font-size: 12px; color: var(--ink2); }
+  .cbar button:hover { background: var(--s3); color: var(--ink); }
+  iframe { flex: 1; width: 100%; border: 0; background: var(--canvas); }
+  @media (max-width: 900px) { body { overflow: auto; } .pg { grid-template-columns: 1fr; height: auto; } .r { height: 80vh; } }
+</style>
+</head>
+<body>
+<div class="pg">
+  <div class="l">
+    <h1>시간 지정 시안</h1>
+    <p class="lead">할 일 · 캘린더에서 시작 · 끝 시간을 고르는 다섯 가지입니다. 날짜는 모두 회고 "새 회고" 모달과 같은 달력으로 바꿨습니다(월요일 시작, 아래 고른 날짜 + "오늘로"). 고르면 오른쪽 실제 캘린더에서 그 시간 고르기가 열린 채로 보입니다. 시간 표시는 서비스 형식(2:00 PM)을 따릅니다.</p>
+    <h2>시간 고르기 <small>?tk=1~5</small></h2><div class="opts" id="o-tk"></div>
+    <h2>열어 볼 곳</h2><div class="opts" id="o-at"></div>
+  </div>
+  <div class="r">
+    <div class="cbar">지금 <code id="combo"></code><span class="sp"></span><button type="button" id="reload">다시 열기</button></div>
+    <iframe id="live" title="캘린더"></iframe>
+  </div>
+</div>
+<script>
+  const TK = [
+    ['목록', '30분 간격 목록. 고른 시간이 가운데에 오고, 끝 시간에는 시작부터 길이(1시간)가 같이 보임. 맨 위 "시간 없음".'],
+    ['직접 입력', '"3pm", "오후 3시 30분", "1530"처럼 쳐서 Enter. 아래에 알아들은 시간과 가까운 시간 제안.'],
+    ['오전/오후 · 시 · 분', '세 칸에서 오전/오후, 1~12시, 00 · 15 · 30 · 45분을 골라 "적용". 15분 단위가 필요할 때.'],
+    ['시간 버튼', '오전 · 오후 · 저녁으로 나눈 30분 간격 버튼 묶음. 한 번 눌러 끝.'],
+    ['길이로 끝 정하기', '끝 시간은 "1시간", "1시간 30분"처럼 길이로 고름(몇 시까지인지 같이). 시작은 "지금", "1시간 뒤" 빠른 버튼 + 목록.'],
+  ];
+  const AT = [
+    ['상세 패널 · 시작', 'pksel=t3&pkopen=start'], ['상세 패널 · 끝', 'pksel=t3&pkopen=end'], ['상세 패널 · 날짜', 'pksel=t3&pkopen=date'],
+    ['새 할 일 모달 · 시작', 'pknew=1&pkopen=start'], ['새 할 일 모달 · 날짜', 'pknew=1&pkopen=date'],
+  ];
+  let tk = 2, at = 0; const $ = (q) => document.querySelector(q);
+  function draw() {
+    $('#o-tk').innerHTML = TK.map(([n, d], i) => `<button type="button" class="op" role="radio" data-tk="${i + 1}" aria-checked="${tk === i + 1}"><span>${i + 1}</span><span style="font:inherit;color:inherit;padding:0"><b>${n}</b><p>${d}</p></span></button>`).join('');
+    $('#o-at').innerHTML = AT.map(([n], i) => `<button type="button" class="op" role="radio" data-at="${i}" aria-checked="${at === i}" style="grid-template-columns:1fr"><span style="font:inherit;color:inherit;padding:0"><b style="margin:0">${n}</b></span></button>`).join('');
+    $('#combo').textContent = `시간 ${tk}. ${TK[tk - 1][0]}, ${AT[at][0]}`;
+    const src = `d-calendar.html?tk=${tk}&${AT[at][1]}`; if ($('#live').getAttribute('src') !== src) $('#live').setAttribute('src', src);
+  }
+  document.addEventListener('click', (e) => {
+    const o = e.target.closest('.op'); if (o) { if (o.dataset.tk) tk = +o.dataset.tk; else at = +o.dataset.at; draw(); return; }
+    if (e.target.closest('#reload')) { const f = $('#live'); f.setAttribute('src', f.getAttribute('src')); }
+  });
+  draw();
+</script>
+</body>
+</html>

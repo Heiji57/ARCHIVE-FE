@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>회고 카드 상태 보기</title>
+<meta name="description" content="회고 카드 다섯 가지 처리 방식을 여덟 가지 상태로 나란히 본다.">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="shared/shared.css">
+<link rel="stylesheet" href="shared/retro-cards.css">
+<style>
+  /* Hallmark · component: retro card preview · genre: modern-minimal · theme: project tokens (ARCHIVE dark) · shape: app screen · states: 8 · contrast: pass · mode: fast · v2.0.0 */
+  /* critique: a plain sheet of states, one section per treatment, so the cards are judged without the page around them. */
+  html, body { overflow-x: clip; }
+  body { height: auto; min-height: 100%; background: var(--canvas); color: var(--ink); font-family: var(--font); }
+  .wrap { max-width: 1240px; margin: 0 auto; padding: var(--rc-s5) var(--rc-s5) 96px; }
+  h1, h2 { text-wrap: balance; }
+  h1 { margin: 0 0 var(--rc-s2); font-size: 20px; font-weight: 600; }
+  .lead { margin: 0 0 40px; max-width: 70ch; color: var(--ink3); font-size: 14px; line-height: 1.6; }
+  section { margin: 0 0 56px; }
+  h2 { margin: 0 0 var(--rc-s1); font-size: 16px; font-weight: 600; }
+  section > p { margin: 0 0 var(--rc-s5); color: var(--ink3); font-size: 13px; }
+  .cg { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--rc-s4); }
+  .rcv4 .cg { row-gap: calc(var(--rc-s5) + var(--rc-s4)); padding-top: var(--rc-s5); }
+  .rcv8 .cg { grid-template-columns: minmax(0, 1fr); gap: 0; border-top: 1px solid var(--rc-rule); }
+  figure { margin: 0; display: flex; flex-direction: column; gap: var(--rc-s2); min-width: 0; }
+  .rcv8 figure { flex-direction: row-reverse; align-items: center; gap: var(--rc-s4); }
+  .rcv8 figure .q-cd { flex: 1; }
+  figcaption { font-size: 12px; color: var(--ink3); }
+  .rcv8 figcaption { width: 120px; flex-shrink: 0; }
+  .q-cd { min-height: 150px; }
+  .rcv8 .q-cd { min-height: 0; }
+  @media (max-width: 960px) { .cg { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 560px) { .cg { grid-template-columns: minmax(0, 1fr); } }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <h1>회고 카드 상태 보기</h1>
+  <p class="lead">다섯 가지 처리 방식마다 카드가 가질 수 있는 여덟 상태를 늘어놓았습니다. 마우스 올림, 포커스, 누름은 실제로도 해 볼 수 있습니다.</p>
+  <div id="out"></div>
+</main>
+<script>
+  const FOLDER = '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>';
+  const PLUS = '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
+  const V = [
+    [4, '색인 탭', '종류가 카드 위쪽 모서리에 붙은 탭. 카드 몸체는 무채색.'],
+    [5, '날짜 잉크', '날짜를 크게, 종류 색으로 씀. 다른 곳은 무채색.'],
+    [6, '줄 노트', '흐린 괘선 위에 종류 색 여백선 하나.'],
+    [7, '색 바탕', '카드 전체를 종류 색으로 아주 옅게 평평하게 칠함.'],
+    [8, '장부', '카드 상자 없이 한 줄씩. 종류는 하나의 열.'],
+  ];
+  const S = [
+    ['기본', '', 'daily', '토큰 재발급 루프 잡은 날', '토큰 재발급 루프 버그 수정. 만료 직전 요청 두 개가 겹치면 refresh 가 두 번 돌았다.', ['2', '월요일'], '11/2 월'],
+    ['마우스 올림', 'is-hover', 'weekly', '10월 4주차 회고', '월간 뷰 무한 스크롤과 알림 설정 API 연결이 중심이었던 한 주.', ['10/25', '~ 10/31', 1], '10/25 ~ 10/31'],
+    ['키보드 포커스', 'is-focus', 'monthly', '10월 회고', '설정 재디자인, i18n, 캘린더 무한 스크롤 순서로 진행.', ['10', '2026', 2], '2026년 10월'],
+    ['누름', 'is-active', 'yearly', '2025년 회고', 'ARCHIVE 를 처음 만든 해.', ['2025', '한 해', 1], '2025년'],
+    ['사용 불가', 'is-disabled', 'daily', '10월 23일 회고', 'React 19 use 훅 문서를 읽음.', ['23', '금요일'], '10/23 금'],
+    ['생성 중', 'is-loading', 'weekly', '11월 1주차 회고', '요약을 만드는 중이에요…', ['11/1', '~ 11/7', 1], '11/1 ~ 11/7', '<span class="q-st">생성 중</span>'],
+    ['생성 실패', 'is-error', 'monthly', '11월 회고', '요약을 만들지 못했어요', ['11', '2026', 2], '2026년 11월', '<span class="q-st f">생성 실패</span>'],
+    ['방금 만듦 (비어 있음)', 'today', 'daily', '11월 3일 회고 (2)', '아직 비어 있어요. 눌러서 이어 쓰기', ['3', '화요일'], '11/3 화', '<span class="q-st t">작성 중</span>'],
+  ];
+  const T = { daily: '일간', weekly: '주간', monthly: '월간', yearly: '연간' };
+  const date = ([a, b, k]) => `<b class="${k === 1 ? 's' : ''}">${a}${k === 2 ? '<i>월</i>' : ''}</b><small>${b}</small>`;
+  const card = (v, [cap, cls, type, tt, ex, dc, when, st = '']) => {
+    const dis = cls === 'is-disabled' ? ' aria-disabled="true"' : '';
+    const base = `type="button" class="q-cd k-${type} ${cls}"${dis}`;
+    const ty = `<span class="q-ty">${T[type]}</span>`, ft = `<span class="ft">${FOLDER}ARCHIVE 개발</span>`;
+    let body;
+    if (v === 5) body = `<span class="q-num">${date(dc)}</span><span class="mt">${ty}<span class="sp"></span>${st}</span><span class="tt">${tt}</span><span class="ex">${ex}</span>${ft}`;
+    else if (v === 8) body = `<span class="lg-d">${date(dc)}</span><span class="lg-k">${T[type]}</span><span class="lg-b"><span class="tt">${tt}</span><span class="ex">${ex}</span></span>${st || '<span></span>'}${ft}`;
+    else body = `<span class="mt">${ty}<span class="d">${when}</span><span class="sp"></span>${st}</span><span class="tt">${tt}</span><span class="ex">${ex}</span>${ft}`;
+    return `<figure><button ${base}>${body}</button><figcaption>${cap}</figcaption></figure>`;
+  };
+  const newCard = () => `<figure><button type="button" class="q-cd q-new"><span class="pl">${PLUS}</span><span class="tt">새 회고 쓰기</span><span class="ex">오늘 이미 1편 썼어요. 몇 편이든 더 쓸 수 있어요.</span></button><figcaption>새 회고 카드</figcaption></figure>`;
+  document.getElementById('out').innerHTML = V.map(([v, n, d]) => `<section class="rcx rcv${v}" aria-labelledby="h${v}"><h2 id="h${v}">${v}. ${n}</h2><p>${d}</p><div class="cg">${S.map((s) => card(v, s)).join('')}${newCard()}</div></section>`).join('');
+</script>
+</body>
+</html>

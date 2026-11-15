@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>회고 요소 고르기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<style>
+  /* 레이아웃: 왼쪽 요소 목록(묶음별) + 오른쪽에 붙어 있는 결과 패널. 좁으면 한 줄로 쌓임. ARCHIVE 셸의 어두운 팔레트를 기본으로. */
+  :root{
+    --bg:#f6f6f8; --surface:#ffffff; --sunk:#eeeef2; --line:#e1e2e8; --line2:#cfd1da;
+    --ink:#15161a; --ink2:#3b3e47; --ink3:#6b6f7b; --ink4:#9a9eaa;
+    --accent:#5e6ad2; --accent-ink:#4651b8; --accent-soft:rgba(94,106,210,.12);
+    --more:#8a6d1f; --more-soft:rgba(198,152,40,.14);
+    --drop-soft:rgba(120,124,138,.12);
+    --warn:#b5541c; --warn-soft:rgba(220,110,40,.10);
+    --sans:"IBM Plex Sans KR","Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+    --mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+  }
+  @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+    --bg:#08090a; --surface:#101113; --sunk:#0c0d0f; --line:#1f2125; --line2:#2c2f35;
+    --ink:#f2f3f5; --ink2:#c9ced8; --ink3:#8a8f98; --ink4:#5f636c;
+    --accent:#5e6ad2; --accent-ink:#9aa3f0; --accent-soft:rgba(94,106,210,.18);
+    --more:#d9b25a; --more-soft:rgba(217,178,90,.12);
+    --drop-soft:rgba(255,255,255,.04);
+    --warn:#e8935a; --warn-soft:rgba(232,147,90,.10);
+    color-scheme:dark }}
+  :root[data-theme="dark"]{
+    --bg:#08090a; --surface:#101113; --sunk:#0c0d0f; --line:#1f2125; --line2:#2c2f35;
+    --ink:#f2f3f5; --ink2:#c9ced8; --ink3:#8a8f98; --ink4:#5f636c;
+    --accent:#5e6ad2; --accent-ink:#9aa3f0; --accent-soft:rgba(94,106,210,.18);
+    --more:#d9b25a; --more-soft:rgba(217,178,90,.12);
+    --drop-soft:rgba(255,255,255,.04);
+    --warn:#e8935a; --warn-soft:rgba(232,147,90,.10);
+    color-scheme:dark }
+
+  body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.55}
+  .wrap{max-width:1240px;margin:0 auto;padding-block:32px 80px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  header.hd{display:flex;flex-direction:column;gap:8px;margin-bottom:24px;max-width:72ch}
+  h1{margin:0;font-size:24px;font-weight:700;letter-spacing:-.4px;text-wrap:balance}
+  .lead{margin:0;color:var(--ink3);font-size:14px}
+  .legend{display:flex;flex-wrap:wrap;gap:8px 16px;margin-top:6px;font-size:13px;color:var(--ink2)}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .legend i{width:10px;height:10px;border-radius:3px;display:inline-block}
+  .legend .s{background:var(--accent)} .legend .m{background:var(--more)} .legend .d{background:var(--ink4)}
+
+  .grid{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:28px;align-items:start}
+  @media (max-width:960px){.grid{grid-template-columns:minmax(0,1fr)}}
+
+  .bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:18px}
+  .seg{display:inline-flex;padding:2px;gap:2px;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+  .seg button{height:28px;padding:0 10px;border-radius:6px;font-size:13px;color:var(--ink3)}
+  .seg button[aria-pressed="true"]{background:var(--sunk);color:var(--ink);box-shadow:inset 0 0 0 1px var(--line2)}
+  .btn{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border-radius:7px;border:1px solid var(--line2);background:var(--surface);color:var(--ink2);font-size:13px}
+  .btn:hover{color:var(--ink);border-color:var(--ink4)}
+  .btn.p{background:var(--accent);border-color:var(--accent);color:#fff}
+  .btn.p:hover{filter:brightness(1.08)}
+  .bar .sp{flex:1}
+  button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+  button:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+  section.grp{margin-bottom:30px}
+  .gh{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:0 0 4px}
+  .gh h2{margin:0;font-size:16px;font-weight:600}
+  .gh .tag{font:500 12px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink3);padding:2px 7px;border:1px solid var(--line2);border-radius:4px}
+  .gh .tag.new{color:var(--accent-ink);border-color:var(--accent-soft);background:var(--accent-soft)}
+  .gdesc{margin:0 0 10px;font-size:13px;color:var(--ink3)}
+  .list{border:1px solid var(--line);border-radius:10px;background:var(--surface);overflow:hidden}
+
+  .it{display:grid;grid-template-columns:40px minmax(0,1fr) auto;gap:4px 14px;padding:12px 14px;border-top:1px solid var(--line);align-items:start}
+  .it:first-child{border-top:0}
+  .it .id{font:500 12px var(--mono);color:var(--ink3);padding-top:2px}
+  .it .body{min-width:0}
+  .it .nm{font-weight:600;font-size:14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .it .rec{font:500 12px var(--mono);color:var(--ink4);font-weight:400;letter-spacing:.02em}
+  .it .ds{margin:2px 0 0;font-size:13px;color:var(--ink2)}
+  .it .mt{margin:4px 0 0;font-size:12px;color:var(--ink3)}
+  .it .mt b{font-weight:500;color:var(--ink2)}
+  .it .ch{display:inline-flex;gap:2px;padding:2px;border:1px solid var(--line);border-radius:8px;background:var(--sunk);align-self:center}
+  .it .ch button{height:28px;padding:0 10px;border-radius:6px;font-size:12px;color:var(--ink3);white-space:nowrap}
+  .it .ch button:hover{color:var(--ink)}
+  .it .ch button[aria-pressed="true"][data-v="show"]{background:var(--accent);color:#fff}
+  .it .ch button[aria-pressed="true"][data-v="more"]{background:var(--more-soft);color:var(--more);box-shadow:inset 0 0 0 1px var(--more)}
+  .it .ch button[aria-pressed="true"][data-v="drop"]{background:var(--drop-soft);color:var(--ink2);box-shadow:inset 0 0 0 1px var(--line2)}
+  .it.s-show{background:var(--accent-soft)}
+  .it.s-drop .nm span.t,.it.s-drop .ds{color:var(--ink4)}
+  .it.s-drop .nm span.t{text-decoration:line-through;text-decoration-color:var(--ink4)}
+  @media (max-width:640px){.it{grid-template-columns:34px minmax(0,1fr)}.it .ch{grid-column:1/-1;justify-self:start;margin-top:6px}}
+
+  aside.res{position:sticky;top:max(16px,env(safe-area-inset-top,0px));display:flex;flex-direction:column;gap:14px;padding:16px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+  @media (max-width:960px){aside.res{position:static}}
+  .res h3{margin:0;font-size:13px;font-weight:600;color:var(--ink2)}
+  .prog{display:flex;flex-direction:column;gap:6px}
+  .prog .row{display:flex;justify-content:space-between;font-size:13px;color:var(--ink3)}
+  .prog .row b{font:500 13px var(--mono);color:var(--ink);font-variant-numeric:tabular-nums}
+  .track{height:6px;border-radius:3px;background:var(--sunk);overflow:hidden;display:flex}
+  .track i{display:block;height:100%}
+  .track .s{background:var(--accent)} .track .m{background:var(--more)} .track .d{background:var(--ink4)}
+  .meter{display:flex;flex-direction:column;gap:8px}
+  .mr{display:grid;grid-template-columns:1fr auto;gap:2px 8px;font-size:13px}
+  .mr span{color:var(--ink2)}
+  .mr b{font:500 13px var(--mono);font-variant-numeric:tabular-nums}
+  .mr b.over{color:var(--warn)}
+  .mr .dots{grid-column:1/-1;display:flex;gap:3px}
+  .mr .dots i{flex:1;height:5px;border-radius:2px;background:var(--sunk)}
+  .mr .dots i.on{background:var(--accent)}
+  .mr .dots i.on.over{background:var(--warn)}
+  .mr small{grid-column:1/-1;color:var(--ink4);font-size:12px}
+  .warns{display:flex;flex-direction:column;gap:6px}
+  .warn{padding:8px 10px;border-radius:8px;background:var(--warn-soft);color:var(--ink2);font-size:13px}
+  .warn b{color:var(--warn);font:500 12px var(--mono);margin-right:4px}
+  .nowarn{font-size:13px;color:var(--ink4)}
+  label.ml{font-size:13px;color:var(--ink2);font-weight:500}
+  textarea{width:100%;box-sizing:border-box;min-height:72px;resize:vertical;padding:8px 10px;border:1px solid var(--line2);border-radius:8px;background:var(--sunk);color:var(--ink);font:13px/1.5 var(--sans)}
+  pre.out{margin:0;max-height:220px;overflow:auto;padding:10px;border-radius:8px;background:var(--sunk);border:1px solid var(--line);font:12px/1.6 var(--mono);color:var(--ink2);white-space:pre-wrap;word-break:keep-all;overflow-wrap:anywhere}
+  .copyrow{display:flex;gap:8px;align-items:center}
+  .copyrow .st{font-size:12px;color:var(--ink3)}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hd">
+    <h1>회고 요소 고르기</h1>
+    <p class="lead">지금 ARCHIVE 회고에 있는 요소(A~D)와 다른 서비스에서 가져올 만한 요소(E~H)입니다. 각 줄에서 셋 중 하나를 고르세요. 고른 내용은 이 브라우저에 저장되고, 오른쪽 결과를 복사해서 대화에 붙여 주시면 그대로 화면을 다시 잡겠습니다.</p>
+    <div class="legend"><span><i class="s"></i>바로 보임: 화면에 늘 나와 있음</span><span><i class="m"></i>필요할 때만: 메뉴, 접기, 빈 상태, 확인 창 안에</span><span><i class="d"></i>빼기</span></div>
+  </header>
+
+  <div class="grid">
+    <main>
+      <div class="bar">
+        <div class="seg" role="group" aria-label="보기">
+          <button id="f-all" data-f="all" aria-pressed="true">전체</button>
+          <button id="f-unset" data-f="unset" aria-pressed="false">안 정한 것만</button>
+          <button id="f-new" data-f="new" aria-pressed="false">새 요소만</button>
+        </div>
+        <span class="sp"></span>
+        <button class="btn" id="b-rec" type="button">추천대로 채우기</button>
+        <button class="btn" id="b-reset" type="button">모두 지우기</button>
+      </div>
+      <div id="groups"></div>
+    </main>
+
+    <aside class="res" aria-label="고른 결과">
+      <div class="prog">
+        <div class="row"><span>정한 요소</span><b id="p-n">0 / 0</b></div>
+        <div class="track" id="p-track"></div>
+      </div>
+      <div>
+        <h3>화면마다 바로 보이는 요소</h3>
+        <div class="meter" id="meter" style="margin-top:8px"></div>
+      </div>
+      <div>
+        <h3>겹치는 요소</h3>
+        <div class="warns" id="warns" style="margin-top:8px"></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <label class="ml" for="memo">메모 (합치고 싶은 것, 꼭 바꾸고 싶은 것)</label>
+        <textarea id="memo" placeholder="예: 주제와 태그는 하나로 합치기, 커밋은 접어 두기"></textarea>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <h3>대화에 붙일 결과</h3>
+        <pre class="out" id="out"></pre>
+        <div class="copyrow"><button class="btn p" id="b-copy" type="button">결과 복사</button><span class="st" id="copy-st" role="status"></span></div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script>
+(() => {
+  const SCREENS = { list: '목록 화면', write: '쓰기 화면', sum: 'AI 요약', topic: '주제 화면', all: '어디서나' };
+  const LIMIT = 6;
+  const G = [
+    { k: 'A', name: '목록 화면 (갤러리)', tag: '지금 있음', desc: '회고를 찾고 고르는 첫 화면', items: [
+      ['A1', '종류 탭', '전체 · 일간 · 주간 · 월간 · 연간 · 주제', 'list', 'show'],
+      ['A2', '검색', '제목·내용 검색. 검색하면 폴더를 무시하고 전체에서 찾음', 'list', 'show'],
+      ['A3', '기간 필터', '연도 → 월 → 주 순서로 좁히기', 'list', 'more'],
+      ['A4', '폴더', '폴더 카드, 폴더 경로, 새 폴더 · 이름 바꾸기 · 지우기, 회고 옮기기', 'list', 'show'],
+      ['A5', '회고 카드', '제목, 날짜, 폴더, 상태 표시 (Today · 연결됨 · 생성 중 · 생성 실패)', 'list', 'show'],
+      ['A6', '페이지 넘기기', '이전 · 다음', 'list', 'more'],
+      ['A7', '빈 상태 안내', '"아직 회고록이 없어요" + 새 회고록 / AI 요약 생성', 'list', 'more'],
+      ['A8', '오늘 회고 쓰기', '이미 있으면 "오늘의 회고록이 이미 존재합니다" 안내', 'list', 'show'],
+    ]},
+    { k: 'B', name: '쓰기 화면 (편집기)', tag: '지금 있음', desc: '회고 하나를 열고 쓰는 화면', items: [
+      ['B1', '제목', '비워 두면 날짜 제목으로 저장. AI 요약은 제목 고정', 'write', 'show'],
+      ['B2', '본문 편집기', 'Markdown, / 명령으로 블록 추가', 'write', 'show'],
+      ['B3', '완료한 작업', '그날 끝낸 할 일 목록', 'write', 'show'],
+      ['B4', '그날 커밋', '저장소 묶음, 다시 불러오기, GitHub 미연결 안내', 'write', 'show'],
+      ['B5', '오른쪽 레일', '자동 저장 표시, GitHub Push 버튼 · 상태, 재료 수', 'write', 'more'],
+      ['B6', '전체 화면 쓰기', 'Ctrl+Shift+F, 목차 포함', 'write', 'more'],
+      ['B7', '목록으로 돌아가기', '"모든 회고록"', 'write', 'more'],
+    ]},
+    { k: 'C', name: 'AI 요약 (주간 · 월간 · 연간)', tag: '지금 있음', desc: '기간을 골라 AI가 정리하는 흐름', items: [
+      ['C1', '기간 고르기 창', '"요약할 주를 선택하세요", 진행 중인 기간 표시', 'sum', 'more'],
+      ['C2', '데이터 부족 확인', '"더 작성하기" / "그대로 생성"', 'sum', 'more'],
+      ['C3', '덮어쓰기 확인', '같은 기간 요약이 이미 있을 때', 'sum', 'more'],
+      ['C4', '요약 안내 띠', '준비 중 · 실패 상태, "AI 원본으로 되돌리기"', 'sum', 'show'],
+    ]},
+    { k: 'D', name: '주제', tag: '지금 있음', desc: '이름과 설명으로 회고를 묶고 AI가 브리핑 문서를 만듦', items: [
+      ['D1', '주제 목록', '알약 모양 목록, 검색, 새 주제 (이름 + 설명), 개수 제한', 'topic', 'show'],
+      ['D2', '주제 고르기', '마지막으로 본 주제 기억, 언제까지 반영됐는지', 'topic', 'more'],
+      ['D3', '주제 문서', 'AI 브리핑, 반영 · 미반영 안내, 다시 정리, 이름 · 설명 고치기', 'topic', 'show'],
+      ['D4', '주제 레일', '반영 시점, 소스 수 (일간 · 주간 · 할 일), 태그 수', 'topic', 'more'],
+      ['D5', '소스 목록 창', '주제에 묶인 회고 · 할 일, 반영된 것과 후보 구분', 'topic', 'more'],
+    ]},
+    { k: 'E', name: '쓰기 시작을 쉽게', tag: '새 요소', desc: '빈 화면 앞에서 멈추지 않게', items: [
+      ['E1', '질문 프롬프트', '"오늘 가장 오래 걸린 일은?" 같은 질문 1~3개', 'write', 'more', 'Day One, 일기 앱들', '빈 회고에서만 보여 주고, 쓰기 시작하면 사라짐'],
+      ['E2', '회고 틀', 'KPT, 한 일 / 배운 점 / 내일 등에서 고르기', 'write', 'drop', 'Notion 템플릿, 회고 도구', '새 회고를 만들 때 한 번 고름'],
+      ['E3', '하루 마무리 흐름', '끝낸 일 확인 → 못 끝낸 일 넘기기 → 한 줄 소감', 'write', 'drop', 'Sunsama', '단계별 창으로 진행'],
+      ['E4', '기록으로 초안 만들기', '할 일 · 커밋으로 본문 초안을 채움', 'write', 'more', 'Apple 저널의 제안 기능', '빈 회고에 버튼 하나 (B3 · B4 재료 활용)'],
+      ['E5', '기분 · 에너지 체크', '이모지 하나나 1~5 점수', 'write', 'drop', 'Daylio', '월간 요약의 재료로'],
+    ]},
+    { k: 'F', name: '회고를 행동으로', tag: '새 요소', desc: '쓴 회고가 다음 할 일로 이어지게', items: [
+      ['F1', '할 일로 보내기', '"다음에 할 일"을 바로 내일 할 일로 만듦', 'write', 'show', '팀 회고 도구의 액션 아이템', '본문 목록 줄 옆 버튼'],
+      ['F2', '지난 액션 다시 보기', '지난번에 해 보자고 한 것을 했는지 확인', 'write', 'show', '팀 회고 도구', '다음 회고 맨 위에 작게'],
+      ['F3', '못 끝낸 일 넘기기', '회고 안에서 내일 · 다음 주로 옮김', 'write', 'more', 'Sunsama', 'B3 목록 안에서'],
+    ]},
+    { k: 'G', name: '지난 회고 다시 보기', tag: '새 요소', desc: '쌓인 회고를 다시 꺼내 보게', items: [
+      ['G1', '그날의 지난 기록', '1주 전 · 1달 전 · 1년 전 같은 날 회고', 'write', 'more', 'Day One의 On This Day', '쓰기 화면 아래나 레일에 접어 두기'],
+      ['G2', '작성 달력 · 잔디', '쓴 날과 연속 작성 일수', 'list', 'more', 'GitHub 기여 그래프, Daylio', '목록 화면 위에 접어 두기'],
+      ['G3', '회고끼리 링크', '[[ 로 다른 회고를 걸고, 나를 링크한 회고 보기', 'write', 'more', 'Obsidian, Reflect', '본문에서 [[ 입력'],
+      ['G4', '태그', '#태그. 지금의 "주제"와 겹침', 'list', 'drop', '대부분의 노트 앱', '주제와 하나로 합칠지 결정'],
+      ['G5', '빠른 이동', 'Ctrl K 로 날짜 · 제목 · 태그 찾기', 'all', 'more', '찾기 창', '셸의 검색 버튼과 같은 창'],
+    ]},
+    { k: 'H', name: '쓰는 경험', tag: '새 요소', desc: '쓰는 순간을 편하게', items: [
+      ['H1', '집중 모드', '메뉴 숨기기, 쓰는 문단만 밝게', 'write', 'more', 'iA Writer 같은 집중 편집기', '지금 B6 전체 화면을 다듬음'],
+      ['H2', '쓴 시간 · 글자 수', '레일에 작게 표시', 'write', 'drop', '글쓰기 앱', 'B5 레일 안'],
+      ['H3', 'AI 이어 쓰기 · 다듬기', '쓴 문장 아래에 제안, 넣을지는 사용자가 결정', 'write', 'drop', 'Notion AI', '/ 명령 안'],
+      ['H4', 'AI 되묻기', '쓴 내용을 읽고 질문 하나', 'write', 'drop', '일기 앱의 AI 질문', '본문 끝에 한 줄'],
+    ]},
+  ];
+  const OVERLAPS = [
+    ['G4', 'D1', '태그와 주제는 비슷한 일을 해요. 하나만 남기거나 합치는 게 좋아요.'],
+    ['E1', 'E2', '질문과 틀은 둘 다 쓰기 시작을 돕습니다. 하나만 바로 보이게 하세요.'],
+    ['E2', 'E3', '틀과 하루 마무리 흐름은 같은 자리를 차지해요.'],
+    ['G2', 'A3', '잔디와 기간 필터는 둘 다 날짜로 고르는 방법이에요.'],
+    ['H1', 'B6', '집중 모드는 지금의 전체 화면 쓰기를 다듬는 거라 하나로 합쳐요.'],
+    ['F3', 'B3', '못 끝낸 일 넘기기는 완료한 작업 목록 안에 넣으면 따로 자리가 필요 없어요.'],
+  ];
+  const ALL = G.flatMap((g) => g.items.map((x) => ({ id: x[0], name: x[1], desc: x[2], screen: x[3], rec: x[4], from: x[5], how: x[6], g: g.k, isNew: g.tag === '새 요소' })));
+  const byId = Object.fromEntries(ALL.map((x) => [x.id, x]));
+  const LABEL = { show: '바로 보임', more: '필요할 때만', drop: '빼기' };
+  const KEY = 'archive.retro-elements.v1';
+  let st = { pick: {}, memo: '' }, filter = 'all';
+  try { const s = JSON.parse(localStorage.getItem(KEY) || 'null'); if (s && s.pick) st = s; } catch (e) {}
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(st)); } catch (e) {} };
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const $ = (q) => document.querySelector(q);
+
+  function drawList() {
+    $('#groups').innerHTML = G.map((g) => {
+      const rows = ALL.filter((x) => x.g === g.k && (filter === 'all' || (filter === 'unset' && !st.pick[x.id]) || (filter === 'new' && x.isNew)));
+      if (!rows.length) return '';
+      return `<section class="grp" aria-labelledby="g-${g.k}"><div class="gh"><h2 id="g-${g.k}">${g.k}. ${esc(g.name)}</h2><span class="tag ${g.tag === '새 요소' ? 'new' : ''}">${g.tag}</span></div><p class="gdesc">${esc(g.desc)}</p>
+        <div class="list">${rows.map((x) => { const v = st.pick[x.id];
+          return `<div class="it ${v ? 's-' + v : ''}" id="it-${x.id}"><span class="id">${x.id}</span>
+            <div class="body"><div class="nm"><span class="t">${esc(x.name)}</span><span class="rec">추천: ${LABEL[x.rec]} · ${SCREENS[x.screen]}</span></div>
+              <p class="ds">${esc(x.desc)}</p>${x.from ? `<p class="mt"><b>비슷한 곳</b> ${esc(x.from)} · <b>넣는다면</b> ${esc(x.how)}</p>` : ''}</div>
+            <div class="ch" role="group" aria-label="${esc(x.id + ' ' + x.name)}">${['show', 'more', 'drop'].map((k) => `<button type="button" data-id="${x.id}" data-v="${k}" aria-pressed="${v === k}">${LABEL[k]}</button>`).join('')}</div></div>`; }).join('')}</div></section>`;
+    }).join('') || '<p class="gdesc">모두 정했어요. "전체"를 누르면 다시 볼 수 있어요.</p>';
+  }
+
+  function drawSide() {
+    const n = ALL.length, c = { show: 0, more: 0, drop: 0 };
+    ALL.forEach((x) => { const v = st.pick[x.id]; if (v) c[v]++; });
+    const done = c.show + c.more + c.drop;
+    $('#p-n').textContent = `${done} / ${n}`;
+    $('#p-track').innerHTML = ['show', 'more', 'drop'].map((k) => `<i class="${k[0]}" style="width:${(c[k] / n) * 100}%"></i>`).join('');
+    const scr = ['list', 'write', 'sum', 'topic'];
+    $('#meter').innerHTML = scr.map((s) => {
+      const on = ALL.filter((x) => x.screen === s && st.pick[x.id] === 'show'), k = on.length, over = k > LIMIT;
+      const slots = Math.max(LIMIT, k);
+      return `<div class="mr"><span>${SCREENS[s]}</span><b class="${over ? 'over' : ''}">${k} / ${LIMIT}</b>
+        <div class="dots" aria-hidden="true">${Array.from({ length: slots }, (_, i) => `<i class="${i < k ? 'on' : ''} ${over && i >= LIMIT ? 'over' : ''}"></i>`).join('')}</div>
+        ${over ? `<small>${LIMIT}개가 넘으면 다시 난잡해 보이기 쉬워요. 몇 개는 "필요할 때만"으로 옮겨 보세요.</small>` : k ? `<small>${on.map((x) => x.id).join(' · ')}</small>` : ''}</div>`;
+    }).join('');
+    const kept = (id) => st.pick[id] === 'show' || st.pick[id] === 'more';
+    const ws = OVERLAPS.filter(([a, b]) => kept(a) && kept(b));
+    $('#warns').innerHTML = ws.map(([a, b, t]) => `<div class="warn"><b>${a} + ${b}</b>${esc(t)}</div>`).join('') || '<p class="nowarn" style="margin:0">겹치는 요소가 없어요.</p>';
+    $('#out').textContent = resultText();
+  }
+
+  function resultText() {
+    const line = (k) => { const l = ALL.filter((x) => st.pick[x.id] === k); return `${LABEL[k]} (${l.length}): ${l.map((x) => `${x.id} ${x.name}`).join(', ') || '-'}`; };
+    const un = ALL.filter((x) => !st.pick[x.id]);
+    return ['[회고 요소 선택]', line('show'), line('more'), line('drop'), `아직 안 정함 (${un.length}): ${un.map((x) => x.id).join(', ') || '-'}`, `메모: ${st.memo.trim() || '-'}`].join('\n');
+  }
+
+  function render() { drawList(); drawSide(); }
+
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest('.ch button');
+    if (b) {
+      const id = b.dataset.id, v = b.dataset.v;
+      st.pick[id] = st.pick[id] === v ? undefined : v; if (!st.pick[id]) delete st.pick[id];
+      save();
+      if (filter === 'unset') { drawSide(); setTimeout(drawList, 350); const it = $('#it-' + id); if (it) { it.className = 'it ' + (st.pick[id] ? 's-' + st.pick[id] : ''); it.querySelectorAll('.ch button').forEach((x) => x.setAttribute('aria-pressed', x.dataset.v === st.pick[id])); } }
+      else render();
+      return;
+    }
+    const f = e.target.closest('[data-f]');
+    if (f) { filter = f.dataset.f; document.querySelectorAll('[data-f]').forEach((x) => x.setAttribute('aria-pressed', x === f)); drawList(); return; }
+  });
+  $('#b-rec').addEventListener('click', () => { ALL.forEach((x) => { st.pick[x.id] = x.rec; }); save(); render(); });
+  $('#b-reset').addEventListener('click', () => {
+    const b = $('#b-reset');
+    if (b.dataset.arm) { st = { pick: {}, memo: '' }; $('#memo').value = ''; save(); render(); b.textContent = '모두 지우기'; delete b.dataset.arm; return; }
+    b.dataset.arm = '1'; b.textContent = '한 번 더 누르면 지워요';
+    setTimeout(() => { if (b.dataset.arm) { delete b.dataset.arm; b.textContent = '모두 지우기'; } }, 2500);
+  });
+  $('#memo').value = st.memo || '';
+  $('#memo').addEventListener('input', (e) => { st.memo = e.target.value; save(); $('#out').textContent = resultText(); });
+  $('#b-copy').addEventListener('click', () => {
+    const t = resultText(), s = $('#copy-st');
+    const fallback = () => { const r = document.createRange(); r.selectNodeContents($('#out')); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); s.textContent = '선택해 두었어요. Ctrl+C 로 복사하세요.'; };
+    try { navigator.clipboard.writeText(t).then(() => { s.textContent = '복사했어요. 대화에 붙여 주세요.'; }, fallback); } catch (e) { fallback(); }
+  });
+  render();
+})();
+</script>
+
+</body>
+</html>

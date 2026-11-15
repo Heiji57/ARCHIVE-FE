@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ARCHIVE 캘린더 시안 3 Lumen</title>
+<meta name="description" content="ARCHIVE 앱 셸과 캘린더 재디자인 시안. 밤의 콘솔처럼 하루를 시간선으로 읽는 Lumen 방향.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Geist:wght@400;500&family=Geist+Mono:wght@400&family=Gowun+Batang&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="style.css">
+<script src="../shared/archive-proto.js" defer></script>
+</head>
+<body>
+<div class="app" data-archive data-default-view="day" data-panel="drawer" data-month-max="3" data-day-start="8" data-day-end="23">
+  <header class="nav">
+    <div class="pill">
+      <a class="brand" href="./">A.R.C.H.I.V.E</a>
+      <nav class="nav-links" aria-label="주 메뉴">
+        <a href="#dashboard">대시보드</a>
+        <a href="./" aria-current="page">캘린더</a>
+        <a href="#todos">할 일</a>
+        <a href="#retrospectives">회고</a>
+        <a href="#settings">설정</a>
+      </nav>
+    </div>
+    <div class="nav-tools">
+      <div class="a-search">
+        <label class="visually-hidden" for="q">할 일과 회고록 검색</label>
+        <input id="q" class="search" data-a="search" type="search" placeholder="검색" autocomplete="off">
+        <div class="a-pop pop" data-a="search-results" hidden></div>
+      </div>
+      <div class="a-search">
+        <button type="button" class="icon-btn" data-pop="notif" aria-expanded="false" aria-controls="notif" aria-label="알림, 새 알림 2개">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+          <span class="badge">2</span>
+        </button>
+        <div class="a-pop pop" id="notif" hidden>
+          <p class="pop-head">새 알림 2개</p>
+          <ul class="notif-list">
+            <li><strong>AI 요약 완료</strong><span>10월 월간 회고 요약이 준비됐습니다.</span></li>
+            <li><strong>할 일 추가됨</strong><span>캘린더 드래그 버그 수정</span></li>
+          </ul>
+        </div>
+      </div>
+      <button type="button" class="user" title="developer@archive.dev 로그아웃" aria-label="developer 계정, 로그아웃"><span class="avatar" aria-hidden="true">D</span></button>
+    </div>
+  </header>
+
+  <div class="main">
+    <aside class="rail" aria-label="오늘 요약">
+      <div class="clock-well">
+        <p class="clock-label">지금</p>
+        <p class="clock"><time datetime="14:20">14:20</time></p>
+        <p class="readout">github 저장소 3개 연결, 동기화 정상</p>
+      </div>
+      <div class="well">
+        <div data-a="mini"></div>
+      </div>
+      <div class="well">
+        <p class="well-h">이 기간</p>
+        <dl class="a-counts counts" data-a="counts"></dl>
+      </div>
+    </aside>
+
+    <main class="a-stage">
+      <div class="banner-slot" data-a="banner" hidden></div>
+      <div class="toolbar">
+        <h1 class="title" data-a="title">11월 2일</h1>
+        <div class="ctrl">
+          <div class="views" role="group" aria-label="보기">
+            <button type="button" class="seg" data-view="month">월간</button>
+            <button type="button" class="seg" data-view="week">주간</button>
+            <button type="button" class="seg" data-view="day">일간</button>
+          </div>
+          <button type="button" class="btn btn-icon" data-nav="prev" aria-label="이전">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+          </button>
+          <button type="button" class="btn btn-primary" data-nav="today">오늘로</button>
+          <button type="button" class="btn btn-icon" data-nav="next" aria-label="다음">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+          </button>
+          <button type="button" class="btn btn-icon" data-expand aria-label="캘린더 확대"></button>
+        </div>
+      </div>
+      <p class="visually-hidden" data-a="live" role="status"></p>
+      <div class="cal blueprint" data-a="calendar"></div>
+    </main>
+  </div>
+
+  <div class="a-scrim" data-scrim></div>
+  <aside class="a-panel panel" data-a="panel" aria-label="작업 상세"></aside>
+</div>
+<noscript><p class="noscript">이 시안은 자바스크립트로 캘린더를 그립니다. 브라우저에서 스크립트를 켜 주세요.</p></noscript>
+</body>
+</html>

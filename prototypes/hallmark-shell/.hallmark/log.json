@@ -1,0 +1,127 @@
+[
+ {
+  "mode": "redesign",
+  "depth": "full",
+  "scope": "app",
+  "shape": "app screen",
+  "theme": "dose",
+  "axes": "light/grotesk-sans/chromatic-green",
+  "hero": "none",
+  "nav": "paper bar, mint key current",
+  "footer": "none",
+  "imagery": "product",
+  "photos": [],
+  "entry": "05-dose/index.html",
+  "sections": [
+   "week organiser"
+  ],
+  "signature": "seven-compartment weekday organiser",
+  "waived": [
+   "39b",
+   "47c"
+  ],
+  "prompt": "ARCHIVE app shell + calendar redesign prototype",
+  "date": "2026-11-02"
+ },
+ {
+  "mode": "redesign",
+  "depth": "full",
+  "scope": "app",
+  "shape": "app screen",
+  "theme": "werkstatt",
+  "axes": "mid/geometric-sans/cool",
+  "hero": "none",
+  "nav": "putty bar, ink block current",
+  "footer": "none",
+  "imagery": "product",
+  "photos": [],
+  "entry": "04-werkstatt/index.html",
+  "sections": [
+   "boxed head",
+   "month schedule"
+  ],
+  "signature": "ruled month, span tasks as primary bars coding tags",
+  "waived": [
+   "39b"
+  ],
+  "prompt": "ARCHIVE app shell + calendar redesign prototype",
+  "date": "2026-11-02"
+ },
+ {
+  "mode": "redesign",
+  "depth": "full",
+  "scope": "app",
+  "shape": "app screen",
+  "theme": "lumen",
+  "axes": "dark/roman-serif/warm",
+  "hero": "none",
+  "nav": "floating hairline pill",
+  "footer": "none",
+  "imagery": "product",
+  "photos": [],
+  "entry": "03-lumen/index.html",
+  "sections": [
+   "clock rail",
+   "day timeline"
+  ],
+  "signature": "day timeline over blueprint grid, brass now line",
+  "waived": [
+   "39b",
+   "47c"
+  ],
+  "prompt": "ARCHIVE app shell + calendar redesign prototype",
+  "date": "2026-11-02"
+ },
+ {
+  "mode": "redesign",
+  "depth": "full",
+  "scope": "app",
+  "shape": "app screen",
+  "theme": "ink",
+  "axes": "light/grotesk-sans/chromatic-teal",
+  "hero": "none",
+  "nav": "white bar, text links, underline current",
+  "footer": "none",
+  "imagery": "product",
+  "photos": [],
+  "entry": "02-ink/index.html",
+  "sections": [
+   "mini month",
+   "week ledger",
+   "docked detail"
+  ],
+  "signature": "ruled week ledger with docked detail sheet",
+  "waived": [
+   "22",
+   "39b"
+  ],
+  "prompt": "ARCHIVE app shell + calendar redesign prototype",
+  "date": "2026-11-02"
+ },
+ {
+  "mode": "redesign",
+  "depth": "full",
+  "scope": "app",
+  "shape": "app screen",
+  "theme": "wayfind",
+  "axes": "light/mono/cool",
+  "hero": "none",
+  "nav": "ink sign bar, joined cells",
+  "footer": "none",
+  "imagery": "product",
+  "photos": [],
+  "entry": "01-wayfind/index.html",
+  "sections": [
+   "today board",
+   "month grid"
+  ],
+  "signature": "today departure board",
+  "waived": [
+   "39b",
+   "64",
+   "72"
+  ],
+  "prompt": "ARCHIVE app shell + calendar redesign prototype",
+  "date": "2026-11-02"
+ }
+]

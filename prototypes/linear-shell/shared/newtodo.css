@@ -1,0 +1,160 @@
+/* Hallmark · scope: app screen (새 할 일 창 시안 1~5) · genre: atmospheric · theme: project tokens (ARCHIVE dark, shared.css) · signature: 처음 보이는 묶음을 다섯 개 안으로 줄인 새 할 일 창 · states: 8 · mode: fast · v2.0.0 */
+/* critique: the old dialog showed nine controls and a preview card at once; each variant keeps what most new todos need in view and opens the rest only when pressed. */
+:root { --nw-sh: 0 8px 24px rgb(0 0 0 / .5); }
+
+dialog#nwdlg { width: calc(100% - 32px); max-width: 560px; overflow: visible; }
+dialog#nwdlg.na2 { width: calc(100% - 32px); max-width: 540px; margin-top: 14vh; }
+dialog#nwdlg.na3, dialog#nwdlg.na4 { width: calc(100% - 32px); max-width: 640px; }
+dialog#nwdlg.na5 { width: calc(100% - 32px); max-width: 840px; }
+
+.nw { display: flex; flex-direction: column; gap: 16px; padding: 24px; }
+.nw-h { display: flex; align-items: center; justify-content: space-between; min-height: 28px; margin: -4px -4px -4px 0; }
+.nw-h h2 { margin: 0; font-size: 14px; font-weight: 600; color: var(--ink2); }
+.nw .ibtn:focus-visible, .nw .btn:focus-visible { outline: 2px solid var(--primary-h); outline-offset: 2px; }
+
+.nw-title { width: 100%; min-width: 0; padding: 4px 0 8px; border: 0; border-bottom: 1px solid var(--line2); background: none; font: 600 18px/1.4 var(--font); color: var(--ink); }
+.nw-title.big { font-size: 20px; }
+.nw-title::placeholder { color: var(--ink4); font-weight: 500; }
+.nw-title:focus-visible { outline: none; border-bottom-color: var(--primary-h); }
+.nw-title.shake { animation: nw-shake .3s; }
+@keyframes nw-shake { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+
+/* 값 단추와 찾기 메뉴 */
+.nw-a { position: relative; display: inline-flex; min-width: 0; max-width: 100%; }
+.nw-t { display: inline-flex; align-items: center; gap: 6px; min-width: 0; max-width: 100%; height: 32px; padding: 0 10px; border: 1px solid var(--line2); border-radius: var(--r); background: var(--s1); font-size: 13px; color: var(--ink2); transition: background-color .12s, border-color .12s, color .12s; }
+.nw-t:hover { background: var(--s3); color: var(--ink); }
+.nw-t:active { background: var(--line); }
+.nw-t:focus-visible { outline: 2px solid var(--primary-h); outline-offset: 2px; transition: none; }
+.nw-t[aria-expanded="true"] { border-color: var(--primary); background: var(--primary-a); color: var(--ink); }
+.nw-t.emp { border-style: dashed; color: var(--ink3); }
+.nw-t > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nw-t svg, .nw3-k svg { flex: none; width: 14px; height: 14px; color: var(--ink3); }
+.nw-dot { flex: none; display: inline-block; width: 10px; height: 10px; border-radius: 3px; background: var(--cc); }
+
+.nw-pop { position: absolute; top: calc(100% + 4px); left: 0; z-index: 6; display: flex; flex-direction: column; width: 264px; max-width: 343px; border: 1px solid var(--line2); border-radius: var(--r2); background: var(--s3); box-shadow: var(--nw-sh); }
+.nw-pin { height: 36px; padding: 0 12px; border: 0; border-bottom: 1px solid var(--line); border-radius: var(--r2) var(--r2) 0 0; background: none; font: 14px var(--font); color: var(--ink); }
+.nw-pin::placeholder { color: var(--ink4); }
+.nw-pin:focus-visible { outline: none; box-shadow: inset 0 -2px 0 var(--primary-h); }
+.nw-ol { display: flex; flex-direction: column; gap: 1px; max-height: 240px; padding: 4px; overflow-y: auto; overscroll-behavior: contain; }
+.nw-o { display: flex; align-items: center; gap: 8px; min-height: 32px; padding: 0 8px; border-radius: var(--r); font-size: 13px; color: var(--ink2); text-align: left; }
+.nw-o:hover { background: var(--line); color: var(--ink); }
+.nw-o:active { background: var(--line2); }
+.nw-o:focus-visible { outline: 2px solid var(--primary-h); outline-offset: -2px; }
+.nw-o > span { flex: 1; min-width: 0; }
+.nw-o em { font-style: normal; font-size: 12px; color: var(--ink4); }
+.nw-o.on { color: var(--ink); }
+.nw-o svg { flex: none; width: 14px; height: 14px; color: var(--primary-h); }
+.nw-o .sti svg { color: inherit; }
+.nw-none { margin: 0; padding: 8px; font-size: 13px; color: var(--ink3); }
+.nw-cu { display: flex; align-items: center; gap: 6px; padding: 8px; border-top: 1px solid var(--line); font-size: 12px; color: var(--ink3); }
+.nw-cu input { flex: 1; min-width: 0; height: 28px; padding: 0 6px; border: 1px solid var(--line2); border-radius: var(--r); background: var(--s1); font: 13px var(--font); color: var(--ink); color-scheme: dark; }
+.nw-cu input:focus-visible { outline: 2px solid var(--primary-h); outline-offset: 1px; }
+
+.nw-lnk { height: 32px; padding: 0 8px; border-radius: var(--r); font-size: 13px; color: var(--ink3); }
+.nw-lnk:hover { background: var(--s3); color: var(--ink); }
+.nw-lnk:focus-visible, .nw3-more:focus-visible { outline: 2px solid var(--primary-h); outline-offset: 2px; }
+.nw-memo { width: 100%; min-height: 72px; padding: 8px 10px; border: 1px solid var(--line2); border-radius: var(--r); background: var(--s1); font: 14px/1.6 var(--font); color: var(--ink); resize: vertical; }
+.nw-memo::placeholder, .nw3-desc::placeholder { color: var(--ink4); }
+.nw-memo:focus-visible { outline: none; border-color: var(--primary-h); }
+.nw-mu { color: var(--ink4); }
+
+.nw-f { display: flex; align-items: center; gap: 8px; padding-top: 16px; border-top: 1px solid var(--line); }
+.nw-hint { flex: 1; min-width: 0; margin: 0; font-size: 13px; line-height: 1.5; color: var(--ink3); word-break: keep-all; }
+.nw-hint b { font-weight: 500; color: var(--warn); }
+.nw-f .kbd { color: var(--ink4); }
+
+/* 1 세 묶음 */
+.nw1-g { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 12px; align-items: start; }
+.nw1-k { font-size: 13px; line-height: 32px; color: var(--ink3); }
+.nw1-v { display: flex; flex-wrap: wrap; gap: 8px; min-width: 0; }
+
+/* 2 칩 한 줄 */
+.nw2 { gap: 12px; padding: 16px; }
+.nw2 .nw-title { padding: 8px 4px; border-bottom: 0; }
+.nw2-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.nw2 .nw-t { height: 28px; padding: 0 8px; }
+.nw2 .nw-lnk { height: 28px; }
+.nw2 .nw-f { padding-top: 12px; }
+.nw2-k { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--ink4); white-space: nowrap; }
+
+/* 3 할 일 창과 같은 모양 */
+.nw3-top { display: flex; align-items: center; gap: 4px; min-height: 28px; margin: -4px -4px -4px 0; }
+.nw3-crumb { flex: 1; display: flex; align-items: center; gap: 8px; min-width: 0; margin: 0; font-size: 13px; color: var(--ink3); }
+.nw3-crumb em { padding: 2px 6px; border: 1px solid var(--line2); border-radius: 4px; font-style: normal; font-size: 12px; color: var(--ink2); }
+.nw3 .nw-title { border-bottom-color: transparent; }
+.nw3 .nw-title:hover { border-bottom-color: var(--line2); }
+.nw3 .nw-title:focus-visible { border-bottom-color: var(--primary-h); }
+.nw3-p { display: flex; flex-direction: column; gap: 2px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+.nw3-r { display: grid; grid-template-columns: 120px minmax(0, 1fr); align-items: center; gap: 8px; min-height: 34px; }
+.nw3-k { display: flex; align-items: center; gap: 8px; padding-left: 4px; font-size: 13px; color: var(--ink3); }
+.nw3-k svg { color: var(--ink4); }
+.nw3 .nw-t { height: 30px; padding: 0 8px; border-color: transparent; background: none; font-size: 14px; color: var(--ink); }
+.nw3 .nw-t:hover { background: var(--s3); }
+.nw3 .nw-t.emp { border-style: solid; color: var(--ink4); }
+.nw3 .nw-t[aria-expanded="true"] { border-color: var(--primary); background: var(--primary-a); }
+.nw3-more { align-self: flex-start; height: 28px; margin-top: 4px; padding: 0 8px; border-radius: var(--r); font-size: 13px; color: var(--ink3); }
+.nw3-more:hover { background: var(--s3); color: var(--ink); }
+.nw3-desc { width: 100%; min-height: 96px; padding: 4px; border: 0; border-radius: var(--r); background: none; font: 15px/1.7 var(--font); color: var(--ink); resize: vertical; }
+.nw3-desc:focus-visible { outline: 1px solid var(--line2); }
+
+/* 4 한 줄로 쓰기 */
+.nw4-help { margin: -4px 0 0; font-size: 13px; line-height: 1.6; color: var(--ink3); word-break: keep-all; }
+.nw4-help code { padding: 1px 4px; border: 1px solid var(--line); border-radius: 4px; background: var(--s1); font: 12px var(--mono); color: var(--ink2); }
+.nw4-out { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 0; }
+.nw4-c { display: flex; flex-direction: column; gap: 4px; min-width: 0; padding: 8px 10px; border: 1px solid var(--line); border-radius: var(--r2); }
+.nw4-c.tt { grid-column: 1 / -1; }
+.nw4-c.got { border-color: var(--primary); background: var(--primary-a); }
+.nw4-c dt { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--ink3); }
+.nw4-c dt em { font-style: normal; font-size: 12px; color: var(--primary-h); white-space: nowrap; }
+.nw4-c dd { margin: 0; min-width: 0; font-size: 14px; color: var(--ink); }
+.nw4 .nw-a { width: calc(100% + 6px); margin-left: -6px; }
+.nw4 .nw-t { width: 100%; height: auto; min-height: 26px; padding: 2px 6px; border: 0; background: none; font-size: 14px; line-height: 1.45; color: var(--ink); text-align: left; }
+.nw4 .nw-t > span { white-space: normal; word-break: keep-all; }
+.nw4 .nw-t:hover { background: var(--s3); }
+.nw4 .nw-t.emp { color: var(--ink4); }
+.nw4 .nw-t[aria-expanded="true"] { background: var(--primary-a); }
+
+/* 5 그날 시간표와 같이 */
+.nw5-c { display: grid; grid-template-columns: minmax(0, 1fr) 256px; gap: 24px; }
+.nw5-l { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.nw5-s { display: flex; flex-direction: column; gap: 8px; }
+.nw5-s h3 { margin: 0; font-size: 12px; font-weight: 500; color: var(--ink3); }
+.nw5-s > div { display: flex; flex-wrap: wrap; gap: 8px; }
+.nw5-r { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.nw5-d { margin: 0; font-size: 13px; font-weight: 600; color: var(--ink2); }
+.nw5-ad { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0; font-size: 12px; color: var(--ink3); }
+.nw5-ad span { overflow: hidden; max-width: 100%; padding: 2px 6px; border-radius: 4px; background: var(--s3); text-overflow: ellipsis; white-space: nowrap; }
+.nw5-ad .nw5-adk { padding: 0; background: none; color: var(--ink4); }
+.nw5-ad .nw5-me { border: 1px dashed var(--primary-h); background: var(--primary-a); color: var(--ink); }
+.nw5-tl { height: 340px; overflow-y: auto; overscroll-behavior: contain; border: 1px solid var(--line); border-radius: var(--r2); background: var(--s1); }
+.nw5-in { position: relative; }
+.nw5-hr { position: absolute; left: 0; right: 0; height: 32px; border-top: 1px solid var(--line); pointer-events: none; }
+.nw5-hr span { position: absolute; top: 2px; left: 6px; font-size: 12px; color: var(--ink4); }
+.nw5-sl { position: absolute; left: 52px; right: 4px; height: 16px; border-radius: 3px; }
+.nw5-sl:hover { background: var(--primary-a); }
+.nw5-sl:focus-visible { outline: 2px solid var(--primary-h); outline-offset: -2px; }
+.nw5-b { position: absolute; left: 52px; right: 6px; display: flex; flex-direction: column; text-align: left; overflow: hidden; padding: 2px 6px; border-left: 2px solid var(--line2); border-radius: 4px; background: var(--s3); font-size: 12px; line-height: 1.35; color: var(--ink3); pointer-events: none; }
+.nw5-b span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nw5-b.cl { border-left-color: var(--warn); color: var(--ink2); }
+.nw5-b.mine { z-index: 1; flex-direction: row; flex-wrap: wrap; column-gap: 6px; border: 1px dashed var(--primary-h); background: var(--primary-a); color: var(--ink); }
+/* 겹치면 반씩 나눠 둘 다 보이게 */
+.nw5-b.cl { right: calc((100% - 52px) / 2 + 2px); }
+.nw5-b.mine.half { left: calc(52px + (100% - 52px) / 2); }
+.nw5-b.mine small { font-size: 12px; color: var(--ink2); }
+.nw5-x { margin: 0; font-size: 12px; color: var(--ink4); }
+
+@media (max-width: 720px) {
+  .nw5-c { grid-template-columns: minmax(0, 1fr); }
+  .nw5-tl { height: 220px; }
+  .nw4-out { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .nw3-r { grid-template-columns: 96px minmax(0, 1fr); }
+  .nw-f .kbd, .nw2-k { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nw-title.shake { animation: none; }
+  .nw-t { transition: none; }
+}
+.nw5-b { align-items: stretch; }
+.nw5-b span { min-width: 0; }
+.nw5-b.mine span { flex: 1; }
+.nw5-b.mine.half small { display: none; }

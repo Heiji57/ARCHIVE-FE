@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ARCHIVE 시안 D · 할 일</title>
+<meta name="description" content="할 일 페이지: 날짜별 할 일 컬럼을 가로로 넘기고, 오른쪽 캘린더 패널에 끌어다 시간을 잡는다.">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="shared/shared.css">
+<link rel="stylesheet" href="shared/planner.css">
+<link rel="stylesheet" href="shared/usermenu.css">
+<link rel="stylesheet" href="shared/logo.css">
+<link rel="stylesheet" href="shared/rest.css">
+<link rel="stylesheet" href="shared/pet.css">
+<link rel="stylesheet" href="shared/pickers.css">
+<link rel="stylesheet" href="shared/sidevar.css">
+<link rel="stylesheet" href="shared/lab3.css">
+<link rel="stylesheet" href="shared/rpanel.css">
+<link rel="stylesheet" href="shared/todomodal.css">
+<link rel="stylesheet" href="shared/lab4.css">
+<link rel="stylesheet" href="shared/newtodo.css">
+<style>
+  .board{grid-column:2;display:flex;overflow-x:auto;overflow-y:hidden;min-width:0}
+  .col{flex:0 0 272px;width:272px;min-width:0;display:flex;flex-direction:column;border-right:1px solid var(--line);min-height:0}
+  .col.past{opacity:.55}
+  .col.past:hover{opacity:.85}
+  .col.m1{border-left:1px solid var(--line2)}
+  .ch-h{position:relative}
+  .mtag{position:absolute;top:1px;left:12px;font:600 12px var(--mono);color:var(--ink3);letter-spacing:.04em}
+  .ch-h{padding:14px 12px 8px;display:flex;align-items:flex-start;gap:8px}
+  .ch-h .d{flex:1}
+  .ch-h b{display:block;font-size:18px;font-weight:600;letter-spacing:-.3px}
+  .ch-h small{font-size:12px;color:var(--ink3)}
+  .col.today .ch-h b{color:var(--primary-h)}
+  .acts{display:flex;gap:2px}
+  .acts button{font-size:12px;color:var(--ink3);padding:3px 6px;border-radius:4px}
+  .acts button:hover{background:var(--s3);color:var(--ink)}
+  .add{display:flex;align-items:center;gap:8px;margin:0 12px 8px;height:32px;padding:0 10px;border:1px solid var(--line);border-radius:var(--r);background:var(--s1);color:var(--ink3)}
+  .add{width:calc(100% - 24px);font-size:13px;text-align:left;cursor:pointer}
+  .add:hover{border-color:var(--line2);color:var(--ink);background:var(--s2)}
+  .list{flex:1;overflow-y:auto;padding:0 12px 24px;display:flex;flex-direction:column;gap:8px;min-height:0}
+  .list.drop{background:var(--primary-a)}
+  .rp .dv-head{background:var(--s1);font-size:12px}
+  .rp .dv-head span{padding:6px 8px}
+  .rp .dv .tl,.rp .dv .dv-head{grid-template-columns:44px 1fr}
+  .rp .dv.has-ghost .tl,.rp .dv.has-ghost .dv-head{grid-template-columns:44px 1fr 36%}
+  .rp .allday{padding-left:52px;background:var(--s1)}
+  .rp .blk .bm{display:none}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <main class="board" id="board" aria-label="날짜별 할 일"></main>
+  <aside class="rp" aria-label="캘린더">
+    <div class="rp-h" id="rph"></div>
+    <div class="scroll" id="rpv"></div>
+    <div class="rp-f"><button class="btn btn-p" data-reflect><i data-ico="sparkle"></i>오늘 마무리 · 회고 초안</button></div>
+  </aside>
+</div>
+<dialog id="detail" aria-label="할 일 상세"></dialog>
+
+<script src="shared/shared.js"></script>
+<script src="shared/planner.js"></script>
+<script src="shared/logo.js"></script>
+<script src="shared/rest.js"></script>
+<script src="shared/sidevar.js"></script>
+<script src="shared/carry3.js"></script>
+<script src="shared/rpanel.js"></script>
+<script src="shared/todomodal.js"></script>
+<script src="shared/tmodal4.js"></script>
+<script src="shared/usermenu.js"></script>
+<script src="shared/pickers.js"></script>
+<script src="shared/newtodo.js"></script>
+<script>
+  const $ = (q) => document.querySelector(q), A = ARC, P = PL;
+  $('#app').insertAdjacentHTML('afterbegin', P.shell('todos'));
+  $('#app').insertAdjacentHTML('beforeend', P.strip('캘린더', 'cal'));
+  /* 날짜 컬럼은 좌우로 끝없이: 끝에 가까워지면 14일씩 이어 붙임 */
+  const COLW = 272, CH = 14, R = { start: null, n: 0 };
+  const dd = (a, b) => Math.round((A.s2d(b) - A.s2d(a)) / 864e5);
+  let lastDate = null, pick = false, shift = 0;
+  const board = $('#board');
+  const title = () => {
+    if (!R.start) return;
+    const d = A.s2d(A.add(R.start, Math.floor((board.scrollLeft + COLW * 0.5) / COLW)));
+    $('#ttl').textContent = `${d.getFullYear()}년 ${d.getMonth() + 1}월`;
+    const i0 = Math.floor((board.scrollLeft + 2) / COLW), n = Math.max(1, Math.floor(board.clientWidth / COLW)), i = dd(R.start, A.TODAY);
+    P.markToday(i < i0 ? 'left' : i > i0 + n - 1 ? 'right' : 'in');
+  };
+
+  function render() {
+    const s = A.s; s.view = 'day';
+    P.frame(); P.sidebar();
+    const b = board, keep = b.scrollLeft;
+    const moved = s.date !== lastDate && !pick; pick = false;
+    if (!R.start || (moved && (dd(R.start, s.date) < 4 || dd(s.date, A.add(R.start, R.n - 1)) < 8))) { R.start = A.add(s.date, -21); R.n = 49; }
+    const days = [...Array(R.n)].map((_, i) => A.add(R.start, i));
+    b.innerHTML = days.map((d) => {
+      const x = A.s2d(d), l = P.sortDay(A.onDay(d).filter(P.pass)), m1 = x.getDate() === 1;
+      return `<section class="col ${d < A.TODAY ? 'past' : ''} ${d === A.TODAY ? 'today' : ''} ${m1 ? 'm1' : ''}" aria-label="${A.label(d)}">
+        <div class="ch-h"><div class="d">${m1 ? `<span class="mtag">${x.getMonth() + 1}월</span>` : ''}<b>${A.DOW[x.getDay()]}요일${d === A.TODAY ? ' · 오늘' : ''}</b><small>${x.getMonth() + 1}월 ${x.getDate()}일${A.retro.has(d) ? ' · 회고 있음' : ''}</small></div>
+          <div class="acts"><button data-pick="${d}" title="오른쪽 캘린더에 이 날 보기">캘린더</button></div></div>
+        <button class="add" data-new="${d}" aria-label="${A.label(d)}에 할 일 추가">${A.ico.plus}<span>할 일 추가</span></button>
+        <div class="list" data-drop="${d}">${P.list(l)}</div></section>`;
+    }).join('');
+    b.scrollLeft = moved ? (dd(R.start, s.date) - 1 + 0.55) * COLW : keep + shift * COLW;
+    shift = 0; lastDate = s.date; title();
+
+    /* 오른쪽 캘린더 패널 */
+    $('#rph').style.display = P.rpHTML ? 'none' : ''; document.querySelector('.rp-f').style.display = P.rpHTML ? 'none' : '';
+    $('#rph').innerHTML = `<div class="dd"><b>캘린더</b><small>${A.label(s.date)}</small></div><a class="btn" href="d-calendar.html" style="height:24px">전체 보기</a>`;
+    const cv = $('#rpv'), ct = cv.scrollTop; cv.innerHTML = P.rpHTML ? P.rpHTML(s.date, 'todos') : P.dayView(s.date);
+    cv.scrollTop = ct || (P.rpHTML ? 0 : (Math.max(A.NOW - 2, A.H0) - A.H0) * A.HH);
+    const tlv = cv.querySelector(".rx-tl"); if (tlv && !tlv.dataset.y) { tlv.scrollTop = (Math.max(A.NOW - 2, A.H0) - A.H0) * A.HH; tlv.dataset.y = 1; }
+    P.detail();
+  }
+
+  document.addEventListener('click', (e) => { const el = e.target.closest('[data-pick]'); if (el) { A.s.date = el.dataset.pick; pick = true; P.rp = true; render(); } });
+  board.addEventListener('scroll', () => {
+    title();
+    if (board.scrollLeft < COLW * 3) { R.start = A.add(R.start, -CH); R.n += CH; shift = CH; render(); }
+    else if (board.scrollLeft + board.clientWidth > board.scrollWidth - COLW * 3) { R.n += CH; render(); }
+  }, { passive: true });
+  /* "오늘"·T 는 이미 그 날이어도 다시 그 자리로 */
+  document.addEventListener('click', (e) => { if (e.target.closest('[data-nav="today"]')) lastDate = null; }, true);
+  document.addEventListener('keydown', (e) => { if (!e.target.closest('input,textarea') && e.key.toLowerCase() === 't') lastDate = null; }, true);
+  document.addEventListener('click', (e) => { const el = e.target.closest('[data-new]'); if (el) P.openNew({ date: el.dataset.new }); });
+  A.init(render);
+</script>
+<script src="shared/pet.js"></script>
+</body>
+</html>

@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>회고 쓰기 화면 시안</title>
+<meta name="description" content="회고 목록을 보는 방식 다섯 가지를 지금 카드 보기와 비교한다.">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="shared/shared.css">
+<style>
+  body{height:auto;min-height:100%}
+  .wrap{padding:28px 24px 64px;max-width:1480px}
+  h1{margin:0 0 6px;font-size:18px;font-weight:600;letter-spacing:-.2px}
+  .lead{margin:0 0 20px;color:var(--ink3);font-size:13px;max-width:84ch;line-height:1.6}
+  .tabs{position:sticky;top:0;z-index:2;display:flex;gap:4px;flex-wrap:wrap;padding:10px 0;background:var(--canvas);border-bottom:1px solid var(--line);margin-bottom:20px}
+  .tabs a{padding:5px 10px;border-radius:6px;font-size:13px;color:var(--ink3)}
+  .tabs a:hover{background:var(--s3);color:var(--ink)}
+  .tabs a b{font-family:var(--mono);color:var(--ink4);margin-right:6px;font-weight:400}
+  section{margin:0 0 36px;scroll-margin-top:60px}
+  .hd{display:flex;align-items:baseline;gap:12px;margin:0 0 8px}
+  h2{margin:0;font-size:14px;font-weight:600}
+  h2 span{font-family:var(--mono);color:var(--ink4);font-weight:400;margin-right:8px}
+  .hd p{margin:0;flex:1;font-size:12px;color:var(--ink3);line-height:1.5}
+  .hd a{font-size:12px;color:var(--primary-h);white-space:nowrap}
+  .hd a:hover{text-decoration:underline}
+  iframe{display:block;width:100%;height:780px;border:1px solid var(--line);border-radius:10px;background:var(--canvas)}
+  section.cur{opacity:.8}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>회고 쓰기 화면 시안</h1>
+  <p class="lead">"새 회고"로 회고를 만들면 열리는 쓰기 화면 다섯 가지입니다. 0은 지금 화면입니다. 각 시안은 막 만든 빈 회고로 열려 있어서 바로 써 볼 수 있고, 오른쪽 "채운 회고로 보기"는 이미 쓴 회고(11월 2일)로 엽니다. 모두 고르신 요소만 씁니다: 제목, 본문, 그날 한 일, 지난번에 해 보자고 한 것, 질문, 할 일로 보내기, 내일로 넘기기, 집중 모드.</p>
+  <nav class="tabs" id="tabs"></nav>
+  <div id="list"></div>
+</div>
+<script>
+  const V = [
+    [0, '지금', '메타 줄, 제목, 지난번 액션, 본문, 아래에 그날 완료한 작업.'],
+    [1, '문서 한 장', '맨 위에 날짜를 날짜 잉크로 크게, 오른쪽에 종류와 폴더. 제목, 본문, 그 아래 "그날 한 일". 가장 단정한 기본형.'],
+    [2, '재료 옆에 두기', '왼쪽 칸에 그날 한 일과 지난번에 해 보자고 한 것을 늘 펼쳐 둠. "본문에 넣기"로 한 줄씩 본문에 옮기며 씀. 못 끝낸 일은 "내일로".'],
+    [3, '기록 칩', '제목 아래에 그날 한 일 · 지난번 액션을 칩으로. 칩을 누르면 본문 끝에 들어가고 칩은 흐려짐. 화면은 한 단 그대로.'],
+    [4, '일기장 여백', '왼쪽 여백에 큰 날짜, 종류, 폴더, 지난번 액션을 세로로. 오른쪽은 제목과 본문만. 종이 일기장의 날짜 칸처럼.'],
+    [5, '목록 위 시트', '페이지를 바꾸지 않고 회고 목록 위로 쓰기 시트가 올라옴. 바깥을 누르거나 Esc 로 닫으면 보던 목록 그대로.'],
+  ];
+  document.getElementById('tabs').innerHTML = V.map(([v, n]) => `<a href="#v${v}"><b>${v}</b>${n}</a>`).join('');
+  document.getElementById('list').innerHTML = V.map(([v, n, d]) => `<section id="v${v}" class="${v === 0 ? 'cur' : ''}">
+    <div class="hd"><h2><span>${v}</span>${n}</h2><p>${d}</p><a href="d-retro2.html?rl=1&vm=grid&ed=${v}&entry=d1102">채운 회고로 보기 →</a></div>
+    <iframe src="d-retro2.html?rl=1&vm=grid&ed=${v}&new=1" title="${v}. ${n}" loading="lazy" style="height:760px"></iframe></section>`).join('');
+</script>
+</body>
+</html>

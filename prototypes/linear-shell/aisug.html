@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI 추천 칸</title>
+<meta name="description" content="AI 추천이 캘린더에 그리는 칸과 오른쪽 목록을, 모양 다섯 가지와 색 다섯 가지로 골라 본다.">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="shared/shared.css">
+<style>
+  /* Hallmark · scope: app screen (시안 비교 페이지) · genre: atmospheric · theme: project tokens (ARCHIVE dark, shared.css) · signature: 한 화면에 들어오는 실제 화면, 모양과 색을 따로 고름 · states: 8 · mode: fast · v2.0.0 */
+  /* critique: the old page stacked two tall frames and scrolled twice; this one fits the live 1440 by 900 screen to the window so nothing scrolls. */
+  html, body { height: 100%; overflow: clip; }
+  body { display: flex; flex-direction: column; background: var(--canvas); }
+  .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+  h1 { margin: 0; font-size: 14px; font-weight: 600; white-space: nowrap; }
+  .grp { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+  .grp span { margin-right: 4px; font-size: 12px; color: var(--ink3); }
+  .grp button { height: 28px; padding: 0 8px; border: 1px solid var(--line2); border-radius: 6px; font-size: 12px; color: var(--ink3); }
+  .grp button:hover { background: var(--s3); color: var(--ink); }
+  .grp button[aria-pressed="true"] { border-color: var(--primary); background: var(--primary-a); color: var(--ink); }
+  .grp button:focus-visible, .bar a:focus-visible { outline: 2px solid var(--primary-h); outline-offset: 2px; }
+  .bar a { margin-left: auto; font-size: 12px; color: var(--primary-h); }
+  .desc { flex-basis: 100%; margin: 0; font-size: 12px; color: var(--ink3); }
+  .stage { position: relative; flex: 1; min-height: 0; overflow: clip; }
+  iframe { position: absolute; top: 0; left: 0; width: 1440px; height: 900px; border: 0; transform-origin: 0 0; background: var(--canvas); }
+  iframe:focus, iframe:focus-visible, iframe.kf { outline: 3px solid var(--primary-h); outline-offset: 0; }
+  .stage:focus-within { outline: 2px solid var(--primary-h); outline-offset: -2px; }
+</style>
+</head>
+<body>
+<div class="bar">
+  <h1>AI 추천 칸</h1>
+  <div class="grp" role="group" aria-label="모양" id="g-ra"></div>
+  <div class="grp" role="group" aria-label="색" id="g-ag"></div>
+  <div class="grp" role="group" aria-label="화면" id="g-pg"></div>
+  <a id="open" href="#" target="_blank" rel="noopener">새 창에서 보기</a>
+  <p class="desc" id="desc"></p>
+</div>
+<div class="stage" id="stage"><iframe id="f" title="AI 추천 시안" scrolling="no"></iframe></div>
+<script>
+  const RA = [['16', '16 미리보기 켜기'], ['17', '17 번호'], ['18', '18 지금과 바뀌면'], ['19', '19 띠와 꼬리표'], ['20', '20 일정 칸처럼 (기본)'], ['21', '21 하나씩']];
+  const AG = [['1', '1 인디고 반투명', '인디고를 옅게 깔고 점선 테두리. 밑의 일정이 비쳐 보여요.'], ['2', '2 빗금', 'AI 버튼, 빗금이와 같은 빗금. 바탕은 거의 비어 있어요.'], ['3', '3 흐린 유리', '흰빛을 아주 옅게 깔고 왼쪽에 인디고 줄. 가장 차분해요.'], ['4', '4 윤곽선만', '바탕 없이 점선 테두리와 AI 표시만. 가장 덜 눈에 띄어요.'], ['5', '5 흐린 일정 칸 (기본)', '실제 일정 칸 모양을 반쯤 투명하게. 마우스를 올리면 진해져요.']];
+  const PG = [['d-calendar.html', '캘린더'], ['d-todos.html', '할 일']];
+  const S = { ra: '20', ag: '5', pg: 'd-calendar.html' };
+  const $ = (q) => document.querySelector(q);
+  const grp = (id, L, k, lab) => { $(id).innerHTML = `<span>${lab}</span>` + L.map(([v, l]) => `<button type="button" data-k="${k}" data-v="${v}" aria-pressed="${S[k] === v}">${l}</button>`).join(''); };
+  const url = () => `${S.pg}?ra=${S.ra}&ag=${S.ag}&aip=1`;
+  const fit = () => { const st = $('#stage'), s = Math.min(st.clientWidth / 1440, st.clientHeight / 900), f = $('#f'); f.style.transform = `scale(${s})`; f.style.left = `${(st.clientWidth - 1440 * s) / 2}px`; };
+  const draw = () => { grp('#g-ra', RA, 'ra', '모양'); grp('#g-ag', AG, 'ag', '색'); grp('#g-pg', PG, 'pg', '화면'); $('#desc').textContent = AG.find((x) => x[0] === S.ag)[2]; $('#open').href = url(); };
+  document.addEventListener('click', (e) => { const b = e.target.closest('.grp button'); if (!b) return; S[b.dataset.k] = b.dataset.v; draw(); $('#f').src = url(); document.querySelector(`.grp [data-k="${b.dataset.k}"][data-v="${b.dataset.v}"]`).focus(); });
+  draw(); $('#f').src = url(); fit(); addEventListener('resize', fit);
+  /* 키보드로 시안 안에 들어가면 바깥에 표시 */
+  const mark = () => $('#f').classList.toggle('kf', document.activeElement === $('#f'));
+  addEventListener('blur', () => setTimeout(mark, 0)); addEventListener('focus', mark);
+</script>
+</body>
+</html>
