@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>회고 시안</title>
+<meta name="description" content="회고 페이지 시안 10개를 비교한다. 6~10 은 문서 도구에서 가져온 아이디어.">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="shared/shared.css">
+<style>
+  body{height:auto;min-height:100%}
+  .wrap{padding:28px 24px 64px;max-width:1480px}
+  h1{margin:0 0 6px;font-size:18px;font-weight:600;letter-spacing:-.2px}
+  .lead{margin:0 0 20px;color:var(--ink3);font-size:13px;max-width:84ch;line-height:1.6}
+  .tabs{position:sticky;top:0;z-index:2;display:flex;gap:4px;flex-wrap:wrap;padding:10px 0;background:var(--canvas);border-bottom:1px solid var(--line);margin-bottom:20px}
+  .tabs a{padding:5px 10px;border-radius:6px;font-size:13px;color:var(--ink3)}
+  .tabs a:hover{background:var(--s3);color:var(--ink)}
+  .tabs a b{font-family:var(--mono);color:var(--ink4);margin-right:6px;font-weight:400}
+  section{margin:0 0 36px;scroll-margin-top:60px}
+  .hd{display:flex;align-items:baseline;gap:12px;margin:0 0 8px}
+  h2{margin:0;font-size:14px;font-weight:600}
+  h2 span{font-family:var(--mono);color:var(--ink4);font-weight:400;margin-right:8px}
+  .hd p{margin:0;flex:1;font-size:12px;color:var(--ink3);line-height:1.5}
+  .hd a{font-size:12px;color:var(--primary-h);white-space:nowrap}
+  .hd a:hover{text-decoration:underline}
+  iframe{display:block;width:100%;height:780px;border:1px solid var(--line);border-radius:10px;background:var(--canvas)}
+  section.cur{opacity:.8}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>회고 시안</h1>
+  <p class="lead"><b style="color:var(--ink)">6~10 (새로 추가)</b>: 문서 작성 도구에서 흔히 쓰는 생각(글끼리 잇는 링크와 거꾸로 따라가기, 글 위의 속성 칸, 탭과 나란히 보기, 슬래시 블록, 찾기 창, 집중 모드)을 ARCHIVE 회고에 맞춰 다시 만든 시안입니다. 화면 배치, 아이콘, 색, 이름은 특정 제품을 따라 하지 않고 이 셸의 것을 그대로 씁니다. 본문에 <code>[[</code> 를 치면 다른 회고를 걸 수 있고, <code>#단어</code> 는 태그가 되며, <code>Ctrl K</code> 로 찾기 창이 열립니다.</p>
+  <p class="lead"><b style="color:var(--ink)">1~5 (앞서 만든 시안)</b>: 회고 페이지를 다섯 가지 구조로 만들었습니다. 지금 서비스의 기능(일간 · 주간 · 월간 · 연간 회고, 폴더, AI 요약 만들기, 그날 끝낸 일 · 커밋 재료, GitHub 저장)은 모두 그대로 넣었습니다. 시안마다 실제 페이지를 띄웠고 안에서 쓰기, 초안 만들기, 요약 만들기, 저장이 모두 됩니다. "이걸로 보기"를 누르면 상단 회고 탭이 그 시안으로 열리고 기억됩니다.</p>
+  <nav class="tabs" id="tabs"></nav>
+  <div id="list"></div>
+</div>
+<script>
+  const V = [
+    [6, '노트 서랍', '왼쪽 서랍(폴더 접기 · 태그로 거르기) / 탭으로 여러 회고 열기 / 글 위 속성 칸(날짜 · 종류 · 폴더 · 태그 · 연결 · 저장). 오른쪽에 "이 글을 부른 글"(앞뒤 문장 같이), "이 글이 부른 글", 태그는 겹치는데 아직 안 이어진 글 + "링크 걸기". 아래 글자 · 블록 · 링크 수.'],
+    [7, '블록 문서', '가운데 한 단. 빈 날은 틀 4개(하루 정리 · 세 칸 · 질문 세 개 · 커밋으로 시작). 빈 줄에서 / 를 누르면 기본 블록 + ARCHIVE 블록(그날 할 일 · 커밋을 자동으로 불러오는 상자, 못 끝낸 일 → 할 일 목록, 질문, AI 로 이어 쓰기). 왼쪽 ⋮⋮ 로 끌어 옮기기 · 메뉴.'],
+    [8, '나란히 보기', '왼쪽에 이번 주 회고를 쓰면서 오른쪽에 그 주 일간 회고를 펴 놓는 구조. 오른쪽 위 날짜 칩으로 하루씩 넘김. 오른쪽 글에서 문장을 고르면 "왼쪽 글에 인용으로 넣기"(출처 링크 포함). 링크를 누르면 반대편 창에 열림. 가운데 선을 끌어 너비 조절.'],
+    [9, '주제 지도', '서비스의 "주제" 기능을 시간축 위에 펼침. #태그 하나가 줄 하나, 점 = 일간 회고, 막대 = 요약 기간, 점선 곡선 = [[ ]] 링크, 맨 아래 기록량. 줄 이름을 누르면 왼쪽에 주제 정리(AI · 다시 정리), 같이 나온 주제, 반영된 글. 점을 누르면 오른쪽에 그 회고.'],
+    [10, '집중 쓰기', '메뉴를 다 숨기고(화면 꽉 채우기, Esc) 쓰는 문단만 밝게. 쓰는 줄이 늘 화면 가운데쯤 오도록 따라 내려감. 아래 도구: 15분 타이머, 목표 글자 수 고리, 질문 받기, 그날 재료를 눌러 넣기. 쓰는 동안 도구는 흐려짐.'],
+    [1, '문서 3단', '왼쪽 목록(종류 탭 · 검색 · 월별 묶음) / 가운데 문서 / 오른쪽 저장 상태 · 목차 · 재료 수. 지금 서비스의 갤러리 ⇄ 편집기 두 화면을 한 화면으로 합침.'],
+    [2, '피드', '날짜를 따라 내려가는 한 줄 피드. 맨 위가 오늘 쓰기 칸이고, 빠진 날은 점선 줄로 바로 "쓰기". 주가 바뀌는 곳에 주간 요약이 끼어 들어감.'],
+    [3, '잔디 + 하루', '위에 22주 잔디(회고 길이 = 진하기, ◆ = 주간 요약)와 연속 작성 수. 칸을 누르면 아래 왼쪽에 그날 할 일 · 커밋 타임라인, 오른쪽에 회고.'],
+    [4, '가이드 (KPT)', '잘한 일 · 아쉬운 일 · 다음에 해 볼 일 세 칸. 왼쪽 재료(끝낸 일 · 못 끝낸 일 · 커밋)를 끌어 놓거나 K · P · T 로 넣음. "다음에"는 바로 내일 할 일로 보냄. 저장하면 문서로 바뀜.'],
+    [5, '갤러리 + 옆 미리보기', '폴더 카드와 회고 카드 그리드(지금 서비스와 같은 구조). 카드를 누르면 화면을 떠나지 않고 오른쪽에 문서가 열리고, ⤢ 로 전체 화면. "오늘 회고 쓰기" · "이번 주 요약 만들기" 카드.'],
+  ];
+  document.getElementById('tabs').innerHTML = V.map(([v, n]) => `<a href="#v${v}"><b>${v}</b>${n}</a>`).join('');
+  document.getElementById('list').innerHTML = V.map(([v, n, d]) => `${v === 1 ? '<h2 style="margin:8px 0 18px;font-size:16px">앞서 만든 시안 1~5</h2>' : v === 6 ? '<h2 style="margin:0 0 18px;font-size:16px">문서 도구에서 가져온 시안 6~10</h2>' : ''}<section id="v${v}">
+    <div class="hd"><h2><span>${v}</span>${n}</h2><p>${d}</p><a href="d-retro.html?rv=${v}">이걸로 보기 →</a></div>
+    <iframe src="d-retro.html?rv=${v}" title="${v}. ${n}" loading="lazy"></iframe></section>`).join('');
+</script>
+</body>
+</html>

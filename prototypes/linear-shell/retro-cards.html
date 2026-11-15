@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>회고 카드 시안 2</title>
+<meta name="description" content="고른 요소만으로 만든 회고 화면 구성 3가지를 비교한다.">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="shared/shared.css">
+<style>
+  body{height:auto;min-height:100%}
+  .wrap{padding:28px 24px 64px;max-width:1480px}
+  h1{margin:0 0 6px;font-size:18px;font-weight:600;letter-spacing:-.2px}
+  .lead{margin:0 0 20px;color:var(--ink3);font-size:13px;max-width:84ch;line-height:1.6}
+  .tabs{position:sticky;top:0;z-index:2;display:flex;gap:4px;flex-wrap:wrap;padding:10px 0;background:var(--canvas);border-bottom:1px solid var(--line);margin-bottom:20px}
+  .tabs a{padding:5px 10px;border-radius:6px;font-size:13px;color:var(--ink3)}
+  .tabs a:hover{background:var(--s3);color:var(--ink)}
+  .tabs a b{font-family:var(--mono);color:var(--ink4);margin-right:6px;font-weight:400}
+  section{margin:0 0 36px;scroll-margin-top:60px}
+  .hd{display:flex;align-items:baseline;gap:12px;margin:0 0 8px}
+  h2{margin:0;font-size:14px;font-weight:600}
+  h2 span{font-family:var(--mono);color:var(--ink4);font-weight:400;margin-right:8px}
+  .hd p{margin:0;flex:1;font-size:12px;color:var(--ink3);line-height:1.5}
+  .hd a{font-size:12px;color:var(--primary-h);white-space:nowrap}
+  .hd a:hover{text-decoration:underline}
+  iframe{display:block;width:100%;height:780px;border:1px solid var(--line);border-radius:10px;background:var(--canvas)}
+  section.cur{opacity:.8}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>회고 카드 시안 (한 화면씩)</h1>
+  <p class="lead">색 번짐을 대신할 카드 처리 5가지입니다. 모두 같은 규칙을 지킵니다: 종류 색은 한 곳에만 쓰고, 깊이는 밝기 차이로만 내고(후광 · 그림자 · 떠오르기 없음), 마우스를 올리면 바탕이 한 단계 밝아지는 것 하나만 바뀝니다. 상태 8가지(기본, 마우스 올림, 포커스, 누름, 사용 불가, 생성 중, 생성 실패, 방금 만듦)는 <a href="retro-cards.preview.html" style="color:var(--primary-h)">상태 보기</a>에 모아 두었습니다.</p>
+  <nav class="tabs" id="tabs"></nav>
+  <div id="list"></div>
+</div>
+<script>
+  const V = [
+    [1, '지금 (색 번짐)', '비교용. 왼쪽 위 색 후광. 어두운 바탕 위 색 번짐은 생성된 화면에서 자주 보이는 처리라 바꾸려는 대상.'],
+    [4, '색인 탭', '종류가 카드 위쪽 모서리에 붙은 작은 탭(일간 · 주간 · 월간 · 연간). 서랍 속 색인 카드처럼 위에서 종류만 훑어볼 수 있고, 카드 몸체는 무채색.'],
+    [5, '날짜 잉크', '날짜를 크게, 종류 색 글자로 씀. 색은 숫자에만 있고 바탕 · 테두리는 무채색. 날짜로 회고를 찾는 습관에 맞춤.'],
+    [6, '줄 노트', '카드에 아주 흐린 괘선, 왼쪽에 종류 색 여백선 한 줄. 일기장 종이를 빌려 온 처리. 마우스를 올리면 여백선이 진해짐.'],
+    [7, '색 바탕', '카드 전체를 종류 색으로 아주 옅게, 평평하게 칠함(그라데이션 없음). 색 덩어리로 종류가 갈림.'],
+    [8, '장부', '카드 상자를 없애고 한 줄씩. 날짜 · 종류 · 제목과 첫 줄 · 폴더가 열로 맞춰짐. 가장 조용하고 많이 보임.'],
+  ];
+  document.getElementById('tabs').innerHTML = V.map(([v, n]) => `<a href="#v${v}"><b>${v}</b>${n}</a>`).join('');
+  document.getElementById('list').innerHTML = V.map(([v, n, d]) => `<section id="v${v}" class="${v === 1 ? 'cur' : ''}">
+    <div class="hd"><h2><span>${v}</span>${n}</h2><p>${d}</p><a href="d-retro2.html?rl=1&cv=${v}">이걸로 보기 →</a></div>
+    <iframe src="d-retro2.html?rl=1&cv=${v}" title="${v}. ${n}" loading="lazy"></iframe></section>`).join('');
+</script>
+</body>
+</html>

@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ARCHIVE 시안 B · Linear 행 목록</title>
+<meta name="description" content="사이드바와 촘촘한 행 목록이 기본, 캘린더는 우측 보조">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="shared/shared.css">
+<style>
+  .app{display:grid;grid-template-columns:220px minmax(0,1fr) 340px;height:100vh}
+  .sb{background:var(--s1);border-right:1px solid var(--line);padding:12px 8px;display:flex;flex-direction:column;gap:14px;overflow:auto}
+  .brand{display:flex;align-items:center;gap:8px;font-weight:600;letter-spacing:.14em;font-size:12px;padding:4px 8px}
+  .brand i{width:18px;height:18px;border-radius:5px;background:var(--primary);display:inline-block}
+  .sb a,.sb button.lnk{display:flex;align-items:center;gap:10px;height:28px;padding:0 8px;border-radius:var(--r);color:var(--ink3);width:100%;text-align:left}
+  .sb a:hover,.sb .lnk:hover{background:var(--s3);color:var(--ink)}
+  .sb a[aria-current=page],.sb .lnk[aria-pressed=true]{background:var(--s4);color:var(--ink)}
+  .sb h2{margin:0 0 4px;padding:0 8px;font-size:12px;font-weight:600;color:var(--ink4);letter-spacing:.04em}
+  .sb .n{margin-left:auto;font:500 12px var(--mono);color:var(--ink3)}
+  .sb .foot{margin-top:auto;font-size:12px;color:var(--ink3);padding:6px 8px;display:flex;gap:8px;align-items:center}
+  .sb .foot b{width:6px;height:6px;border-radius:50%;background:var(--done)}
+  main{display:flex;flex-direction:column;min-width:0;height:100vh;border-right:1px solid var(--line)}
+  .bar{display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .bar h1{margin:0;font-size:14px;font-weight:600;flex:0 0 auto}
+  .bar .sp{flex:1}
+  .scroll{flex:1;overflow:auto;min-height:0}
+  .grp{position:sticky;top:0;z-index:2;background:var(--canvas);display:flex;align-items:center;gap:10px;padding:8px 16px;border-bottom:1px solid var(--line);font-size:12px;color:var(--ink3)}
+  .grp b{color:var(--ink);font-weight:600;font-size:13px}
+  .grp.today b{color:var(--primary-h)}
+  .row{display:flex;align-items:center;gap:10px;height:32px;padding:0 16px;border-bottom:1px solid var(--line);cursor:pointer;width:100%;text-align:left}
+  .row:hover{background:var(--s1)}
+  .row[aria-selected=true]{background:var(--primary-a);box-shadow:inset 2px 0 var(--primary)}
+  .row .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .row[data-st=done] .t{color:var(--ink3);text-decoration:line-through}
+  .row .tm{font:500 12px var(--mono);color:var(--ink3);width:92px;text-align:right}
+  .row .lk{font:500 12px var(--mono);color:var(--primary-h);width:32px}
+  .row .gh-r{font:500 12px var(--mono);color:var(--ink3)}
+  aside.side{overflow:auto;background:var(--s1)}
+  .box{padding:14px 16px;border-bottom:1px solid var(--line)}
+  .box h2{margin:0 0 8px;font-size:12px;font-weight:600;color:var(--ink3);letter-spacing:.04em}
+  .up{display:flex;gap:8px;align-items:center;padding:4px 0;font-size:13px;color:var(--ink2);width:100%;text-align:left}
+  .up .mono{color:var(--ink3);font-size:12px;width:44px}
+  .sum{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .sum div{border:1px solid var(--line);border-radius:var(--r);padding:8px 10px;background:var(--canvas)}
+  .sum b{display:block;font:600 20px var(--mono)}
+  .sum span{font-size:12px;color:var(--ink3)}
+  .vwrap{padding:0}
+  @media (max-width:1100px){.app{grid-template-columns:200px minmax(0,1fr)}aside.side{position:fixed;right:0;top:0;bottom:0;width:340px;z-index:20;border-left:1px solid var(--line2)}}
+  @media (max-width:720px){.app{grid-template-columns:1fr}.sb{display:none}aside.side{width:100%}}
+</style>
+</head>
+<body>
+<div class="app">
+  <nav class="sb" aria-label="주 메뉴">
+    <div class="brand"><i></i>A.R.C.H.I.V.E</div>
+    <button class="btn" data-act="palette" style="justify-content:space-between"><span style="display:flex;gap:8px;align-items:center"><i data-ico="search"></i>검색</span><span class="kbd">Ctrl K</span></button>
+    <div><a href="#"><i data-ico="dash"></i>대시보드</a><a href="#" aria-current="page"><i data-ico="cal"></i>캘린더</a><a href="#"><i data-ico="todo"></i>할 일</a><a href="#"><i data-ico="retro"></i>회고</a><a href="#"><i data-ico="set"></i>설정</a></div>
+    <div id="filters"></div>
+    <div class="foot"><b></b>GitHub 3개 연결 · developer</div>
+  </nav>
+  <main>
+    <div class="bar">
+      <h1 id="ttl">할 일</h1>
+      <form class="cap" data-capform style="flex:1;min-width:200px;max-width:420px;height:28px"><i data-ico="plus"></i><input data-capture placeholder="추가: 내일 3시 PR 리뷰 #work (C)" aria-label="퀵 캡처"></form>
+      <span class="sp"></span>
+      <button class="btn" data-act="ghost" aria-pressed="true" id="gbtn"></button>
+      <div class="seg" role="group" aria-label="보기"><button data-view="list">목록</button><button data-view="day">일</button><button data-view="week">주</button><button data-view="month">월</button></div>
+      <button class="ibtn" data-nav="-1" aria-label="이전"><i data-ico="l"></i></button><button class="btn" data-nav="today">오늘</button><button class="ibtn" data-nav="1" aria-label="다음"><i data-ico="r"></i></button>
+    </div>
+    <div class="scroll" id="view"></div>
+  </main>
+  <aside class="side" id="side" aria-label="보조 패널"></aside>
+</div>
+<script src="shared/shared.js"></script>
+<script>
+  const $ = (q) => document.querySelector(q);
+  let filter = 'all';
+  ARC.listKeys = true;
+  function rowsOf() {
+    const A = ARC, f = (t) => filter === 'all' || t.status === filter;
+    const groups = []; const days = [A.TODAY, A.add(A.TODAY, 1), A.add(A.TODAY, 2)];
+    const later = A.todos.filter((t) => t.date && t.date > days[2] && f(t)).sort((a, b) => a.date.localeCompare(b.date));
+    const prev = A.todos.filter((t) => t.date && t.date < A.TODAY && f(t));
+    days.forEach((d) => groups.push({ k: d, name: d === A.TODAY ? '오늘' : d === days[1] ? '내일' : '모레', d, items: A.onDay(d).filter(f).sort((a, b) => (a.start ?? 0) - (b.start ?? 0)) }));
+    groups.push({ k: 'later', name: '이후', items: later }); groups.push({ k: 'q', name: '배치 대기', items: A.queue().filter(f) });
+    groups.push({ k: 'prev', name: '지난 일', items: prev });
+    return groups;
+  }
+  function render() {
+    const A = ARC, s = A.s; if (!s.listInit) { s.view = new URLSearchParams(location.search).get('view') || 'list'; s.listInit = 1; }
+    $('#ttl').textContent = s.view === 'list' ? '할 일' : A.title();
+    document.querySelectorAll('[data-view]').forEach((b) => b.setAttribute('aria-pressed', b.dataset.view === s.view));
+    $('#gbtn').innerHTML = `${A.ico.link}활동 ${s.ghost ? '켬' : '끔'}`;
+    $('#gbtn').setAttribute('aria-pressed', s.ghost);
+    const cnt = (st) => A.todos.filter((t) => st === 'all' || t.status === st).length;
+    $('#filters').innerHTML = `<h2>보기</h2>${[['all', '전체'], ['doing', '진행 중'], ['todo', '대기'], ['done', '완료']].map(([k, n]) => `<button class="lnk" data-filter="${k}" aria-pressed="${filter === k}">${k === 'all' ? A.ico.todo : A.sd(k)}${n}<span class="n">${cnt(k)}</span></button>`).join('')}`;
+    const v = $('#view');
+    if (s.view === 'list') {
+      v.innerHTML = rowsOf().filter((g) => g.items.length || ['q'].includes(g.k) === false && g.d).map((g) => `<div class="grp ${g.k === A.TODAY ? 'today' : ''}"><b>${g.name}</b>${g.d ? `<span class="num">${g.d.slice(5)}</span>` : ''}<span class="num">${g.items.length}</span></div>
+        ${g.items.map((t) => { const lk = A.commits.filter((c) => c.todoId === t.id).length; return `<div class="row" role="button" tabindex="0" data-id="${t.id}" data-st="${t.status}" draggable="true" aria-selected="${s.sel === t.id}"><span class="sdbtn" data-toggle="${t.id}">${A.sd(t.status)}</span><span class="t">${A.esc(t.title)}${t.until ? ` <span class="num" style="color:var(--ink3)">~${t.until.slice(5)}</span>` : ''}</span><span class="tag">${A.TAG[t.tag]}</span><span class="lk">${lk && s.ghost ? '↔' + lk : ''}</span><span class="tm">${t.start != null ? A.hm(t.start) + '–' + A.hm(t.end) : '종일'}</span></div>`; }).join('') || '<div class="row" style="cursor:default;color:var(--ink4)">없음</div>'}`).join('');
+    } else v.innerHTML = `<div class="vwrap">${A.viewHTML(false)}</div>`;
+    const t = A.byId(s.sel), st = A.stats(s.date);
+    $('#side').innerHTML = t ? A.panelHTML(t) + `<div class="box"><button class="btn" data-act="close-day" style="width:100%;justify-content:center">${A.ico.sparkle}하루 닫기 · 회고 초안</button></div>` : `<div class="box">${A.miniHTML(s.date)}</div>
+      <div class="box"><h2>${A.label(s.date)}</h2><div class="sum"><div><b>${st.done}/${st.n}</b><span>완료 / 계획</span></div><div><b>${st.commits}</b><span>커밋</span></div></div></div>
+      <div class="box"><h2>다가오는 일정</h2>${A.todos.filter((x) => x.date && x.date >= A.TODAY && x.status !== 'done').sort((a, b) => a.date.localeCompare(b.date) || (a.start ?? 0) - (b.start ?? 0)).slice(0, 5).map((x) => `<button class="up" data-id="${x.id}">${A.sd(x.status)}<span style="flex:1">${A.esc(x.title)}</span><span class="mono">${x.date.slice(5)}</span></button>`).join('')}</div>
+      <div class="box"><button class="btn btn-p" data-act="close-day" style="width:100%;justify-content:center">${A.ico.sparkle}하루 닫기 · 회고 초안</button></div>`;
+  }
+  document.addEventListener('click', (e) => { const f = e.target.closest('[data-filter]'); if (f) { filter = f.dataset.filter; render(); } });
+  /* 목록에서 J/K = 행 이동 */
+  document.addEventListener('keydown', (e) => {
+    if (ARC.s.view !== 'list' || !['j', 'k', 'ArrowDown', 'ArrowUp'].includes(e.key) || e.target.closest('input,textarea,dialog')) return;
+    const ids = [...document.querySelectorAll('.row[data-id]')].map((r) => r.dataset.id); if (!ids.length) return;
+    const i = ids.indexOf(ARC.s.sel), n = e.key === 'j' || e.key === 'ArrowDown' ? Math.min(i + 1, ids.length - 1) : Math.max(i - 1, 0);
+    ARC.s.sel = ids[i < 0 ? 0 : n]; e.preventDefault(); render();
+    document.querySelector(`.row[data-id="${ARC.s.sel}"]`)?.scrollIntoView({ block: 'nearest' });
+  });
+  ARC.init(render);
+</script>
+</body>
+</html>

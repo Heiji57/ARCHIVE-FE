@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>설정 시안</title>
+<meta name="description" content="왼쪽 아래 사용자 메뉴로 들어가는 설정을 다섯 가지 배치로 비교한다.">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="shared/shared.css">
+<style>
+  body{height:auto;min-height:100%}
+  .wrap{padding:28px 24px 64px;max-width:1480px}
+  h1{margin:0 0 6px;font-size:18px;font-weight:600}
+  .lead{margin:0 0 20px;color:var(--ink3);font-size:13px;max-width:92ch;line-height:1.6}
+  .tabs{position:sticky;top:0;z-index:2;display:flex;gap:4px;flex-wrap:wrap;padding:10px 0;background:var(--canvas);border-bottom:1px solid var(--line);margin-bottom:20px}
+  .tabs a{padding:5px 10px;border-radius:6px;font-size:13px;color:var(--ink3)}
+  .tabs a:hover{background:var(--s3);color:var(--ink)}
+  section{margin:0 0 40px;scroll-margin-top:60px}
+  .hd{display:flex;align-items:baseline;gap:12px;margin:0 0 8px}
+  h2{margin:0;font-size:14px;font-weight:600;white-space:nowrap}
+  h2 span{font-family:var(--mono);color:var(--ink4);font-weight:400;margin-right:8px}
+  .hd p{margin:0;flex:1;font-size:12px;color:var(--ink3);line-height:1.5}
+  .st{display:flex;gap:4px;flex-wrap:wrap;margin:0 0 8px}
+  .st button{height:28px;padding:0 10px;border-radius:6px;border:1px solid var(--line2);font-size:12px;color:var(--ink3)}
+  .st button:hover{background:var(--s3);color:var(--ink)}
+  .st button[aria-pressed="true"]{border-color:var(--primary);color:var(--ink);background:var(--primary-a)}
+  .st button:focus-visible{outline:2px solid var(--primary-h);outline-offset:2px}
+  .st a{margin-left:auto;font-size:12px;color:var(--primary-h);align-self:center}
+  iframe{display:block;width:100%;height:780px;border:1px solid var(--line);border-radius:10px;background:var(--canvas)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>설정 시안</h1>
+  <p class="lead">설정은 "창으로 열기"로 정했습니다. 어느 탭에서든 왼쪽 아래 사용자 메뉴의 "설정"(또는 Ctrl ,)을 누르면 보던 화면 위에 창으로 열립니다. 할 일과 캘린더, AI 세부 선택, 연동 표시, 데이터와 보안은 각각 다섯 가지 중에서 고르세요. 서비스 전체 경고 모양은 <a href="alerts.html" target="_blank" rel="noopener">경고 디자인 템플릿</a>에서 따로 고릅니다. 번호 버튼으로 바꿔 보고, "이걸로 보기"를 누르면 그 시안이 기본이 됩니다.</p>
+  <nav class="tabs" id="tabs"></nav>
+  <div id="list"></div>
+</div>
+<script>
+  const B = 'd-settings.html?sv=3';
+  const L = [
+    ['um', '사용자 메뉴', '모든 탭 공용. 여기서 "설정"을 누르면 창이 열립니다.', [['메뉴 열기', 'd-ai.html?ep=6&um=1'], ['테마 옆 메뉴', 'd-ai.html?ep=6&um=theme'], ['할 일 위에 설정 창', 'd-todos.html?sheet=1']]],
+    ['wd', '할 일과 캘린더: 일하는 시간 + 새 할 일과 끝낸 일', '두 부분을 한 벌로 묶어 다섯 가지로 만들었습니다. 1번은 실제 할 일 카드로 끝낸 일이 어떻게 보이는지 미리 보여 줍니다.', [['1 캘린더 미리보기', `${B}&wd=1#work`], ['2 표', `${B}&wd=2#work`], ['3 요약과 펼치기', `${B}&wd=3#work`], ['4 블록과 단계 버튼', `${B}&wd=4#work`], ['5 질문', `${B}&wd=5#work`]], 'wd'],
+    ['wy', '할 일과 캘린더: 일하는 요일 고르기', '일하는 시간을 바꾸는 칸(3번 요약과 펼치기를 연 상태)에서 요일 고르는 모양만 다섯 가지로 바꿨습니다.', [['1 동그라미', `${B}&wd=3&wde=work&wy=1#work`], ['2 이어진 막대', `${B}&wd=3&wde=work&wy=2#work`], ['3 이번 주 달력', `${B}&wd=3&wde=work&wy=3#work`], ['4 글자 줄', `${B}&wd=3&wde=work&wy=4#work`], ['5 요일 카드', `${B}&wd=3&wde=work&wy=5#work`]], 'wy'],
+    ['wy2', '일하는 요일 고르기: 새 다섯 가지', '위 다섯 가지와 다른 방식입니다.', [['6 펼침 목록', `${B}&wd=3&wde=work&wy=6#work`], ['7 범위 막대', `${B}&wd=3&wde=work&wy=7#work`], ['8 평일, 주말 묶음', `${B}&wd=3&wde=work&wy=8#work`], ['9 자주 쓰는 조합', `${B}&wd=3&wde=work&wy=9#work`], ['10 둥근 고리', `${B}&wd=3&wde=work&wy=10#work`]], 'wy'],
+    ['retro', '회고: 기간별 템플릿 카드', '일간, 주간, 월간, 연간 탭마다 템플릿을 따로 등록하고 하나를 기본으로 정합니다. 주간, 월간, 연간 AI 요약은 그 기간 기본 템플릿을 따릅니다. 카드의 "고치기"나 "새 ○○ 템플릿"을 누르면 등록 화면이 열리고, 본문은 회고 편집기처럼 / 를 입력해 블록을 넣는 마크다운입니다.', [['일간', `${B}&tper=day#retro`], ['주간', `${B}&tper=week#retro`], ['월간', `${B}&tper=month#retro`], ['연간', `${B}&tper=year#retro`]]],
+    ['ax', 'AI 세부 설정: 펼쳤을 때 고르는 모양', '바꾸기 전 확인, 답하는 방식, AI 대화 기록을 펼친 상태입니다.', [['1 선택 카드', `${B}&ax=1&open=L5,L2,L6#ai`], ['2 라디오 목록', `${B}&ax=2&open=L5,L2,L6#ai`], ['3 미리보기', `${B}&ax=3&open=L5,L2,L6#ai`], ['4 단계 막대', `${B}&ax=4&open=L5,L2,L6#ai`], ['5 펼침 메뉴', `${B}&ax=5&open=L5,L2,L6#ai`]], 'ax'],
+    ['lk', '연동: GitHub, Google Calendar 표시', '실제 서비스 아이콘을 넣고 계정, 하는 일, 마지막 동기화는 뺐습니다. GitHub는 이메일 권한이 없는 상태라 카드 안에 알림 줄이 붙어 있습니다.', [['1 나란히 카드', `${B}&lk=1#link`], ['2 한 줄 목록', `${B}&lk=2#link`], ['3 서비스별 묶음', `${B}&lk=3#link`], ['4 큰 타일', `${B}&lk=4#link`], ['5 스위치', `${B}&lk=5#link`]], 'lk'],
+    ['wh', '연동: 경고 "자세히" 보기', 'GitHub 카드의 "자세히"를 눌러 보세요. 어느 방식이든 카드 크기는 그대로입니다.', [['1 작은 팝오버', `${B}&lk=1&wh=1#link`], ['2 카드 위 덮개', `${B}&lk=1&wh=2#link`], ['3 오른쪽 서랍', `${B}&lk=1&wh=3#link`], ['4 가운데 창 (단계, 기본으로 정함)', `${B}&lk=1&wh=4#link`], ['5 서비스 상세 화면', `${B}&lk=1&wh=5#link`]], 'wh'],
+    ['te', '회고: 새 템플릿 작성 화면', '주간 템플릿 새로 만들기 화면입니다. 위치, 이름, 기간, 기본 지정, 시작할 틀, 본문, 저장까지 화면 전체가 다릅니다. 기존 템플릿 "고치기"도 같은 화면을 씁니다.', [['1 문서처럼 (큰 제목, 속성 한 줄)', `${B}&te=1&tedit=new:week#retro`], ['2 입력 + 새 회고 미리보기', `${B}&te=2&tedit=new:week#retro`], ['3 단계 (틀 고르기, 본문, 이름)', `${B}&te=3&tedit=new:week#retro`], ['4 카드 자리에서 펼치기', `${B}&te=4&tedit=new:week#retro`], ['5 편집기 + 속성 칸', `${B}&te=5&tedit=new:week#retro`]], 'te'],
+    ['dt', '데이터와 보안', '내보내기는 체크 상자 없이 담을 것을 눌러서 고르고, 기간과 파일은 눌러서 펼칩니다. 기간은 직접 정할 수도 있습니다.', [['1 기기 카드와 단계', `${B}&dt=1#data`], ['2 요약 먼저', `${B}&dt=2#data`], ['3 로그인 기록', `${B}&dt=3#data`], ['4 표', `${B}&dt=4#data`], ['5 두 열', `${B}&dt=5#data`]], 'dt'],
+  ];
+  const $ = (q) => document.querySelector(q);
+  $('#tabs').innerHTML = L.map(([k, t]) => `<a href="#v${k}">${t.split(' (')[0].split(':')[0]}</a>`).join('');
+  $('#list').innerHTML = L.map(([k, t, d, st, pv]) => `<section id="v${k}"><div class="hd"><h2>${t}</h2><p>${d}</p></div>
+    <div class="st" role="group" aria-label="${t}">${st.length > 1 ? st.map(([l, u], i) => `<button type="button" data-k="${k}" data-u="${u}" aria-pressed="${i === 0}">${l}</button>`).join('') : ''}${k === 'um' ? '' : `<a id="a${k}" href="${st[0][1].replace(/&open=[^#]*/, '')}" target="_blank" rel="noopener">이걸로 보기</a>`}</div>
+    <iframe id="f${k}" title="${t}" loading="lazy" src="${st[0][1]}"></iframe></section>`).join('');
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest('.st button'); if (!b) return;
+    b.parentNode.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', x === b));
+    const f = $('#f' + b.dataset.k), u = b.dataset.u, a = $('#a' + b.dataset.k); if (a) a.href = u.replace(/&open=[^#]*/, '');
+    f.src = 'about:blank'; setTimeout(() => { f.src = u; }, 30);
+  });
+</script>
+</body>
+</html>

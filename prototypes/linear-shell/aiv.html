@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI 탭 시안</title>
+<meta name="description" content="AI 탭의 시작 화면과 진행, 결과 화면을 다섯 가지씩 지금 것과 비교한다.">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="shared/shared.css">
+<style>
+  /* Hallmark · scope: app screen (시안 비교 페이지) · genre: atmospheric · theme: project tokens (ARCHIVE dark, shared.css) · signature: 한 화면에 들어오는 실제 화면, 시작 화면과 결과 화면을 따로 고름 · states: 8 · mode: fast · v2.0.0 */
+  /* critique: the old page stacked two tall frames and scrolled twice; this one fits the live 1440 by 900 screen to the window so nothing scrolls. */
+  html, body { height: 100%; overflow: clip; }
+  body { display: flex; flex-direction: column; background: var(--canvas); }
+  .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+  h1 { margin: 0; font-size: 14px; font-weight: 600; white-space: nowrap; }
+  .grp { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+  .grp span { margin-right: 4px; font-size: 12px; color: var(--ink3); }
+  .grp button { height: 28px; padding: 0 8px; border: 1px solid var(--line2); border-radius: 6px; font-size: 12px; color: var(--ink3); }
+  .grp button:hover { background: var(--s3); color: var(--ink); }
+  .grp button[aria-pressed="true"] { border-color: var(--primary); background: var(--primary-a); color: var(--ink); }
+  .grp button:focus-visible, .bar a:focus-visible { outline: 2px solid var(--primary-h); outline-offset: 2px; }
+  .bar a { margin-left: auto; font-size: 12px; color: var(--primary-h); }
+  .again { height: 28px; padding: 0 10px; border: 1px solid var(--line2); border-radius: 6px; font-size: 12px; color: var(--ink2); }
+  .again:hover { background: var(--s3); color: var(--ink); }
+  .again:focus-visible { outline: 2px solid var(--primary-h); outline-offset: 2px; }
+  .again[hidden] { display: none; }
+  .desc { flex-basis: 100%; margin: 0; font-size: 12px; color: var(--ink3); }
+  .stage { position: relative; flex: 1; min-height: 0; overflow: clip; }
+  iframe { position: absolute; top: 0; left: 0; width: 1440px; height: 900px; border: 0; transform-origin: 0 0; background: var(--canvas); }
+  iframe:focus, iframe:focus-visible, iframe.kf { outline: 3px solid var(--primary-h); outline-offset: 0; }
+  .stage:focus-within { outline: 2px solid var(--primary-h); outline-offset: -2px; }
+</style>
+</head>
+<body>
+<div class="bar">
+  <h1>AI 탭</h1>
+  <div class="grp" role="group" aria-label="화면" id="g-tb"></div>
+  <div class="grp" role="group" aria-label="시안" id="g-v"></div>
+  <div class="grp" role="group" aria-label="부탁" id="g-q"></div>
+  <button type="button" class="again" id="again">다시 실행</button>
+  <a id="open" href="#" target="_blank" rel="noopener">새 창에서 보기</a>
+  <p class="desc" id="desc"></p>
+</div>
+<div class="stage" id="stage"><iframe id="f" title="AI 탭 시안" scrolling="no"></iframe></div>
+<script>
+  const TB = [['bh', '배경 (빗금 파생)'], ['bg', '배경 (처음)'], ['as6', '시작 화면 (새로)'], ['as', '시작 화면 (처음)'], ['ap', '진행과 결과']];
+  const BH = [3, 6, 7, 8, 9, 10];
+  const V = {
+    bh: ['빗금 모서리(원래 3번): 왼쪽 위와 오른쪽 아래에 주황 빗금', '위아래 띠: 테이프처럼 위와 아래 가장자리에만, 양 끝은 사라짐', '네 가장자리: 가운데는 비우고 바깥으로 갈수록 빗금이 진해짐', '입력창 그림자: 입력창이 빗금 그림자를 드리우고, 모서리 빗금은 작게', '빗금이 엿보기: 오른쪽 아래에서 커다란 빗금이가 반쯤 보임', '인디고 빗금: 3번과 같은 자리, AI 추천 표시와 같은 인디고'],
+    bg: ['점 격자: 가운데는 보이고 가장자리로 갈수록 사라지는 점', '캘린더 눈금: 이번 주 일곱 칸과 시간 줄, 오늘 칸만 옅은 인디고', '빗금: 빗금이의 주황 빗금을 왼쪽 위와 오른쪽 아래 모서리에만', '오늘 일정: 오늘 할 일을 캘린더 색 그림자로, 지금 시각 선', '큰 날짜: 오른쪽 아래에 오늘 날짜 11.03을 크게'],
+    as6: ['색 아이콘 칩: 인사 두 줄과 입력창 아래에 종류마다 색이 다른 칩', '빗금이와 인사: 마스코트가 인사하고, 칩은 색 아이콘과 테두리만', '색 머리 카드: 입력창 아래 네 장, 왼쪽 위 색 아이콘과 실제 숫자', '오늘 색 띠: 입력창 아래에 오늘 일정을 캘린더 색 막대로', '인사에 색: 남은 개수와 회고 여부를 인사 문장에 색으로'],
+    as: ['오늘 숫자로 시작: 남은 일, 회고, 내일 일정을 실제 숫자와 함께 네 칸으로', '고르는 목록: 만들기, 정리하기, 돌아보기로 묶은 한 줄짜리 목록', '오늘 기록 옆에: 왼쪽은 입력과 최근 대화, 오른쪽은 오늘 할 일, 커밋, 회고 상태', '이렇게 말하면 돼요: 바꿔 쓸 자리가 점선인 예문, 비서가 다루는 것 네 가지', '지난 작업 장부: 언제, 무엇을 부탁했고 무엇이 바뀌었는지 표로'],
+    ap: ['작업 기록: 부탁 시각과 단계별 기록, 결과는 넣고 뺄 수 있는 표', '캘린더 미리보기: 들어갈 자리를 그날 칸에 흐린 일정으로 그리고 아래 표', '바뀔 내용 목록: 추가는 +, 옮김은 ~ 로 한 줄씩, 확인한 자료는 한 줄 요약', '문서처럼: 부탁이 제목, 아래에 답과 표. 진행 중에는 빈 줄만', '작업 카드: 단계 이름이 보이는 가로 단계와 상태 표시'],
+  };
+  const QS = [['todo', '할 일 3개', '내일 오전 10시에 스프린트 회의, 오후 2시에 디자인 리뷰 1시간, 금요일에 릴리스 노트 정리 추가해줘'], ['move', '남은 일 옮기기', '오늘 못 끝낸 일 내일로 옮겨줘'], ['retro', '회고 초안', '오늘 회고 써줘']];
+  const S = { tb: 'bh', v: '6', q: 'todo' };
+  const $ = (q) => document.querySelector(q);
+  const grp = (id, L, k, lab) => { $(id).innerHTML = `<span>${lab}</span>` + L.map(([v, l]) => `<button type="button" data-k="${k}" data-v="${v}" aria-pressed="${S[k] === v}">${l}</button>`).join(''); };
+  const url = () => S.tb === 'bh' ? `d-ai.html?ai=g1&bg=${S.v === '0' ? 0 : BH[+S.v - 1]}` : S.tb === 'bg' ? `d-ai.html?ai=g1&bg=${S.v}` : S.tb === 'as6' ? `d-ai.html?ai=g1${S.v === '0' ? '' : `&as=${+S.v + 5}`}` : S.tb === 'as' ? `d-ai.html?ai=g1${S.v === '0' ? '' : `&as=${S.v}`}` : `d-ai.html?ai=g1&ap=${S.v}&q=${encodeURIComponent(QS.find((x) => x[0] === S.q)[2])}`;
+  const fit = () => { const st = $('#stage'), s = Math.min(st.clientWidth / 1440, st.clientHeight / 900), f = $('#f'); f.style.transform = `scale(${s})`; f.style.left = `${(st.clientWidth - 1440 * s) / 2}px`; };
+  const draw = () => { grp('#g-tb', TB, 'tb', '화면'); grp('#g-v', [['0', S.tb === 'ap' ? '이전' : S.tb === 'bh' || S.tb === 'bg' ? '없음' : '지금'], ...V[S.tb].map((_, i) => i + 1).map((n) => [String(n), S.tb === 'bh' ? (n === 6 ? '10 (기본)' : String(BH[n - 1])) : S.tb === 'as6' ? String(n + 5) : S.tb === 'ap' && n === 2 ? '2 (기본)' : String(n)])], 'v', '시안');
+    $('#g-q').hidden = S.tb !== 'ap'; $('#again').hidden = S.tb !== 'ap'; if (S.tb === 'ap') grp('#g-q', QS.map((x) => [x[0], x[1]]), 'q', '부탁');
+    $('#desc').textContent = S.v === '0' ? (S.tb === 'ap' ? '처음 만든 모양이에요.' : S.tb === 'bh' || S.tb === 'bg' ? '배경 없이 빈 바탕이에요.' : '지금 쓰는 모양이에요.') : `${S.tb === 'as6' ? +S.v + 5 : S.tb === 'bh' ? BH[+S.v - 1] : S.v}. ${V[S.tb][+S.v - 1]}`; $('#open').href = url(); };
+  const load = () => { $('#f').src = 'about:blank'; setTimeout(() => { $('#f').src = url(); }, 30); };
+  document.addEventListener('click', (e) => { if (e.target.closest('#again')) return load(); const b = e.target.closest('.grp button'); if (!b) return; S[b.dataset.k] = b.dataset.v; if (b.dataset.k === 'tb') S.v = S.tb === 'ap' ? '2' : S.tb === 'bh' ? '6' : '1'; draw(); load(); document.querySelector(`.grp [data-k="${b.dataset.k}"][data-v="${b.dataset.v}"]`).focus(); });
+  draw(); $('#f').src = url(); fit(); addEventListener('resize', fit);
+  /* 키보드로 시안 안에 들어가면 바깥에 표시 */
+  const mark = () => $('#f').classList.toggle('kf', document.activeElement === $('#f'));
+  addEventListener('blur', () => setTimeout(mark, 0)); addEventListener('focus', mark);
+</script>
+</body>
+</html>

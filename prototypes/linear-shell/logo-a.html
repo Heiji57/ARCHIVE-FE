@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>복합 A 로고</title>
+<meta name="description" content="A 형태 안에 서비스 요소를 담은 복합 로고 다섯 가지를 크기, 바탕, 실제 사이드바에서 비교한다.">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="shared/shared.css">
+<link rel="stylesheet" href="shared/logo.css">
+<style>
+  /* Hallmark · scope: app screen (시안 비교 페이지) · genre: atmospheric · theme: project tokens (ARCHIVE dark, shared.css) · signature: A 안에 캘린더와 기록을 담은 복합 표식과 파비콘용 축약형을 함께 비교 · states: 8 · mode: fast · v2.0.0 */
+  /* critique: a detailed mark cannot survive favicon size unchanged, so each one is paired with a reduced master and judged at both scales. */
+  body{height:auto;min-height:100%}
+  .wrap{padding:28px 24px 64px;max-width:1280px;margin:0 auto}
+  h1{margin:0 0 6px;font-size:18px;font-weight:600;text-wrap:balance}
+  .lead{margin:0 0 24px;color:var(--ink3);font-size:13px;max-width:92ch;line-height:1.6}
+  .it{display:grid;grid-template-columns:120px minmax(0,1fr) auto;gap:32px;align-items:center;padding:24px 0;border-top:1px solid var(--line)}
+  .big{display:grid;place-items:center;width:120px;height:120px;border-radius:24px;background:var(--s3);color:var(--ink)}
+  .big .lg-m{width:92px;height:92px}
+  h2{margin:0;font-size:16px;font-weight:600}
+  h2 span{margin-right:8px}
+  .it p{margin:4px 0 16px;max-width:56ch;font-size:13px;line-height:1.55;color:var(--ink3)}
+  .lock{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--ink)}
+  .lock .lg-m{width:22px;height:22px}
+  .sz{display:flex;align-items:flex-end;gap:16px;color:var(--ink)}
+  .sz .lg-m:nth-child(1){width:16px;height:16px}.sz .lg-m:nth-child(2){width:20px;height:20px}.sz .lg-m:nth-child(3){width:32px;height:32px}.sz .lg-m:nth-child(4){width:48px;height:48px}
+  .tiles{display:flex;gap:8px;margin-top:16px;align-items:center}
+  .t{display:grid;place-items:center;width:56px;height:56px;border-radius:13px}
+  .t .lg-m{width:34px;height:34px}
+  .t.a{background:var(--primary);color:var(--ink);--lg-b:var(--ink)}
+  .t.b{background:var(--ink);color:var(--canvas);--lg-b:var(--primary)}
+  .t.c{background:var(--canvas);border:1px solid var(--line2);color:var(--ink)}
+  .t.m{background:var(--s3);color:var(--ink2);--lg-b:var(--ink2)}
+  .px{display:block;width:56px;height:56px;border-radius:6px;background:var(--canvas);border:1px solid var(--line2);image-rendering:pixelated}
+  .lab{display:flex;gap:8px;margin-top:4px;font-size:12px;color:var(--ink3)}.lab span{width:56px;text-align:center}
+  section{margin:32px 0 0}
+  section h2{margin:0 0 8px;font-size:14px}
+  .st{display:flex;gap:4px;flex-wrap:wrap;margin:0 0 8px}
+  .st button{height:32px;padding:0 12px;border-radius:6px;border:1px solid var(--line2);font-size:12px;color:var(--ink3)}
+  .st button:hover{background:var(--s3);color:var(--ink)}
+  .st button[aria-pressed="true"]{border-color:var(--primary);color:var(--ink);background:var(--primary-a)}
+  .st button:focus-visible,.st a:focus-visible{outline:2px solid var(--primary-h);outline-offset:2px}
+  .st a{margin-left:auto;font-size:12px;color:var(--primary-h);align-self:center}
+  iframe:focus,iframe:focus-visible,iframe.kf{outline:2px solid var(--primary-h);outline-offset:2px}
+  iframe{display:block;width:100%;height:560px;border:1px solid var(--line);border-radius:10px;background:var(--canvas)}
+  @media (max-width:760px){.it{grid-template-columns:minmax(0,1fr);gap:16px}.wrap{padding:20px 16px 48px}.tiles{flex-wrap:wrap}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>복합 A 로고</h1>
+  <p class="lead">A 형태를 유지하고 그 안에 캘린더, 커밋, 쌓인 기록을 담았습니다. 공통 규칙은 일곱 날과 색이 있는 오늘 하나입니다. 16px과 20px에는 파비콘용 축약형을 씁니다.</p>
+  <div id="list"></div>
+  <section><h2>실제 사이드바에서</h2><div class="st" id="st" role="group" aria-label="로고 고르기"></div><iframe id="f" title="로고를 넣은 캘린더 화면" src="d-calendar.html?logo=21"></iframe></section>
+</div>
+<script src="shared/logo.js"></script>
+<script>
+  const { L, mark, word } = ARCLOGO, ids = [21, 22, 23, 24, 25], $ = (q) => document.querySelector(q);
+  $('#list').innerHTML = ids.map((n) => `<article class="it"><div class="big">${mark(n)}</div><div><h2><span>${n}</span>${L[n].n}</h2><p>${L[n].d}</p><div class="lock">${mark(n)}${word(n)}</div></div><div><div class="sz" aria-hidden="true">${mark(n, true).repeat(2)}${mark(n).repeat(2)}</div><div class="tiles" aria-hidden="true"><span class="t a">${mark(n)}</span><span class="t b">${mark(n)}</span><span class="t c">${mark(n)}</span><span class="t m">${mark(n)}</span><img class="px" src="shared/logo-svg/${n}-16.png" width="56" height="56" alt="${L[n].n} 16픽셀 확대"></div><div class="lab" aria-hidden="true"><span>색 바탕</span><span>밝은 바탕</span><span>어두운 바탕</span><span>한 색</span><span>16px 확대</span></div></div></article>`).join('');
+  $('#st').innerHTML = ids.map((n, i) => `<button type="button" data-n="${n}" aria-pressed="${n === 21}">${n} ${L[n].n}</button>`).join('') + '<a id="a" href="d-calendar.html?logo=21" target="_blank" rel="noopener">이걸로 보기</a>';
+  document.addEventListener('click', (e) => { const b = e.target.closest('.st button'); if (!b) return; document.querySelectorAll('.st button').forEach((x) => x.setAttribute('aria-pressed', x === b)); const u = `d-calendar.html?logo=${b.dataset.n}`; $('#a').href = u; $('#f').src = u; });
+  const kf = () => $('#f').classList.toggle('kf', document.activeElement === $('#f'));
+  window.addEventListener('blur', () => setTimeout(kf, 0)); window.addEventListener('focus', kf);
+</script>
+</body>
+</html>

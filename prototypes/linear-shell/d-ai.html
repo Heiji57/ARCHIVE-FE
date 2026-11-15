@@ -1,0 +1,718 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ARCHIVE AI 비서</title>
+<meta name="description" content="말로 할 일을 만들고 오늘 기록으로 회고 초안을 쓰는 AI 비서 탭. ?ai=g1~g5, c1~c5, k1~k5 로 시안을 바꿔 본다.">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="shared/shared.css">
+<link rel="stylesheet" href="shared/planner.css">
+<link rel="stylesheet" href="shared/usermenu.css">
+<link rel="stylesheet" href="shared/logo.css">
+<link rel="stylesheet" href="shared/rest.css">
+<link rel="stylesheet" href="shared/ai.css">
+<link rel="stylesheet" href="shared/aiv.css">
+</head>
+<body>
+<div class="app ag" id="app">
+  <main class="ag-main" id="am" aria-label="AI 비서"></main>
+</div>
+<dialog id="detail" aria-label="할 일 상세"></dialog>
+<script src="shared/shared.js"></script>
+<script src="shared/planner.js"></script>
+<script src="shared/logo.js"></script>
+<script src="shared/rest.js"></script>
+<script src="shared/usermenu.js"></script>
+<script>
+  const $ = (q, r = document) => r.querySelector(q), A = ARC, P = PL;
+  const Q = new URLSearchParams(location.search);
+  const IDS = ['g1', 'g2', 'g3', 'g4', 'g5', 'c1', 'c2', 'c3', 'c4', 'c5', 'k1', 'k2', 'k3', 'k4', 'k5'];
+  const AI = (() => { const q = Q.get('ai'); try { if (q != null && window.top === window) localStorage.setItem('archive.ai', q); const v = q ?? localStorage.getItem('archive.ai') ?? 'g1'; return IDS.includes(v) ? v : 'g1'; } catch (e) { return IDS.includes(q) ? q : 'g1'; } })();
+  /* 시안별 설정: 입력창 모양, 대화 모양, 진행 표시, 옆 칸 */
+  const CFG = {
+    g1: { cmp: 'pill', talk: 'g', prog: 'think', name: '두 줄 인사' }, g2: { cmp: 'pill', talk: 'g', prog: 'line', name: '부탁 카드' }, g3: { cmp: 'pill', talk: 'g', prog: 'bar', name: '아래 입력 바' },
+    g4: { cmp: 'pill', talk: 'g', prog: 'chips', name: '오늘 브리핑' }, g5: { cmp: 'pill', talk: 'g', prog: 'memo', name: '도구 부르기' },
+    c1: { cmp: 'round', talk: 'c', prog: 'mini', name: '가운데 질문' }, c2: { cmp: 'round', talk: 'c', prog: 'tool', name: '도구 메뉴' }, c3: { cmp: 'round', talk: 'c', prog: 'chips', name: '맥락 붙이기' },
+    c4: { cmp: 'round', talk: 'c', prog: 'log', name: '예약한 일' }, c5: { cmp: 'round', talk: 'c', prog: 'memo', side: 'canvas', name: '캔버스' },
+    k1: { cmp: 'card', talk: 'k', prog: 'think', name: '시간대 인사' }, k2: { cmp: 'card', talk: 'k', prog: 'tool', name: '연결된 도구' }, k3: { cmp: 'card', talk: 'k', prog: 'memo', side: 'art', name: '결과물 옆 칸' },
+    k4: { cmp: 'card', talk: 'k', prog: 'line', name: '알려 둔 것' }, k5: { cmp: 'card', talk: 'k', prog: 'src', name: '꼼꼼히 찾기' },
+  }[AI];
+  const STEP = Q.get('demo') ? 900 : 650;
+  P.rp = false;
+  const I = (p) => `<svg class="i" viewBox="0 0 24 24" aria-hidden="true">${p}</svg>`;
+  const ic = {
+    send: I('<path d="M12 19V5M6 11l6-6 6 6"/>'), cal: A.ico.cal, todo: I('<rect x="4" y="4" width="16" height="16" rx="4"/><path d="m8.5 12 2.5 2.5 4.5-5"/>'), spark: A.ico.sparkle,
+    commit: I('<circle cx="12" cy="12" r="3.5"/><path d="M3 12h5.5M15.5 12H21"/>'), doc: I('<path d="M6 3h9l3 3v15H6z"/><path d="M9 11h6M9 15h4"/>'), clock: I('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'), plus: I('<path d="M12 5v14M5 12h14"/>'),
+    move: I('<path d="M5 12h14M13 6l6 6-6 6"/>'), mic: I('<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>'), tools: I('<path d="M4 7h10M4 17h6M18 7h2M14 17h6"/><circle cx="16" cy="7" r="2"/><circle cx="12" cy="17" r="2"/>'),
+    copy: I('<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/>'), redo: I('<path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v5h-5"/>'), up: I('<path d="M7 11v9H4v-9zM7 11l4-8a2 2 0 0 1 3 2l-1 5h6a2 2 0 0 1 2 2l-2 7a2 2 0 0 1-2 1H7"/>'),
+    x: A.ico.x, chev: I('<path d="m6 9 6 6 6-6"/>'), book: I('<path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5"/>'), gh: I('<path d="M9 19c-4 1.5-4-2-6-2.5M15 21v-3.5c0-1 .1-1.5-.5-2 2.8-.3 5.5-1.4 5.5-6a4.7 4.7 0 0 0-1.3-3.2 4.3 4.3 0 0 0-.1-3.2s-1-.3-3.4 1.3a11.6 11.6 0 0 0-6.2 0C6.6 2.8 5.6 3.1 5.6 3.1a4.3 4.3 0 0 0-.1 3.2A4.7 4.7 0 0 0 4.2 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/>'),
+    search: A.ico.search, open: I('<path d="M14 4h6v6M20 4l-9 9M18 14v6H4V6h6"/>'),
+  };
+  const md2 = (d) => `${+d.slice(5, 7)}/${+d.slice(8)}`;
+  const dLabel = (d) => { const x = A.s2d(d); return `${x.getMonth() + 1}월 ${x.getDate()}일 ${A.DOW[x.getDay()]}요일`; };
+  const rel = (d) => d === A.TODAY ? '오늘' : d === A.add(A.TODAY, 1) ? '내일' : d === A.add(A.TODAY, 2) ? '모레' : d === A.add(A.TODAY, -1) ? '어제' : '';
+  const M = (src) => { const inl = (x) => A.esc(x).replace(/`([^`]+)`/g, '<code>$1</code>'); let h = '', ul = false;
+    src.trim().split('\n').map((l) => l.trim()).filter(Boolean).forEach((l) => { const li = l.startsWith('- '); if (ul && !li) { h += '</ul>'; ul = false; }
+      if (li) { if (!ul) { h += '<ul>'; ul = true; } const t = l.slice(2); h += `<li${t.startsWith('(') ? ' class="ph"' : ''}>${inl(t)}</li>`; } else if (l.startsWith('## ')) h += `<h2>${inl(l.slice(3))}</h2>`; else h += `<p>${inl(l)}</p>`; });
+    return h + (ul ? '</ul>' : ''); };
+
+  /* ---------- 규칙으로 흉내 낸 비서 ---------- */
+  const DOWI = { 일: 0, 월: 1, 화: 2, 수: 3, 목: 4, 금: 5, 토: 6 };
+  function dateOf(seg, fallback) {
+    let m;
+    if (/모레/.test(seg)) return A.add(A.TODAY, 2);
+    if (/내일/.test(seg)) return A.add(A.TODAY, 1);
+    if (/오늘/.test(seg)) return A.TODAY;
+    if (/어제/.test(seg)) return A.add(A.TODAY, -1);
+    if ((m = seg.match(/(다음\s*주|이번\s*주)?\s*([월화수목금토일])요일/))) { const want = DOWI[m[2]], cur = A.s2d(A.TODAY).getDay();
+      if (/다음/.test(m[1] || '')) { const mon = A.add(A.TODAY, -((cur + 6) % 7)); return A.add(mon, 7 + (want + 6) % 7); }
+      let diff = (want - cur + 7) % 7; if (diff === 0) diff = 7; return A.add(A.TODAY, diff); }
+    if ((m = seg.match(/(\d{1,2})\s*월\s*(\d{1,2})\s*일/))) return `2026-${String(m[1]).padStart(2, '0')}-${String(m[2]).padStart(2, '0')}`;
+    return fallback;
+  }
+  function timeOf(seg) {
+    const m = seg.match(/(오전|오후|아침|저녁|밤)?\s*(\d{1,2})\s*시(?!간)\s*(반|(\d{1,2})\s*분)?/) || seg.match(/(오전|오후)?\s*(\d{1,2}):(\d{2})/);
+    if (!m) return null; let h = +m[2]; const mm = m[3] === '반' ? 30 : +(m[4] || (/^\d+$/.test(m[3] || '') ? m[3] : 0)) || 0;
+    if (/오후|저녁|밤/.test(m[1] || '') && h < 12) h += 12; if (!m[1] && h >= 1 && h <= 7) h += 12;
+    return h + mm / 60;
+  }
+  const durOf = (seg) => { const m = seg.match(/(\d+(?:\.\d+)?)\s*시간(\s*반)?/), n = seg.match(/(\d+)\s*분\s*(동안)?/); return m ? +m[1] + (m[2] ? 0.5 : 0) : n && n[2] ? +n[1] / 60 : null; };
+  function parseTodos(text) {
+    const body = text.replace(/(할\s*일로\s*)?(추가해\s*줘|추가해\s*주세요|만들어\s*줘|만들어\s*주세요|잡아\s*줘|잡아\s*주세요|넣어\s*줘|등록해\s*줘)[.!]?/g, '').trim();
+    let last = A.TODAY;
+    return body.split(/\s*(?:,|그리고|\n|;)\s*/).map((s) => s.trim()).filter((s) => s.length > 1).map((seg, i) => {
+      const date = dateOf(seg, last); last = date; const start = timeOf(seg), d = durOf(seg);
+      const title = seg.replace(/(다음\s*주|이번\s*주)?\s*[월화수목금토일]요일(까지|에)?/g, '').replace(/(오늘|내일|모레)(까지|에)?/g, '').replace(/\d{1,2}\s*월\s*\d{1,2}\s*일(까지|에)?/g, '')
+        .replace(/(오전|오후|아침|저녁|밤)?\s*\d{1,2}\s*시(?!간)\s*(반|\d{1,2}\s*분)?(에|부터)?/g, '').replace(/(오전|오후)?\s*\d{1,2}:\d{2}(에)?/g, '').replace(/\d+(\.\d+)?\s*시간(\s*반)?(\s*동안)?/g, '').replace(/\d+\s*분\s*동안/g, '')
+        .replace(/^\s*(에|에서|까지|부터)\s*/, '').replace(/\s+/g, ' ').trim();
+      const end = start != null ? Math.min(24, start + (d || 1)) : null;
+      const clash = start != null ? A.onDay(date).find((t) => t.start != null && t.start < end && start < t.end) : null;
+      return { id: 'ai' + Date.now() + i, on: true, title: title || '새 할 일', date, start, end, clash: clash ? clash.title : null };
+    });
+  }
+  const dayData = (d) => { const td = A.onDay(d).filter((t) => !t.until || t.until === d); return { done: td.filter((t) => t.status === 'done'), open: td.filter((t) => t.status !== 'done'), commits: A.commits.filter((c) => c.date === d) }; };
+  const retroDraft = (d) => { const x = dayData(d);
+    return `## ${rel(d) === '오늘' ? '오늘' : '그날'} 한 일\n${x.done.map((t) => `- ${t.title}`).join('\n') || '- (끝낸 일이 없어요)'}\n${x.open.length ? `## 못 끝낸 일\n${x.open.map((t) => `- ${t.title} (${A.ST[t.status]})`).join('\n')}\n` : ''}${x.commits.length ? `## 커밋\n${x.commits.map((c) => `- \`${c.msg}\``).join('\n')}\n` : ''}## 배운 점\n- (한 줄 써 주세요)\n## 내일\n${x.open.map((t) => `- ${t.title} 마무리`).join('\n') || '- '}`; };
+  /* 단계: [진행 문장, 아이콘, 자료 이름, 생각 문장, 도구 이름, 도구 결과] */
+  function plan(text) {
+    if (/회고/.test(text) && /(써|쓰|작성|초안|정리해)/.test(text) && !/추가|잡아|넣어|일정/.test(text)) { const d = dateOf(text, A.TODAY), x = dayData(d), r = rel(d) || md2(d);
+      return { kind: 'retro', date: d, title: `${+d.slice(5, 7)}월 ${+d.slice(8)}일 회고`, html: M(retroDraft(d)),
+        say: `${rel(d) || dLabel(d)} 기록으로 <b>회고 초안</b>을 써 두었어요<span class="ax-ref">1</span><span class="ax-ref">2</span>. 배운 점은 직접 적어 주세요. 저장할까요?`,
+        steps: [[`${r} 할 일 ${x.done.length + x.open.length}개 살펴보는 중`, ic.todo, `${r} 할 일 ${x.done.length + x.open.length}개`, `${r} 끝낸 일 ${x.done.length}개와 못 끝낸 일 ${x.open.length}개를 나눠 볼게요.`, '할 일 읽기', `${x.done.length + x.open.length}개를 찾았어요`],
+          [`커밋 ${x.commits.length}개 읽는 중`, ic.commit, `커밋 ${x.commits.length}개`, `커밋 메시지에서 그날 고친 것을 뽑아 둘게요.`, 'GitHub 커밋 읽기', `${x.commits.length}개를 읽었어요`],
+          ['초안 쓰는 중', ic.doc, '회고 형식', '한 일, 못 끝낸 일, 커밋, 배운 점, 내일 순서로 쓰고 배운 점은 비워 둘게요.', '회고 초안 쓰기', '소제목 5개로 썼어요']] }; }
+    if (/옮겨|미뤄|넘겨/.test(text)) { const open = dayData(A.TODAY).open;
+      return { kind: 'move', items: open.map((t) => ({ id: t.id, on: true, title: t.title, date: A.add(A.TODAY, 1), start: t.start, end: t.end })), say: `오늘 못 끝낸 <b>${open.length}개</b>를 내일 같은 시간으로 옮길게요<span class="ax-ref">1</span>. 이대로 옮길까요?`,
+        steps: [['오늘 남은 일 찾는 중', ic.todo, `오늘 남은 일 ${open.length}개`, `오늘 아직 끝나지 않은 일을 모을게요.`, '할 일 읽기', `${open.length}개가 남았어요`], ['내일 일정 확인하는 중', ic.cal, `${md2(A.add(A.TODAY, 1))} 캘린더`, '내일 같은 시간이 비어 있는지 볼게요.', '캘린더 읽기', '겹치는 일정이 없어요']] }; }
+    if (/할\s*일|추가|만들|잡아|일정|넣어|등록|회의|리뷰|정리|미팅/.test(text)) { const items = parseTodos(text), cl = items.filter((x) => x.clash).length, days = [...new Set(items.map((x) => x.date))];
+      return { kind: 'todos', items, say: `할 일 <b>${items.length}개</b>로 정리했어요<span class="ax-ref">1</span>.${cl ? ` ${cl}개는 이미 있는 일정과 시간이 겹쳐요<span class="ax-ref">2</span>.` : ''} 이대로 추가할까요?`,
+        steps: [['부탁 읽는 중', ic.doc, '부탁 내용', `할 일 ${items.length}개로 나눌 수 있겠어요.`, '부탁 나누기', `${items.length}개로 나눴어요`],
+          ['날짜와 시간 맞추는 중', ic.clock, days.map((d) => rel(d) || md2(d)).join(', '), `${days.map((d) => rel(d) || dLabel(d)).join(', ')}에 시간을 맞춰 볼게요. 길이를 말하지 않은 일은 1시간으로 잡을게요.`, '날짜 · 시간 읽기', `${items.filter((x) => x.start != null).length}개에 시간을 붙였어요`],
+          ['겹치는 일정 찾는 중', ic.cal, `${days.length}일치 캘린더`, `이미 잡힌 일정과 겹치는지 확인할게요.`, '캘린더 읽기', cl ? `${cl}개가 겹쳐요` : '겹치는 일정이 없어요']] }; }
+    return { kind: 'text', say: '할 일을 만들거나 옮기고, 회고 초안을 쓸 수 있어요. 예를 들어 "내일 오후 3시에 디자인 리뷰 1시간 추가해줘"라고 해 주세요.', steps: [['부탁 읽는 중', ic.doc, '부탁 내용', '어떤 일을 원하시는지 볼게요.', '부탁 읽기', '할 수 있는 일을 안내할게요']] };
+  }
+
+  const SEED = '내일 오전 10시에 스프린트 회의, 오후 2시에 디자인 리뷰 1시간, 금요일에 릴리스 노트 정리 추가해줘';
+  const S = { msgs: [], busy: false, input: '', pop: null, mode: 'quick', deep: true, scope: '1주', ctx: ['today', 'commits', 'retro'], tools: { cal: true, todo: true, retro: true, gh: true }, sched: [true, false], memo: '회고는 한 일, 배운 점, 내일 순서로 짧게 써 줘.\n회의는 길이를 말하지 않으면 1시간으로 잡아 줘.', pane: null };
+
+  function send(text) {
+    text = (text || '').trim(); if (!text || S.busy) return;
+    const r = plan(text), m = { role: 'ai', q: text, r, step: 0, done: false, t0: Date.now(), ts: [] };
+    S.msgs.push({ role: 'you', text }, m); S.busy = true; S.input = ''; S.pop = null; S.pane = S.msgs.length - 1; render(); end();
+    const tick = () => { m.ts[m.step] = Date.now() - m.t0; if (m.step < r.steps.length) { m.step++; render(); end(); setTimeout(tick, STEP); } else { m.done = true; S.busy = false; render(); end(); const c = $('#cmp'); c && c.focus(); } };
+    setTimeout(tick, 200);
+  }
+  const end = () => { const t = $('.ax-th'); if (t) t.scrollTop = t.scrollHeight; };
+  function apply(i) {
+    const r = S.msgs[i].r; if (r.applied) return;
+    if (r.kind === 'todos') { const add = r.items.filter((x) => x.on).map((x) => ({ id: x.id, title: x.title, status: 'todo', date: x.date, start: x.start, end: x.end, tag: 'work', tags: ['work'], note: 'AI 비서가 만든 할 일', ai: true }));
+      add.forEach((t) => A.todos.push(t)); try { sessionStorage.setItem('archive.aiTodos', JSON.stringify([...JSON.parse(sessionStorage.getItem('archive.aiTodos') || '[]'), ...add])); } catch (e) {}
+      r.applied = add.map((t) => t.id); }
+    if (r.kind === 'move') { r.prev = []; r.items.filter((x) => x.on).forEach((x) => { const t = A.byId(x.id); if (t) { r.prev.push([t.id, t.date]); t.date = x.date; } }); r.applied = r.prev.map((p) => p[0]); }
+    if (r.kind === 'retro') { const doc = $(`[data-doc="${i}"]`); if (doc) r.html = doc.innerHTML; r.rid = 'air' + Date.now();
+      try { const s = JSON.parse(sessionStorage.getItem('archive.aiRetros') || '[]'); s.push({ id: r.rid, date: r.date, title: '', html: r.html }); sessionStorage.setItem('archive.aiRetros', JSON.stringify(s)); } catch (e) {}
+      r.applied = [r.rid]; }
+    render();
+  }
+  function undo(i) { const r = S.msgs[i].r; if (!r.applied) return;
+    if (r.kind === 'todos') { A.todos = A.todos.filter((t) => !r.applied.includes(t.id)); try { sessionStorage.setItem('archive.aiTodos', JSON.stringify(JSON.parse(sessionStorage.getItem('archive.aiTodos') || '[]').filter((t) => !r.applied.includes(t.id)))); } catch (e) {} }
+    if (r.kind === 'move') r.prev.forEach(([id, d]) => { const t = A.byId(id); if (t) t.date = d; });
+    if (r.kind === 'retro') { try { sessionStorage.setItem('archive.aiRetros', JSON.stringify(JSON.parse(sessionStorage.getItem('archive.aiRetros') || '[]').filter((x) => x.id !== r.rid))); } catch (e) {} }
+    r.applied = null; render(); }
+
+  /* ---------- 결과 ---------- */
+  const wh = (x) => `${rel(x.date) || md2(x.date)} ${A.DOW[A.s2d(x.date).getDay()]}요일${x.start != null ? `, ${A.hmd(x.start)}${x.end ? `부터 ${A.hmd(x.end)}까지` : ''}` : ', 종일'}`;
+  function itemsHTML(m, i, fill = Infinity) {
+    const r = m.r;
+    return `<ul class="ag-items">${r.items.map((x, j) => j >= fill ? `<li class="ag-it sk" aria-hidden="true"><input type="checkbox" disabled><span class="ti"></span><span class="wh"></span></li>`
+      : `<li class="ag-it ${x.on ? '' : 'off'} ${!m.done && j === fill - 1 ? 'fresh' : ''}"><input type="checkbox" ${x.on ? 'checked' : ''} ${r.applied || !m.done ? 'disabled' : ''} data-on="${i}:${j}" aria-label="${A.esc(x.title)} 넣기">
+        <input class="ti" value="${A.esc(x.title)}" data-ti="${i}:${j}" ${r.applied || r.kind === 'move' || !m.done ? 'readonly' : ''} aria-label="할 일 제목">${r.applied && x.on ? `<span class="got">${r.kind === 'move' ? '옮겼어요' : '추가했어요'}</span>` : `<span class="wh">${wh(x)}</span>`}
+        ${x.clash && !r.applied && m.done ? `<span class="clash">이미 있는 "${A.esc(x.clash)}"와 시간이 겹쳐요</span>` : ''}</li>`).join('')}</ul>`;
+  }
+  function resHTML(m, i) {
+    const r = m.r; if (r.kind === 'text') return '';
+    const n = r.kind === 'retro' ? 1 : r.items.filter((x) => x.on).length;
+    const head = r.kind === 'retro' ? `<div class="ag-res-h"><b>${r.title}</b><span>${dLabel(r.date)}</span></div>` : `<div class="ag-res-h"><b>${r.kind === 'move' ? '내일로 옮길 일' : '새 할 일'}</b><span>${r.items.length}개</span></div>`;
+    const body = r.kind === 'retro' ? `<div class="ag-doc" contenteditable="${r.applied ? 'false' : 'true'}" data-doc="${i}" role="textbox" aria-multiline="true" aria-label="회고 초안">${r.html}</div>` : itemsHTML(m, i);
+    const act = r.applied
+      ? `<div class="ag-act"><span class="msg">${r.kind === 'retro' ? `회고로 저장했어요. <a href="d-retro2.html?entry=${r.rid}">회고에서 열기</a>` : r.kind === 'move' ? `${r.applied.length}개를 옮겼어요. <a href="d-calendar.html">캘린더에서 보기</a>` : `${r.applied.length}개를 추가했어요. <a href="d-calendar.html">캘린더에서 보기</a>`}</span><span class="sp"></span><button type="button" class="ag-btn q" data-undo="${i}">되돌리기</button></div>`
+      : `<div class="ag-act"><span class="sp"></span><button type="button" class="ag-btn q" data-redo="${i}">다시 정리</button><button type="button" class="ag-btn p" data-apply="${i}" ${n ? '' : 'disabled'}>${r.kind === 'retro' ? '회고로 저장' : r.kind === 'move' ? `${n}개 옮기기` : `${n}개 추가`}</button></div>`;
+    return `<div class="ag-res">${head}${body}${act}</div>`;
+  }
+
+  /* ---------- 진행 표시 ---------- */
+  const secs = (ms) => `${(ms / 1000).toFixed(1)}초`;
+  function progress(m) {
+    const st = m.r.steps, k = Math.min(m.step, st.length) - 1, total = m.ts[st.length] || (Date.now() - m.t0), p = CFG.prog;
+    if (p === 'think') return `<div class="px-think" aria-live="polite">${m.done ? `<details><summary>생각한 과정 보기, ${secs(total)}</summary>${st.map((s) => `<p>${s[3]}</p>`).join('')}</details>`
+      : st.map((s, j) => j > k ? '' : `<p class="${j === k ? 'on' : ''}">${s[3]}</p>`).join('') || '<p class="on">부탁을 읽고 있어요.</p>'}</div>`;
+    if (p === 'mini') return `<div class="px-mini" aria-live="polite">${m.done ? `<details><summary>${secs(total)} 동안 생각함</summary><ul>${st.map((s) => `<li>${s[2]} 확인</li>`).join('')}</ul></details>` : `<span class="on">${k >= 0 ? st[k][0] : '생각하는 중'}</span>`}</div>`;
+    if (p === 'tool') return `<div class="px-tool" aria-live="polite">${st.map((s, j) => j > k && !m.done ? '' : `<details class="${!m.done && j === k ? 'on' : ''}"><summary>${s[1]}<span class="ax-nm">${s[4]}</span><span class="st">${!m.done && j === k ? '하는 중' : s[5]}</span></summary><div class="out">${s[3]}</div></details>`).join('')}</div>`;
+    if (p === 'src') return `<div class="px-src" aria-live="polite"><span class="hd">${m.done ? `자료 ${st.length}가지를 찾아 정리했어요` : '찾아보는 중'}</span><ol>${st.map((s, j) => j > k && !m.done ? '' : `<li class="${!m.done && j === k ? 'on' : ''}"><span class="ax-ref">${j + 1}</span>${s[2]}<small>${!m.done && j === k ? '읽는 중' : '읽음'}</small></li>`).join('')}</ol></div>`;
+    if (p === 'line') return `<div class="pg1" aria-live="polite">${m.done ? `<details><summary>${secs(total)} 동안 정리했어요</summary><ol>${st.map((s, j) => `<li>${s[2]} 확인<span>${secs((m.ts[j + 1] || 0) - (m.ts[j] || 0))}</span></li>`).join('')}</ol></details>`
+      : `<div class="pg1-line"><span class="pg1-now">${k >= 0 ? st[k][0] : '부탁 받는 중'}</span><span class="t">${Math.max(1, k + 1)} / ${st.length}</span></div>`}</div>`;
+    if (p === 'bar') return `<div class="pg2 ${m.done ? 'done' : ''}" aria-live="polite"><div class="pg2-bar" style="--n:${st.length}" role="progressbar" aria-label="진행" aria-valuemin="0" aria-valuemax="${st.length}" aria-valuenow="${m.done ? st.length : Math.max(0, k)}">${st.map((_, j) => `<i style="--f:${m.done || j < k ? 1 : j === k ? 0.55 : 0}"></i>`).join('')}</div>
+      <div class="pg2-l"><b>${m.done ? '다 됐어요' : k >= 0 ? st[k][0] : '시작하는 중'}</b><span>${m.done ? secs(total) : `${Math.max(1, k + 1)} / ${st.length}`}</span></div></div>`;
+    if (p === 'log') return `<ol class="pg3 ${m.done ? 'done' : ''}" aria-live="polite">${st.map((s, j) => j > k && !m.done ? '' : `<li class="${!m.done && j === k ? 'on' : 'past'}"><span class="t">${secs(m.ts[j] || 0)}</span><span class="x">${!m.done && j === k ? s[0] : `${s[2]} 확인`}</span></li>`).join('')}${m.done ? `<li class="past"><span class="t">${secs(total)}</span><span class="x">정리 끝</span></li>` : ''}</ol>`;
+    if (p === 'chips') return `<div class="pg5 ${m.done ? 'done' : ''}" aria-live="polite"><span class="pg5-h">${m.done ? `자료 ${st.length}가지를 보고 정리했어요` : '이걸 보고 있어요'}</span><div class="pg5-l">${st.map((s, j) => j > k && !m.done ? '' : `<span class="${!m.done && j === k ? 'on' : ''}">${s[1]}${s[2]}</span>`).join('')}</div></div>`;
+    return '';
+  }
+  function memo(m, i) {
+    const r = m.r, st = r.steps, k = Math.max(0, Math.min(m.step, st.length)), frac = m.done ? 1 : k / (st.length + 1);
+    if (r.kind === 'text') return m.done ? '' : `<p class="pg4-h" aria-live="polite">${st[0][0]}</p>`;
+    if (m.done) return resHTML(m, i);
+    if (r.kind === 'retro') { const parts = r.html.split(/(?=<h2>)/), show = Math.floor(parts.length * frac);
+      return `<div class="ag-res"><div class="ag-res-h"><b>${r.title}</b><span class="pg4-h" aria-live="polite">${st[Math.max(0, k - 1)][0]}</span></div><div class="ag-doc">${parts.slice(0, show).join('')}${'<span class="sk"></span>'.repeat(Math.max(2, (parts.length - show) * 2))}</div></div>`; }
+    return `<div class="ag-res"><div class="ag-res-h"><b>${r.kind === 'move' ? '내일로 옮길 일' : '새 할 일'}</b><span class="pg4-h" aria-live="polite">${st[Math.max(0, k - 1)][0]}</span></div>${itemsHTML(m, i, Math.floor(r.items.length * frac))}</div>`;
+  }
+  const acts = (i) => `<div class="ax-acts" aria-label="답 도구"><button type="button" class="ax-ib" data-toast="답을 복사했어요" aria-label="복사">${ic.copy}</button><button type="button" class="ax-ib" data-redo="${i}" aria-label="다시 정리">${ic.redo}</button><button type="button" class="ax-ib" data-toast="좋은 답이라고 기록했어요" aria-label="좋아요">${ic.up}</button></div>`;
+  function turn(m, i) {
+    const side = CFG.side && m.r.kind !== 'text';
+    const res = side ? (m.done || CFG.prog === 'memo' ? `<button type="button" class="ax-open" data-pane="${i}">${m.r.kind === 'retro' ? ic.doc : ic.todo}<span><b>${m.r.kind === 'retro' ? m.r.title : m.r.kind === 'move' ? '내일로 옮길 일' : `새 할 일 ${m.r.items.length}개`}</b>${CFG.side === 'canvas' ? '캔버스에서 고치기' : '옆 칸에서 보기'}</span></button>` : '')
+      : CFG.prog === 'memo' ? memo(m, i) : m.done ? resHTML(m, i) : '';
+    const say = m.done ? `<p class="ag-say">${CFG.prog === 'src' ? m.r.say : m.r.say.replace(/<span class="ax-ref">\d+<\/span>/g, '')}</p>` : '';
+    const prog = CFG.prog === 'memo' ? '' : progress(m);
+    const body = `${prog}${say}${res}${m.done && CFG.talk !== 'g' ? acts(i) : ''}`;
+    if (CFG.talk === 'g') return `<div class="ax-a"><span class="ax-mark">${ic.spark}</span><div class="bd">${body}</div></div>`;
+    return `<div class="ax-a"><div class="bd">${body}</div></div>`;
+  }
+  const you = (m) => CFG.talk === 'k' ? `<div class="ax-u k"><span class="ax-av">D</span><span>${A.esc(m.text)}</span></div>` : `<div class="ax-u">${A.esc(m.text)}</div>`;
+
+  /* ---------- 입력창 ---------- */
+  function composer(ph, o = {}) {
+    const ta = `<textarea id="cmp" rows="1" placeholder="${ph}" aria-label="AI 비서에게 부탁하기">${A.esc(S.input)}</textarea>`;
+    const go = `<button type="button" class="ax-go" data-send aria-label="보내기" ${S.busy ? 'disabled' : ''}>${ic.send}</button>`;
+    if (CFG.cmp === 'pill') return `<div class="ax-cmp pill">${ta}<div class="ax-cbar"><button type="button" class="ax-ib" data-toast="파일 첨부는 시안에서 생략했어요" aria-label="첨부">${ic.plus}</button>
+        ${o.tools ? o.tools : `<button type="button" class="ax-tool" data-fill="할 일: ">${ic.todo}할 일</button><button type="button" class="ax-tool" data-fill="오늘 회고 써줘">${ic.doc}회고</button>`}
+        <span class="sp"></span>${o.mode ? `<span class="q-wrap">${o.mode}</span>` : ''}<button type="button" class="ax-ib" data-toast="음성 입력은 시안에서 생략했어요" aria-label="말로 부탁하기">${ic.mic}</button>${go}</div></div>`;
+    if (CFG.cmp === 'round') return `${o.ctx || ''}<div class="ax-cmp round">${ta}<div class="ax-cbar"><button type="button" class="ax-ib" data-toast="파일 첨부는 시안에서 생략했어요" aria-label="첨부">${ic.plus}</button>
+        <button type="button" class="ax-tool" data-pop="tools" aria-expanded="${S.pop === 'tools'}">${ic.tools}도구</button><span class="sp"></span><button type="button" class="ax-ib" data-toast="음성 입력은 시안에서 생략했어요" aria-label="말로 부탁하기">${ic.mic}</button>${go}</div>
+        ${S.pop === 'tools' ? `<div class="ax-menu" role="menu">${[['할 일 만들기', '날짜와 시간을 읽어 할 일로', ic.todo, '내일 오전 10시에 '], ['회고 쓰기', '그날 할 일과 커밋으로 초안', ic.doc, '오늘 회고 써줘'], ['일정 옮기기', '남은 일을 다른 날로', ic.move, '오늘 못 끝낸 일 내일로 옮겨줘'], ['캘린더 정리', '겹치는 일정 찾기', ic.cal, '내일 겹치는 일정 정리해줘']].map(([t, d, ii, q]) => `<button type="button" role="menuitem" data-fill="${q}">${ii}<span>${t}</span><small>${d}</small></button>`).join('')}</div>` : ''}</div>`;
+    return `<div class="ax-cmp card">${ta}<div class="ax-cbar"><button type="button" class="ax-ib" data-toast="파일 첨부는 시안에서 생략했어요" aria-label="첨부">${ic.plus}</button>${o.tools || `<button type="button" class="ax-tool" data-pop="tools2" aria-expanded="${S.pop === 'tools2'}">${ic.tools}도구 4개</button>`}<span class="sp"></span>
+        <button type="button" class="ax-sel" data-cycle="style">${S.mode === 'quick' ? '짧게' : '자세히'}${ic.chev}</button>${go}</div></div>`;
+  }
+
+  /* ---------- 시작 화면 15가지 ---------- */
+  const x0 = dayData(A.TODAY), tmr = A.onDay(A.add(A.TODAY, 1));
+  const nowWord = A.NOW < 12 ? '좋은 아침이에요' : A.NOW < 18 ? '좋은 오후예요' : '좋은 저녁이에요';
+  const todayList = () => A.onDay(A.TODAY).filter((t) => !t.until).sort((a, b) => (a.start ?? 99) - (b.start ?? 99));
+  const LAND = {
+    g1: () => `<div class="ax-center"><div class="ax-wrap"><h1 class="ax-h lg"><span class="ax-nm">developer님, 안녕하세요</span><br>무엇을 정리해 드릴까요?</h1>${composer('비서에게 부탁하기')}</div></div>`,
+    g2: () => `<div class="ax-center"><div class="ax-wrap ax-wide"><h1 class="ax-h"><span class="ax-nm">developer님</span>, 오늘 무엇을 도와드릴까요?</h1>${composer('비서에게 부탁하기')}
+      <div class="ax-cards">${[['내일 오전 회의 두 개 잡기', '내일 오전 10시에 스프린트 회의, 11시에 디자인 리뷰 추가해줘', ic.cal], ['오늘 회고 초안 쓰기', '오늘 회고 써줘', ic.doc], ['못 끝낸 일 내일로 옮기기', '오늘 못 끝낸 일 내일로 옮겨줘', ic.move], ['금요일까지 할 일 정리', '금요일에 릴리스 노트 정리 추가해줘', ic.todo]].map(([t, q, ii]) => `<button type="button" class="ax-card" data-ask="${A.esc(q)}">${t}${ii}</button>`).join('')}</div></div></div>`,
+    g3: () => `<div class="ax-top"><div class="ax-wrap"><h1 class="ax-h lg"><span class="ax-nm">안녕하세요</span><br>오늘은 할 일 ${x0.done.length + x0.open.length}개 중 ${x0.done.length}개를 끝냈어요</h1>
+      <div class="ax-pills">${['남은 일 내일로 옮겨줘', '오늘 회고 써줘', '내일 오후 3시에 디자인 리뷰 잡아줘'].map((q) => `<button type="button" class="ax-pill" data-ask="${A.esc(q)}">${A.esc(q)}</button>`).join('')}</div></div></div><div class="ax-dock">${composer('비서에게 부탁하기')}</div>`,
+    g4: () => `<div class="ax-center"><div class="ax-wrap"><h1 class="ax-h"><span class="ax-nm">developer님</span>, 오늘 일정이에요</h1>
+      <div class="ax-brief"><h3>${dLabel(A.TODAY)}</h3><ol>${todayList().map((t) => `<li><span class="tm">${t.start != null ? A.hmd(t.start) : '종일'}</span><span>${A.esc(t.title)}</span><span class="st">${A.ST[t.status]}</span></li>`).join('')}</ol></div>
+      ${composer('이 일정으로 무엇을 할까요?')}<div class="ax-pills"><button type="button" class="ax-pill" data-ask="오늘 못 끝낸 일 내일로 옮겨줘">${ic.move}남은 ${x0.open.length}개 옮기기</button><button type="button" class="ax-pill" data-ask="오늘 회고 써줘">${ic.doc}오늘 회고 쓰기</button></div></div></div>`,
+    g5: () => `<div class="ax-center"><div class="ax-wrap"><h1 class="ax-h"><span class="ax-nm">developer님</span>, 무엇을 정리해 드릴까요?</h1>
+      ${composer('@ 로 도구를 부르거나 그냥 부탁하세요', { tools: ['캘린더', '할 일', '회고', 'GitHub'].map((n) => `<button type="button" class="ax-tool" data-fill="@${n} ">@${n}</button>`).join(''),
+        mode: `<button type="button" class="ax-sel" data-cycle="mode">${S.mode === 'quick' ? '빠르게' : '꼼꼼하게'}${ic.chev}</button>` })}
+      <p class="ax-hint">"@캘린더 내일 비는 시간 알려줘"처럼 도구를 직접 부를 수 있어요.</p></div></div>`,
+    c1: () => `<div class="ax-center"><div class="ax-wrap"><h1 class="ax-h c">무엇을 도와드릴까요?</h1>${composer('무엇이든 부탁하세요')}
+      <div class="ax-pills c">${[[ic.todo, '할 일 만들기', '내일 오전 10시에 스프린트 회의 잡아줘'], [ic.doc, '회고 쓰기', '오늘 회고 써줘'], [ic.move, '일정 옮기기', '오늘 못 끝낸 일 내일로 옮겨줘'], [ic.cal, '오늘 요약', '오늘 회고 써줘']].map(([ii, t, q]) => `<button type="button" class="ax-pill" data-ask="${A.esc(q)}">${ii}${t}</button>`).join('')}</div></div></div>`,
+    c2: () => { if (S.pop == null && !S.msgs.length && !S.popInit) { S.pop = 'tools'; S.popInit = true; } return `<div class="ax-center"><div class="ax-wrap"><h1 class="ax-h c">무엇을 도와드릴까요?</h1>${composer('부탁하거나 도구를 고르세요')}<p class="ax-hint c">도구를 고르면 부탁이 미리 채워져요.</p></div></div>`; },
+    c3: () => { const ctx = { today: [ic.todo, `오늘 할 일 ${x0.done.length + x0.open.length}개`], commits: [ic.commit, `오늘 커밋 ${x0.commits.length}개`], retro: [ic.doc, '어제 회고'] };
+      return `<div class="ax-center"><div class="ax-wrap"><h1 class="ax-h c">무엇을 도와드릴까요?</h1>${composer('붙여 둔 자료를 보고 답해요', { ctx: `<div class="ax-ctx" aria-label="붙여 둔 자료">${S.ctx.map((k) => `<span>${ctx[k][0]}${ctx[k][1]}<button type="button" data-unctx="${k}" aria-label="${ctx[k][1]} 빼기">${ic.x}</button></span>`).join('')}${S.ctx.length < 3 ? `<span><button type="button" data-ctxall aria-label="자료 다시 붙이기" style="width:auto;padding:0 6px">${ic.plus}</button></span>` : ''}</div>` })}
+        <p class="ax-hint c">자료를 빼면 그 자료는 보지 않고 답해요.</p></div></div>`; },
+    c4: () => `<div class="ax-center"><div class="ax-wrap"><h1 class="ax-h c">무엇을 도와드릴까요?</h1>${composer('부탁하거나 "매일 오후 6시에" 처럼 예약하세요')}
+      <h2 class="ax-sec">예약한 일</h2><ul class="ax-list w">${[['매일 오후 6시, 오늘 회고 초안 쓰기', '다음 실행: 오늘 6:00 PM'], ['매주 일요일 오후 9시, 다음 주 할 일 정리', '다음 실행: 11월 8일 9:00 PM']].map(([t, d], j) => `<li><span><span class="ti2">${t}</span><small>${d}</small></span><button type="button" class="ax-tg" role="switch" aria-checked="${S.sched[j]}" data-sched="${j}" aria-label="${t}"></button></li>`).join('')}</ul>
+      <div><button type="button" class="ax-link" data-fill="매일 오후 6시에 ">예약 추가</button></div></div></div>`,
+    c5: () => `<div class="ax-split"><div class="ax-chat ax-center"><div class="ax-wrap"><h1 class="ax-h">무엇을 만들어 드릴까요?</h1><p class="ax-sub">회고 초안이나 할 일 목록은 오른쪽 캔버스에 펼쳐서 같이 고쳐요.</p>${composer('예: 오늘 회고 써줘')}
+      <div class="ax-pills">${['오늘 회고 써줘', '내일 오전 10시에 스프린트 회의 잡아줘'].map((q) => `<button type="button" class="ax-pill" data-ask="${A.esc(q)}">${A.esc(q)}</button>`).join('')}</div></div></div>
+      <div class="ax-canvas-e"><div><b>캔버스</b><p>결과가 여기에 열리고, 문장을 바로 고치거나 항목을 빼고 저장할 수 있어요.</p></div></div></div>`,
+    k1: () => `<div class="ax-center"><div class="ax-wrap"><div class="ax-row"><span class="ax-mark">${ic.spark}</span><h1 class="ax-h">${nowWord}, developer님</h1></div>${composer('오늘 무엇을 정리할까요?')}
+      <h2 class="ax-sec">최근 대화</h2><ul class="ax-list w">${[['내일 회의 두 개 잡기', '어제'], ['11월 2일 회고 초안', '어제'], ['이번 주 남은 일 정리', '11월 1일']].map(([t, d]) => `<li><span class="ti2">${t}</span><span class="tm">${d}</span></li>`).join('')}</ul></div></div>`,
+    k2: () => `<div class="ax-center"><div class="ax-wrap"><div class="ax-row"><span class="ax-mark">${ic.spark}</span><h1 class="ax-h">${nowWord}, developer님</h1></div>${composer('오늘 무엇을 정리할까요?')}
+      <h2 class="ax-sec">비서가 쓸 수 있는 도구</h2><ul class="ax-list w">${[['cal', ic.cal, '캘린더', '일정 읽기, 새 일정 만들기'], ['todo', ic.todo, '할 일', '읽기, 만들기, 날짜 옮기기'], ['retro', ic.doc, '회고', '읽기, 초안 저장'], ['gh', ic.gh, 'GitHub 커밋', '읽기만']].map(([k, ii, t, d]) => `<li><span class="ax-row">${ii}<span><span class="ti2">${t}</span><small>${d}</small></span></span><button type="button" class="ax-tg" role="switch" aria-checked="${S.tools[k]}" data-tool="${k}" aria-label="${t} 쓰기"></button></li>`).join('')}</ul>
+      <p class="ax-hint">꺼 둔 도구는 쓰지 않고, 바꾸는 일은 항상 먼저 확인받아요.</p></div></div>`,
+    k3: () => `<div class="ax-center"><div class="ax-wrap ax-wide"><div class="ax-row"><span class="ax-mark">${ic.spark}</span><h1 class="ax-h">${nowWord}, developer님</h1></div>${composer('오늘 무엇을 정리할까요?')}
+      <h2 class="ax-sec">최근 결과물</h2><div class="ax-arts">${[['11월 2일 회고', '회고 초안', '토큰 재발급 루프를 잡은 날. 동시에 401 이 오면 refresh 를 하나로 모으는 큐로 해결.'], ['이번 주 할 일', '할 일 4개', '릴리스 점검, 디자인 리뷰, 영어 스터디, 리팩터링 스프린트'], ['10월 4주차 정리', '주간 요약', '월간 뷰 무한 스크롤과 알림 설정 API 연결이 중심이었던 한 주.']].map(([t, s, pv]) => `<button type="button" class="ax-art" data-toast="결과물 열기는 시안에서 생략했어요"><b>${t}</b><small>${s}</small><span class="pv">${pv}</span></button>`).join('')}</div></div></div>`,
+    k4: () => `<div class="ax-center"><div class="ax-wrap"><div class="ax-row"><span class="ax-mark">${ic.spark}</span><h1 class="ax-h">${nowWord}, developer님</h1></div>${composer('오늘 무엇을 정리할까요?')}
+      <h2 class="ax-sec">비서에게 알려 둔 것</h2><textarea id="memo" class="ax-memo" data-memo aria-label="비서에게 알려 둔 것">${A.esc(S.memo)}</textarea>
+      <div class="ax-know"><div><b>${A.todos.length}</b><span>볼 수 있는 할 일</span></div><div><b>12</b><span>쓴 회고</span></div><div><b>${A.commits.length}</b><span>이번 주 커밋</span></div></div></div></div>`,
+    k5: () => `<div class="ax-center"><div class="ax-wrap"><div class="ax-row"><span class="ax-mark">${ic.spark}</span><h1 class="ax-h">${nowWord}, developer님</h1></div>
+      ${composer('꼼꼼히 찾아보고 정리할 일을 부탁하세요', { tools: `<button type="button" class="ax-tool" data-deep aria-pressed="${S.deep}">${ic.search}꼼꼼히 찾기</button>` })}
+      <p class="ax-hint">꼼꼼히 찾기를 켜면 할 일, 커밋, 지난 회고를 더 넓게 읽고 어디서 가져왔는지 번호로 보여 드려요.</p>
+      <div class="ax-row"><span class="ax-sub" style="font-size:14px">찾아볼 범위</span>${['오늘', '1주', '1달'].map((s) => `<button type="button" class="ax-pill" aria-pressed="${S.scope === s}" data-scope="${s}">${s}</button>`).join('')}</div></div></div>`,
+  };
+
+  /* ---------- 화면 ---------- */
+  function page() {
+    if (!S.msgs.length) return `<div class="ag-page">${LAND[AI]()}</div>`;
+    const thread = `<div class="ax-th"><div class="ax-th-in">${S.msgs.map((m, i) => m.role === 'you' ? you(m) : turn(m, i)).join('')}</div></div><div class="ax-dock">${composer('이어서 부탁하기')}</div>`;
+    if (!CFG.side) return `<div class="ag-page">${thread}</div>`;
+    const pi = S.pane != null ? S.pane : -1, pm = S.msgs[pi];
+    const pane = pm && pm.role === 'ai' && pm.r.kind !== 'text'
+      ? `<section class="ax-pane" aria-label="${CFG.side === 'canvas' ? '캔버스' : '결과물'}"><div class="ax-pane-h"><b>${pm.r.kind === 'retro' ? pm.r.title : pm.r.kind === 'move' ? '내일로 옮길 일' : '새 할 일'}</b><span>${pm.done ? (pm.r.applied ? '적용함' : '확인 기다림') : '쓰는 중'}</span><span class="sp" style="flex:1"></span>${CFG.side === 'art' ? `<button type="button" class="ax-ib" data-pane="-1" aria-label="옆 칸 닫기">${ic.x}</button>` : ''}</div><div class="ax-pane-b">${memo(pm, pi)}</div></section>`
+      : CFG.side === 'canvas' ? `<div class="ax-canvas-e"><div><b>캔버스</b><p>결과가 여기에 열려요.</p></div></div>` : '';
+    return `<div class="ag-page"><div class="ax-split" style="${pane ? '' : 'grid-template-columns:minmax(0,1fr)'}"><div class="ax-chat">${thread}</div>${pane}</div></div>`;
+  }
+  function sidebar() {
+    const side = $('.side'); if (!side) return;
+    side.querySelectorAll('section').forEach((s) => s.remove());
+    $('.ws', side).insertAdjacentHTML('afterend', `<section aria-label="AI 비서"><h2>AI 비서</h2><button type="button" class="ch" data-reset>${ic.plus}새 대화</button></section>
+      <section aria-label="지난 대화"><h2>지난 대화</h2>${(S.msgs.length ? [S.msgs[0].text.slice(0, 18) + (S.msgs[0].text.length > 18 ? '…' : '')] : []).concat(['내일 회의 두 개 잡기', '11월 2일 회고 초안', '이번 주 남은 일 정리']).map((t, i) => `<button type="button" class="ch" aria-pressed="${i === 0 && S.msgs.length > 0}">${A.esc(t)}</button>`).join('')}</section>`);
+  }
+  function render() {
+    P.frame(); sidebar();
+    $('#ttl').innerHTML = typeof EP !== 'undefined' && EP ? '' : `AI <span class="ag-sub">${AI.toUpperCase()} ${CFG.name}</span>`; $('#topx').innerHTML = typeof EP !== 'undefined' && EP ? EPTOP() : '';
+    const ta = $('#cmp'), had = ta && document.activeElement === ta, pos = ta ? ta.selectionStart : 0, th = $('.ax-th'), y = th ? th.scrollTop : 0;
+    const open = [...document.querySelectorAll('.ax-th details')].map((d) => d.open);
+    $('#am').innerHTML = page();
+    document.querySelectorAll('.ax-th details').forEach((d, j) => { if (open[j]) d.open = true; });
+    const t2 = $('#cmp'); if (t2) { grow(t2); if (had) { t2.focus(); t2.setSelectionRange(pos, pos); } }
+    if ($('.ax-th')) $('.ax-th').scrollTop = y;
+  }
+  const grow = (t) => { t.style.height = 'auto'; t.style.height = Math.min(260, t.scrollHeight + 2) + 'px'; };
+  const fill = (v) => { S.input = v; S.pop = null; render(); const c = $('#cmp'); if (c) { c.focus(); c.setSelectionRange(v.length, v.length); } };
+
+  document.addEventListener('click', (e) => {
+    if (!(e.target instanceof Element)) return;
+    const g = (a) => e.target.closest(`[${a}]`); let el;
+    if (S.pop && !g('data-pop') && !e.target.closest('.ax-menu')) { S.pop = null; render(); }
+    if (g('data-send')) { e.stopPropagation(); send($('#cmp').value); return; }
+    if ((el = g('data-ask'))) { e.stopPropagation(); send(el.dataset.ask); return; }
+    if ((el = g('data-fill'))) { e.stopPropagation(); fill(el.dataset.fill); return; }
+    if ((el = g('data-pop'))) { e.stopPropagation(); S.pop = S.pop === el.dataset.pop ? null : el.dataset.pop; render(); return; }
+    if ((el = g('data-apply'))) { e.stopPropagation(); apply(+el.dataset.apply); return; }
+    if ((el = g('data-undo'))) { e.stopPropagation(); undo(+el.dataset.undo); return; }
+    if ((el = g('data-redo'))) { e.stopPropagation(); send(S.msgs[+el.dataset.redo].q); return; }
+    if ((el = g('data-pane'))) { e.stopPropagation(); const v = +el.dataset.pane; S.pane = v < 0 ? null : v; render(); return; }
+    if ((el = g('data-on'))) { const [i, j] = el.dataset.on.split(':').map(Number); S.msgs[i].r.items[j].on = el.checked; render(); return; }
+    if ((el = g('data-cycle'))) { e.stopPropagation(); S.mode = S.mode === 'quick' ? 'deep' : 'quick'; render(); return; }
+    if ((el = g('data-unctx'))) { e.stopPropagation(); S.ctx = S.ctx.filter((k) => k !== el.dataset.unctx); render(); return; }
+    if (g('data-ctxall')) { e.stopPropagation(); S.ctx = ['today', 'commits', 'retro']; render(); return; }
+    if ((el = g('data-sched'))) { e.stopPropagation(); S.sched[+el.dataset.sched] = !S.sched[+el.dataset.sched]; render(); return; }
+    if ((el = g('data-tool'))) { e.stopPropagation(); S.tools[el.dataset.tool] = !S.tools[el.dataset.tool]; render(); return; }
+    if (g('data-deep')) { e.stopPropagation(); S.deep = !S.deep; render(); return; }
+    if ((el = g('data-scope'))) { e.stopPropagation(); S.scope = el.dataset.scope; render(); return; }
+    if ((el = g('data-toast'))) { e.stopPropagation(); A.toast(el.dataset.toast); return; }
+    if (g('data-reset')) { e.stopPropagation(); S.msgs = []; S.busy = false; S.pane = null; render(); const c = $('#cmp'); c && c.focus(); }
+  }, true);
+  document.addEventListener('input', (e) => {
+    const t = e.target;
+    if (t.id === 'cmp') { S.input = t.value; grow(t); return; }
+    if (t.matches('[data-memo]')) { S.memo = t.value; return; }
+    if (t.matches('[data-ti]')) { const [i, j] = t.dataset.ti.split(':').map(Number); S.msgs[i].r.items[j].title = t.value; return; }
+    if (t.matches('[data-doc]')) S.msgs[+t.dataset.doc].r.html = t.innerHTML;
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && S.pop) { S.pop = null; render(); e.stopPropagation(); return; }
+    if (e.target.id === 'cmp' && typeof EP !== 'undefined' && EP === 2 && S.sl) return;
+    if (e.target.id === 'cmp') { e.stopPropagation(); if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); send(e.target.value); } return; }
+    if (e.target.closest && e.target.closest('input, textarea, [contenteditable="true"]')) e.stopPropagation();
+  }, true);
+
+  /* =================================================================
+     기능을 어디서 켜는지: ?ep=1~5 (진입점 시안). 기능은 모두 같고 여는 자리만 다르다.
+     만들기(할 일 · 회고 · 옮기기 · 주간 요약) · 자료 붙이기 · 답 길이 · 꼼꼼히 찾기
+     · 예약한 일 · 연결된 도구 · 알려 둔 것 · 결과물 · 지난 대화
+     ================================================================= */
+  const EP = (() => { const v = +(Q.get('ep') || 0); return v >= 1 && v <= 6 ? v : 0; })();
+  const EPN = ['', '+ 메뉴', '/ 와 @', '사이드바 메뉴', '입력창 아래 줄', '이어서 제안', '+ 메뉴와 사이드바'];
+  const MAKE = [['todo', ic.todo, '할 일 만들기', '날짜와 시간을 읽어 할 일로', '내일 오전 10시에 '], ['retro', ic.doc, '회고 쓰기', '그날 할 일과 커밋으로 초안', '오늘 회고 써줘'],
+    ['move', ic.move, '일정 옮기기', '남은 일을 다른 날로', '오늘 못 끝낸 일 내일로 옮겨줘'], ['week', ic.cal, '주간 요약 쓰기', '이번 주 회고를 한 편으로', '이번 주 회고 써줘']];
+  const CTX = { today: [ic.todo, '오늘 할 일'], commits: [ic.commit, '오늘 커밋'], retro: [ic.doc, '어제 회고'], week: [ic.cal, '이번 주 캘린더'] };
+  const TOOLS = [['cal', ic.cal, '캘린더', '일정 읽기, 새 일정 만들기'], ['todo', ic.todo, '할 일', '읽기, 만들기, 날짜 옮기기'], ['retro', ic.doc, '회고', '읽기, 초안 저장'], ['gh', ic.gh, 'GitHub 커밋', '읽기만']];
+  const RESULTS0 = [['11월 2일 회고', '회고 초안', '어제 저장'], ['내일 회의 두 개', '할 일 2개', '어제 추가'], ['10월 4주차 정리', '주간 요약', '11월 1일 저장']];
+  Object.assign(S, { view: 'chat', drawer: false, stab: 'tools', sl: '', cmd: null, schedList: [['매일', '오후 6시', '오늘 회고 초안 쓰기', true], ['매주 일요일', '오후 9시', '다음 주 할 일 정리', false]], nf: null });
+  /* 6: 대화 폴더 */
+  const fi = (d) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+  const FIC = { folder: fi('<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>'), fadd: fi('<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M12 10.5v5M9.5 13h5"/>'),
+    more: fi('<circle cx="6" cy="12" r="1.2" fill="currentColor"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/><circle cx="18" cy="12" r="1.2" fill="currentColor"/>'), right: fi('<path d="m9 6 6 6-6 6"/>'), out: fi('<path d="M15 12H4M8 8l-4 4 4 4"/><path d="M14 5h4a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-4"/>'),
+    pen: fi('<path d="M4 20h4L19 9l-4-4L4 16z"/>'), trash: fi('<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>'), check: fi('<path d="m5 12 5 5 9-10"/>') };
+  Object.assign(S, { dk: 'set', folders: [{ id: 'f1', name: '회고', open: true }, { id: 'f2', name: '일정 정리', open: false }],
+    convs: [{ id: 'c1', t: '11월 2일 회고 초안', f: 'f1' }, { id: 'c2', t: '10월 4주 회고 정리', f: 'f1' }, { id: 'c3', t: '내일 회의 두 개 잡기', f: 'f2' }, { id: 'c4', t: '이번 주 남은 일 정리', f: 'f2' }, { id: 'c5', t: '주간 요약 문장 다듬기', f: null }],
+    cur: null, fm: null, nfold: null, ren: null, newIn: null, uid: 10 });
+  if (EP) { Object.assign(CFG, { cmp: 'round', talk: 'c', prog: 'tool', name: EPN[EP], side: null }); S.ctx = []; }
+
+  /* --- 공용: 비서 설정 (도구 · 알려 둔 것 · 예약) --- */
+  function schedForm() {
+    const f = S.nf || { when: '매일', time: '오후 6시', what: '' };
+    return `<form class="ep-form" data-epform onsubmit="return false"><label>언제<select data-nf="when">${['매일', '평일', '매주 일요일', '매주 금요일'].map((w) => `<option ${f.when === w ? 'selected' : ''}>${w}</option>`).join('')}</select></label>
+      <label>몇 시<input data-nf="time" value="${A.esc(f.time)}" autocomplete="off"></label><label class="w">무엇을<input data-nf="what" value="${A.esc(f.what)}" placeholder="예: 오늘 회고 초안 쓰기" autocomplete="off"></label>
+      <div class="ft"><button type="button" class="ag-btn q" data-epnf="0">취소</button><button type="button" class="ag-btn p" data-epsave>예약하기</button></div></form>`;
+  }
+  function settingsHTML() {
+    const T = [['tools', '연결된 도구'], ['how', '답하는 방식'], ['memo', '알려 둔 것'], ['sched', '예약한 일']].filter((x) => EP !== 6 || x[0] !== 'sched');
+    const body = S.stab === 'tools' ? `<p class="ep-d">비서가 읽고 바꿀 수 있는 곳이에요. 꺼 둔 곳은 쓰지 않고, 바꾸는 일은 항상 먼저 확인받아요.</p><ul class="ax-list w">${TOOLS.map(([k, ii, t, d]) => `<li><span class="ax-row">${ii}<span><span class="ti2">${t}</span><small>${d}</small></span></span><button type="button" class="ax-tg" role="switch" aria-checked="${S.tools[k]}" data-tool="${k}" aria-label="${t} 쓰기"></button></li>`).join('')}</ul>`
+      : S.stab === 'how' ? `<p class="ep-d">새 대화를 시작할 때 쓰는 기본값이에요.</p><ul class="ax-list w"><li><span class="ax-row">${ic.search}<span><span class="ti2">꼼꼼히 찾기</span><small>할 일, 커밋, 지난 회고를 더 넓게 읽어요</small></span></span><button type="button" class="ax-tg" role="switch" aria-checked="${S.deep}" aria-label="꼼꼼히 찾기" data-deep></button></li><li><span class="ax-row">${ic.doc}<span><span class="ti2">답 길이</span><small>${S.mode === 'quick' ? '짧게, 핵심만' : '자세히, 이유까지'}</small></span></span><span class="ep-seg" role="radiogroup" aria-label="답 길이">${['짧게', '자세히'].map((v) => `<button type="button" role="radio" aria-checked="${(S.mode === 'quick') === (v === '짧게')}" data-eplen="${v}">${v}</button>`).join('')}</span></li></ul>`
+      : S.stab === 'memo' ? `<p class="ep-d">비서가 늘 기억할 것을 적어 두세요. 모든 대화에 적용돼요.</p><textarea class="ax-memo" data-memo aria-label="비서에게 알려 둔 것">${A.esc(S.memo)}</textarea>`
+      : `<p class="ep-d">정한 시간에 비서가 알아서 해 두고 알려 드려요. 바꾸는 일은 확인을 기다려요.</p><ul class="ax-list w">${S.schedList.map(([w, t, what, on], j) => `<li><span><span class="ti2">${A.esc(what)}</span><small>${w} ${t}</small></span><button type="button" class="ax-tg" role="switch" aria-checked="${on}" data-epsched="${j}" aria-label="${A.esc(what)}"></button></li>`).join('')}</ul>${S.nf ? schedForm() : '<button type="button" class="ax-link" data-epnf="1">예약 추가</button>'}`;
+    return `<div class="ep-set"><div class="ep-tabs" role="tablist">${T.map(([k, n]) => `<button type="button" role="tab" aria-selected="${S.stab === k}" data-stab="${k}">${n}</button>`).join('')}</div><div class="ep-tb" role="tabpanel">${body}</div></div>`;
+  }
+  function resultsHTML() {
+    const mine = S.msgs.filter((m) => m.role === 'ai' && m.r.applied).map((m) => [m.r.kind === 'retro' ? m.r.title : m.r.kind === 'move' ? `옮긴 일 ${m.r.applied.length}개` : `할 일 ${m.r.applied.length}개`, m.r.kind === 'retro' ? '회고 초안' : '할 일', '방금']);
+    return `<ul class="ax-list w ep-res">${[...mine, ...RESULTS0].map(([t, k, d]) => `<li><span><span class="ti2">${A.esc(t)}</span><small>${k}</small></span><span class="tm">${d}</span></li>`).join('')}</ul>`;
+  }
+  const DK = { results: ['결과물', '비서가 만들고 저장한 것'], sched: ['예약한 일', '정한 시간에 비서가 알아서 해요'], set: ['비서 설정', '도구, 답하는 방식, 알려 둔 것'] };
+  function drawerBody() {
+    if (EP !== 6) return settingsHTML();
+    if (S.dk === 'results') return resultsHTML();
+    if (S.dk === 'sched') { S.stab = 'sched'; return settingsHTML().replace(/<div class="ep-tabs"[\s\S]*?<\/div>/, ''); }
+    if (S.stab === 'sched') S.stab = 'tools'; return settingsHTML();
+  }
+  const drawerHTML = () => { if (!S.drawer) return ''; const [t, d] = EP === 6 ? DK[S.dk] : ['비서 설정', ''];
+    return `<div class="ep-scrim" data-epdrawer="0"></div><aside class="ep-drawer" role="dialog" aria-modal="true" aria-label="${t}"><div class="ep-dh"><span><b>${t}</b>${d ? `<small>${d}</small>` : ''}</span><button type="button" class="ax-ib" data-epdrawer="0" aria-label="닫기">${ic.x}</button></div>${drawerBody()}</aside>`; };
+  const ctxRow = () => S.ctx.length ? `<div class="ax-ctx" aria-label="붙인 자료">${S.ctx.map((k) => `<span>${CTX[k][0]}${CTX[k][1]}<button type="button" data-unctx="${k}" aria-label="${CTX[k][1]} 빼기">${ic.x}</button></span>`).join('')}</div>` : '';
+  const menuSec = (h, items) => `<p class="ep-mh">${h}</p>${items}`;
+
+  /* --- 입력창: 시안마다 기능을 여는 자리가 다름 --- */
+  const composer0 = composer;
+  composer = function (ph, o = {}) {
+    if (!EP) return composer0(ph, o);
+    const ta = `<textarea id="cmp" rows="1" placeholder="${ph}" aria-label="AI 비서에게 부탁하기">${A.esc(S.input)}</textarea>`;
+    const go = `<button type="button" class="ax-go" data-send aria-label="보내기" ${S.busy ? 'disabled' : ''}>${ic.send}</button>`;
+    if (EP === 1 || EP === 6) { const menu = S.pop === 'plus' ? `<div class="ax-menu ep-plus ${S.msgs.length ? 'up' : 'down'}" role="menu">${menuSec('만들기', MAKE.map(([k, ii, t, d, q]) => `<button type="button" role="menuitem" data-fill="${q}">${ii}<span>${t}</span><small>${d}</small></button>`).join(''))}
+        ${menuSec('자료 붙이기', Object.entries(CTX).map(([k, [ii, t]]) => `<button type="button" role="menuitemcheckbox" aria-checked="${S.ctx.includes(k)}" data-epctx="${k}">${ii}<span>${t}</span><small>${S.ctx.includes(k) ? '붙임' : '눌러서 붙이기'}</small></button>`).join(''))}
+        ${menuSec('답하는 방식', `<button type="button" role="menuitemcheckbox" aria-checked="${S.deep}" data-deep>${ic.search}<span>꼼꼼히 찾기</span><small>${S.deep ? '켜짐' : '꺼짐'}</small></button><button type="button" role="menuitem" data-cycle="style">${ic.doc}<span>답 길이</span><small>${S.mode === 'quick' ? '짧게' : '자세히'}</small></button>`)}</div>` : '';
+      return `${ctxRow()}<div class="ax-cmp round">${ta}<div class="ax-cbar"><button type="button" class="ax-ib" data-pop="plus" aria-expanded="${S.pop === 'plus'}" aria-label="기능 열기">${ic.plus}</button>${S.deep ? `<span class="ep-on">${ic.search}꼼꼼히</span>` : ''}<span class="sp"></span>${go}</div>${menu}</div>`; }
+    if (EP === 2) { const sl = S.sl; let list = sl === '/' ? [...MAKE.map(([k, ii, t, d, q]) => [ii, `/${t.split(' ')[0]}`, d, `cmd:${k}`]), [ic.cal, '/예약', '정한 시간에 자동으로', 'cmd:sched'], [ic.search, '/꼼꼼히', S.deep ? '지금 켜짐, 누르면 끔' : '지금 꺼짐, 누르면 켬', 'opt:deep'], [ic.doc, '/짧게', S.mode === 'quick' ? '지금 이 길이' : '답을 짧게', 'opt:quick'], [ic.doc, '/자세히', S.mode === 'deep' ? '지금 이 길이' : '답을 자세히', 'opt:deep2'], [ic.tools, '/설정', '도구 · 답하는 방식 · 알려 둔 것 · 예약', 'cmd:set']]
+        : sl === '@' ? Object.entries(CTX).map(([k, [ii, t]]) => [ii, `@${t}`, S.ctx.includes(k) ? '붙임' : '자료로 붙이기', `ctx:${k}`]) : [];
+      const fl = list.filter((x) => !S.slq || x[1].slice(1).replace(/\s/g, '').includes(S.slq)); list.length = 0; list.push(...fl);
+      return `<div class="ax-cmp round">${S.cmd ? `<span class="ep-tok">${(MAKE.find((x) => x[0] === S.cmd) || [, , '예약'])[2]}<button type="button" data-epcmd="" aria-label="명령 빼기">${ic.x}</button></span>` : ''}${ctxRow()}${ta}<div class="ax-cbar"><span class="ep-keys"><span class="r-kbd">/</span> 기능 <span class="r-kbd">@</span> 자료</span><span class="sp"></span>${go}</div>
+        ${list.length ? `<div class="ax-menu ep-slash ${S.msgs.length ? 'up' : 'down'}" role="listbox" aria-label="${sl === '/' ? '기능' : '자료'}">${list.map(([ii, t, d, v], j) => `<button type="button" role="option" aria-selected="${j === (S.sk || 0)}" data-epsl="${v}">${ii}<span>${t}</span><small>${d}</small></button>`).join('')}</div>` : ''}</div>`; }
+    if (EP === 4) { const dd = (id, label, items) => `<span class="q-wrap"><button type="button" class="ax-sel ep-dd" data-pop="${id}" aria-expanded="${S.pop === id}">${label}${ic.chev}</button>${S.pop === id ? `<div class="ax-menu ep-up ${S.msgs.length ? 'up' : 'down'}" role="menu">${items}</div>` : ''}</span>`;
+      return `<div class="ax-cmp round">${ta}<div class="ax-cbar"><span class="sp"></span>${go}</div></div>
+        <div class="ep-row" aria-label="부탁 설정">${dd('make', `${ic.plus}만들기`, MAKE.map(([k, ii, t, d, q]) => `<button type="button" role="menuitem" data-fill="${q}">${ii}<span>${t}</span><small>${d}</small></button>`).join(''))}
+          ${dd('ctx', `${ic.doc}자료 ${S.ctx.length}`, Object.entries(CTX).map(([k, [ii, t]]) => `<button type="button" role="menuitemcheckbox" aria-checked="${S.ctx.includes(k)}" data-epctx="${k}">${ii}<span>${t}</span><small>${S.ctx.includes(k) ? '붙임' : '붙이기'}</small></button>`).join(''))}
+          <button type="button" class="ax-sel ep-dd" data-deep aria-pressed="${S.deep}">${ic.search}꼼꼼히 ${S.deep ? '켬' : '끔'}</button>
+          ${dd('len', `답 ${S.mode === 'quick' ? '짧게' : '자세히'}`, ['짧게', '자세히'].map((v) => `<button type="button" role="menuitemradio" aria-checked="${(S.mode === 'quick') === (v === '짧게')}" data-eplen="${v}">${ic.doc}<span>${v}</span><small>${v === '짧게' ? '한두 문장으로' : '이유까지 같이'}</small></button>`).join(''))}
+          <span class="sp"></span><button type="button" class="ax-sel ep-dd" data-epdrawer="1">${ic.tools}비서 설정</button></div>`; }
+    return `<div class="ax-cmp round">${ta}<div class="ax-cbar"><button type="button" class="ax-ib" data-toast="파일 첨부는 시안에서 생략했어요" aria-label="첨부">${ic.plus}</button><span class="sp"></span>${go}</div></div>`;
+  };
+
+  /* --- 시작 화면 --- */
+  LAND.ep = () => {
+    if (EP === 5) return `<div class="ax-center"><div class="ax-wrap"><h1 class="ax-h c">무엇을 도와드릴까요?</h1>${composer('부탁하면 다음에 할 만한 일을 이어서 제안해 드려요')}
+      <div class="ep-tiles">${MAKE.slice(0, 3).map(([k, ii, t, d, q]) => `<button type="button" class="ep-tile" data-fill="${q}">${ii}<b>${t}</b><small>${d}</small></button>`).join('')}</div>
+      <p class="ax-hint c">예약, 도구, 알려 둔 것은 결과 아래 제안이나 오른쪽 위 "비서 설정"에서 정해요.</p></div></div>`;
+    if (EP === 3) return `<div class="ax-center"><div class="ax-wrap"><h1 class="ax-h c">무엇을 도와드릴까요?</h1>${composer('부탁하기')}<p class="ax-hint c">결과물, 예약한 일, 비서 설정은 왼쪽 메뉴에 있어요.</p></div></div>`;
+    return `<div class="ax-center"><div class="ax-wrap"><h1 class="ax-h c">무엇을 도와드릴까요?</h1>${composer(EP === 2 ? '/ 로 기능을, @ 로 자료를 불러요' : '부탁하기')}
+      ${EP === 6 ? `<p class="ax-hint c">${S.newIn ? `이 대화는 "${A.esc((S.folders.find((f) => f.id === S.newIn) || {}).name || '')}" 폴더에 저장돼요. ` : ''}입력창의 + 에서 만들기, 자료, 답하는 방식을 골라요. 결과물, 예약, 비서 설정은 왼쪽 메뉴를 누르면 오른쪽에 열려요.</p>` : EP === 1 ? `<p class="ax-hint c">입력창의 + 에서 만들기, 자료 붙이기, 답하는 방식을 고를 수 있어요. 예약과 도구는 왼쪽 아래 "비서 설정".</p>` : EP === 2 ? `<p class="ax-hint c">/할 일, /회고, /옮기기, /예약, /설정 그리고 @오늘 할 일, @커밋 처럼 불러 보세요.</p>` : ''}</div></div>`;
+  };
+  const page0 = page;
+  page = function () {
+    if (!EP) return page0();
+    if (EP === 3 && S.view !== 'chat') { const H = { results: ['결과물', '비서가 만들고 저장한 것'], sched: ['예약한 일', '정한 시간에 비서가 알아서 해요'], set: ['비서 설정', '도구, 답하는 방식, 알려 둔 것'] }[S.view];
+      if (S.view === 'sched') S.stab = 'sched'; else if (S.view === 'set' && S.stab === 'sched') S.stab = 'tools';
+      return `<div class="ag-page"><div class="ax-top"><div class="ax-wrap"><h1 class="ax-h">${H[0]}</h1><p class="ax-sub">${H[1]}</p>${S.view === 'results' ? resultsHTML() : S.view === 'sched' ? settingsHTML().replace(/<div class="ep-tabs"[\s\S]*?<\/div>/, '') : settingsHTML()}</div></div></div>`; }
+    if (!S.msgs.length) return `<div class="ag-page">${LAND.ep()}</div>${drawerHTML()}`;
+    return page0() + drawerHTML();
+  };
+  const sidebar0 = sidebar;
+  sidebar = function () {
+    sidebar0(); if (!EP) return;
+    const side = $('.side'); if (!side) return;
+    if (EP === 3) { const sec = side.querySelector('section'); sec.insertAdjacentHTML('beforeend', [['chat', ic.spark, '지금 대화'], ['results', ic.doc, '결과물'], ['sched', ic.clock, '예약한 일'], ['set', ic.tools, '비서 설정']].map(([v, ii, t]) => `<button type="button" class="ch" data-epview="${v}" aria-pressed="${S.view === v}">${ii}${t}</button>`).join('')); }
+    if (EP === 6) sidebar6(side);
+    if (EP === 1) side.querySelector('.foot').insertAdjacentHTML('beforebegin', `<section aria-label="비서"><button type="button" class="ch" data-epdrawer="1">${ic.tools}비서 설정</button><button type="button" class="ch" data-epdrawer="1" data-epstab="sched">${ic.clock}예약한 일</button></section>`);
+  };
+  function sidebar6(side) {
+    const now = S.convs.find((c) => c.id === 'now');
+    if (now && !S.msgs.length) now.id = 'c' + (++S.uid);
+    if (S.msgs.length && !S.convs.find((c) => c.id === 'now')) S.convs.unshift({ id: 'now', t: S.msgs[0].text.slice(0, 22) + (S.msgs[0].text.length > 22 ? '…' : ''), f: S.newIn });
+    side.querySelectorAll('section, .fo-menu').forEach((x) => x.remove());
+    const on = (k) => S.drawer && S.dk === k;
+    const nSched = S.schedList.filter((x) => x[3]).length, nRes = RESULTS0.length + S.msgs.filter((m) => m.role === 'ai' && m.r && m.r.applied).length;
+    const active = (c) => c.id === 'now' ? S.msgs.length > 0 && !S.cur : S.cur === c.id;
+    const conv = (c) => S.ren === c.id ? inp('ren:' + c.id, c.t, '대화 이름') : `<div class="fo-row${S.fm === 'c:' + c.id ? ' fo-open' : ''}" draggable="true" data-fodrag="${c.id}"><button type="button" class="ch fo-c" data-focur="${c.id}" aria-pressed="${active(c)}">${A.esc(c.t)}</button><button type="button" class="fo-more" data-fomenu="c:${c.id}" aria-haspopup="menu" aria-expanded="${S.fm === 'c:' + c.id}" aria-label="${A.esc(c.t)} 메뉴">${FIC.more}</button></div>`;
+    const inp = (k, v, ph) => `<div class="fo-new">${FIC.folder}<input class="fo-in" data-foin="${k}" value="${A.esc(v)}" placeholder="${ph}" maxlength="30" autocomplete="off" aria-label="${ph}"></div><p class="fo-tip">Enter 로 저장, Esc 로 취소</p>`;
+    const folders = S.folders.map((f) => { const cs = S.convs.filter((c) => c.f === f.id);
+      return `<div class="fo-f" data-fodrop="${f.id}">${S.ren === f.id ? inp('ren:' + f.id, f.name, '폴더 이름') : `<div class="fo-row${S.fm === 'f:' + f.id ? ' fo-open' : ''}"><button type="button" class="ch fo-h" data-fotog="${f.id}" aria-expanded="${f.open}"><span class="fo-chev">${FIC.right}</span>${FIC.folder}<span class="fo-nm">${A.esc(f.name)}</span><span class="n">${cs.length}</span></button><button type="button" class="fo-more" data-fomenu="f:${f.id}" aria-haspopup="menu" aria-expanded="${S.fm === 'f:' + f.id}" aria-label="${A.esc(f.name)} 폴더 메뉴">${FIC.more}</button></div>`}
+        ${f.open ? `<div class="fo-in-list">${cs.length ? cs.map(conv).join('') : `<p class="fo-empty">대화를 끌어다 놓거나 ⋯ 에서 옮겨요</p>`}</div>` : ''}</div>`; }).join('');
+    const loose = S.convs.filter((c) => !c.f);
+    side.querySelector('.ws').insertAdjacentHTML('afterend', `<section aria-label="AI 비서"><h2>AI 비서</h2>
+        <button type="button" class="ch" data-reset>${ic.plus}새 대화</button>
+        <button type="button" class="ch" data-epdk="results" aria-pressed="${on('results')}">${ic.doc}결과물<span class="n">${nRes}</span></button>
+        <button type="button" class="ch" data-epdk="sched" aria-pressed="${on('sched')}">${ic.clock}예약한 일<span class="n">${nSched}</span></button>
+        <button type="button" class="ch" data-epdk="set" aria-pressed="${on('set')}">${ic.tools}비서 설정</button></section>
+      <section aria-label="대화" class="fo-sec"><h2 class="hx">대화<button type="button" class="ibtn fo-add" data-fonew aria-label="새 폴더">${FIC.fadd}</button></h2>
+        ${S.nfold ? inp('new', '', '새 폴더 이름') : ''}${folders}
+        <div class="fo-loose" data-fodrop="">${loose.map(conv).join('')}</div></section>`);
+    if (S.fm) { const [k, id] = S.fm.split(':');
+      const items = k === 'f' ? `<button type="button" role="menuitem" data-reset data-fonewchat="${id}">${ic.plus}<span>이 폴더에서 새 대화</span></button><button type="button" role="menuitem" data-foren="${id}">${FIC.pen}<span>이름 바꾸기</span></button><hr><button type="button" role="menuitem" class="fo-del" data-fodel="${id}">${FIC.trash}<span>폴더 삭제</span><small>대화는 남아요</small></button>`
+        : (() => { const c = S.convs.find((x) => x.id === id) || {}; return `<p class="ep-mh">폴더로 옮기기</p>${S.folders.map((f) => `<button type="button" role="menuitemradio" aria-checked="${c.f === f.id}" data-fomove="${id}|${f.id}">${FIC.folder}<span>${A.esc(f.name)}</span>${c.f === f.id ? FIC.check : ''}</button>`).join('')}
+          <button type="button" role="menuitem" data-fonew="${id}">${FIC.fadd}<span>새 폴더 만들어 옮기기</span></button>${c.f ? `<button type="button" role="menuitem" data-fomove="${id}|">${FIC.out}<span>폴더에서 빼기</span></button>` : ''}<hr><button type="button" role="menuitem" data-foren="${id}">${FIC.pen}<span>이름 바꾸기</span></button>`; })();
+      side.insertAdjacentHTML('beforeend', `<div class="fo-menu" role="menu">${items}</div>`);
+      requestAnimationFrame(() => { const b = side.querySelector(`[data-fomenu="${S.fm}"]`), m = side.querySelector('.fo-menu'); if (!b || !m) return; const r = b.getBoundingClientRect();
+        m.style.left = `${r.right + 6}px`; m.style.top = `${Math.max(8, Math.min(r.top - 4, innerHeight - m.offsetHeight - 8))}px`; m.querySelector('button')?.focus({ preventScroll: true }); }); }
+    const fin = side.querySelector('.fo-in'); if (fin) requestAnimationFrame(() => { fin.focus({ preventScroll: true }); fin.select(); });
+  }
+  function foCommit(inp) {
+    const k = inp.dataset.foin, v = inp.value.trim();
+    if (k === 'new') { if (v) { const id = 'f' + (++S.uid); S.folders.push({ id, name: v, open: true }); if (S.nfold !== true) { const c = S.convs.find((x) => x.id === S.nfold); if (c) c.f = id; } A.toast(`"${v}" 폴더를 만들었어요`); } S.nfold = null; }
+    else { const id = k.slice(4), f = S.folders.find((x) => x.id === id), c = S.convs.find((x) => x.id === id); if (v) { if (f) f.name = v; if (c) c.t = v; } S.ren = null; }
+    render();
+  }
+  const EPTOP = () => EP === 5 ? `<button type="button" class="ag-btn q" data-epdrawer="1">${ic.tools}비서 설정</button>` : '';
+
+  /* --- 5: 결과 아래에 이어서 할 일 제안 --- */
+  const turn0 = turn;
+  turn = function (m, i) {
+    const h = turn0(m, i); if (EP !== 5 || !m.done || m.r.kind === 'text') return h;
+    const sug = m.r.kind === 'retro' ? [['sched', '매일 오후 6시에 자동으로 써 둘까요?', '매일|오후 6시|오늘 회고 초안 쓰기'], ['memo', '이 형식을 기억해 둘까요?', '회고는 이번 초안과 같은 순서로 써 줘.']]
+      : m.r.kind === 'todos' ? [['memo', '길이를 안 말하면 1시간으로 기억할까요?', '회의는 길이를 말하지 않으면 1시간으로 잡아 줘.'], ['sched', '매주 일요일 밤에 다음 주 할 일을 잡아 둘까요?', '매주 일요일|오후 9시|다음 주 할 일 정리']] : [['sched', '매일 오후 9시에 남은 일을 옮겨 둘까요?', '매일|오후 9시|남은 일 내일로 옮기기']];
+    return h.replace(/<\/div><\/div>$/, `<div class="ep-follow" aria-label="이어서 할 일">${sug.map(([k, t, v]) => `<button type="button" class="ax-pill" data-epfollow="${k}" data-v="${A.esc(v)}">${k === 'sched' ? ic.clock : ic.doc}${t}</button>`).join('')}</div></div></div>`);
+  };
+
+  /* --- 이벤트 --- */
+  document.addEventListener('click', (e) => {
+    if (!EP || !(e.target instanceof Element)) return;
+    const g = (a) => e.target.closest(`[${a}]`); let el;
+    if (EP === 6) {
+      if (S.fm && !e.target.closest('.fo-menu') && !g('data-fomenu')) { S.fm = null; if (!g('data-epdk') && !g('data-fotog') && !g('data-focur') && !g('data-fonew') && !g('data-reset')) { e.stopPropagation(); render(); return; } }
+      const fin = document.querySelector('.fo-in'); if (fin && !e.target.closest('.fo-new')) { foCommit(fin); if (!g('data-fonew')) return; }
+      if ((el = g('data-epdk'))) { e.stopPropagation(); const k = el.dataset.epdk; S.drawer = !(S.drawer && S.dk === k); S.dk = k; S.nf = null; render(); return; }
+      if ((el = g('data-fomenu'))) { e.stopPropagation(); S.fm = S.fm === el.dataset.fomenu ? null : el.dataset.fomenu; render(); return; }
+      if ((el = g('data-fotog'))) { e.stopPropagation(); const f = S.folders.find((x) => x.id === el.dataset.fotog); f.open = !f.open; render(); return; }
+      if ((el = g('data-focur'))) { e.stopPropagation(); S.cur = el.dataset.focur === 'now' ? null : el.dataset.focur; render(); return; }
+      if ((el = g('data-fonew'))) { e.stopPropagation(); S.fm = null; S.nfold = el.dataset.fonew || true; render(); return; }
+      if ((el = g('data-fomove'))) { e.stopPropagation(); const [cid, fid] = el.dataset.fomove.split('|'), c = S.convs.find((x) => x.id === cid), f = S.folders.find((x) => x.id === fid); c.f = fid || null; if (f) f.open = true; S.fm = null; A.toast(f ? `"${f.name}" 폴더로 옮겼어요` : '폴더에서 뺐어요'); render(); return; }
+      if ((el = g('data-foren'))) { e.stopPropagation(); S.ren = el.dataset.foren; S.fm = null; render(); return; }
+      if ((el = g('data-fodel'))) { e.stopPropagation(); const id = el.dataset.fodel, f = S.folders.find((x) => x.id === id); S.convs.forEach((c) => { if (c.f === id) c.f = null; }); S.folders = S.folders.filter((x) => x.id !== id); S.fm = null; A.toast(`"${f.name}" 폴더를 지웠어요. 대화는 아래에 남아요`); render(); return; }
+      if ((el = g('data-reset'))) { S.cur = null; S.drawer = false; S.newIn = el.dataset.fonewchat || null; S.fm = null; setTimeout(render, 0); }
+    }
+    if ((el = g('data-epdrawer'))) { e.stopPropagation(); S.drawer = el.dataset.epdrawer === '1'; if (el.dataset.epstab) S.stab = el.dataset.epstab; render(); return; }
+    if ((el = g('data-stab'))) { e.stopPropagation(); S.stab = el.dataset.stab; render(); return; }
+    if ((el = g('data-epview'))) { e.stopPropagation(); S.view = el.dataset.epview; render(); return; }
+    if (g('data-reset')) S.view = 'chat';
+    if ((el = g('data-epctx'))) { e.stopPropagation(); const k = el.dataset.epctx; S.ctx = S.ctx.includes(k) ? S.ctx.filter((x) => x !== k) : [...S.ctx, k]; render(); return; }
+    if ((el = g('data-eplen'))) { e.stopPropagation(); S.mode = el.dataset.eplen === '짧게' ? 'quick' : 'deep'; S.pop = null; render(); return; }
+    if ((el = g('data-epsched'))) { e.stopPropagation(); const j = +el.dataset.epsched; S.schedList[j][3] = !S.schedList[j][3]; render(); return; }
+    if ((el = g('data-epnf'))) { e.stopPropagation(); S.nf = el.dataset.epnf === '1' ? { when: '매일', time: '오후 6시', what: '' } : null; render(); return; }
+    if (g('data-epsave')) { e.stopPropagation(); const f = S.nf; if (!f.what.trim()) { A.toast('무엇을 할지 적어 주세요'); return; } S.schedList.push([f.when, f.time, f.what.trim(), true]); S.nf = null; A.toast(`${f.when} ${f.time}에 "${f.what.trim()}"을 예약했어요`); render(); return; }
+    if ((el = g('data-epsl'))) { e.stopPropagation(); pickSl(el.dataset.epsl); return; }
+    if ((el = g('data-epcmd'))) { e.stopPropagation(); S.cmd = null; render(); return; }
+    if ((el = g('data-epfollow'))) { e.stopPropagation(); const k = el.dataset.epfollow, v = el.dataset.v;
+      if (k === 'memo') { if (!S.memo.includes(v)) S.memo += `\n${v}`; A.toast('알려 둔 것에 적어 두었어요'); el.disabled = true; return; }
+      const [when, time, what] = v.split('|'); S.drawer = true; S.stab = 'sched'; S.nf = { when, time, what }; render(); return; }
+  }, true);
+  function pickSl(v) {
+    const [t, k] = v.split(':'), ta = $('#cmp'), cur = ta ? ta.value : S.input;
+    S.input = cur.replace(/[\/@][^\s]*$/, ''); S.sl = ''; S.slq = ''; S.sk = 0;
+    if (t === 'ctx') { if (!S.ctx.includes(k)) S.ctx.push(k); }
+    else if (t === 'opt') { if (k === 'deep') S.deep = !S.deep; else S.mode = k === 'quick' ? 'quick' : 'deep'; }
+    else if (k === 'set') { S.drawer = true; S.stab = 'tools'; }
+    else if (k === 'sched') { S.drawer = true; S.stab = 'sched'; S.nf = { when: '매일', time: '오후 6시', what: '' }; }
+    else { S.cmd = k; const q = MAKE.find((x) => x[0] === k)[4]; if (!S.input.trim()) S.input = q; }
+    render(); const c = $('#cmp'); if (c) { c.focus(); c.setSelectionRange(c.value.length, c.value.length); }
+  }
+  document.addEventListener('input', (e) => {
+    if (!EP) return; const t = e.target;
+    if (t.matches('[data-nf]')) { S.nf[t.dataset.nf] = t.value; return; }
+    if (EP === 2 && t.id === 'cmp') { const m = t.value.match(/(^|\s)([\/@])([^\s]*)$/); const nv = m ? m[2] : '', q = m ? m[3] : ''; if (nv !== S.sl || q !== (S.slq || '')) { S.sl = nv; S.slq = q; S.sk = 0; S.input = t.value; render(); } }
+  });
+  document.addEventListener('change', (e) => { if (EP && e.target.matches('[data-nf]')) S.nf[e.target.dataset.nf] = e.target.value; });
+  document.addEventListener('keydown', (e) => {
+    if (!EP) return;
+    if (EP === 6 && e.target.matches && e.target.matches('.fo-in')) { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); e.stopPropagation(); foCommit(e.target); } else if (e.key === 'Escape') { e.stopPropagation(); S.nfold = null; S.ren = null; render(); } return; }
+    if (EP === 6 && e.key === 'Escape' && S.fm) { S.fm = null; render(); e.stopPropagation(); return; }
+    if (e.key === 'Escape' && S.drawer) { S.drawer = false; render(); e.stopPropagation(); return; }
+    if (EP === 2 && S.sl && e.target.id === 'cmp') { const opts = [...document.querySelectorAll('.ep-slash [data-epsl]')];
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); e.stopPropagation(); S.sk = ((S.sk || 0) + (e.key === 'ArrowDown' ? 1 : -1) + opts.length) % opts.length; S.input = e.target.value; render(); return; }
+      if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); const o = opts[S.sk || 0]; o && pickSl(o.dataset.epsl); return; }
+      if (e.key === 'Escape') { S.sl = ''; render(); e.stopPropagation(); } }
+  }, true);
+  if (EP === 2 && Q.get('slash')) { S.input = '/'; S.sl = '/'; }
+  if (Q.get('drawer')) { S.drawer = true; const d = Q.get('drawer'); if (EP === 6 && DK[d]) S.dk = d; else { S.stab = d; S.dk = d === 'sched' ? 'sched' : 'set'; } }
+  if (EP === 6) {
+    if (Q.get('fm')) S.fm = Q.get('fm'); if (Q.get('nfold')) S.nfold = true;
+    let drag = null;
+    document.addEventListener('dragstart', (e) => { const r = e.target.closest && e.target.closest('[data-fodrag]'); if (!r) return; drag = r.dataset.fodrag; e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', drag); r.classList.add('fo-drag'); });
+    document.addEventListener('dragend', () => { drag = null; document.querySelectorAll('.fo-over, .fo-drag').forEach((x) => x.classList.remove('fo-over', 'fo-drag')); });
+    document.addEventListener('dragover', (e) => { const t = drag && e.target.closest && e.target.closest('[data-fodrop]'); document.querySelectorAll('.fo-over').forEach((x) => x !== t && x.classList.remove('fo-over')); if (!t) return; e.preventDefault(); t.classList.add('fo-over'); });
+    document.addEventListener('drop', (e) => { const t = drag && e.target.closest && e.target.closest('[data-fodrop]'); if (!t) return; e.preventDefault(); const c = S.convs.find((x) => x.id === drag), fid = t.dataset.fodrop || null, f = S.folders.find((x) => x.id === fid);
+      if (c && c.f !== fid) { c.f = fid; if (f) f.open = true; A.toast(f ? `"${f.name}" 폴더로 옮겼어요` : '폴더에서 뺐어요'); } drag = null; render(); });
+  }
+  if (Q.get('view')) S.view = Q.get('view');
+  if (Q.get('pop')) S.pop = Q.get('pop');
+  /* =================================================================
+     시작 화면 ?as=1..5, 진행과 결과 ?ap=1..5. AI처럼 보이는 장식(반짝이, 말풍선, 보라 빛, 체크박스) 대신
+     실제 기록과 바뀔 내용을 먼저 보여 준다. 기능(send, apply, undo)은 그대로 쓴다.
+     ================================================================= */
+  const AS = +(Q.get('as') || 0), AP = Q.has('ap') ? +Q.get('ap') || 0 : 2; /* 진행과 결과는 2번(캘린더 미리보기)으로 정함. ?ap=0 은 이전 모양 */
+  if (AS || AP) document.documentElement.classList.add('axv');
+  if (AS || AP) CFG.name = [AS ? `시작 ${AS}` : '', AP ? `결과 ${AP}` : ''].filter(Boolean).join(', ');
+  const tomD = A.add(A.TODAY, 1), tmrL = A.onDay(tomD).filter((t) => !t.until), lateL = A.todos.filter((t) => t.due && t.status !== 'done' && t.due < A.TODAY);
+  const yD = A.add(A.TODAY, -1), wrote = (d) => A.retro && A.retro.has(d);
+  const clk = () => A.hmd(A.NOW);
+  const asHead = (h) => `<p class="as-date">${dLabel(A.TODAY)}</p><h1 class="as-h">${h}</h1>`;
+  const ASV = {
+    /* 1 오늘 숫자로 시작: 지금 할 만한 일을 실제 숫자와 함께 */
+    1: () => `<div class="as as1"><div class="as-in">${asHead('무엇을 정리할까요?')}${composer('예: 내일 오전 10시에 스프린트 회의 잡아줘')}
+      <div class="as1-g">${[
+        ['오늘 남은 일 옮기기', `${x0.open.length}개`, '못 끝낸 일을 내일 같은 시간으로', 'ask', '오늘 못 끝낸 일 내일로 옮겨줘'],
+        ['오늘 회고 초안', wrote(A.TODAY) ? '썼음' : '아직', `끝낸 일 ${x0.done.length}개와 커밋 ${x0.commits.length}개로`, 'ask', '오늘 회고 써줘'],
+        ['내일 일정 잡기', `${tmrL.length}개`, '내일은 지금 이만큼 잡혀 있어요', 'fill', '내일 오전 10시에 '],
+        ['어제 회고 초안', wrote(yD) ? '썼음' : '아직', `${md2(yD)} 기록으로`, 'ask', '어제 회고 써줘'],
+      ].map(([t, n, d, k, q]) => `<button type="button" class="as1-c" data-${k}="${A.esc(q)}"><span class="as1-t">${t}</span><b>${n}</b><small>${d}</small></button>`).join('')}</div></div></div>`,
+    /* 2 고르는 목록: 할 수 있는 일을 묶음별 한 줄씩 */
+    2: () => `<div class="as as2"><div class="as-in">${asHead('무엇을 정리할까요?')}${composer('부탁을 쓰거나 아래에서 고르세요')}
+      <div class="as2-l">${[
+        ['만들기', [['할 일 추가', '날짜와 시간을 말하면 할 일로 만들어요', 'fill', '내일 오전 10시에 '], ['회의 두 개 잡기', '내일 오전 10시 스프린트 회의, 11시 디자인 리뷰', 'ask', '내일 오전 10시에 스프린트 회의, 11시에 디자인 리뷰 추가해줘']]],
+        ['정리하기', [['남은 일 옮기기', `오늘 못 끝낸 ${x0.open.length}개를 내일로`, 'ask', '오늘 못 끝낸 일 내일로 옮겨줘'], ['금요일 할 일 넣기', '금요일에 릴리스 노트 정리', 'ask', '금요일에 릴리스 노트 정리 추가해줘']]],
+        ['돌아보기', [['오늘 회고 초안', `끝낸 일 ${x0.done.length}개, 커밋 ${x0.commits.length}개`, 'ask', '오늘 회고 써줘'], ['어제 회고 초안', `${md2(yD)} 기록`, 'ask', '어제 회고 써줘']]],
+      ].map(([g, rows]) => `<section><h2>${g}</h2>${rows.map(([t, d, k, q]) => `<button type="button" class="as2-r" data-${k}="${A.esc(q)}"><span class="as2-t">${t}</span><span class="as2-d">${d}</span><span class="as2-k">${k === 'fill' ? '채우기' : '바로 하기'}</span></button>`).join('')}</section>`).join('')}</div></div></div>`,
+    /* 3 오늘 기록 옆에: 왼쪽은 입력과 최근 대화, 오른쪽은 오늘 기록 */
+    3: () => `<div class="as as3"><div class="as3-m"><div class="as-in">${asHead('무엇을 정리할까요?')}${composer('오늘 기록을 보고 정리해요')}
+        <h2 class="as-sec">최근 대화</h2><ul class="as3-recent">${[['내일 회의 두 개 잡기', '할 일 2개 추가', '어제'], ['11월 2일 회고 초안', '회고 1편 저장', '어제'], ['이번 주 남은 일 정리', '할 일 3개 옮김', '11월 1일']].map(([t, r, d]) => `<li><button type="button" data-toast="지난 대화 열기는 시안에서 생략했어요"><span>${t}</span><small>${r}</small><time>${d}</time></button></li>`).join('')}</ul></div></div>
+      <aside class="as3-side" aria-label="오늘 기록"><h2>오늘 기록</h2><ol>${todayList().map((t) => `<li>${A.sd(t.status)}<span>${A.esc(t.title)}</span><time>${t.start != null ? A.hmd(t.start) : '종일'}</time></li>`).join('')}</ol>
+        <dl><div><dt>커밋</dt><dd>${x0.commits.length}개</dd></div><div><dt>회고</dt><dd>${wrote(A.TODAY) ? '썼어요' : '아직 안 썼어요'}</dd></div><div><dt>마감 지남</dt><dd>${lateL.length}개</dd></div></dl>
+        ${wrote(A.TODAY) ? '' : '<button type="button" class="as-btn" data-ask="오늘 회고 써줘">이 기록으로 회고 초안 쓰기</button>'}</aside></div>`,
+    /* 4 이렇게 말하면 돼요: 바꿔 쓸 자리가 보이는 문장 */
+    4: () => { const v = (x) => `<span class="as4-v">${x}</span>`;
+      return `<div class="as as4"><div class="as-in">${asHead('무엇을 정리할까요?')}${composer('아래 문장을 눌러 고쳐 쓰세요')}
+        <h2 class="as-sec">이렇게 말하면 돼요</h2><ul class="as4-l">${[
+          [`${v('내일')} ${v('오전 10시')}에 ${v('스프린트 회의')} 잡아줘`, '내일 오전 10시에 스프린트 회의 잡아줘'],
+          [`${v('오늘')} 못 끝낸 일 ${v('내일')}로 옮겨줘`, '오늘 못 끝낸 일 내일로 옮겨줘'],
+          [`${v('금요일')}에 ${v('릴리스 노트 정리')} 추가해줘`, '금요일에 릴리스 노트 정리 추가해줘'],
+          [`${v('오늘')} 회고 써줘`, '오늘 회고 써줘'],
+        ].map(([h, q]) => `<li><button type="button" data-fill="${A.esc(q)}">${h}</button></li>`).join('')}</ul>
+        <h2 class="as-sec">비서가 다루는 것</h2><dl class="as4-d">${[['할 일', '만들기, 날짜 옮기기'], ['캘린더', '겹치는 일정 확인'], ['회고', '초안 쓰기, 저장은 직접'], ['GitHub 커밋', '읽기만']].map(([t, d]) => `<div><dt>${t}</dt><dd>${d}</dd></div>`).join('')}</dl></div></div>`; },
+    /* 5 지난 작업 장부: 무엇을 바꿨는지 표로 */
+    5: () => `<div class="as as5"><div class="as-in">${asHead('무엇을 정리할까요?')}${composer('부탁하기')}
+      <h2 class="as-sec">지난 작업</h2><table class="as5-t"><thead><tr><th scope="col">언제</th><th scope="col">부탁</th><th scope="col">바뀐 것</th><th scope="col">상태</th></tr></thead><tbody>${[
+        ['어제', '내일 회의 두 개 잡기', '할 일 2개 추가', '적용함'], ['11월 2일', '11월 2일 회고 초안', '회고 1편 저장', '적용함'], ['11월 1일', '이번 주 남은 일 정리', '할 일 3개 옮김', '되돌림'], ['10월 31일', '금요일 릴리스 노트', '할 일 1개 추가', '적용함'],
+      ].map(([d, q, r, s]) => `<tr><td>${d}</td><td><button type="button" data-toast="지난 작업 열기는 시안에서 생략했어요">${q}</button></td><td>${r}</td><td class="${s === '되돌림' ? 'mu' : ''}">${s}</td></tr>`).join('')}</tbody></table></div></div>`,
+  };
+
+  /* 시작 화면 6~10: 구조(날짜, 인사, 입력창, 그 아래 한 줄)는 같고 색을 더함. 색은 할 일 종류마다 하나 */
+  const HAT = `<svg class="as-pet" viewBox="0 0 48 48" aria-hidden="true"><defs><clipPath id="aspc"><rect x="6" y="6" width="36" height="36" rx="7"/></clipPath></defs><rect class="bg" x="6" y="6" width="36" height="36" rx="7"/><g clip-path="url(#aspc)" class="hl">${[...Array(12)].map((_, k) => `<path d="M${k * 6 - 12} 6l36 36"/>`).join('')}</g><rect class="bd" x="6" y="6" width="36" height="36" rx="7"/><rect class="ey" x="16" y="19" width="5" height="9" rx="1.5"/><rect class="ey" x="27" y="19" width="5" height="9" rx="1.5"/></svg>`;
+  const SUG = [['todo', ic.todo, '할 일 만들기', 'fill', '내일 오전 10시에 '], ['retro', ic.doc, '오늘 회고 쓰기', 'ask', '오늘 회고 써줘'], ['move', ic.move, '남은 일 옮기기', 'ask', '오늘 못 끝낸 일 내일로 옮겨줘'], ['cal', ic.cal, '회의 두 개 잡기', 'ask', '내일 오전 10시에 스프린트 회의, 11시에 디자인 리뷰 추가해줘']];
+  const hi2 = (who) => `<h1 class="as-h2"><span class="as-hi">${who}님, 안녕하세요</span><br>무엇을 정리해 드릴까요?</h1>`;
+  Object.assign(ASV, {
+    /* 6 색 아이콘 칩: 입력창 아래에 종류마다 색이 다른 칩 */
+    6: () => `<div class="as as6"><div class="as-in">${hi2('developer')}${composer('비서에게 부탁하기')}
+      <div class="as6-l">${SUG.map(([k, ii, t, a, q]) => `<button type="button" class="as-chip k-${k}" data-${a}="${A.esc(q)}"><span class="as-ic">${ii}</span>${t}</button>`).join('')}</div></div></div>`,
+    /* 7 빗금이와 인사: 마스코트가 인사하고, 칩은 테두리만 */
+    7: () => `<div class="as as7"><div class="as-in"><div class="as7-hd">${HAT}<div><p class="as-date">${dLabel(A.TODAY)}</p>${hi2('developer')}</div></div>${composer('빗금이에게 부탁하기')}
+      <div class="as6-l">${SUG.map(([k, ii, t, a, q]) => `<button type="button" class="as-chip line k-${k}" data-${a}="${A.esc(q)}"><span class="as-ic">${ii}</span>${t}</button>`).join('')}</div></div></div>`,
+    /* 8 색 머리 카드: 네 장, 왼쪽 위에 색 아이콘과 한 줄 설명 */
+    8: () => `<div class="as as8"><div class="as-in">${hi2('developer')}${composer('비서에게 부탁하기')}
+      <div class="as8-g">${[['todo', ic.todo, '할 일 만들기', '날짜와 시간을 말하면 할 일로', 'fill', '내일 오전 10시에 '], ['retro', ic.doc, '오늘 회고 쓰기', `끝낸 일 ${x0.done.length}개, 커밋 ${x0.commits.length}개로 초안`, 'ask', '오늘 회고 써줘'], ['move', ic.move, '남은 일 옮기기', `못 끝낸 ${x0.open.length}개를 내일 같은 시간으로`, 'ask', '오늘 못 끝낸 일 내일로 옮겨줘'], ['cal', ic.cal, '내일 일정 보기', `내일은 지금 ${tmrL.length}개`, 'fill', '내일 오후 3시에 ']].map(([k, ii, t, d, a, q]) => `<button type="button" class="as8-c k-${k}" data-${a}="${A.esc(q)}"><span class="as-ic">${ii}</span><b>${t}</b><small>${d}</small></button>`).join('')}</div></div></div>`,
+    /* 9 오늘 색 띠: 입력창 아래에 오늘 일정을 캘린더 색으로 */
+    9: () => { const L = todayList().filter((t) => t.start != null), H0 = 8, H1 = 20, pc = (h) => `${((Math.min(Math.max(h, H0), H1) - H0) / (H1 - H0)) * 100}%`;
+      return `<div class="as as9"><div class="as-in">${hi2('developer')}${composer('오늘 일정을 보고 정리해요')}
+        <div class="as9-day"><p><b>오늘</b><span>할 일 ${x0.done.length + x0.open.length}개 중 ${x0.done.length}개 끝냄, 커밋 ${x0.commits.length}개</span></p>
+        <div class="as9-bar" role="img" aria-label="오늘 일정 막대">${L.map((t) => `<i class="${t.status}" style="left:${pc(t.start)};width:calc(${pc(t.end ?? t.start + 1)} - ${pc(t.start)});--cc:${P.calC ? P.calC(t) : 'var(--primary-h)'}" title="${A.esc(t.title)}"></i>`).join('')}<span class="nw" style="left:${pc(A.NOW)}"></span></div>
+        <p class="as9-ax"><span>오전 8시</span><span>낮 2시</span><span>저녁 8시</span></p></div>
+        <div class="as6-l">${SUG.slice(0, 3).map(([k, ii, t, a, q]) => `<button type="button" class="as-chip k-${k}" data-${a}="${A.esc(q)}"><span class="as-ic">${ii}</span>${t}</button>`).join('')}</div></div></div>`; },
+    /* 10 인사에 색: 이름만 앱 색으로, 아래 칩은 숫자 붙은 칩 */
+    10: () => `<div class="as as10"><div class="as-in"><h1 class="as-h2"><span class="as10-nm">developer님</span>, 오늘 <span class="as10-n k-todo">${x0.open.length}개</span>가 남았고<br><span class="as10-n k-retro">회고</span>는 아직이에요</h1>${composer('무엇이든 부탁하세요')}
+      <div class="as6-l">${[['move', ic.move, `남은 ${x0.open.length}개 옮기기`, 'ask', '오늘 못 끝낸 일 내일로 옮겨줘'], ['retro', ic.doc, '회고 초안 쓰기', 'ask', '오늘 회고 써줘'], ['todo', ic.todo, '할 일 만들기', 'fill', '내일 오전 10시에 '], ['git', ic.commit, `커밋 ${x0.commits.length}개 정리`, 'ask', '오늘 회고 써줘']].map(([k, ii, t, a, q]) => `<button type="button" class="as-chip k-${k}" data-${a}="${A.esc(q)}"><span class="as-ic">${ii}</span>${t}</button>`).join('')}</div></div></div>`,
+  });
+  if (ASV[AS]) LAND[AI] = ASV[AS];
+
+  /* ---------- 진행과 결과 ---------- */
+  const stInfo = (m) => { const st = m.r.steps, k = m.done ? st.length : Math.max(0, Math.min(m.step, st.length) - 1); return { st, k, n: st.length }; };
+  const state = (m) => (!m.done ? ['run', '진행 중'] : m.r.kind === 'text' ? ['info', '안내'] : m.r.applied ? ['ok', '적용함'] : ['wait', '확인 기다림']);
+  const sayTxt = (m) => m.r.say.replace(/<span class="ax-ref">\d+<\/span>/g, '');
+  const tgl = (i, j, x, r, m) => `<button type="button" class="ap-tg" data-aon="${i}:${j}" aria-pressed="${x.on}" ${r.applied || !m.done ? 'disabled' : ''} aria-label="${A.esc(x.title)} ${x.on ? '빼기' : '넣기'}">${x.on ? '넣음' : '뺌'}</button>`;
+  const tiIn = (i, j, x, r) => `<input class="ap-ti" value="${A.esc(x.title)}" data-ti="${i}:${j}" ${r.applied || r.kind === 'move' ? 'readonly' : ''} aria-label="할 일 제목">`;
+  const whenD = (x) => `${rel(x.date) || md2(x.date)} ${A.DOW[A.s2d(x.date).getDay()]}`, whenT = (x) => (x.start != null ? `${A.hmd(x.start)}${x.end ? ` ~ ${A.hmd(x.end)}` : ''}` : '종일');
+  const actsV = (m, i) => { const r = m.r; if (!m.done || r.kind === 'text') return ''; const n = r.kind === 'retro' ? 1 : r.items.filter((x) => x.on).length;
+    if (r.applied) return `<div class="ap-act"><span class="ap-msg">${r.kind === 'retro' ? `회고로 저장했어요. <a href="d-retro2.html?entry=${r.rid}">회고에서 열기</a>` : `${r.applied.length}개를 ${r.kind === 'move' ? '옮겼어요' : '추가했어요'}. <a href="d-calendar.html">캘린더에서 보기</a>`}</span><button type="button" class="ap-b" data-undo="${i}">되돌리기</button></div>`;
+    return `<div class="ap-act"><span class="ap-msg">${r.kind === 'retro' ? '초안은 바로 고칠 수 있어요' : '눌러서 넣고 뺄 수 있어요'}</span><button type="button" class="ap-b" data-redo="${i}">다시 정리</button><button type="button" class="ap-b p" data-apply="${i}" ${n ? '' : 'disabled'}>${r.kind === 'retro' ? '회고로 저장' : r.kind === 'move' ? `${n}개 옮기기` : `${n}개 추가`}</button></div>`; };
+  const docV = (m, i) => `<div class="ag-doc ap-doc" contenteditable="${m.r.applied ? 'false' : 'true'}" data-doc="${i}" role="textbox" aria-multiline="true" aria-label="회고 초안">${m.r.html}</div>`;
+  const tableV = (m, i) => { const r = m.r; return `<table class="ap-tb"><thead><tr><th scope="col">${r.kind === 'move' ? '옮길 일' : '할 일'}</th><th scope="col">날짜</th><th scope="col">시간</th><th scope="col"><span class="sr">넣기</span></th></tr></thead><tbody>${r.items.map((x, j) => `<tr class="${x.on ? '' : 'off'}"><td>${tiIn(i, j, x, r)}${x.clash && !r.applied ? `<small class="ap-clash">"${A.esc(x.clash)}"와 겹쳐요</small>` : ''}</td><td>${whenD(x)}</td><td>${whenT(x)}</td><td>${tgl(i, j, x, r, m)}</td></tr>`).join('')}</tbody></table>`; };
+  const resV = (m, i) => (m.r.kind === 'text' ? '' : m.r.kind === 'retro' ? docV(m, i) : tableV(m, i));
+  const skel = (n = 3) => `<div class="ap-sk" aria-hidden="true">${'<i></i>'.repeat(n)}</div>`;
+  /* 2: 그날 캘린더에 들어갈 자리 */
+  /* 2: 그날 캘린더에 들어갈 자리. 새 일정 주변 시간만 크게 보여 줌 */
+  const calV = (m, i) => { const r = m.r; if (r.kind === 'retro' || r.kind === 'text') return m.done ? resV(m, i) : skel(4);
+    const show = m.done ? r.items : r.items.slice(0, Math.floor(r.items.length * (m.step / (r.steps.length + 1))));
+    const days = [...new Set(r.items.map((x) => x.date))].slice(0, 3), tim = r.items.filter((x) => x.start != null);
+    let lo = tim.length ? Math.floor(Math.min(...tim.map((x) => x.start))) - 1 : 9, hi = tim.length ? Math.ceil(Math.max(...tim.map((x) => x.end ?? x.start + 1))) + 1 : 15;
+    lo = Math.max(8, lo); hi = Math.min(21, Math.max(hi, lo + 5)); const PX = 44, y = (h) => (Math.min(Math.max(h, lo), hi) - lo) * PX, hgt = (a, b) => Math.max(y(b) - y(a) - 2, 18);
+    const hrs = []; for (let h = lo; h < hi; h++) hrs.push(h);
+    const moved = new Set(r.kind === 'move' ? r.items.map((x) => x.id) : []);
+    return `<div class="ap2-cal" style="--n:${days.length}">${days.map((d) => { const mine = show.filter((x) => x.date === d), ev = A.onDay(d).filter((t) => t.start != null && !t.until && !moved.has(t.id) && (t.end ?? t.start + 1) > lo && t.start < hi), allday = mine.filter((x) => x.start == null);
+      const over = (x) => ev.some((t) => t.start < (x.end ?? x.start + 1) && x.start < (t.end ?? t.start + 1));
+      return `<section class="ap2-col"><header><b>${rel(d) || md2(d)}</b><span>${+d.slice(5, 7)}월 ${+d.slice(8)}일 ${A.DOW[A.s2d(d).getDay()]}요일</span><em>${r.items.filter((x) => x.date === d).length ? `새 일정 ${r.items.filter((x) => x.date === d).length}개` : ''}</em></header>
+        ${allday.length ? `<div class="ap2-ad">${allday.map((x) => `<span class="ap2-chip ${x.on ? '' : 'off'}">${MARKV}${A.esc(x.title)}<small>종일</small></span>`).join('')}</div>` : ''}
+        ${!r.items.some((x) => x.date === d && x.start != null) ? `<p class="ap2-none">시간이 정해진 새 일정은 없어요. 그날 다른 일정 ${A.onDay(d).filter((t) => !t.until).length}개</p>` : `<div class="ap2-g" style="height:${(hi - lo) * PX}px">${hrs.map((h) => `<span class="ap2-hr" style="top:${y(h)}px"><em>${A.hmc(h)}</em></span>`).join('')}
+        ${ev.map((t) => `<div class="ap2-ev" style="top:${y(t.start)}px;height:${hgt(t.start, t.end ?? t.start + 1)}px"><b>${A.esc(t.title)}</b><small>${A.hmd(t.start)}</small></div>`).join('')}
+        ${mine.filter((x) => x.start != null).map((x) => `<div class="ap2-new ${x.on ? '' : 'off'} ${over(x) ? 'half' : ''}" style="top:${y(x.start)}px;height:${hgt(x.start, x.end ?? x.start + 1)}px"><b>${MARKV}${A.esc(x.title)}</b><small>${A.hmd(x.start)} ~ ${A.hmd(x.end ?? x.start + 1)}${x.clash ? ', 겹침' : ''}</small></div>`).join('')}</div>`}</section>`; }).join('')}</div>${m.done ? tableV(m, i) : ''}`; };
+  const MARKV = `<svg class="i ap-mk" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 16l8-8M12 16l4-4M8 12l4-4"/></svg>`;
+  const JOB = {
+    /* 1 작업 기록: 시각과 단계, 결과는 표 */
+    1: (m, i) => { const { st, k } = stInfo(m), [sc, sl] = state(m);
+      return `<article class="ap ap1"><header class="ap-hd"><time>${clk()}</time><p class="ap-q">${A.esc(m.q)}</p><span class="ap-st ${sc}">${sl}</span></header>
+        <ol class="ap1-log">${st.map((s, j) => (j > k && !m.done ? '' : `<li class="${!m.done && j === k ? 'on' : ''}"><span class="t">${secs(m.ts[j] || 0)}</span><span class="x">${!m.done && j === k ? s[0] : `${s[4]}, ${s[5]}`}</span></li>`)).join('')}</ol>
+        ${m.done ? `<p class="ap-say">${sayTxt(m)}</p>${resV(m, i)}${actsV(m, i)}` : ''}</article>`; },
+    /* 2 캘린더 미리보기: 들어갈 자리를 그날 칸에 */
+    2: (m, i) => { const { st, k, n } = stInfo(m), [sc, sl] = state(m);
+      return `<article class="ap ap2"><header class="ap-hd"><p class="ap-q">${A.esc(m.q)}</p><span class="ap-st ${sc}">${sl}</span></header>
+        ${m.done ? `<p class="ap-say">${sayTxt(m)}</p>` : `<div class="ap2-run"><div class="ap-seg" style="--n:${n}">${st.map((_, j) => `<i class="${j < k ? 'ok' : j === k ? 'on' : ''}"></i>`).join('')}</div><span>${st[k][0]}</span></div>`}
+        ${calV(m, i)}${actsV(m, i)}</article>`; },
+    /* 3 바뀔 내용 목록: 추가는 +, 옮김은 날짜 둘 */
+    3: (m, i) => { const { st, k } = stInfo(m), r = m.r, total = m.ts[st.length] || 0;
+      const lines = !m.done ? st.map((s, j) => (j > k ? '' : `<li class="chk ${j === k ? 'on' : ''}"><span class="sg">${j === k ? '…' : '·'}</span><span>${j === k ? s[0] : `${s[2]} 확인`}</span></li>`)).join('')
+        : r.kind === 'text' ? '' : r.kind === 'retro' ? `<li class="add"><span class="sg">+</span><span>회고</span><b>${r.title}</b></li>`
+        : r.items.map((x, j) => `<li class="${r.kind === 'move' ? 'mv' : 'add'} ${x.on ? '' : 'off'}"><span class="sg">${r.kind === 'move' ? '~' : '+'}</span><span>${r.kind === 'move' ? '옮김' : '할 일'}</span>${tiIn(i, j, x, r)}<span class="wh">${r.kind === 'move' ? `${md2(A.TODAY)}에서 ${md2(x.date)}로` : `${whenD(x)}, ${whenT(x)}`}</span>${tgl(i, j, x, r, m)}</li>`).join('');
+      return `<article class="ap ap3"><header class="ap-hd"><p class="ap-q">${A.esc(m.q)}</p></header>${m.done && r.kind !== 'text' ? `<p class="ap3-sum">확인한 것: ${st.map((s) => s[2]).join(', ')}, ${secs(total)}</p>` : ''}
+        ${m.done ? `<p class="ap-say">${sayTxt(m)}</p>` : ''}<ul class="ap3-diff">${lines}</ul>${m.done && r.kind === 'retro' ? docV(m, i) : ''}${actsV(m, i)}</article>`; },
+    /* 4 문서처럼: 부탁이 제목, 아래에 답과 표 */
+    4: (m, i) => { const { st, k, n } = stInfo(m);
+      return `<article class="ap ap4"><h2 class="ap4-h">${A.esc(m.q)}</h2><p class="ap4-meta">${m.done ? `${clk()}에 정리함, ${st.length}가지 확인` : `작성 중, ${k + 1}/${n} ${st[k][0]}`}</p>
+        ${m.done ? `<p class="ap-say">${sayTxt(m)}</p>${resV(m, i)}${actsV(m, i)}` : skel(3)}</article>`; },
+    /* 5 작업 카드: 단계 이름이 보이는 가로 단계 */
+    5: (m, i) => { const { st, k } = stInfo(m), [sc, sl] = state(m);
+      return `<article class="ap ap5"><header class="ap-hd"><p class="ap-q">${A.esc(m.q)}</p><span class="ap-st ${sc}">${sl}</span></header>
+        <ol class="ap5-st">${st.map((s, j) => `<li class="${m.done || j < k ? 'ok' : j === k ? 'on' : ''}"><i aria-hidden="true"></i><span>${s[4]}</span></li>`).join('')}<li class="${m.done && m.r.kind !== 'text' ? (m.r.applied ? 'ok' : 'on') : ''}"><i aria-hidden="true"></i><span>${m.r.kind === 'text' ? '안내' : '확인'}</span></li></ol>
+        ${m.done ? `<p class="ap-say">${sayTxt(m)}</p>${resV(m, i)}${actsV(m, i)}` : `<p class="ap5-now">${st[k][0]}</p>`}</article>`; },
+  };
+  if (JOB[AP]) {
+    page = function () {
+      if (!S.msgs.length) return `<div class="ag-page">${LAND[AI]()}</div>`;
+      const jobs = []; for (let i = 0; i < S.msgs.length; i++) if (S.msgs[i].role === 'ai') jobs.push(JOB[AP](S.msgs[i], i));
+      return `<div class="ag-page"><div class="ax-th"><div class="ax-th-in apv ap-l${AP}">${jobs.join('')}</div></div><div class="ax-dock">${composer('이어서 부탁하기')}</div></div>`;
+    };
+    document.addEventListener('click', (e) => { const b = e.target.closest && e.target.closest('[data-aon]'); if (!b) return; e.stopPropagation(); const [i, j] = b.dataset.aon.split(':').map(Number), x = S.msgs[i].r.items[j]; x.on = !x.on; render(); document.querySelector(`[data-aon="${i}:${j}"]`)?.focus(); }, true);
+  }
+
+  /* ---------- 배경 ?bg=1..5: 빈 검정 대신 서비스 재료(점 격자, 캘린더 눈금, 빗금, 오늘 일정, 날짜)를 아주 옅게 ---------- */
+  const BG = Q.has('bg') ? +Q.get('bg') || 0 : 10; /* 배경은 10번(인디고 빗금 모서리)으로 정함. ?bg=0 은 배경 없음 */
+  const bgLayer = () => {
+    if (BG === 2) { const ws = A.weekStart(A.TODAY), days = [...Array(7)].map((_, i) => A.add(ws, i));
+      return `<div class="axbg" aria-hidden="true"><div class="bg2-h">${days.map((d) => `<span class="${d === A.TODAY ? 'on' : ''}">${A.DOW[A.s2d(d).getDay()]} ${+d.slice(8)}</span>`).join('')}</div><div class="bg2-g">${days.map((d) => `<i class="${d === A.TODAY ? 'on' : ''}"></i>`).join('')}</div></div>`; }
+    if (BG === 4) { const L = A.onDay(A.TODAY).filter((t) => t.start != null && !t.until), H0 = 8, H1 = 21, y = (h) => `${((h - H0) / (H1 - H0)) * 100}%`;
+      return `<div class="axbg" aria-hidden="true">${[9, 11, 13, 15, 17, 19].map((h) => `<span class="bg4-hr" style="top:${y(h)}"><em>${A.hmc(h)}</em></span>`).join('')}${L.map((t, i) => `<i class="bg4-b ${t.status}" style="top:${y(t.start)};height:calc(${y(t.end ?? t.start + 1)} - ${y(t.start)});left:${12 + (i % 3) * 26}%;--cc:${P.calC ? P.calC(t) : 'var(--primary-h)'}"></i>`).join('')}<span class="bg4-now" style="top:${y(A.NOW)}"></span></div>`; }
+    if (BG === 9) return `<div class="axbg" aria-hidden="true"><svg class="bg9-p" viewBox="0 0 48 48"><defs><clipPath id="bg9c"><rect x="6" y="6" width="36" height="36" rx="7"/></clipPath></defs><g clip-path="url(#bg9c)" class="hl">${[...Array(16)].map((_, k) => `<path d="M${k * 3 - 18} 6l36 36"/>`).join('')}</g><rect class="bd" x="6" y="6" width="36" height="36" rx="7"/><rect class="ey" x="14" y="17" width="4" height="8" rx="1.2"/><rect class="ey" x="24" y="17" width="4" height="8" rx="1.2"/></svg></div>`;
+    if (BG === 5) return `<div class="axbg" aria-hidden="true"><span class="bg5-d">${+A.TODAY.slice(5, 7)}.${A.TODAY.slice(8)}</span><span class="bg5-w">${A.DOW[A.s2d(A.TODAY).getDay()]}요일</span></div>`;
+    return BG ? '<div class="axbg" aria-hidden="true"></div>' : '';
+  };
+  if (BG) { const pageB = page; page = function () { return pageB().replace('<div class="ag-page">', `<div class="ag-page bgx bg${BG} ${S.msgs.length ? 'talk' : 'land'}">${bgLayer()}`); }; CFG.name = `${CFG.name ? CFG.name + ', ' : ''}배경 ${BG}`; }
+  P.todayBtn = () => '';
+  $('#app').insertAdjacentHTML('afterbegin', P.shell('ai'));
+  A.init(render);
+  render();
+  if (Q.get('q')) setTimeout(() => send(Q.get('q')), 200);
+  else if (Q.get('demo')) setTimeout(() => send(Q.get('demo') === 'retro' ? '오늘 회고 써줘' : SEED), 1600);
+  else { const c = $('#cmp'); c && c.focus({ preventScroll: true }); }
+</script>
+</body>
+</html>

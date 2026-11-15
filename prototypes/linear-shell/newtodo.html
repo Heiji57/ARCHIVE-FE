@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>새 할 일 창</title>
+<meta name="description" content="할 일을 추가하는 창 다섯 가지를 지금 창과 비교한다.">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="shared/shared.css">
+<style>
+  /* Hallmark · scope: app screen (시안 비교 페이지) · genre: atmospheric · theme: project tokens (ARCHIVE dark, shared.css) · signature: 버튼으로 시안을 바꿔 끼우는 실제 화면 · states: 8 · mode: fast · v2.0.0 */
+  /* critique: a gallery of screenshots hides behaviour; each slot is the live page so the carry-over and the modal can be clicked through. */
+  body{height:auto;min-height:100%}
+  .wrap{padding:28px 24px 64px;max-width:1480px}
+  h1{margin:0 0 6px;font-size:18px;font-weight:600;text-wrap:balance}
+  .lead{margin:0 0 20px;color:var(--ink3);font-size:13px;max-width:92ch;line-height:1.6}
+  .tabs{position:sticky;top:0;z-index:2;display:flex;gap:4px;flex-wrap:wrap;padding:10px 0;background:var(--canvas);border-bottom:1px solid var(--line);margin-bottom:20px}
+  .tabs a{padding:5px 10px;border-radius:6px;font-size:13px;color:var(--ink3)}
+  .tabs a:hover{background:var(--s3);color:var(--ink)}
+  section{margin:0 0 40px;scroll-margin-top:60px}
+  .hd{display:flex;align-items:baseline;gap:12px;margin:0 0 8px}
+  h2{margin:0;font-size:14px;font-weight:600;white-space:nowrap}
+  h2 span{font-family:var(--mono);color:var(--ink4);font-weight:400;margin-right:8px}
+  .hd p{margin:0;flex:1;font-size:12px;color:var(--ink3);line-height:1.5}
+  .st{display:flex;gap:4px;flex-wrap:wrap;margin:0 0 8px}
+  .st button{height:28px;padding:0 10px;border-radius:6px;border:1px solid var(--line2);font-size:12px;color:var(--ink3)}
+  .st button:hover{background:var(--s3);color:var(--ink)}
+  .st button[aria-pressed="true"]{border-color:var(--primary);color:var(--ink);background:var(--primary-a)}
+  .st button:focus-visible{outline:2px solid var(--primary-h);outline-offset:2px}
+  .st a{margin-left:auto;font-size:12px;color:var(--primary-h);align-self:center}
+  iframe:focus,iframe:focus-visible,iframe.kf{outline:2px solid var(--primary-h);outline-offset:2px}
+  @media (max-width:640px){.hd{flex-direction:column;gap:4px}h2{white-space:normal}.wrap{padding:20px 16px 48px}}
+  iframe{display:block;width:100%;height:780px;border:1px solid var(--line);border-radius:10px;background:var(--canvas)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>새 할 일 창</h1>
+  <p class="lead">지금 창은 제목, 상태, 시작, 마감, 캘린더, 태그, 메모, 미리보기가 한 번에 보여서 아홉 가지를 훑어야 합니다. 시안은 처음 보이는 묶음을 다섯 개 안으로 줄이고, 자주 안 바꾸는 상태, 마감, 메모는 눌러야 열리게 했습니다. 값을 누르면 할 일 창(26번)과 같은 찾기 메뉴가 열립니다.</p>
+  <nav class="tabs" id="tabs"></nav>
+  <div id="list"></div>
+</div>
+<script>
+  const L = [
+    ['na', '빈 창', '캘린더 화면에서 새 할 일 창을 연 상태입니다.', [['이전 창', 'd-calendar.html?na=0&naopen=1'], ['1 세 묶음', 'd-calendar.html?na=1&naopen=1'], ['2 칩 한 줄', 'd-calendar.html?na=2&naopen=1'], ['3 할 일 창과 같은 모양 (기본)', 'd-calendar.html?na=3&naopen=1'], ['4 한 줄로 쓰기', 'd-calendar.html?na=4&naopen=1'], ['5 그날 시간표와 같이', 'd-calendar.html?na=5&naopen=1']], 'na'],
+    ['nb', '값을 고르는 모습', '시간 메뉴를 연 상태입니다. 4번은 한 줄을 써 넣은 상태입니다.', [['1 세 묶음', 'd-calendar.html?na=1&naopen=1&napop=time'], ['2 칩 한 줄', 'd-calendar.html?na=2&naopen=1&napop=time'], ['3 할 일 창과 같은 모양', 'd-calendar.html?na=3&naopen=1&napop=time'], ['4 한 줄로 쓰기', 'd-calendar.html?na=4&naopen=1&natext=' + encodeURIComponent('내일 오후 3시 디자인 리뷰 #업무 @팀 금요일까지')], ['5 그날 시간표와 같이', 'd-calendar.html?na=5&naopen=1&napop=time']], 'nb'],
+  ];
+  const $ = (q) => document.querySelector(q);
+  $('#tabs').innerHTML = L.map(([k, t]) => `<a href="#v${k}">${t.split(' (')[0].split(':')[0]}</a>`).join('');
+  $('#list').innerHTML = L.map(([k, t, d, st, pv]) => `<section id="v${k}"><div class="hd"><h2>${t}</h2><p>${d}</p></div>
+    <div class="st" role="group" aria-label="${t}">${st.length > 1 ? st.map(([l, u], i) => `<button type="button" data-k="${k}" data-u="${u}" aria-pressed="${i === 0}">${l}</button>`).join('') : ''}${k === 'um' ? '' : `<a id="a${k}" href="${st[0][1].replace(/&open=[^#]*/, '')}" target="_blank" rel="noopener">이걸로 보기</a>`}</div>
+    <iframe id="f${k}" title="${t}" loading="lazy" src="${st[0][1]}"></iframe></section>`).join('');
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest('.st button'); if (!b) return;
+    b.parentNode.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', x === b));
+    const f = $('#f' + b.dataset.k), u = b.dataset.u, a = $('#a' + b.dataset.k); if (a) a.href = u.replace(/&open=[^#]*/, '');
+    f.src = 'about:blank'; setTimeout(() => { f.src = u; }, 30);
+  });
+  /* 키보드로 시안 안으로 들어가면 바깥 테두리로 표시 */
+  const mark = () => document.querySelectorAll('iframe').forEach((f) => f.classList.toggle('kf', document.activeElement === f));
+  window.addEventListener('blur', () => setTimeout(mark, 0)); window.addEventListener('focus', mark);
+</script>
+</body>
+</html>

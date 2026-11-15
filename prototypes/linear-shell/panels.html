@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>패널 탭 시안</title>
+<meta name="description" content="오른쪽 패널의 하루, 시간 미정, 마감, 커밋 탭을 탭마다 다섯 가지로 비교한다.">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="shared/shared.css">
+<style>
+  /* Hallmark · scope: app screen (시안 비교 페이지) · genre: atmospheric · theme: project tokens (ARCHIVE dark, shared.css) · signature: 한 화면에 들어오는 실제 화면, 탭과 시안을 따로 고름 · states: 8 · mode: fast · v2.0.0 */
+  /* critique: the old page stacked two tall frames and scrolled twice; this one fits the live 1440 by 900 screen to the window so nothing scrolls. */
+  html, body { height: 100%; overflow: clip; }
+  body { display: flex; flex-direction: column; background: var(--canvas); }
+  .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+  h1 { margin: 0; font-size: 14px; font-weight: 600; white-space: nowrap; }
+  .grp { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+  .grp span { margin-right: 4px; font-size: 12px; color: var(--ink3); }
+  .grp button { height: 28px; padding: 0 8px; border: 1px solid var(--line2); border-radius: 6px; font-size: 12px; color: var(--ink3); }
+  .grp button:hover { background: var(--s3); color: var(--ink); }
+  .grp button[aria-pressed="true"] { border-color: var(--primary); background: var(--primary-a); color: var(--ink); }
+  .grp button:focus-visible, .bar a:focus-visible { outline: 2px solid var(--primary-h); outline-offset: 2px; }
+  .bar a { margin-left: auto; font-size: 12px; color: var(--primary-h); }
+  .desc { flex-basis: 100%; margin: 0; font-size: 12px; color: var(--ink3); }
+  .stage { position: relative; flex: 1; min-height: 0; overflow: clip; }
+  iframe { position: absolute; top: 0; left: 0; width: 1440px; height: 900px; border: 0; transform-origin: 0 0; background: var(--canvas); }
+  iframe:focus, iframe:focus-visible, iframe.kf { outline: 3px solid var(--primary-h); outline-offset: 0; }
+  .stage:focus-within { outline: 2px solid var(--primary-h); outline-offset: -2px; }
+</style>
+</head>
+<body>
+<div class="bar">
+  <h1>패널 탭</h1>
+  <div class="grp" role="group" aria-label="탭" id="g-tb"></div>
+  <div class="grp" role="group" aria-label="시안" id="g-v"></div>
+  <a id="open" href="#" target="_blank" rel="noopener">새 창에서 보기</a>
+  <p class="desc" id="desc"></p>
+</div>
+<div class="stage" id="stage"><iframe id="f" title="패널 탭 시안" scrolling="no"></iframe></div>
+<script>
+  const TB = [['day', '하루', 'dy'], ['ut', '시간 미정', 'ut'], ['due', '마감', 'dd'], ['cm', '커밋', 'gc']];
+  const V = {
+    day: ['계획 막대 먼저: 남은 수를 크게, 하루를 가로 막대로 보고 아래 목록', '지금과 다음: 지금 하는 일과 진행 정도, 다음 일까지 남은 시간', '세로 시간 줄: 끝낸 일은 줄을 긋고 남기고, 지금 선을 사이에', '숫자 세 칸: 완료, 계획, 커밋을 칸으로, 할 일은 상태별로', '한 문장 요약: 시각 먼저인 목록, 끝낸 일은 접어 둠'],
+    ut: ['빈 시간 고르기: 할 일마다 빈 시각 후보를 눌러 바로 넣기', '빈 칸 막대: 하루 막대에 빈 시간을 점선으로, 남은 빈 시간 합계', '길이 먼저: 30분, 1시간, 2시간을 고르면 들어갈 시각이 바뀜', '끌어 놓는 카드: 손잡이와 태그가 보이는 큰 카드', '한 번에 넣기: 빈 시간에 차례로 넣는 버튼과 들어갈 시각 미리 보기'],
+    due: ['D-숫자 먼저: D+1, D-1을 왼쪽에 크게', '일주일 띠: 날마다 마감 수를 점으로, 날을 누르면 그날만', '지난 마감 상자: 지난 것만 경고 상자에 넣고 오늘로 바꾸기', '남은 날 막대: 마감이 가까울수록 막대가 참', '두 주 달력: 마감 있는 날에 점, 날을 누르면 그날만'],
+    cm: ['할 일에 묶어서: 어느 할 일에 남긴 커밋인지', '하루 막대 위 점: 언제 일했는지 한눈에', '종류별: fix, test, review 같은 앞말로 묶음', '세로 시간 줄: 저장소와 묶인 할 일까지', '회고에 넣을 것 고르기: 눌러서 넣고 빼기'],
+  };
+  const S = { tb: 'day', v: '2' };
+  const $ = (q) => document.querySelector(q);
+  const grp = (id, L, k, lab) => { $(id).innerHTML = `<span>${lab}</span>` + L.map(([v, l]) => `<button type="button" data-k="${k}" data-v="${v}" aria-pressed="${S[k] === v}">${l}</button>`).join(''); };
+  const DEF = { day: '2', ut: '0', due: '2', cm: '4' }; /* 정한 시안 */
+  const url = () => { const t = TB.find((x) => x[0] === S.tb); return `d-calendar.html?rtab=${S.tb}&${t[2]}=${S.v}`; };
+  const fit = () => { const st = $('#stage'), s = Math.min(st.clientWidth / 1440, st.clientHeight / 900), f = $('#f'); f.style.transform = `scale(${s})`; f.style.left = `${(st.clientWidth - 1440 * s) / 2}px`; };
+  const draw = () => { grp('#g-tb', TB.map((x) => [x[0], x[1]]), 'tb', '탭'); grp('#g-v', [['0', '이전'], ...[1, 2, 3, 4, 5].map((n) => [String(n), String(n)])].map(([v, l]) => [v, v === DEF[S.tb] ? `${l} (기본)` : l]), 'v', '시안'); $('#desc').textContent = S.v === '0' ? '처음 만든 모양이에요.' : `${S.v}. ${V[S.tb][+S.v - 1]}`; $('#open').href = url(); };
+  document.addEventListener('click', (e) => { const b = e.target.closest('.grp button'); if (!b) return; S[b.dataset.k] = b.dataset.v; if (b.dataset.k === 'tb') S.v = DEF[S.tb]; draw(); $('#f').src = url(); document.querySelector(`.grp [data-k="${b.dataset.k}"][data-v="${b.dataset.v}"]`).focus(); });
+  draw(); $('#f').src = url(); fit(); addEventListener('resize', fit);
+  /* 키보드로 시안 안에 들어가면 바깥에 표시 */
+  const mark = () => $('#f').classList.toggle('kf', document.activeElement === $('#f'));
+  addEventListener('blur', () => setTimeout(mark, 0)); addEventListener('focus', mark);
+</script>
+</body>
+</html>

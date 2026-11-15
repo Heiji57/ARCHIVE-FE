@@ -1,0 +1,79 @@
+/* 날짜 · 시간 고르기 (할 일 · 캘린더 공용). 회고 "새 회고" 모달의 달력과 같은 모양 */
+.pk-in { position: absolute !important; width: 1px !important; height: 1px !important; opacity: 0; pointer-events: none; border: 0 !important; padding: 0 !important; }
+.pk-trig { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 10px; border: 1px solid var(--line2); border-radius: var(--r); background: var(--s1); font-size: 13px; color: var(--ink); white-space: nowrap; cursor: pointer; }
+.pk-trig:hover { border-color: var(--ink4); }
+.pk-trig[aria-expanded="true"] { border-color: var(--primary); }
+.pk-trig:disabled { opacity: 0.45; cursor: not-allowed; }
+.pk-trig:focus-visible { outline: 2px solid var(--primary-h); outline-offset: 2px; }
+.pk-trig svg { width: 14px; height: 14px; color: var(--ink3); flex: none; }
+.pk-mu { color: var(--ink4); }
+.td .frow .pk-trig.pk-t { flex: 1; justify-content: flex-start; height: 40px; font-size: 14px; }
+dd > .pk-trig + .pk-in + .pk-trig { margin-left: 6px; }
+
+.pk-pop { position: fixed; z-index: 700; padding: 12px; border: 1px solid var(--line2); border-radius: 10px; background: var(--s2); box-shadow: 0 12px 32px rgba(0, 0, 0, .5); color: var(--ink); font-size: 13px; }
+.pk-pop button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+.pk-pop button:focus-visible { outline: 2px solid var(--primary-h); outline-offset: 1px; }
+.pk-sp { flex: 1; }
+.pk-ft { display: flex; align-items: center; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); font-size: 13px; color: var(--ink2); }
+.pk-ft small { color: var(--ink3); margin-left: 4px; }
+.pk-lnk { height: 26px; padding: 0 8px; border-radius: 6px; color: var(--ink2) !important; }
+.pk-lnk:hover { background: var(--s4) !important; color: var(--ink) !important; }
+.pk-lnk:disabled { opacity: .4; cursor: default; }
+.pk-ok { height: 28px; padding: 0 12px; border-radius: 6px; background: var(--primary) !important; color: #fff !important; }
+.pk-eb { margin: 2px 4px 6px; font-size: 12px; color: var(--ink3); }
+.pk-eb:not(:first-child) { margin-top: 12px; }
+
+/* 날짜: 달력만 */
+.pk-cal { width: 300px; }
+.pk-mh { display: flex; align-items: center; justify-content: space-between; margin: 0 2px 8px; }
+.pk-mh b { font-size: 14px; font-weight: 600; }
+.pk-ib { width: 28px; height: 28px; border-radius: 6px; display: grid; place-items: center; color: var(--ink3) !important; }
+.pk-ib:hover { background: var(--s4) !important; color: var(--ink) !important; }
+.pk-ib svg { width: 14px; height: 14px; }
+.pk-g { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.pk-g > span { text-align: center; font-size: 12px; color: var(--ink3); padding-bottom: 2px; }
+.pk-g > span.sat { color: var(--sat); }
+.pk-g > span.sun { color: var(--sun); }
+.pk-g button { aspect-ratio: 1 / 1; border-radius: 6px; background: var(--s3) !important; font: 500 13px var(--mono) !important; }
+.pk-g button.out { background: none !important; color: var(--ink4) !important; }
+.pk-g button.today { box-shadow: inset 0 0 0 1px var(--primary); }
+.pk-g button:hover:not(:disabled) { background: var(--s4) !important; }
+.pk-g button[aria-pressed="true"] { background: var(--primary) !important; color: #fff !important; }
+.pk-g button:disabled { background: none !important; color: var(--line2) !important; cursor: default; }
+
+/* 시간 1 · 5: 목록 */
+.pk-time { width: 240px; }
+.pk-list { display: flex; flex-direction: column; gap: 1px; max-height: 280px; overflow: auto; position: relative; }
+.pk-row { display: flex; align-items: center; gap: 8px; min-height: 32px; padding: 0 10px; border-radius: 6px; text-align: left; font-family: var(--mono) !important; font-size: 13px !important; }
+.pk-row small { margin-left: auto; font-family: var(--font); font-size: 12px; color: var(--ink3); }
+.pk-row:hover { background: var(--s4) !important; }
+.pk-row.on { background: var(--primary-a) !important; color: var(--ink); box-shadow: inset 2px 0 var(--primary); }
+.pk-row[data-pkt=""] { font-family: var(--font) !important; color: var(--ink2); border-bottom: 1px solid var(--line); border-radius: 6px 6px 0 0; margin-bottom: 2px; }
+/* 시간 2: 직접 입력 */
+.pk-type { display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 10px; border: 1px solid var(--primary); border-radius: 7px; background: var(--s1); }
+.pk-type svg { width: 14px; height: 14px; color: var(--ink3); }
+.pk-type input { flex: 1; min-width: 0; border: 0; background: none; outline: 0; font: 14px var(--font); color: var(--ink); }
+.pk-hint { margin: 6px 4px 8px; font-size: 12px; color: var(--ink3); }
+/* 시간 3: 오전/오후 · 시 · 분 */
+.pk-time.tkv3 { width: 260px; }
+.pk-wh { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+.pk-col { display: flex; flex-direction: column; gap: 2px; max-height: 196px; overflow: auto; padding: 2px; border-radius: 8px; background: var(--s1); }
+.pk-col button { min-height: 30px; border-radius: 6px; font: 500 13px var(--mono) !important; }
+.pk-col button:hover { background: var(--s4) !important; }
+.pk-col button[aria-selected="true"] { background: var(--primary) !important; color: #fff !important; }
+.pk-col:first-child button { font-family: var(--font) !important; }
+/* 시간 4: 시간 버튼 */
+.pk-time.tkv4 { width: 300px; }
+.pk-chips { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+.pk-chips button { min-height: 30px; border-radius: 6px; background: var(--s3) !important; font: 500 13px var(--mono) !important; }
+.pk-chips button:hover { background: var(--s4) !important; }
+.pk-chips button.on { background: var(--primary) !important; color: #fff !important; }
+/* 시간 5: 길이로 끝 정하기 */
+.pk-time.tkv5 { width: 280px; }
+.pk-chips.dur { grid-template-columns: repeat(2, 1fr); }
+.pk-chips.dur button, .pk-chips.q button { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; padding: 8px 10px; font-family: var(--font) !important; text-align: left; }
+.pk-chips.dur b { font-size: 13px; font-weight: 600; }
+.pk-chips small { font-size: 12px; color: var(--ink3); }
+.pk-chips button.on small { color: #fff; }
+.pk-chips.q { grid-template-columns: 1fr 1fr; margin-bottom: 8px; }
+@media (prefers-reduced-motion: reduce) { .pk-pop { animation: none; } }

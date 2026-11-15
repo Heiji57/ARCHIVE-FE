@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>회고 화면 구성</title>
+<meta name="description" content="고른 요소만으로 만든 회고 화면 구성 3가지를 비교한다.">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="shared/shared.css">
+<style>
+  body{height:auto;min-height:100%}
+  .wrap{padding:28px 24px 64px;max-width:1480px}
+  h1{margin:0 0 6px;font-size:18px;font-weight:600;letter-spacing:-.2px}
+  .lead{margin:0 0 20px;color:var(--ink3);font-size:13px;max-width:84ch;line-height:1.6}
+  .tabs{position:sticky;top:0;z-index:2;display:flex;gap:4px;flex-wrap:wrap;padding:10px 0;background:var(--canvas);border-bottom:1px solid var(--line);margin-bottom:20px}
+  .tabs a{padding:5px 10px;border-radius:6px;font-size:13px;color:var(--ink3)}
+  .tabs a:hover{background:var(--s3);color:var(--ink)}
+  .tabs a b{font-family:var(--mono);color:var(--ink4);margin-right:6px;font-weight:400}
+  section{margin:0 0 36px;scroll-margin-top:60px}
+  .hd{display:flex;align-items:baseline;gap:12px;margin:0 0 8px}
+  h2{margin:0;font-size:14px;font-weight:600}
+  h2 span{font-family:var(--mono);color:var(--ink4);font-weight:400;margin-right:8px}
+  .hd p{margin:0;flex:1;font-size:12px;color:var(--ink3);line-height:1.5}
+  .hd a{font-size:12px;color:var(--primary-h);white-space:nowrap}
+  .hd a:hover{text-decoration:underline}
+  iframe{display:block;width:100%;height:780px;border:1px solid var(--line);border-radius:10px;background:var(--canvas)}
+  section.cur{opacity:.8}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>회고 화면 구성 (고른 요소만)</h1>
+  <p class="lead">체크 페이지에서 고른 대로 만들었습니다. 바로 보이는 것은 기간 필터, 회고 카드, 제목, 본문, 그날 완료한 작업, AI 요약 안내 띠, 주제 목록뿐이고, 나머지는 메뉴 · 버튼 · 빈 상태 안에 넣었습니다. 커밋, 오른쪽 레일, 태그, 잔디, 틀, 초안 만들기는 뺐습니다. 주제는 왼쪽 사이드바에서 "회고"와 따로 고르는 별도 화면입니다.</p>
+  <p class="lead">세 구성은 요소가 같고 놓는 방식만 다릅니다. 안에서 눌러 보면 다 동작합니다. 주제 화면은 왼쪽 사이드바의 "주제"를 누르세요.</p>
+  <nav class="tabs" id="tabs"></nav>
+  <div id="list"></div>
+</div>
+<script>
+  const V = [
+    [1, '한 화면씩', '목록 화면과 쓰기 화면을 오갑니다. 목록: 기간 필터 + 카드 그리드, 오른쪽 위에 종류 · 검색 · 새로 만들기. 카드를 누르면 쓰기 화면이 화면 전체로 열리고 "모든 회고"로 돌아옵니다. 지금 서비스와 가장 가까움.'],
+    [2, '목록 옆 문서', '왼쪽 340px 목록(기간 필터, 카드), 오른쪽 문서가 늘 같이 보입니다. 하루씩 넘겨 가며 쓰고 읽기 편함. 주제도 왼쪽 목록 + 오른쪽 문서.'],
+    [3, '기간 묶음 + 옆에서 열기', '기간 필터가 화면의 중심: 연도 아래 12개월 막대(주별 작성량), 월을 고르면 주 칩. 회고는 주 단위로 묶인 줄 목록, 누르면 오른쪽에서 문서가 열림(Esc 로 닫기).'],
+  ];
+  document.getElementById('tabs').innerHTML = V.map(([v, n]) => `<a href="#v${v}"><b>${v}</b>${n}</a>`).join('');
+  document.getElementById('list').innerHTML = V.map(([v, n, d]) => `<section id="v${v}">
+    <div class="hd"><h2><span>${v}</span>${n}</h2><p>${d}</p><a href="d-retro2.html?rl=${v}">이걸로 보기 →</a></div>
+    <iframe src="d-retro2.html?rl=${v}" title="${v}. ${n}" loading="lazy"></iframe></section>`).join('');
+</script>
+</body>
+</html>

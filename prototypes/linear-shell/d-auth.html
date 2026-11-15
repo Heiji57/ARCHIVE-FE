@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ARCHIVE 로그인</title>
+<meta name="description" content="로그인, 가입, 비밀번호 재설정, 온보딩, 오류 페이지 시안. ?v= 로 화면을 바꾼다.">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="shared/shared.css">
+<link rel="stylesheet" href="shared/logo.css">
+<style>
+  /* Hallmark · scope: app screen (로그인과 온보딩) · genre: atmospheric · theme: project tokens (ARCHIVE dark, shared.css) · signature: 가운데에 모은 짧은 입력 흐름 · states: 8 · mode: fast · v2.0.0 */
+  /* critique: the entry screens were still the old card, so they now carry the new mark with one centred form and social sign-in below the email step. */
+  :root{--au-g-b:#4285f4;--au-g-g:#34a853;--au-g-y:#fbbc05;--au-g-r:#ea4335}
+  html,body{height:auto;min-height:100%;overflow-x:clip}
+  body{background:var(--canvas)}
+  .lg{position:relative;min-height:100vh;display:grid}
+  .lg-top{position:absolute;top:16px;right:16px;display:flex;gap:4px;z-index:2}
+  .lg-top button{height:28px;padding:0 8px;border-radius:var(--r);font-size:12px;color:var(--ink3)}.lg-top button[aria-pressed=true]{background:var(--s4);color:var(--ink)}
+  .br{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--ink);text-decoration:none}.br .lg-m{width:24px;height:24px}
+  .fm{display:flex;flex-direction:column;gap:12px;width:100%;max-width:360px}
+  .fm h1{margin:12px 0 0;font-size:24px;font-weight:600;letter-spacing:-.3px;text-wrap:balance;overflow-wrap:break-word}
+  .fm>p{margin:0 0 4px;font-size:14px;line-height:1.55;color:var(--ink3)}
+  .steps{display:flex;gap:4px;font-size:12px;color:var(--ink3)}.steps span{flex:1;padding-top:6px;border-top:2px solid var(--line2)}.steps span.on{border-color:var(--ink);color:var(--ink)}
+  label.f{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--ink2)}
+  label.f input,label.f select{height:40px;padding:0 12px;border:1px solid var(--ink4);border-radius:var(--r);background:var(--s1);font:inherit;font-size:14px;color:var(--ink)}
+  label.f input:focus-visible,label.f select:focus-visible{outline:0;border-color:var(--primary-h)}
+  label.f small{font-size:12px;color:var(--ink3)}
+  .rw{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;color:var(--ink2)}
+  .sw{display:flex;align-items:center;gap:8px}
+  .sw-b{position:relative;flex:none;width:32px;height:18px;border-radius:9px;background:var(--s4);box-shadow:inset 0 0 0 1px var(--line2)}.sw-b::after{content:"";position:absolute;top:3px;left:3px;width:12px;height:12px;border-radius:50%;background:var(--ink3);transition:transform .12s}.sw-b[aria-checked=true]{background:var(--ink)}.sw-b[aria-checked=true]::after{transform:translateX(14px);background:var(--canvas)}
+  .ln{color:var(--primary-h);font-size:13px;border-radius:4px}.ln:hover{text-decoration:underline}
+  .b1,.b2{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:40px;border-radius:var(--r);font-size:14px;font-weight:600}
+  .b1{background:var(--ink);color:var(--canvas)}.b1:hover{background:var(--ink2)}.b1:active,.b2:active{transform:scale(.99)}
+  .b2{border:1px solid var(--line2);color:var(--ink);font-weight:500}.b2:hover{background:var(--s3)}
+  button:focus-visible,a:focus-visible{outline:2px solid var(--primary-h);outline-offset:2px}
+  .b2 svg{width:18px;height:18px;flex:none}.b2 .i-gh{fill:currentColor}.gb{fill:var(--au-g-b)}.gg{fill:var(--au-g-g)}.gy{fill:var(--au-g-y)}.gr{fill:var(--au-g-r)}
+  .or{display:flex;align-items:center;gap:12px;font-size:12px;color:var(--ink3)}.or::before,.or::after{content:"";flex:1;border-top:1px solid var(--line2)}
+  .bt{margin:0;text-align:center;font-size:13px;color:var(--ink3)}
+  .er{margin:0;padding:8px 12px;border:1px solid var(--danger);border-radius:var(--r);font-size:13px;color:var(--ink)}
+  .cd{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}.cd input{height:48px;min-width:0;border:1px solid var(--ink4);border-radius:var(--r);background:var(--s1);text-align:center;font:600 18px var(--mono);color:var(--ink)}.cd input:focus-visible{outline:0;border-color:var(--primary-h)}
+  .big{font-size:64px;font-weight:700;letter-spacing:-2px;color:var(--ink);line-height:1;margin:0}
+  .a1{place-items:center;padding:32px 16px}
+  @media (prefers-reduced-motion:reduce){.b1:active,.b2:active{transform:none}.sw-b::after{transition:none}}
+</style>
+</head>
+<body>
+<div id="r"></div>
+<script src="shared/logo.js"></script>
+<script>
+  const Q = new URLSearchParams(location.search), $ = (q, r = document) => r.querySelector(q), mk = ARCLOGO.mark(39);
+  const S = { v: Q.get('v') || 'login', lang: 'ko', err: null, rem: false, terms: false };
+  const brand = `<a class="br" href="d-auth.html" aria-label="ARCHIVE">${mk}<span>${ARCLOGO.word(39)}</span></a>`;
+  const go = (l, v) => `<button type="button" class="ln" data-v="${v}">${l}</button>`;
+  const fld = (l, t, ph = '', h = '', extra = '') => `<label class="f">${l}<input type="${t}" placeholder="${ph}" ${extra}>${h ? `<small>${h}</small>` : ''}</label>`;
+  const sw = (k, l) => `<span class="sw"><button type="button" class="sw-b" role="switch" aria-checked="${S[k]}" aria-label="${l}" data-sw="${k}"></button><span>${l}</span></span>`;
+  const oauth = `<div class="or">또는</div><button type="button" class="b2" data-v="onboard"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="gb" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path class="gg" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path class="gy" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path class="gr" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>Google로 계속하기</button><button type="button" class="b2" data-v="onboard"><svg class="i-gh" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>GitHub로 계속하기</button>`;
+  const steps = (n) => `<div class="steps" aria-label="3단계 중 ${n}단계">${['이메일', '코드 확인', '프로필'].map((x, i) => `<span class="${i < n ? 'on' : ''}">${x}</span>`).join('')}</div>`;
+  const code = `<div class="cd" role="group" aria-label="인증 코드 6자리">${[...Array(6)].map((_, i) => `<input inputmode="numeric" maxlength="1" aria-label="${i + 1}번째 숫자" data-cd="${i}">`).join('')}</div>`;
+  const country = `<label class="f">국가<select aria-label="국가"><option>대한민국</option><option>일본</option><option>미국</option></select></label>`;
+  const V = {
+    login: () => `${brand}<h1>다시 만나서 반가워요</h1><p>ARCHIVE 계정으로 로그인</p>${S.err ? `<p class="er" role="alert">${S.err}</p>` : ''}${fld('이메일', 'email', 'you@example.com', '', 'required id="em"')}${fld('비밀번호', 'password', '', '', 'required')}<div class="rw">${sw('rem', '로그인 상태 유지')}${go('비밀번호를 잊으셨나요?', 'forgot')}</div><button type="button" class="b1" data-login>로그인</button>${oauth}<p class="bt">아직 계정이 없으신가요? ${go('회원가입', 'signup')}</p>`,
+    signup: () => `${brand}<h1>ARCHIVE 시작하기</h1>${steps(1)}${fld('이메일', 'email', 'you@example.com')}<button type="button" class="b1" data-v="code">인증 코드 받기</button>${oauth}<p class="bt">이미 계정이 있으신가요? ${go('로그인', 'login')}</p>`,
+    code: () => `${brand}<h1>메일로 온 코드를 입력해 주세요</h1>${steps(2)}<p>you@example.com으로 6자리 코드를 보냈어요.</p>${code}<button type="button" class="b1" data-v="profile">코드 확인</button><div class="rw">${go('이전', 'signup')}<span>52초 후 재전송</span></div>`,
+    profile: () => `${brand}<h1>거의 다 됐어요</h1>${steps(3)}${fld('닉네임', 'text', '다른 사용자에게 보일 이름')}${fld('비밀번호', 'password', '', '최소 8자 이상')}${fld('비밀번호 확인', 'password')}${country}<div class="rw">${sw('terms', '이용약관 및 개인정보 처리방침에 동의합니다')}</div><a class="b1" href="d-calendar.html?empty=1&gh=0">가입 완료</a>`,
+    onboard: () => `${brand}<h1>거의 다 됐어요</h1><p>기간 집계가 정확하도록 거주 국가를 선택해 주세요.</p>${country}<a class="b1" href="d-calendar.html?empty=1&gh=0">가입 완료</a><p class="bt">${go('로그인으로 돌아가기', 'login')}</p>`,
+    forgot: () => `${brand}<h1>비밀번호 재설정</h1><p>가입한 이메일로 재설정 링크를 보내 드려요.</p>${fld('이메일', 'email', 'you@example.com')}<button type="button" class="b1" data-v="sent">재설정 링크 받기</button><p class="bt">${go('로그인으로 돌아가기', 'login')}</p>`,
+    sent: () => `${brand}<h1>메일을 확인해 주세요</h1><p>you@example.com으로 재설정 링크를 보냈어요. 메일이 안 보이면 스팸함도 확인해 주세요.</p><button type="button" class="b2" data-v="reset">메일의 링크 열기 (시안)</button><p class="bt">${go('로그인으로 돌아가기', 'login')}</p>`,
+    reset: () => `${brand}<h1>새 비밀번호 설정</h1><p>새로 사용할 비밀번호를 입력해 주세요.</p>${fld('새 비밀번호', 'password', '', '최소 8자 이상')}${fld('비밀번호 확인', 'password')}<button type="button" class="b1" data-v="resetok">비밀번호 변경</button>`,
+    resetok: () => `${brand}<h1>비밀번호를 바꿨어요</h1><p>새 비밀번호로 다시 로그인해 주세요.</p><button type="button" class="b1" data-v="login">로그인하러 가기</button>`,
+    expired: () => `${brand}<h1>링크가 만료됐어요</h1><p>재설정 링크는 한 번만 쓸 수 있고, 시간이 지나면 만료돼요.</p><button type="button" class="b1" data-v="forgot">재설정 링크 다시 받기</button>`,
+    404: () => `${brand}<p class="big">404</p><h1>찾는 페이지가 없어요</h1><p>주소가 바뀌었거나 지워진 페이지예요.</p><a class="b1" href="d-calendar.html">캘린더로 가기</a>`,
+    500: () => `${brand}<p class="big">500</p><h1>잠시 문제가 생겼어요</h1><p>저장해 둔 내용은 그대로 있어요. 잠시 뒤 다시 시도해 주세요.</p><button type="button" class="b1" data-reload>다시 시도</button><a class="b2" href="d-calendar.html">캘린더로 가기</a>`,
+  };
+  const topbar = () => `<div class="lg-top" role="group" aria-label="언어">${[['ko', '한국어'], ['en', 'English']].map(([k, l]) => `<button type="button" aria-pressed="${S.lang === k}" data-lang="${k}">${l}</button>`).join('')}</div>`;
+  function draw() { const f = `<form class="fm" onsubmit="return false">${V[S.v]()}</form>`, L = `<main class="lg a1">${f}</main>`; $('#r').innerHTML = `<div style="position:relative">${topbar()}${L}</div>`; $('#r input')?.focus({ preventScroll: true }); }
+  document.addEventListener('click', (e) => { const g = (a) => e.target.closest(`[${a}]`); let el; if ((el = g('data-v'))) { S.v = el.dataset.v; S.err = null; return draw(); } if ((el = g('data-sw'))) { S[el.dataset.sw] = !S[el.dataset.sw]; el.setAttribute('aria-checked', S[el.dataset.sw]); return; } if ((el = g('data-lang'))) { S.lang = el.dataset.lang; return draw(); } if (g('data-reload')) return location.reload(); if (g('data-login')) { const v = $('#em').value.trim(); if (!v) { S.err = '이메일 또는 비밀번호가 올바르지 않습니다.'; draw(); return; } location.href = 'd-calendar.html'; } });
+  document.addEventListener('input', (e) => { const c = e.target.closest('[data-cd]'); if (c && c.value) document.querySelector(`[data-cd="${+c.dataset.cd + 1}"]`)?.focus(); });
+  document.addEventListener('keydown', (e) => { const c = e.target.closest && e.target.closest('[data-cd]'); if (c && e.key === 'Backspace' && !c.value) document.querySelector(`[data-cd="${+c.dataset.cd - 1}"]`)?.focus(); });
+  draw();
+</script>
+</body>
+</html>

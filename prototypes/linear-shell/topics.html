@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>회고 주제</title>
+<meta name="description" content="회고 카드와 같은 뼈대의 주제 카드 다섯 가지, 다른 서비스 배치를 참고한 주제 본문 다섯 가지, 자료를 점과 선으로 이은 연결 보기를 골라 본다.">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="shared/shared.css">
+<style>
+  /* Hallmark · scope: app screen (시안 비교 페이지) · genre: atmospheric · theme: project tokens (ARCHIVE dark, shared.css) · signature: 한 화면에 들어오는 실제 화면, 목록과 내용을 따로 고름 · states: 8 · mode: fast · v2.0.0 */
+  /* critique: one live 1440 by 900 screen scaled to the window, list and body picked separately so nothing scrolls. */
+  /* waive 39b: 비교 페이지의 28px 시안 고르기 버튼은 다른 비교 페이지(aiv.html, aisug.html)와 같은 크기 */
+  html, body { height: 100%; overflow: clip; }
+  body { display: flex; flex-direction: column; background: var(--canvas); }
+  .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+  h1 { margin: 0; font-size: 14px; font-weight: 600; white-space: nowrap; }
+  .grp { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+  .grp span { margin-right: 4px; font-size: 12px; color: var(--ink3); }
+  .grp button { height: 28px; padding: 0 8px; border: 1px solid var(--line2); border-radius: 6px; font-size: 12px; color: var(--ink3); }
+  .grp button:hover { background: var(--s3); color: var(--ink); }
+  .grp button[aria-pressed="true"] { border-color: var(--primary); background: var(--primary-a); color: var(--ink); }
+  .grp button:focus-visible, .bar a:focus-visible { outline: 2px solid var(--primary-h); outline-offset: 2px; }
+  .bar a { margin-left: auto; font-size: 12px; color: var(--primary-h); }
+  .desc { flex-basis: 100%; margin: 0; font-size: 12px; color: var(--ink3); }
+  .stage { position: relative; flex: 1; min-height: 0; overflow: clip; }
+  iframe { position: absolute; top: 0; left: 0; width: 1440px; height: 900px; border: 0; transform-origin: 0 0; background: var(--canvas); }
+  iframe:focus, iframe:focus-visible, iframe.kf { outline: 3px solid var(--primary-h); outline-offset: 0; }
+  .stage:focus-within { outline: 2px solid var(--primary-h); outline-offset: -2px; }
+  .grp[hidden] { display: none; }
+</style>
+</head>
+<body>
+<div class="bar">
+  <h1>회고 주제</h1>
+  <div class="grp" role="group" aria-label="화면" id="g-tb"></div>
+  <div class="grp" role="group" aria-label="시안" id="g-v"></div>
+  <div class="grp" role="group" aria-label="주제" id="g-tp"></div>
+  <a id="open" href="#" target="_blank" rel="noopener">새 창에서 보기</a>
+  <p class="desc" id="desc"></p>
+</div>
+<div class="stage" id="stage"><iframe id="f" title="회고 주제 시안" scrolling="no"></iframe></div>
+<script>
+  const TB = [['tl', '주제 목록'], ['td', '본문 D 파생'], ['sk', '근거 구분'], ['hd', '본문 상단'], ['tf', '큰 주제 거르기'], ['gp', '연결 자료 표시'], ['gn', '연결 점 구분'], ['gt', '연결 보이기'], ['gv', '연결 (Obsidian 참고)'], ['sw', '문서/연결 전환'], ['tc', '주제 본문 A~E'], ['tg', '연결 (이전)']];
+  const V = {
+    tl: ['회고 수 크게', '기간 크게', '이름 크게', '주제마다 색 책갈피', '모은 회고', '3 + 4 (기본): 한 줄에 두 장, 주제 이름을 주제 색으로 크게, 위 가장자리에 그 주제 색 책갈피, 요약과 "이런 회고를 모아요"', '보기: 좌우로 넘기기. 회고의 좌우로 넘기기와 같은 레일에 주제 한 장씩, 최근에 한 일 다섯 줄. ← → 키, 아래 점으로 이동'],
+    td: ['D 저널 (원래): 최신순, 큰 날짜, 큰 주제 탭, 그날 회고 한 줄 인용', 'D-1 주마다 묶음: 오래된 날부터 이야기처럼, 주 제목 아래 날짜, "여기까지 정리"와 "오늘" 선', 'D-2 달력 옆에: 왼쪽 작은 달력에 그날 다룬 큰 주제 색 점, 날짜를 누르면 그날로', 'D-3 회고 원문 먼저: 회고가 있는 날은 원문 몇 줄을 크게, 아래 그날 정리된 것. 할 일만 있는 날은 한 줄', 'D-4 큰 주제 색 띠: 날짜 아래 그날 다룬 큰 주제 색 띠, 하루 안에서는 큰 주제별로 묶음', 'D-5 (기본) 하루가 카드 한 장: 회고 카드처럼 날짜를 크게, 한 일마다 큰 주제와 근거, "자세히 보기"로 그날 회고 전문과 커밋. 큰 주제 탭을 누르면 그 주제 설명'],
+    sk: ['채운 모양: 근거 이름 앞에 작은 아이콘. 회고는 라벤더 문서, 할 일은 상태 색 기호(끝냄 체크 선, 하는 중 화살표, 아직 줄표)', '문장 앞 기호: 한 일 문장 맨 앞에 회고는 라벤더 따옴표, 할 일은 상태 색 깃발', '왼쪽 여백: 큰 주제 색 띠 대신 왼쪽 여백에 아이콘. 회고는 라벤더 펜, 할 일은 상태 기호', '이름도 색: 아이콘과 근거 이름을 같은 종류 색으로, 할 일은 상태 글자도', '모양으로: 회고는 라벤더 마름모, 할 일은 삼각형(끝냄 채움, 하는 중 반, 아직 빈). 위에 뜻 한 줄'],
+    hd: ['이름 크게 + 책갈피: 위에 주제, 기간, 회고, 할 일, 정리 날짜 한 줄. 이름을 주제 색으로 크게, 오른쪽 위 책갈피', '요약이 제목: 작은 주제 이름 아래 한 줄 요약을 크게, 그 아래 설명과 숫자', '기간 크게: 왼쪽에 기간을 주제 색으로 크게, 오른쪽에 이름, 설명, 요약', '표지 띠: 주제 색이 옅게 깔린 띠 안에 이름과 설명, 오른쪽에 기간, 회고, 할 일, 정리', '한 줄 + 인용: 이름과 숫자를 한 줄로, 요약은 따옴표 인용, 설명은 접어 둠'],
+    tf: ['밑줄 탭: 글자만, 고른 큰 주제에 그 색 밑줄', '색 점 글자: 테두리 없이 색 점과 이름, 하나를 고르면 나머지는 흐리게', '비율 막대: 큰 주제 몫만큼 나눈 막대, 조각을 누르면 그 주제만', '왼쪽 목록: 본문 왼쪽에 따라다니는 큰 주제 목록과 몫 막대', '메뉴 하나: "큰 주제 전체" 한 줄을 누르면 목록이 펼쳐짐'],
+    gp: ['숫자 줄: 요약 한 줄 아래 큰 주제, 회고, 할 일, 커밋 수. 줄에 마우스를 올리면 그 종류가 그래프에서 밝아짐', '자료 목록: 회고, 할 일, 커밋을 날짜와 함께 나열. 마우스를 올리면 그 점이, 누르면 고름', '큰 주제별: 큰 주제마다 묶인 자료 이름. 큰 주제에 마우스를 올리면 그 무리가 밝아짐', '날짜 띠: 회고, 할 일, 커밋이 언제 생겼는지 점으로. 점에 마우스를 올리면 그래프에서 그 점이', '떠 있는 범례: 옆 칸 없이 캔버스 왼쪽 위에 작은 범례와 수. 점을 고르면 그때 옆 칸'],
+    gn: ['모양: 주제와 회고는 동그라미, 큰 주제는 네모, 할 일은 마름모(상태 색), 커밋은 세모. 아래 범례', '아이콘: 점 안에 작은 아이콘(주제 책갈피, 큰 주제 네모, 회고 문서, 할 일 체크, 커밋 마디)', '색 + 이름 항상: 종류 색 점에 이름을 늘 보이게, 이름도 종류 색. 큰 주제는 빈 고리', '무리 영역: 큰 주제마다 그 자료를 옅은 색 영역으로 감쌈. 어떤 회고가 어느 큰 주제에 속하는지가 면으로 보임', '동심원: 가운데 주제, 안쪽 고리 큰 주제, 다음 회고, 할 일, 바깥 커밋. 자리가 곧 종류'],
+    gt: ['눈 아이콘: 레이어 목록처럼 눈 모양 아이콘, 끄면 눈에 빗금과 흐린 글자', '범례가 곧 거르기: 종류 색 점과 이름, 끄면 빈 점과 가운데 줄', '종류 색 밑줄: 켠 종류에 그 색 밑줄, 여러 개를 함께 켬', '묶음 하나 고르기: 모두, 회고와 할 일, 회고만, 할 일만 중 하나', '숫자 크게: 종류 색 큰 숫자와 이름, 끄면 흐리게'],
+    gv: ['기본: 회색 점과 가는 선, 점 크기는 이어진 수만큼. 휠로 확대하면 글자가 드러나고, 마우스를 올리면 이웃만 밝게. 오른쪽에 설명', '설정 서랍: 찾기, 보이기, 색 나누기(큰 주제별, 종류별, 한 색), 글자, 점 크기, 선 굵기, 밀어내는 힘, 선 길이를 바로 바꿈', '로컬 그래프: 고른 점을 가운데 두고 깊이 1~3 만큼 이어진 것만. 점을 누르면 그 점이 가운데로', '시간순 재생: 아래 막대로 날짜를 옮기거나 재생하면 그날까지의 회고, 할 일, 커밋이 차례로 나타남', '화면 가득: 옆 칸 없이 캔버스만, 왼쪽 위 찾기, 마우스를 올린 점 옆에 작은 카드'],
+    sw: ['아이콘 두 개: 오른쪽 위에 문서 모양과 점 모양 아이콘만, 마우스를 올리면 이름', '밑줄 탭: 모든 주제 옆에 "문서", "연결 24" 탭, 고른 쪽에 인디고 밑줄', '미리보기 버튼: 오른쪽 위에 이 주제 연결을 작게 그린 버튼 "연결 보기, 자료 24개를 점과 선으로". 연결에서는 "문서로 보기"', '스위치: 오른쪽 위 "연결로 보기" 켜고 끄기', '떠 있는 버튼: 본문 아래 가운데 "이 주제의 연결 보기", G 키로도 바꿈'],
+    tc: ['A 위키 문서 (Notion, Confluence 배치 참고): 큰 주제가 차례로 이어지는 섹션, 오른쪽에 따라다니는 목차', 'B 출처 칸 (NotebookLM 배치 참고): 문장 끝 번호가 오른쪽 근거로, 큰 주제를 누르면 근거가 그 주제만', 'C 프로젝트 개요 (Linear 프로젝트 배치 참고): 속성 한 줄, 큰 주제 흐름 막대, 최근에 한 일, 오른쪽에 자세히', 'D 저널 (Day One, Apple Journal 흐름 참고): 날짜가 큰 세로 흐름, 위에 큰 주제 탭, 그날 회고 한 줄 인용', 'E 칸 나누기 (Heptabase, 칸반 배치 참고): 큰 주제가 세로 칸, 칸 안에 날짜순으로 한 일, 누르면 근거'],
+    tg: ['자유 배치: 주제 가운데, 큰 주제가 둘레, 회고와 할 일과 커밋이 이어짐. 점을 끌어 옮기고 누르면 오른쪽에 설명', '날짜순: 가로가 날짜, 왼쪽 끝이 주제. 언제 쓴 자료가 어느 큰 주제로 갔는지'],
+  };
+  const TP = [['tp1', '캘린더 다듬기'], ['tp2', '인증, 토큰'], ['tp3', 'i18n']];
+  const S = { tb: 'tl', v: '6', tp: 'tp1', tc: '10' };
+  const TDV = ['4', '6', '7', '8', '9', '10'];
+  const $ = (q) => document.querySelector(q);
+  const grp = (id, L, k, lab) => { $(id).innerHTML = `<span>${lab}</span>` + L.map(([v, l]) => `<button type="button" data-k="${k}" data-v="${v}" aria-pressed="${S[k] === v}">${l}</button>`).join(''); };
+  const url = () => S.tb === 'gt' ? `d-retro2.html?rl=1&area=topic&tp=${S.tp}&tg=1&gv=1&gt=${S.v}` : S.tb === 'gn' ? `d-retro2.html?rl=1&area=topic&tp=${S.tp}&tg=1&gv=1&gn=${S.v}` : S.tb === 'hd' ? `d-retro2.html?rl=1&area=topic&tp=${S.tp}&hd=${S.v}` : S.tb === 'tf' ? `d-retro2.html?rl=1&area=topic&tp=${S.tp}&tf=${S.v}` : S.tb === 'gp' ? `d-retro2.html?rl=1&area=topic&tp=${S.tp}&tg=1&gv=1&gp=${S.v}` : S.tb === 'sw' ? `d-retro2.html?rl=1&area=topic&tp=${S.tp}&gv=1&sw=${S.v}` : S.tb === 'sk' ? `d-retro2.html?rl=1&area=topic&tp=${S.tp}&sk=${S.v}` : S.tb === 'gv' ? `d-retro2.html?rl=1&area=topic&tp=${S.tp}&tg=1&gv=${S.v}` : S.tb === 'td' ? `d-retro2.html?rl=1&area=topic&tp=${S.tp}&tc=${TDV[+S.v - 1]}` : S.tb === 'tl' ? `d-retro2.html?rl=1&area=topic&tl=${S.v === '7' ? 6 : S.v}&tc=${S.tc}${S.v === '7' ? '&tvm=rail' : ''}` : S.tb === 'tc' ? `d-retro2.html?rl=1&area=topic&tp=${S.tp}${S.v === '0' ? '' : `&tc=${S.v}`}` : `d-retro2.html?rl=1&area=topic&tp=${S.tp}&tc=${S.tc}&tg=1${S.v === '2' ? '&lay=date' : ''}`;
+  const fit = () => { const st = $('#stage'), s = Math.min(st.clientWidth / 1440, st.clientHeight / 900), f = $('#f'); f.style.transform = `scale(${s})`; f.style.left = `${(st.clientWidth - 1440 * s) / 2}px`; };
+  const draw = () => { grp('#g-tb', TB, 'tb', '화면'); grp('#g-v', [...(S.tb === 'tg' || S.tb === 'td' || S.tb === 'gv' ? [] : [['0', '지금']]), ...V[S.tb].map((_, i) => [String(i + 1), S.tb === 'tg' ? ['자유 배치', '날짜순'][i] : S.tb === 'tc' ? 'ABCDE'[i] : S.tb === 'td' ? ['D', 'D-1', 'D-2', 'D-3', 'D-4', 'D-5 (기본)'][i] : S.tb === 'gv' ? ['1 기본', '2 설정 서랍', '3 로컬', '4 시간순', '5 화면 가득'][i] : i === 5 ? '6 (기본)' : i === 6 ? '넘기기' : String(i + 1)])], 'v', '시안');
+    $('#g-tp').hidden = S.tb === 'tl'; if (S.tb !== 'tl') grp('#g-tp', TP, 'tp', '주제');
+    $('#desc').textContent = S.v === '0' ? (S.tb === 'tl' ? '지금 쓰는 카드 목록이에요.' : S.tb === 'sk' ? '지금은 작은 문서 아이콘과 할 일 상태 동그라미로만 구분해요.' : S.tb === 'hd' ? '지금 상단이에요. 정리 기준은 경고 없이 한 줄로만 둬요.' : S.tb === 'tf' ? '지금은 테두리 있는 칸들이에요.' : S.tb === 'gp' ? '지금은 범례와 설명 글이에요.' : S.tb === 'gn' ? '지금은 모든 점이 같은 회색 동그라미예요.' : S.tb === 'gt' ? '지금은 테두리 있는 작은 칸 세 개예요.' : S.tb === 'sw' ? '지금은 모든 주제 옆 "문서 | 연결" 글자 두 칸이에요. 시안 안에서 눌러 바꿔 보세요.' : '지금 쓰는 markdown 한 편이에요.') : ['tl', 'sk', 'gv', 'sw', 'hd', 'tf', 'gp', 'gn', 'gt'].includes(S.tb) ? `${S.v}. ${V[S.tb][+S.v - 1]}` : V[S.tb][+S.v - 1]; $('#open').href = url(); };
+  document.addEventListener('click', (e) => { const b = e.target.closest('.grp button'); if (!b) return; S[b.dataset.k] = b.dataset.v; if (b.dataset.k === 'tb') S.v = S.tb === 'tl' ? '6' : S.tb === 'td' ? '6' : '1'; if (b.dataset.k === 'v' && S.tb === 'tc' && S.v !== '0') S.tc = S.v; if (b.dataset.k === 'v' && S.tb === 'td') S.tc = TDV[+S.v - 1]; draw(); $('#f').src = url(); document.querySelector(`.grp [data-k="${b.dataset.k}"][data-v="${b.dataset.v}"]`).focus(); });
+  draw(); $('#f').src = url(); fit(); addEventListener('resize', fit);
+  /* 키보드로 시안 안에 들어가면 바깥에 표시 */
+  const mark = () => $('#f').classList.toggle('kf', document.activeElement === $('#f'));
+  addEventListener('blur', () => setTimeout(mark, 0)); addEventListener('focus', mark);
+</script>
+</body>
+</html>
