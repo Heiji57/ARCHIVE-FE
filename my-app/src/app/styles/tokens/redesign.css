@@ -230,4 +230,10 @@
   --z-danger-bg: oklch(30% 0.09 25);
   --z-ok: var(--done);
   --z-span: oklch(30% 0.05 275);
+
+  /* d-auth.html — 로그인과 가입: Google 로고 네 색(브랜드 고정색) */
+  --au-g-b: #4285f4;
+  --au-g-g: #34a853;
+  --au-g-y: #fbbc05;
+  --au-g-r: #ea4335;
 }
