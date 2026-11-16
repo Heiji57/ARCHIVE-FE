@@ -9,6 +9,7 @@
 @import "./tokens/spacing-radius.css";
 @import "./tokens/typography.css";
 @import "./tokens/shadows.css";
+@import "./tokens/redesign.css";
 
 /* 2. Base (reset, scrollbar, focus, selection) */
 @import "./base/reset.css";

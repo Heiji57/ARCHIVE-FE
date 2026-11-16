@@ -1,5 +1,10 @@
-/** 모든 번역 키. 키 추가 시 locales/ 4개 파일에 값도 함께 추가한다(누락 시 컴파일 에러). */
-export type TranslationKey =
+import type { ModuleTranslationKey } from "./modules/registry";
+
+/**
+ * 기존 번역 키(locales/ 16개 파일에 값이 있는 키). 키 추가 시 locales/ 파일에 값도 함께 추가한다(누락 시 컴파일 에러).
+ * 리디자인부터 새 키는 여기 말고 modules/<기능>.ts 에 추가한다(modules/README.md).
+ */
+export type BaseTranslationKey =
   // Nav
   | "nav.dashboard"
   | "nav.calendar"
@@ -981,4 +986,11 @@ export type TranslationKey =
   | "landing.footer.link.startFree"
   | "landing.footer.copyright";
 
-export type Dict = Record<TranslationKey, string>;
+/** 모든 번역 키 = 기존 키 ∪ 등록된 i18n 모듈 키. */
+export type TranslationKey = BaseTranslationKey | ModuleTranslationKey;
+
+/** locales/ 파일 한 개의 형식(기존 키만). */
+export type Dict = Record<BaseTranslationKey, string>;
+
+/** 모듈까지 합친 로케일 사전 한 개의 형식. */
+export type FullDict = Record<TranslationKey, string>;

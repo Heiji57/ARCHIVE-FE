@@ -3,7 +3,8 @@
  * (기존 import 경로를 유지하기 위해 재내보낸다.)
  */
 import type { Locale } from "@/app/model/settings";
-import type { Dict } from "./keys";
+import type { Dict, FullDict } from "./keys";
+import { I18N_MODULES, mergeI18nModules } from "./modules/registry";
 import { ko } from "./locales/ko";
 import { en } from "./locales/en";
 import { zh } from "./locales/zh";
@@ -21,6 +22,9 @@ import { th } from "./locales/th";
 import { id } from "./locales/id";
 import { hi } from "./locales/hi";
 
-export type { TranslationKey, Dict } from "./keys";
+export type { TranslationKey, BaseTranslationKey, Dict, FullDict } from "./keys";
 
-export const DICTIONARIES: Record<Locale, Dict> = { ko, en, zh, ja, es, fr, de, pt, it, ru, tr, vi, "zh-TW": zhTW, th, id, hi };
+const BASE_DICTIONARIES: Record<Locale, Dict> = { ko, en, zh, ja, es, fr, de, pt, it, ru, tr, vi, "zh-TW": zhTW, th, id, hi };
+
+/** 기존 로케일 사전 + i18n 모듈(modules/). ko/en 이외 로케일의 모듈 키는 en 값. */
+export const DICTIONARIES = mergeI18nModules(BASE_DICTIONARIES, I18N_MODULES) as Record<Locale, FullDict>;
