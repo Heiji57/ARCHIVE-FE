@@ -2,9 +2,6 @@ import type { ReactNode } from "react";
 import type { AppSettings } from "@/app/model/settings";
 import type { TranslationKey } from "@/shared/lib/i18n";
 import { useTranslation } from "@/shared/lib/i18n";
-import { useArchiveApp } from "@/app/providers/useArchiveApp";
-import { can } from "@/shared/lib/permissions";
-import { AccountTypeCard } from "./AccountTypeCard";
 import { AutoSummaryCard } from "./AutoSummaryCard";
 import { CalendarCard } from "./CalendarCard";
 import { GithubCard } from "./GithubCard";
@@ -38,9 +35,6 @@ function SettingsSection({
 }
 
 export function SettingsStudio() {
-  const { state } = useArchiveApp();
-  const showGithub = can(state.settings.accountType, "github");
-
   return (
     <div className="page settings-page">
       <SettingsSection
@@ -50,7 +44,6 @@ export function SettingsStudio() {
         <div className="settings-card settings-list">
           <LanguageCard />
           <RegionTimezoneCard />
-          <AccountTypeCard />
           <TodoRangeCard />
           <NotificationsCard />
         </div>
@@ -66,14 +59,12 @@ export function SettingsStudio() {
       </SettingsSection>
 
       {/* 외부 서비스 연동 — 각 서비스를 독립 섹션으로 분리(풀 width). */}
-      {showGithub && (
-        <SettingsSection
-          label="settings.section.github"
-          hint="settings.group.github.hint"
-        >
-          <GithubCard />
-        </SettingsSection>
-      )}
+      <SettingsSection
+        label="settings.section.github"
+        hint="settings.group.github.hint"
+      >
+        <GithubCard />
+      </SettingsSection>
 
       <SettingsSection
         label="settings.section.calendar"

@@ -4,3 +4,4 @@
  * 여기서 export 한 것은 전부 I18nModule 이어야 한다(registry.ts 가 컴파일 단계에서 확인).
  */
 export { authI18n } from "./auth";
+export { shellI18n } from "./shell";
