@@ -1,0 +1,233 @@
+/* ------------------------------------------------------------------
+   Redesign tokens — prototypes/linear-shell/shared/*.css 의 :root 값 그대로.
+   (앱 리디자인 퍼블리싱 Task 0. 새 화면은 이 토큰만 쓴다. 다크 모드만.)
+   --ink, --canvas 는 colors.css 에 같은 값(#f7f8f8, #010102)이 있어 다시 정의하지 않는다.
+   시안 파일에 새 :root 값이 생기면 같은 이름, 같은 묶음으로 여기에 더한다.
+   ------------------------------------------------------------------ */
+:root {
+
+  /* shared.css — 셸 공통: 색, 표면, 선, 상태, 글꼴, 반경, 시간 칸 높이 */
+  --primary: #5e6ad2;
+  --primary-h: #828fff;
+  --primary-a: rgba(94,106,210,.16);
+  --ink2: #d0d6e0;
+  --ink3: #8a8f98;
+  --ink4: #62666d;
+  --s1: #0f1011;
+  --s2: #141516;
+  --s3: #18191a;
+  --s4: #191a1b;
+  --line: #23252a;
+  --line2: #34343a;
+  --done: #27a644;
+  --warn: #d9a23a;
+  --danger: #d0563f;
+  --font: "Pretendard",Inter,system-ui,-apple-system,sans-serif;
+  --mono: "Commit Mono",ui-monospace,"SF Mono",Menlo,monospace;
+  --r: 6px;
+  --r2: 8px;
+  --hh: 48px;
+
+  /* retro-cards.css — 회고 카드: 표면과 회고 종류 색(d 일간, w 주간, m 월간, y 연간) */
+  --rc-font: var(--font);
+  --rc-mono: var(--mono);
+  --rc-surface: oklch(19.5% 0.008 275);
+  --rc-surface-hover: oklch(23% 0.01 275);
+  --rc-surface-active: oklch(21% 0.01 275);
+  --rc-rule: oklch(30% 0.012 275);
+  --rc-rule-strong: oklch(40% 0.014 275);
+  --rc-rule-faint: oklch(23.5% 0.01 275);
+  --rc-ink: oklch(95% 0.006 275);
+  --rc-ink-2: oklch(83% 0.01 275);
+  --rc-ink-3: oklch(70% 0.012 275);
+  --rc-focus: oklch(74% 0.19 278);
+  --rc-on-accent: oklch(98% 0.005 275);
+  --rc-accent: oklch(56% 0.16 278);
+  --rc-err: oklch(74% 0.14 32);
+  --rc-err-well: oklch(26% 0.05 32);
+  --rc-d: oklch(76% 0.12 278);
+  --rc-w: oklch(78% 0.11 172);
+  --rc-m: oklch(81% 0.12 78);
+  --rc-y: oklch(75% 0.13 5);
+  --rc-d-well: oklch(22.5% 0.032 278);
+  --rc-w-well: oklch(22.5% 0.03 172);
+  --rc-m-well: oklch(23% 0.03 78);
+  --rc-y-well: oklch(22.5% 0.032 5);
+  --rc-d-tab: oklch(29% 0.06 278);
+  --rc-w-tab: oklch(29% 0.05 172);
+  --rc-m-tab: oklch(30% 0.05 78);
+  --rc-y-tab: oklch(29% 0.06 5);
+  --rc-d-edge: oklch(33% 0.06 278);
+  --rc-w-edge: oklch(33% 0.05 172);
+  --rc-m-edge: oklch(34% 0.05 78);
+  --rc-y-edge: oklch(33% 0.06 5);
+  --rc-s1: 4px;
+  --rc-s2: 8px;
+  --rc-s3: 12px;
+  --rc-s4: 16px;
+  --rc-s5: 24px;
+  --rc-radius: 10px;
+  --rc-radius-in: 6px;
+  --rc-dur: 120ms;
+
+  /* topicv.css — 회고 주제: 그래프 색(th), 주제 카드 색(tpc/tpw), 스켈레톤(sk) */
+  --th1: #8b95ff;
+  --th2: #45c2a8;
+  --th3: #6cb4e4;
+  --th4: #e07a9a;
+  --rc-t: oklch(79% 0.1 225);
+  --rc-t-well: oklch(22.5% 0.03 225);
+  --tpc1: oklch(79% 0.1 225);
+  --tpw1: oklch(22.5% 0.03 225);
+  --tpc2: oklch(80% 0.11 55);
+  --tpw2: oklch(23% 0.035 55);
+  --tpc3: oklch(80% 0.11 150);
+  --tpw3: oklch(22.5% 0.03 150);
+  --tpc4: oklch(77% 0.11 330);
+  --tpw4: oklch(22.5% 0.03 330);
+  --sk-r: var(--rc-d);
+  --sk-rw: var(--rc-d-well);
+  --sk-t: var(--done);
+  --sk-tw: color-mix(in srgb, var(--done) 16%, transparent);
+
+  /* ai.css — AI 탭: 인디고 표면과 강조(ag) */
+  --ag-font: var(--font);
+  --ag-num: var(--mono);
+  --ag-canvas: oklch(7% 0.004 275);
+  --ag-surface: oklch(17.5% 0.008 275);
+  --ag-surface-2: oklch(21% 0.01 275);
+  --ag-surface-3: oklch(25% 0.012 275);
+  --ag-rule: oklch(29% 0.012 275);
+  --ag-rule-strong: oklch(38% 0.014 275);
+  --ag-ink: oklch(95% 0.006 275);
+  --ag-ink-2: oklch(83% 0.01 275);
+  --ag-ink-3: oklch(68% 0.012 275);
+  --ag-ink-4: oklch(56% 0.012 275);
+  --ag-accent: oklch(56% 0.16 278);
+  --ag-accent-hover: oklch(61% 0.16 278);
+  --ag-accent-ink: oklch(98% 0.005 275);
+  --ag-accent-soft: oklch(28% 0.07 278);
+  --ag-accent-text: oklch(78% 0.12 278);
+  --ag-focus: oklch(74% 0.19 278);
+  --ag-ok: oklch(74% 0.14 152);
+  --ag-warn: oklch(80% 0.13 75);
+  --ag-shadow: oklch(4% 0.004 275 / 0.5);
+  --ag-scrim: oklch(4% 0.004 275 / 0.55);
+  --ag-s1: 4px;
+  --ag-s2: 8px;
+  --ag-s3: 12px;
+  --ag-s4: 16px;
+  --ag-s5: 24px;
+  --ag-s6: 40px;
+  --ag-s7: 64px;
+  --ag-r: 8px;
+  --ag-r-lg: 16px;
+  --ag-r-pill: 999px;
+  --ag-measure: 720px;
+  --ag-dur: 160ms;
+
+  /* aiv.css — AI 추천 종류 색(as) */
+  --as-todo: var(--primary-h);
+  --as-retro: var(--done);
+  --as-move: var(--warn);
+  --as-cal: color-mix(in srgb, var(--primary-h) 45%, var(--done));
+  --as-git: var(--ink2);
+
+  /* rpanel.css — 오른쪽 패널(rx), AI 표시(ai) */
+  --rx-late: var(--danger);
+  --rx-soon: var(--warn);
+  --rx-ai-bg: var(--primary-a);
+  --ai: var(--primary-h);
+  --ai-soft: color-mix(in srgb, var(--primary) 22%, transparent);
+
+  /* settings.css — 설정 시트(sx), Google 캘린더 브랜드 색(br-gc) */
+  --sx-scrim: oklch(4% 0.004 275 / 0.6);
+  --sx-danger: oklch(66% 0.17 30);
+  --sx-danger-soft: oklch(26% 0.07 30);
+  --sx-ok: var(--ag-ok);
+  --sx-warn: var(--ag-warn);
+  --br-gc-blue: #4285f4;
+  --br-gc-dark: #1967d2;
+  --br-gc-yellow: #fbbc04;
+  --br-gc-green: #34a853;
+  --br-gc-red: #ea4335;
+  --br-gc-paper: #ffffff;
+  --sx-note-bg: oklch(24% 0.04 80);
+  --sx-note-line: oklch(42% 0.08 80);
+
+  /* sidevar.css — 캘린더 사이드바(sv) */
+  --sv-gc-blue: #4285f4;
+  --sv-gc-dark: #1967d2;
+  --sv-gc-yellow: #fbbc04;
+  --sv-gc-green: #34a853;
+  --sv-gc-red: #ea4335;
+  --sv-gc-paper: #ffffff;
+  --sv-warn-bg: oklch(24% 0.04 80);
+  --sv-warn-line: oklch(40% 0.07 80);
+  --sv-late: oklch(66% 0.17 30);
+  --sv-late-bg: oklch(26% 0.07 30);
+
+  /* todomodal.css — 할 일 모달(tm) */
+  --tm-warn-bg: oklch(24% 0.04 80);
+  --tm-warn-line: oklch(40% 0.07 80);
+  --tm-scrim: oklch(4% 0.004 275 / 0.55);
+  --tm-danger-bg: oklch(30% 0.09 25);
+
+  /* tododetail.css — 할 일 상세(td) */
+  --td-late: oklch(66% 0.17 30);
+  --td-late-bg: oklch(26% 0.07 30);
+  --td-soon-bg: oklch(24% 0.04 80);
+  --td-scrim: oklch(4% 0.004 275 / 0.25);
+
+  /* newtodo.css — 새 할 일 창(nw) */
+  --nw-sh: 0 8px 24px rgb(0 0 0 / .5);
+
+  /* rest.css — 빈 화면, 오류, 알림, 검색 상태(rs) */
+  --rs-shadow: 0 8px 24px rgba(0, 0, 0, .5);
+  --rs-scrim: rgba(0, 0, 0, .55);
+
+  /* usermenu.css — 사용자 메뉴(um) */
+  --um-shadow: rgba(0, 0, 0, .5);
+  --um-scrim: rgba(1, 1, 2, .6);
+  --um-danger: #b4432f;
+
+  /* pet.css — 빗금이(pet, hx) */
+  --pet-out: var(--canvas);
+  --pet-ink: var(--canvas);
+  --pet-shadow: 0 8px 24px rgba(0, 0, 0, .5);
+  --pet-bm-a: var(--primary-h);
+  --pet-bm-b: var(--primary);
+  --pet-bm-c: var(--ink);
+  --pet-dr-a: var(--ink3);
+  --pet-dr-b: var(--ink2);
+  --pet-dr-c: var(--canvas);
+  --pet-dr-e: var(--ink);
+  --pet-pg-a: var(--ink2);
+  --pet-pg-b: var(--ink3);
+  --pet-pg-c: var(--ink3);
+  --pet-ow-a: var(--warn);
+  --pet-ow-b: color-mix(in srgb, var(--warn) 62%, var(--canvas));
+  --pet-ow-c: color-mix(in srgb, var(--warn) 30%, var(--canvas));
+  --pet-ow-w: var(--ink);
+  --hx-line: var(--ink3);
+  --hx-edge: var(--ink2);
+  --hx-bg: var(--s2);
+  --hx-eye: var(--ink);
+
+  /* planner.css — 셸: 주말 칸, 일요일/토요일 색 */
+  --we: rgba(255,255,255,.034);
+  --we-h: rgba(255,255,255,.05);
+  --sun: #e0806f;
+  --sat: #7f97e0;
+
+  /* lab3.css — 하루 닫기 이월, 할 일 모달 바뀐 값 표시(x) */
+  --x-chg: var(--primary-h);
+  --x-chg-bg: var(--primary-a);
+  --x-over: var(--warn);
+
+  /* lab4.css — 할 일 상세 모달, 반복 범위(z) */
+  --z-scrim: oklch(4% 0.004 275 / 0.6);
+  --z-danger-bg: oklch(30% 0.09 25);
+  --z-ok: var(--done);
+  --z-span: oklch(30% 0.05 275);
+}

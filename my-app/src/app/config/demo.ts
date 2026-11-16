@@ -10,8 +10,6 @@ import { fromDateKey } from "@/shared/lib/date"
 export const DEMO_ANCHOR_DATE_KEY = "2026-06-15"
 export const DEMO_ANCHOR_DATE = fromDateKey(DEMO_ANCHOR_DATE_KEY)
 
-/** URL `?demo=true` 여부. 게스트 데모 모드 판별 (SSR 안전). */
-export function isDemoMode(): boolean {
-  if (typeof window === "undefined") return false
-  return new URLSearchParams(window.location.search).get("demo") === "true"
-}
+// isDemoMode 는 shared 레이어(useServerFeature 등)에서도 써야 해서 shared/lib 로 옮겼다.
+// 기존 import 경로(@/app/config/demo)는 그대로 쓸 수 있게 다시 내보낸다.
+export { isDemoMode } from "@/shared/lib/demoMode"
