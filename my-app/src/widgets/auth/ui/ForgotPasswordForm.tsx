@@ -3,6 +3,7 @@ import { useArchiveApp } from "@/app/providers/useArchiveApp";
 import type { AuthRoute } from "@/app/router/authRoute";
 import { useTranslation } from "@/shared/lib/i18n";
 import { TextField } from "@/shared/ui";
+import { AuthHeading } from "./AuthParts";
 
 interface ForgotPasswordFormProps {
   onAuthNavigate: (route: AuthRoute) => void;
@@ -36,31 +37,31 @@ export function ForgotPasswordForm({ onAuthNavigate }: ForgotPasswordFormProps) 
   return (
     <>
       {!sent ? (
-        <form className="auth-form" onSubmit={(e) => void submitEmail(e)}>
-          <TextField
-            type="email"
-            autoComplete="email"
-            label={t("auth.login.email")}
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-          <button type="submit" className="auth-submit" disabled={submitting}>
-            {submitting
-              ? t("auth.signup.emailSending")
-              : t("auth.forgot.emailSubmit")}
-          </button>
-        </form>
+        <>
+          <AuthHeading title={t("auth.forgot.title")} lead={t("auth.forgot.lead")} />
+          <form className="auth-form" onSubmit={(e) => void submitEmail(e)}>
+            <TextField
+              type="email"
+              autoComplete="email"
+              label={t("auth.login.email")}
+              placeholder={t("auth.field.emailPlaceholder")}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              autoFocus
+              required
+            />
+            <button type="submit" className="auth-submit" disabled={submitting}>
+              {submitting ? t("auth.signup.emailSending") : t("auth.forgot.sendLink")}
+            </button>
+          </form>
+        </>
       ) : (
-        <div className="auth-success">{t("auth.forgot.linkSent")}</div>
+        // 가입 여부를 드러내지 않는 기존 안내 문구를 그대로 쓴다
+        <AuthHeading title={t("auth.forgot.sentTitle")} lead={t("auth.forgot.linkSent")} />
       )}
 
-      <p className="auth-footer">
-        <button
-          type="button"
-          className="auth-link"
-          onClick={() => onAuthNavigate("login")}
-        >
+      <p className="auth-foot">
+        <button type="button" className="auth-link" onClick={() => onAuthNavigate("login")}>
           {t("auth.forgot.backToLogin")}
         </button>
       </p>

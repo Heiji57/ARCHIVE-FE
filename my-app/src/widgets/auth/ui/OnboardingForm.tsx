@@ -3,6 +3,7 @@ import { useArchiveApp } from "@/app/providers/useArchiveApp";
 import type { AuthRoute } from "@/app/router/authRoute";
 import { isMultiTzCountry } from "@/shared/lib/geo";
 import { useTranslation } from "@/shared/lib/i18n";
+import { AuthHeading } from "./AuthParts";
 import { CountryRegionFields } from "./CountryRegionFields";
 
 interface OnboardingFormProps {
@@ -47,8 +48,8 @@ export function OnboardingForm({ onAuthNavigate }: OnboardingFormProps) {
 
   return (
     <>
+      <AuthHeading title={t("auth.onboarding.title")} lead={t("auth.onboarding.lead")} />
       <form className="auth-form" onSubmit={(e) => void submit(e)}>
-        <p className="auth-onboarding-lead">{t("auth.onboarding.lead")}</p>
         <CountryRegionFields
           country={country}
           region={region}
@@ -67,12 +68,8 @@ export function OnboardingForm({ onAuthNavigate }: OnboardingFormProps) {
         </button>
       </form>
 
-      <p className="auth-footer">
-        <button
-          type="button"
-          className="auth-link"
-          onClick={() => onAuthNavigate("login")}
-        >
+      <p className="auth-foot">
+        <button type="button" className="auth-link" onClick={() => onAuthNavigate("login")}>
           {t("auth.onboarding.backToLogin")}
         </button>
       </p>

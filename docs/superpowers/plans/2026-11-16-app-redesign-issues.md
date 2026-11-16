@@ -25,3 +25,19 @@
 
 - [시안] `d-retro2.html?empty=1`이 스크립트 오류(983행, `undefined.date`)로 셸(사이드바, 상단)을 그리지 못하고 빈 화면 문구만 보인다. 앱에서는 셸 안에 빈 화면 한 줄을 넣는다(Task 4).
 - [결정] 데모 데이터 위치: 위젯 하나만 쓰는 것은 그 위젯의 `model/demo*.ts`, 여러 위젯이 같이 쓰는 것(캘린더 목록, 커밋, 주제 정리 결과)은 `entities/<entity>/model/demo.ts`. `app/config/demo-redesign`은 Task 1에서 지운다.
+
+## Task 7 (로그인과 가입)
+
+- [결정] 로고 표식(39번 둥근 날개)은 Task 1의 `AppLogo`가 아직 없어 `widgets/auth/ui/AuthParts.tsx`의 `AuthBrand`에 따로 그렸다. Task 1이 합쳐지면 `AppLogo`로 바꾼다(통합 점검 Task 11).
+- [결정] Google 로고 네 색은 시안 `d-auth.html`의 `:root`(`--au-g-b/g/y/r`)를 `tokens/redesign.css` 끝에 새 묶음으로 넣었다(README 표에는 아직 안 적음).
+- [결정] 인증 코드는 시안처럼 6칸이지만 서버 코드가 영숫자 6자(예: PW1YOT)라 숫자 키패드(`inputmode=numeric`)를 쓰지 않고, 칸 읽기 이름도 "n번째 숫자" 대신 "n번째 글자". 붙여넣기와 `one-time-code` 자동 완성은 칸을 차례로 채운다(`model/code.ts`, 테스트 있음).
+- [결정] 가입 프로필 단계에 시안에 없는 "로그인 상태 유지" 스위치를 남겼다(기존 동작, 기본 켬). 가입 2, 3단계에도 "이미 계정이 있으신가요? 로그인"을 남겼다(시안은 1단계만). 이동 경로를 줄이지 않으려고.
+- [결정] 비밀번호 찾기 발송 후 문구는 시안("you@example.com으로 보냈어요")이 아니라 기존 `auth.forgot.linkSent`("가입되어 있다면 보냈습니다")를 쓴다. 가입 여부를 드러내지 않는 기존 보안 방침. 시안의 "메일의 링크 열기 (시안)" 버튼은 옮기지 않았다.
+- [결정] 재설정 링크 만료(`token-expired`)는 시안의 "링크가 만료됐어요" 화면 대신 기존처럼 폼 위 오류 문구로 보인다(오류 코드 → 문구 매핑 유지). 토큰 없이 들어오면 제목 + 오류 + "재설정 링크 다시 받기" 버튼.
+- [결정] 오류는 시안의 `.er` 상자(폼 위)로 모았다. 비밀번호 확인 불일치만 칸 아래에 둔다. 비밀번호 칸의 보기 버튼(기존)은 남겼다.
+- [결정] mock 모드(`VITE_USE_API` 아님)의 콘솔 안내 상자는 시안에 없지만 남겼다(실제 모드에서는 안 보임).
+- [결정] 시안 글자 크기(라벨·링크 13px, 입력·버튼 14px, 제목 24px)를 따랐다. CLAUDE.md 10장(12/16/18) 밖의 값.
+- [버그] 기존 `auth.forgot.subtitle`("인증 코드를 보내드려요")와 영어 `auth.forgot.emailSubmit`("Send reset code")가 링크 방식과 맞지 않았다. 새 키 `auth.forgot.lead`, `auth.forgot.sendLink`로 바꿔 쓰고 옛 키는 남겼다(Task 11 정리 대상: `auth.forgot.subtitle`, `auth.forgot.emailSubmit`, `auth.forgot.codeSubmit`, `auth.forgot.newPasswordSubmit`, `auth.forgot.success`, `auth.signup.subtitle`, `auth.onboarding.subtitle`, `auth.reset.success`).
+- [버그] 기존 OAuth 버튼의 로딩 아이콘 `className="spin"`은 CSS가 없어 돌지 않았다. `auth-spin`으로 바꿨다.
+- [결정] `auth.css`의 계정 유형 카드(`actype-*`)와 `.auth-secondary`는 `AccountTypeForm`이 아직 쓰므로 남겼다. Task 1이 그 화면을 지울 때 함께 지운다.
+- [시안] 시안 로그인 화면의 로고는 링크(`d-auth.html`)지만 앱에서는 이동을 새로 만들지 않으려고 링크 없이 둔다.
