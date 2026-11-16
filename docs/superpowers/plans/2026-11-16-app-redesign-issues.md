@@ -20,3 +20,8 @@
 - [시안] 같은 값의 브랜드 색이 두 벌(`--br-gc-*`, `--sv-gc-*`), 위험 색이 여러 벌(`--danger` #d0563f, `--sx-danger`/`--sv-late`/`--td-late` oklch(66% 0.17 30), `--um-danger` #b4432f, `--tm-danger-bg`/`--z-danger-bg`). 시안 그대로 옮겼고 통합 점검(Task 11)에서 줄일 수 있다.
 - [시안] `--font`(시안: Pretendard, Inter, system-ui)와 앱 `--font-text`(Pretendard, Inter, -apple-system, ...)의 글꼴 목록이 조금 다르다. 첫 두 글꼴은 같아 화면 차이는 없다.
 - [기존] `pnpm build`의 "chunk 500 kB 넘음" 경고는 전부터 있던 것.
+
+## 리뷰 (오케스트레이터)
+
+- [시안] `d-retro2.html?empty=1`이 스크립트 오류(983행, `undefined.date`)로 셸(사이드바, 상단)을 그리지 못하고 빈 화면 문구만 보인다. 앱에서는 셸 안에 빈 화면 한 줄을 넣는다(Task 4).
+- [결정] 데모 데이터 위치: 위젯 하나만 쓰는 것은 그 위젯의 `model/demo*.ts`, 여러 위젯이 같이 쓰는 것(캘린더 목록, 커밋, 주제 정리 결과)은 `entities/<entity>/model/demo.ts`. `app/config/demo-redesign`은 Task 1에서 지운다.
