@@ -36,6 +36,7 @@
 @import "./layout/sub-header.css";
 @import "./layout/side-panel.css";
 @import "./layout/responsive.css";
+@import "./layout/redesign-shell.css";
 
 /* 6. Widget-specific styles */
 @import "./widgets/toast.css";
@@ -52,7 +53,6 @@
 @import "./widgets/todo-board.css";
 @import "./widgets/disconnect-banner.css";
 @import "./widgets/dnd.css";
-@import "./widgets/dashboard.css";
 @import "./widgets/landing.css";
 
 /* 7. Legacy aliases (apple-* back-compat) */

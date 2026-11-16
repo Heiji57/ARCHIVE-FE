@@ -4,7 +4,7 @@ import type { JournalEntry } from "@/entities/entry/model/types"
 import type { Folder } from "@/entities/folder/model/types"
 import type { GitHubCommit } from "@/entities/github/model/types"
 import { useArchiveApp } from "@/app/providers/useArchiveApp"
-import { can } from "@/shared/lib/permissions"
+import { canUseGithub } from "@/shared/lib/permissions"
 import { ConfirmModal } from "@/shared/ui/confirm-modal/ConfirmModal"
 import { useTodayKey } from "@/app/providers/useToday"
 import { useTranslation } from "@/shared/lib/i18n"
@@ -56,7 +56,7 @@ export function RetroEditor({
 }: RetroEditorProps) {
   const { t } = useTranslation()
   const { state, loadCommits, pushRetrospective, pushNotification } = useArchiveApp()
-  const isGithubEnabled = can(state.settings.accountType, "github")
+  const isGithubEnabled = canUseGithub(state.github)
   const todayDateKey = useTodayKey()
 
   // 커밋 섹션은 모든 일간 회고에 표시 (오늘 + 과거 날짜 모두)

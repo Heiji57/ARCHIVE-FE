@@ -20,3 +20,4 @@ export {
   type SearchableSelectProps,
   type SearchableSelectOption,
 } from "./searchable-select/SearchableSelect";
+export { AppLogo, type AppLogoProps } from "./app-logo/AppLogo";

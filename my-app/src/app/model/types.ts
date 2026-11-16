@@ -22,7 +22,11 @@ import type { RecurrenceRule, RecurrenceScope, TaskStatus, Todo } from "@/entiti
 import type { OAuthProvider, User } from "@/entities/user/model/types";
 import type { AppSettings, Locale, TodoBoardRange } from "@/app/model/settings";
 
-export type AppRoute = "dashboard" | "calendar" | "todos" | "retrospectives" | "settings";
+/**
+ * 앱 화면. "ai" 는 리디자인에서 추가. "dashboard" 와 "settings" 는 경로 호환용으로만 남는다
+ * (/dashboard → 캘린더, /settings → 캘린더 위에 설정 시트). 랜딩의 데모 진입이 "settings" 를 쓴다.
+ */
+export type AppRoute = "ai" | "calendar" | "todos" | "retrospectives" | "dashboard" | "settings";
 
 /**
  * 전역 검색 등에서 특정 대상으로 "이동 + 포커스"를 요청하는 일회성 인텐트.
