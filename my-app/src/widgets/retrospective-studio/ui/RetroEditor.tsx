@@ -1,298 +1,382 @@
-import { lazy, Suspense, useEffect, useRef, useState } from "react"
-import { ChevronLeft } from "lucide-react"
-import type { JournalEntry } from "@/entities/entry/model/types"
-import type { Folder } from "@/entities/folder/model/types"
-import type { GitHubCommit } from "@/entities/github/model/types"
-import { useArchiveApp } from "@/app/providers/useArchiveApp"
-import { canUseGithub } from "@/shared/lib/permissions"
-import { ConfirmModal } from "@/shared/ui/confirm-modal/ConfirmModal"
-import { useTodayKey } from "@/app/providers/useToday"
-import { useTranslation } from "@/shared/lib/i18n"
-import { integrationErrorMessageKey } from "@/shared/api"
-import { EditorErrorBoundary } from "@/shared/ui/rich-editor"
-import { RetroCommitsSection } from "./RetroCommitsSection"
-import { RetroCompletedSection } from "./RetroCompletedSection"
-import { RetroDocHead } from "./RetroDocHead"
-import { RetroDocRail } from "./RetroDocRail"
-import { RetroExpandOverlay } from "./RetroExpandOverlay"
-import { RetroSummaryBanner } from "./RetroSummaryBanner"
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Check, ChevronDown, ChevronLeft, Folder as FolderIcon, Maximize, Minimize, MoreHorizontal, Plus, RefreshCw, Search } from "lucide-react";
+import { useArchiveApp } from "@/app/providers/useArchiveApp";
+import type { JournalEntry } from "@/entities/entry/model/types";
+import type { GitHubCommit } from "@/entities/github/model/types";
+import type { Todo } from "@/entities/todo/model/types";
+import { integrationErrorMessageKey } from "@/shared/api";
+import { useTranslation, type TranslationKey } from "@/shared/lib/i18n";
+import { canUseGithub } from "@/shared/lib/permissions";
+import { ConfirmModal } from "@/shared/ui/confirm-modal/ConfirmModal";
+import { ICON_STROKE, SparkIcon } from "@/shared/ui/icons";
+import { EditorErrorBoundary } from "@/shared/ui/rich-editor";
+import { defaultTitle, KIND_RETRO_KEY, periodText } from "../model/format";
+import { nextDayKey, prevActions } from "../model/retroList";
+import { useRetroStudio } from "../model/retroStudio";
+import { useEntryState } from "../model/entryState";
+import { PopMenu } from "./PopMenu";
 
-// TipTap 에디터는 번들 크기가 크므로 회고록 페이지 진입 시에만 로드
-const RichEditor = lazy(() => import("@/shared/ui/rich-editor/ui/RichEditor"))
+// TipTap 편집기는 번들이 커서 회고 편집기를 열 때만 불러온다.
+const RichEditor = lazy(() => import("@/shared/ui/rich-editor/ui/RichEditor"));
 
-export interface RetroEditorProps {
-  entry: JournalEntry
-  completedTodos: { id: string; title: string }[]
-  githubConnectedAs: string
-  isGithubConnected: boolean
-  /** verified emails 캐시 보유 여부. false 면 커밋 0건 시 재연결 안내를 표시한다. */
-  hasVerifiedEmails: boolean
-  pushTargetRepositoryId: string | null
-  /** 폴더 선택기에 쓸 전체 폴더 목록. */
-  folders: Folder[]
-  /** 폴더 이동. null 이면 루트로 옮긴다. */
-  onFolderChange: (folderId: string | null) => void
-  onUpdate: (patch: Partial<Pick<JournalEntry, "title" | "content">>) => void
-  onSave: () => void
-  /** AI 요약(isSummary) 편집 해제 — 확인 후 AI 원본으로 되돌린다. */
-  onRevertSummary?: () => void
-  /** 갤러리로 돌아가기 (2화면 네비게이션). */
-  onBack: () => void
+const QS: TranslationKey[] = ["retro.ed.q1", "retro.ed.q2", "retro.ed.q3", "retro.ed.q4"];
+const i15 = { size: 15, strokeWidth: ICON_STROKE, "aria-hidden": true } as const;
+
+/** 할 일 하나를 그날 완료로 볼지(기간 할 일은 끝낸 날 기준). 기존 회고 편집기 규칙 그대로. */
+function doneOn(todo: Todo, dateKey: string): boolean {
+  if (todo.status !== "done") return false;
+  if (todo.dueDate && todo.dueDate > todo.dateKey) return (todo.completedAt ? todo.completedAt.slice(0, 10) : todo.dueDate) === dateKey;
+  return todo.dateKey === dateKey;
 }
 
-export function RetroEditor({
-  entry,
-  completedTodos,
-  githubConnectedAs,
-  isGithubConnected,
-  hasVerifiedEmails,
-  pushTargetRepositoryId,
-  folders,
-  onFolderChange,
-  onUpdate,
-  onSave,
-  onRevertSummary,
-  onBack,
-}: RetroEditorProps) {
-  const { t } = useTranslation()
-  const { state, loadCommits, pushRetrospective, pushNotification } = useArchiveApp()
-  const isGithubEnabled = canUseGithub(state.github)
-  const todayDateKey = useTodayKey()
+/** 회고 쓰기 화면(시안 d-retro2 editor()): 위 막대, 머리, AI 요약 띠, 지난번 약속, 본문, 그날 한 일, 커밋. */
+export function RetroEditor({ entry }: { entry: JournalEntry }) {
+  const { t, locale } = useTranslation();
+  const s = useRetroStudio();
+  const app = useArchiveApp();
+  const { state, updateEntry, revertSummaryEdit, isDemo, loadCommits, pushRetrospective, pushNotification, moveTodo, addTodo } = app;
+  const { pending, failed } = useEntryState(entry);
+  const [focus, setFocus] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const saveTimer = useRef(0);
+  const [prevOpen, setPrevOpen] = useState(false);
+  const [prevDone, setPrevDone] = useState<Set<string>>(() => new Set());
+  const [qi, setQi] = useState(0);
+  const [revertOpen, setRevertOpen] = useState(false);
+  const [moved, setMoved] = useState<Todo[]>([]);
+  const isDaily = entry.retroType === "daily";
 
-  // 커밋 섹션은 모든 일간 회고에 표시 (오늘 + 과거 날짜 모두)
-  const isDailyEntry = entry.retroType === "daily"
-  // 오늘 여부 — 제목·빈 상태 문구 구분에 사용
-  const isTodayDaily = isDailyEntry && entry.dateKey === todayDateKey
+  const dirty = () => {
+    setSaving(true);
+    window.clearTimeout(saveTimer.current);
+    saveTimer.current = window.setTimeout(() => setSaving(false), 600);
+  };
+  useEffect(() => () => window.clearTimeout(saveTimer.current), []);
 
-  // ─── 커밋 로드 (로컬 state — entry 별 독립 관리) ──────────────────────────
-  // loadCommits 가 결과를 직접 반환하므로, 전역 state 를 거치지 않고 이 컴포넌트
-  // 인스턴스(key=entry.id 로 재마운트)에 격리된 커밋 목록을 유지한다.
-  // → 다른 날짜 회고를 열어도 오늘 커밋이 덮어쓰이지 않는다.
-  const [commits, setCommits] = useState<GitHubCommit[]>([])
-  const [loadingCommits, setLoadingCommits] = useState(false)
-
-  // 일간 회고를 열 때 자동으로 해당 날짜 커밋 1회 로드 (오늘 + 과거 모두)
-  const commitsLoadedRef = useRef(false)
-  useEffect(() => {
-    if (!isDailyEntry || !isGithubConnected) return
-    if (commitsLoadedRef.current) return
-    commitsLoadedRef.current = true
-    // 커밋 로드(외부 API) 시작 시 로딩 플래그 표시 — 데이터 페치 표준 패턴이라 예외 처리.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setLoadingCommits(true)
-    void loadCommits(entry.dateKey)
-      .then(setCommits)
-      .finally(() => setLoadingCommits(false))
-  }, [isDailyEntry, isGithubConnected, entry.dateKey, loadCommits])
-
-  const handleRefreshCommits = () => {
-    setLoadingCommits(true)
-    void loadCommits(entry.dateKey)
-      .then(setCommits)
-      .finally(() => setLoadingCommits(false))
-  }
-
-  // ─── Push ──────────────────────────────────────────────────────────────────
-  const [pushing, setPushing] = useState(false)
-
-  const handlePush = async () => {
-    if (!isGithubConnected || !pushTargetRepositoryId) return
-    setPushing(true)
-    const result = await pushRetrospective(
-      entry.retroType,
-      entry.dateKey,
-      entry.content,
-    )
-    setPushing(false)
-    if (result.ok) {
-      onSave() // synced 마킹
-      pushNotification("success", t("retro.editor.pushSuccess"), result.path, {
-        category: "sync",
-      })
-    } else {
-      // v2 세분화 코드(권한 부족·rate limit·응답 이상)는 전용 안내, 그 외는 기존처럼 코드 표시
-      const errorKey = result.error ? integrationErrorMessageKey(result.error) : null
-      pushNotification(
-        "warning",
-        t("retro.editor.pushFailed"),
-        errorKey ? t(errorKey) : result.error,
-        {
-          category: "sync",
-          ...(result.error === "GITHUB_PERMISSION_DENIED"
-            ? { actionLabel: t("nav.settings"), actionHref: "/settings" }
-            : {}),
-        },
-      )
-    }
-  }
-
-  // ─── 확장 모드 ─────────────────────────────────────────────────────────────
-  const [expanded, setExpanded] = useState(false)
-
+  // Ctrl+Shift+F 집중 쓰기, Esc 로 끝내기
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (
-        (e.ctrlKey || e.metaKey) &&
-        e.shiftKey &&
-        e.key.toLowerCase() === "f"
-      ) {
-        e.preventDefault()
-        setExpanded((v) => !v)
-        return
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === "f") {
+        e.preventDefault();
+        setFocus((v) => !v);
+      } else if (focus && e.key === "Escape" && !document.querySelector("dialog[open]")) {
+        e.preventDefault();
+        setFocus(false);
       }
-      if (expanded && e.key === "Escape") {
-        e.preventDefault()
-        setExpanded(false)
-      }
-    }
-    document.addEventListener("keydown", onKey)
-    return () => document.removeEventListener("keydown", onKey)
-  }, [expanded])
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [focus]);
 
+  const prev = useMemo(() => prevActions(state.entries, entry), [state.entries, entry]);
+  const dayTodos = useMemo(() => {
+    if (!isDaily) return { done: [], open: [] };
+    const done = state.todos.filter((x) => !x.isVirtual && doneOn(x, entry.dateKey));
+    const open = state.todos.filter((x) => !x.isVirtual && x.dateKey === entry.dateKey && x.status !== "done");
+    return { done, open: [...open, ...moved.filter((m) => !open.some((o) => o.id === m.id))] };
+  }, [isDaily, state.todos, entry.dateKey, moved]);
+
+  // ─── GitHub(기존 동작 유지: 그날 커밋, 저장소에 push) ───────────────────
+  const githubOn = canUseGithub(state.github);
+  const connected = state.github.status === "connected";
+  const canPush = connected && !!state.github.pushTargetRepositoryId;
+  const [commits, setCommits] = useState<GitHubCommit[] | null>(null);
+  const [loadingCommits, setLoadingCommits] = useState(false);
+  const loadDayCommits = () => {
+    setLoadingCommits(true);
+    void loadCommits(entry.dateKey)
+      .then(setCommits)
+      .finally(() => setLoadingCommits(false));
+  };
+  const commitsLoaded = useRef(false);
   useEffect(() => {
-    if (!expanded) return
-    const prev = document.body.style.overflow
-    document.body.style.overflow = "hidden"
-    return () => {
-      document.body.style.overflow = prev
+    if (!isDaily || !connected || commitsLoaded.current) return;
+    commitsLoaded.current = true;
+    // 커밋 받기 시작 표시(표준 패턴)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setLoadingCommits(true);
+    void loadCommits(entry.dateKey)
+      .then(setCommits)
+      .finally(() => setLoadingCommits(false));
+  }, [isDaily, connected, entry.dateKey, loadCommits]);
+
+  const [pushing, setPushing] = useState(false);
+  const push = async () => {
+    if (isDemo || !canPush) return;
+    setPushing(true);
+    const r = await pushRetrospective(entry.retroType, entry.dateKey, entry.content);
+    setPushing(false);
+    if (r.ok) {
+      updateEntry(entry.id, { synced: true });
+      pushNotification("success", t("retro.editor.pushSuccess"), r.path, { category: "sync" });
+    } else {
+      const key = r.error ? integrationErrorMessageKey(r.error) : null;
+      pushNotification("warning", t("retro.editor.pushFailed"), key ? t(key) : r.error ?? "", { category: "sync" });
     }
-  }, [expanded])
+  };
 
-  const canPush = isGithubConnected && !!pushTargetRepositoryId
+  // ─── 본문 목록 줄 옆 "→ 할 일로" (시안 F1) ─────────────────────────────
+  const edRef = useRef<HTMLDivElement>(null);
+  const [f1, setF1] = useState<{ text: string; left: number; top: number } | null>(null);
+  const onMove = (e: React.MouseEvent) => {
+    const el = e.target as HTMLElement;
+    if (el.closest(".rv-f1")) return;
+    const li = el.closest<HTMLElement>(".rv-body li");
+    const box = edRef.current;
+    if (!li || !box || !li.textContent?.trim()) {
+      if (f1) setF1(null);
+      return;
+    }
+    const br = box.getBoundingClientRect();
+    const r = li.getBoundingClientRect();
+    const text = li.textContent.trim();
+    if (f1?.text === text) return;
+    setF1({ text, left: Math.min(r.right - br.left + 8, br.width - 96), top: r.top - br.top + 2 });
+  };
+  const sendToTodo = () => {
+    if (!f1) return;
+    const title = f1.text.slice(0, 200);
+    addTodo(title, nextDayKey(s.today));
+    s.toast(t("retro.ed.toTodoToast", { t: title.slice(0, 20) }));
+    setF1(null);
+  };
 
-  // ─── AI 요약 되돌리기(편집 해제 → AI 원본 복귀) ────────────────────────────
-  const [revertConfirmOpen, setRevertConfirmOpen] = useState(false)
+  const kindLabel = t(KIND_RETRO_KEY[entry.retroType]);
+  const dflt = defaultTitle(t, locale, entry.retroType, entry.dateKey);
+  const titleValue = entry.isSummary || /^\d{4}-\d{2}-\d{2}\s/.test(entry.title) ? "" : entry.title;
 
   return (
-    <article>
-      <button type="button" className="retro-back-link" onClick={onBack}>
-        <ChevronLeft size={15} />
-        {t("retro.gallery.backToList")}
-      </button>
-
-      <div className="retro-doc">
-        <div className="retro-doc-main">
-          <RetroDocHead
-            entry={entry}
-            folders={folders}
-            onTitleChange={(title) => onUpdate({ title })}
-            onFolderChange={onFolderChange}
-          />
-
-          {isGithubEnabled && !isGithubConnected ? (
-            <div className="retro-doc-banner" style={{ marginTop: "var(--s-md)" }}>
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "var(--s-xxs)",
-                  flex: 1,
-                }}>
-                <span style={{ color: "var(--color-ink)" }}>
-                  {t("retro.github.notConnected")}
-                </span>
-                <span>{t("retro.github.connectFromSettings")}</span>
-              </div>
-            </div>
-          ) : isGithubEnabled && !pushTargetRepositoryId ? (
-            <div className="retro-doc-banner" style={{ marginTop: "var(--s-md)" }}>
-              <span style={{ flex: 1 }}>{t("settings.github.pushTargetHint")}</span>
-            </div>
-          ) : null}
-
-          {entry.isSummary && onRevertSummary ? (
-            <RetroSummaryBanner
+    <div className={`rv-ed${focus ? " zen" : ""}`} ref={edRef} onMouseMove={onMove} onMouseLeave={() => setF1(null)}>
+      <div className="rv-eb">
+        {!focus ? (
+          <button type="button" className="rv-bt g" onClick={s.closeEntry}>
+            <ChevronLeft size={14} strokeWidth={ICON_STROKE} aria-hidden="true" />
+            {t("retro.ed.back")}
+          </button>
+        ) : null}
+        <span className="sp" />
+        {githubOn && connected ? (
+          <span className={`rv-sync${entry.synced ? " on" : ""}`}>{t(entry.synced ? "retro.ed.synced" : "retro.ed.unsynced")}</span>
+        ) : null}
+        <span className="sv" aria-live="polite">
+          {t(saving ? "retro.ed.saving" : "retro.ed.saved")}
+        </span>
+        <button
+          type="button"
+          className="rv-ib"
+          aria-pressed={focus}
+          aria-label={t("retro.ed.focus")}
+          title={t(focus ? "retro.ed.focusEnd" : "retro.ed.focusTitle")}
+          onClick={() => setFocus((v) => !v)}
+        >
+          {focus ? <Minimize {...i15} /> : <Maximize {...i15} />}
+        </button>
+        <PopMenu trigger={<MoreHorizontal {...i15} />} triggerClass="rv-ib" triggerLabel={t("retro.ed.more")} side="r">
+          {(close) => (
+            <EditorMenu
               entry={entry}
-              onRevert={() => setRevertConfirmOpen(true)}
+              close={close}
+              canPush={canPush && !isDemo}
+              pushing={pushing}
+              onPush={() => {
+                close();
+                void push();
+              }}
             />
+          )}
+        </PopMenu>
+      </div>
+      <div className="rv-es">
+        <article className="rv-doc">
+          <div className="rv-meta">
+            <span className={`q-ty${entry.isSummary ? " ai" : ""}`}>
+              {entry.isSummary ? <SparkIcon size={11} /> : null}
+              {kindLabel}
+            </span>
+            <span>{periodText(locale, entry)}</span>
+          </div>
+          <input
+            className="rv-ttl"
+            aria-label={t("retro.ed.titleLabel")}
+            value={entry.isSummary ? dflt : titleValue}
+            placeholder={dflt}
+            readOnly={entry.isSummary}
+            title={entry.isSummary ? t("retro.ed.hintSummary") : undefined}
+            onChange={(e) => {
+              updateEntry(entry.id, { title: e.target.value });
+              dirty();
+            }}
+          />
+          <p className="rv-hint">{entry.isSummary ? t("retro.ed.hintSummary") : t("retro.ed.hintDefault", { title: dflt })}</p>
+
+          {entry.isSummary ? (
+            pending ? (
+              <div className="rv-ban wait">
+                <i className="rv-spin" aria-hidden="true" />
+                <span>{t("retro.ed.wait")}</span>
+              </div>
+            ) : failed ? (
+              <div className="rv-ban fail">
+                <b>{t("retro.ed.failTag")}</b>
+                <span>{t("retro.ed.failMsg")}</span>
+                <button type="button" className="rv-bt g" onClick={() => s.setSummaryKind(entry.retroType === "daily" ? "weekly" : entry.retroType)}>
+                  {t("retro.ed.retry")}
+                </button>
+              </div>
+            ) : (
+              <div className="rv-ban">
+                <b>
+                  <SparkIcon size={13} />
+                  {t("retro.ed.ai")}
+                </b>
+                <span>{t("retro.ed.aiNote")}</span>
+                <button type="button" className="rv-bt g" onClick={() => setRevertOpen(true)}>
+                  {t("retro.summary.revert")}
+                </button>
+              </div>
+            )
           ) : null}
 
-          {/* 일반 모드 */}
-          {!expanded && (
-            <>
-              {/* 완료된 할 일 — 일간 회고에서만 표시 */}
-              {isDailyEntry && <RetroCompletedSection todos={completedTodos} />}
-
-              {/* 커밋 기록 (개발자 계정 + 일간 회고 + GitHub 연결 시 표시) */}
-              {isGithubEnabled && isGithubConnected && isDailyEntry ? (
-                <RetroCommitsSection
-                  commits={commits}
-                  loading={loadingCommits}
-                  onRefresh={handleRefreshCommits}
-                  githubConnectedAs={githubConnectedAs}
-                  hasVerifiedEmails={hasVerifiedEmails}
-                  isToday={isTodayDaily}
-                />
+          {prev.length ? (
+            <div className="rv-prev" data-open={prevOpen ? "true" : undefined}>
+              <button type="button" aria-expanded={prevOpen} onClick={() => setPrevOpen((v) => !v)}>
+                {t("retro.ed.prev")}
+                <b>
+                  {prev.filter((x) => prevDone.has(x.key)).length} / {prev.length}
+                </b>
+                <ChevronDown size={14} strokeWidth={ICON_STROKE} aria-hidden="true" className="cv" />
+              </button>
+              {prevOpen ? (
+                <ul>
+                  {prev.map((x) => {
+                    const on = prevDone.has(x.key);
+                    return (
+                      <li key={x.key} className={on ? "on" : undefined}>
+                        <button
+                          type="button"
+                          aria-pressed={on}
+                          onClick={() =>
+                            setPrevDone((p) => {
+                              const n = new Set(p);
+                              if (on) n.delete(x.key);
+                              else n.add(x.key);
+                              return n;
+                            })
+                          }
+                        >
+                          <Ck st={on ? "done" : "todo"} />
+                          <span>{x.text}</span>
+                        </button>
+                        <small>{`${+x.fromDateKey.slice(5, 7)}/${+x.fromDateKey.slice(8, 10)}`}</small>
+                      </li>
+                    );
+                  })}
+                </ul>
               ) : null}
+            </div>
+          ) : null}
 
-              {/* 회고 본문 — AI 요약(isSummary)도 편집 가능(PATCH /summaries/{id}) */}
-              <section className="retro-doc-section">
-                <div className="retro-doc-section-head">
-                  <h2 className="retro-doc-section-title">{t("retro.editor.content")}</h2>
-                  <span className="retro-doc-section-meta">
-                    {t("retro.editor.contentHint")}
-                  </span>
+          {isDaily && !entry.content.trim() ? (
+            <div className="rv-ask">
+              <b>{t(QS[qi])}</b>
+              <button type="button" onClick={() => setQi((i) => (i + 1) % QS.length)}>
+                {t("retro.ed.otherQ")}
+              </button>
+            </div>
+          ) : null}
+
+          <div className="rv-body">
+            {pending ? null : (
+              <EditorErrorBoundary fallback={(error) => <div className="rv-ban fail">{error.message}</div>}>
+                <Suspense fallback={<p className="rv-load">{t("retro.editor.loadingEditor")}</p>}>
+                  <RichEditor
+                    key={entry.id}
+                    value={entry.content}
+                    placeholder={t("retro.ed.placeholder")}
+                    onChange={(md) => {
+                      // 처음 불러올 때 편집기가 같은 글을 다시 내보내는 것은 고친 것이 아니다
+                      if (md === entry.content) return;
+                      updateEntry(entry.id, { content: md });
+                      dirty();
+                    }}
+                    spellCheck={state.settings.spellCheck}
+                  />
+                </Suspense>
+              </EditorErrorBoundary>
+            )}
+          </div>
+
+          {isDaily ? (
+            <section className="rv-done" aria-label={t("retro.ed.done")}>
+              <h3>
+                {t("retro.ed.done")} <em>{dayTodos.done.length}</em>
+                {dayTodos.open.length ? <em>{t("retro.ed.openN", { n: dayTodos.open.length })}</em> : null}
+              </h3>
+              {dayTodos.done.length === 0 ? <p className="rv-none-l">{t("retro.ed.noneDone")}</p> : null}
+              {dayTodos.done.map((x) => (
+                <div key={x.id} className="rv-mr">
+                  <Ck st="done" />
+                  <span>{x.title}</span>
+                  <em>{fmtTime(locale, x.startTime)}</em>
                 </div>
+              ))}
+              {dayTodos.open.map((x) => {
+                const mv = moved.some((m) => m.id === x.id);
+                return (
+                  <div key={x.id} className={`rv-mr${mv ? " moved" : ""}`}>
+                    <Ck st={x.status === "in-progress" ? "doing" : "todo"} />
+                    <span>{x.title}</span>
+                    {mv ? (
+                      <em>{t("retro.ed.carried")}</em>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          className="f3"
+                          onClick={() => {
+                            setMoved((m) => [...m, x]);
+                            moveTodo(x.id, nextDayKey(s.today));
+                            s.toast(t("retro.ed.carriedToast"));
+                          }}
+                        >
+                          {t("retro.ed.carry")}
+                        </button>
+                        <em>{fmtTime(locale, x.startTime)}</em>
+                      </>
+                    )}
+                  </div>
+                );
+              })}
+            </section>
+          ) : null}
 
-                <EditorErrorBoundary
-                  fallback={(error) => (
-                    <div
-                      className="retro-doc-banner"
-                      data-tone="danger"
-                      style={{
-                        fontFamily: "var(--font-mono)",
-                        whiteSpace: "pre-wrap",
-                      }}>
-                      {error.message}
-                    </div>
-                  )}>
-                  <Suspense
-                    fallback={
-                      <p className="retro-doc-empty" style={{ minHeight: 260 }}>
-                        {t("retro.editor.loadingEditor")}
-                      </p>
-                    }>
-                    <RichEditor
-                      key={entry.id}
-                      value={entry.content}
-                      placeholder={t("retro.editor.learnedPlaceholder")}
-                      onChange={(md) => onUpdate({ content: md })}
-                      spellCheck={state.settings.spellCheck}
-                    />
-                  </Suspense>
-                </EditorErrorBoundary>
-              </section>
-            </>
-          )}
-        </div>
-
-        <aside className="retro-doc-rail">
-          <RetroDocRail
-            entry={entry}
-            isGithubEnabled={isGithubEnabled}
-            isGithubConnected={isGithubConnected}
-            canPush={canPush}
-            pushing={pushing}
-            completedCount={completedTodos.length}
-            commitCount={commits.length}
-            onPush={() => void handlePush()}
-            onExpand={() => setExpanded(true)}
-          />
-        </aside>
+          {isDaily && githubOn && connected ? (
+            <section className="rv-done" aria-label={t("retro.ed.commits")}>
+              <h3>
+                {t("retro.ed.commits")} <em>{commits?.length ?? 0}</em>
+                <button type="button" className="rv-ib xs" aria-label={t("retro.ed.commitsRefresh")} onClick={loadDayCommits} disabled={loadingCommits}>
+                  <RefreshCw size={12} strokeWidth={ICON_STROKE} aria-hidden="true" />
+                </button>
+              </h3>
+              {loadingCommits && !commits ? <p className="rv-none-l">{t("retro.load.loading")}</p> : null}
+              {commits && commits.length === 0 ? <p className="rv-none-l">{t("retro.ed.commitsNone")}</p> : null}
+              {commits?.map((c) => (
+                <a key={c.sha} className="rv-mr" href={c.htmlUrl} target="_blank" rel="noopener noreferrer">
+                  <code>{c.sha.slice(0, 7)}</code>
+                  <span>{c.message.split("\n")[0]}</span>
+                  <em>{c.fullName}</em>
+                </a>
+              ))}
+            </section>
+          ) : null}
+        </article>
       </div>
-
-      {/* 확장 모드 — Portal (Notion 스타일 목차 포함) */}
-      {expanded ? (
-        <RetroExpandOverlay
-          entry={entry}
-          onUpdate={onUpdate}
-          onClose={() => setExpanded(false)}
-          spellCheck={state.settings.spellCheck}
-        />
+      {f1 ? (
+        <button type="button" className="rv-f1" style={{ left: f1.left, top: f1.top }} onClick={sendToTodo}>
+          {t("retro.ed.toTodo")}
+        </button>
       ) : null}
-
-      {/* AI 요약 되돌리기 확인 */}
-      {revertConfirmOpen ? (
+      {revertOpen ? (
         <ConfirmModal
           open
           title={t("retro.summary.revertConfirmTitle")}
@@ -300,12 +384,91 @@ export function RetroEditor({
           confirmLabel={t("retro.summary.revertConfirm")}
           cancelLabel={t("retro.summary.revertCancel")}
           onConfirm={() => {
-            setRevertConfirmOpen(false)
-            onRevertSummary?.()
+            setRevertOpen(false);
+            revertSummaryEdit(entry.id);
           }}
-          onCancel={() => setRevertConfirmOpen(false)}
+          onCancel={() => setRevertOpen(false)}
         />
       ) : null}
-    </article>
-  )
+    </div>
+  );
+}
+
+function fmtTime(locale: string, hhmm?: string | null): string {
+  if (!hhmm) return "";
+  const [h, m] = hhmm.split(":").map(Number);
+  return new Intl.DateTimeFormat(locale, { hour: "numeric", minute: "2-digit" }).format(new Date(2000, 0, 1, h, m));
+}
+
+function Ck({ st }: { st: "done" | "doing" | "todo" }) {
+  if (st === "done")
+    return (
+      <span className="rv-ck">
+        <Check size={9} strokeWidth={3} aria-hidden="true" />
+      </span>
+    );
+  return <span className={`rv-ck ${st === "doing" ? "d" : "o"}`} />;
+}
+
+/** ⋯ 메뉴: 폴더 옮기기(찾기 + 새 폴더), GitHub 저장. */
+function EditorMenu({ entry, close, canPush, pushing, onPush }: { entry: JournalEntry; close: () => void; canPush: boolean; pushing: boolean; onPush: () => void }) {
+  const { t } = useTranslation();
+  const s = useRetroStudio();
+  const [q, setQ] = useState("");
+  const opts: Array<{ id: string | null; name: string }> = [...s.folders.map((f) => ({ id: f.id as string | null, name: f.name })), { id: null, name: t("retro.cd.unfiled") }];
+  const hits = opts.filter((o) => o.name.toLowerCase().includes(q.trim().toLowerCase()));
+  const canCreate = q.trim() !== "" && !opts.some((o) => o.name === q.trim());
+  const pick = (id: string | null) => {
+    close();
+    if (id !== entry.folderId) s.moveEntry(entry, id);
+  };
+  const create = async () => {
+    const name = q.trim();
+    close();
+    const id = await s.createFolder(name);
+    if (id) s.moveEntry(entry, id);
+  };
+  return (
+    <>
+      <p className="rv-pop-h">{t("retro.ed.moveFolder")}</p>
+      <label className="rv-fs">
+        <Search size={13} strokeWidth={ICON_STROKE} aria-hidden="true" />
+        <input
+          value={q}
+          placeholder={t("retro.ed.folderFind")}
+          aria-label={t("retro.ed.folderFind")}
+          onChange={(e) => setQ(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key !== "Enter" || e.nativeEvent.isComposing) return;
+            e.preventDefault();
+            if (hits[0]) pick(hits[0].id);
+            else if (canCreate) void create();
+          }}
+        />
+      </label>
+      {hits.map((o) => (
+        <button key={o.id ?? "none"} type="button" role="menuitemradio" aria-checked={(entry.folderId ?? null) === o.id} onClick={() => pick(o.id)}>
+          <FolderIcon size={13} strokeWidth={ICON_STROKE} aria-hidden="true" />
+          {o.name}
+        </button>
+      ))}
+      {canCreate ? (
+        <>
+          <hr />
+          <button type="button" role="menuitem" onClick={() => void create()}>
+            <Plus size={13} strokeWidth={ICON_STROKE} aria-hidden="true" />
+            {t("retro.ed.folderCreate", { name: q.trim() })}
+          </button>
+        </>
+      ) : null}
+      {canPush ? (
+        <>
+          <hr />
+          <button type="button" role="menuitem" disabled={pushing} onClick={onPush}>
+            {pushing ? t("retro.editor.pushing") : t("retro.ed.push")}
+          </button>
+        </>
+      ) : null}
+    </>
+  );
 }

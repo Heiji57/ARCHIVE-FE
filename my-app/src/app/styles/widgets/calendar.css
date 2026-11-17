@@ -1,734 +1,1346 @@
-/* ---------- Calendar page layout ---------- */
+/* 캘린더(주간, 일간, 월간)와 캘린더 사이드바.
+   시안: prototypes/linear-shell/d-calendar.html(인라인 스타일), shared/planner.css(카드 6번, 시간 칸,
+   종일 줄, 기간 막대 4번, 월간 카드 1번, 보기 메뉴 3번, 캘린더 목록), shared/sidevar.css(오늘 회고 5번,
+   연동 문제 3번), shared/shared.css(미니 달력). 색과 글꼴은 tokens/redesign.css 토큰만. 접두 cal- */
 
-/* 일반(비확대) 모드: 뷰포트 높이에서 sticky 네비게이션(56px)을 뺀 높이를 확보 */
-.calendar-shell:not(.calendar-shell-expanded) {
+/* ---------- 바탕 ---------- */
+.cal-root {
+  height: 100%;
   display: flex;
   flex-direction: column;
-  min-height: calc(100vh - 56px);
-}
-
-/* .calendar-shell의 flex 자식으로서 남은 높이를 모두 차지하고,
-   내부 자식(툴바 + 뷰)을 flex column으로 배분한다 */
-.calendar-page {
-  padding-top: 40px;
-  box-sizing: border-box;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-/* Toolbar (view toggle + month label + nav buttons) */
-.calendar-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 28px;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-.calendar-toolbar-left {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-.calendar-toolbar-title {
-  margin: 0;
-}
-.calendar-toolbar-nav {
-  display: flex;
-  gap: 8px;
-}
-
-/* Toolbar right cluster — legend + expand control */
-.calendar-toolbar-right {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-/* 확대(전체화면) 토글 버튼 */
-.calendar-expand-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  flex-shrink: 0;
-  border-radius: var(--r-sm, 8px);
-  border: 1px solid var(--color-hairline, rgba(0, 0, 0, 0.1));
-  background: var(--color-tile-2);
-  color: var(--color-body-muted);
-  cursor: pointer;
-  transition: background-color 120ms, color 120ms;
-}
-.calendar-expand-btn:hover {
-  background: var(--color-tile-3);
-  color: var(--color-ink);
-}
-
-/* 확대 모드 — 앱 사이드바 포함 전체 화면을 덮는다.
-   일간 뷰는 높이가 고정(내부 스크롤)이고, 주간 뷰는 할 일이 많아질수록 셀 높이가
-   늘어나 콘텐츠가 길어질 수 있다. 그래서 부모에 align-items:center 를 쓰지 않고
-   자식(.calendar-page)에 margin:auto 를 준다 — 콘텐츠가 뷰포트보다 작으면
-   수직 중앙 정렬되고, 뷰포트보다 커지면 margin 이 0 으로 줄어들며 위쪽부터 자연스럽게
-   쌓여 스크롤로 처음부터 끝까지 온전히 닿을 수 있다(align-items:center 는 넘칠 때
-   위쪽이 스크롤로 닿지 않는 문제가 있어 사용하지 않는다). */
-.calendar-shell-expanded {
-  position: fixed;
-  inset: 0;
-  z-index: 120;
-  background: var(--color-canvas);
-  overflow-y: auto;
-  padding: 20px clamp(20px, 4vw, 56px) 48px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  animation: calendarExpandFadeIn 160ms ease-out;
-}
-.calendar-shell-expanded .calendar-page {
-  padding-top: 8px;
-  padding-left: 0;
-  padding-right: 0;
-  width: 100%;
-  margin-left: 0;
-  margin-right: 0;
-}
-/* 일간 뷰는 내부 스크롤 박스(.day-timeline-scroll)가 고정 max-height 를 가지므로
-   확대 모드에서 별도로 키워 전체 카드(툴바 포함)가 화면 높이의 대부분을 차지하게
-   맞춘다(140px 은 툴바+셸 패딩 대략치). 주간/월간 뷰는 콘텐츠 높이가 자연스럽게
-   늘어나므로 별도 처리가 필요 없다. */
-.calendar-shell-expanded .day-timeline-scroll {
-  flex: none;
-  max-height: max(320px, calc(92vh - 140px));
-}
-/* 확대 모드에서는 툴바 안의 버튼 대신 우측 상단에 고정된 축소 버튼을 쓴다. */
-.calendar-shell-expanded .calendar-expand-btn {
-  display: none;
-}
-.calendar-expand-float-btn {
-  position: fixed;
-  top: 20px;
-  right: clamp(20px, 4vw, 56px);
-  z-index: 130;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 38px;
-  height: 38px;
-  border-radius: var(--r-sm, 8px);
-  border: 1px solid var(--color-hairline, rgba(0, 0, 0, 0.1));
-  background: var(--color-tile-2);
-  color: var(--color-body-muted);
-  cursor: pointer;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
-  transition: background-color 120ms, color 120ms;
-}
-.calendar-expand-float-btn:hover {
-  background: var(--color-tile-3);
-  color: var(--color-ink);
-}
-@keyframes calendarExpandFadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-/* Status legend — sits at the toolbar's right edge (Linear design) */
-.calendar-legend {
-  display: flex;
-  gap: 28px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-.calendar-legend-group {
-  display: flex;
-  gap: 16px;
-  align-items: center;
-}
-.calendar-legend-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 16px;
-  color: var(--color-body-muted);
-}
-
-/* ---------- Day timeline view ---------- */
-.day-timeline {
-  display: flex;
-  flex-direction: column;
-  border: 1px solid var(--color-divider-soft);
-  border-radius: var(--r-lg);
-  overflow: hidden;
-  background: var(--color-tile-2);
-  flex: 1;
   min-height: 0;
+  font: 400 14px/1.45 var(--font);
+  color: var(--ink);
+  background: var(--canvas);
 }
-
-/* "종일"(시간 미지정) 영역 */
-.day-allday {
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
-  padding: 14px 18px;
-  border-bottom: 1px solid var(--color-divider-soft);
-  background: var(--color-tile-3);
-}
-.day-allday-label {
-  flex: 0 0 auto;
-  font-size: 12px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--color-body-muted);
-  padding-top: 5px;
-}
-.day-allday-items {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-.day-allday-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 10px;
-  border-radius: var(--r-pill);
-  background: var(--color-tile-2);
-  border: 1px solid var(--color-divider-soft);
-  color: var(--color-ink);
-  font-size: 12px;
-  cursor: pointer;
-  max-width: 220px;
-}
-.day-allday-chip-title {
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-.day-allday-chip[data-status="done"] {
-  background: rgba(39, 166, 68, 0.12);
-  border-color: rgba(39, 166, 68, 0.3);
-  color: var(--color-status-done);
-}
-.day-allday-chip[aria-pressed="true"] {
-  border-color: var(--color-primary);
-}
-/* 드래그 가능: 미지정 칩을 타임라인으로 끌어 시간 지정 */
-.day-allday-chip {
-  touch-action: none;
+.cal-root[data-dragging],
+.cal-root[data-dragging] * {
+  cursor: grabbing !important;
   user-select: none;
 }
-.day-allday-chip[data-dragging] {
-  opacity: 0.4;
-}
-/* 미지정 영역이 비었을 때 드롭 안내 */
-.day-allday-empty {
-  font-size: 12px;
-  color: var(--color-ink-muted-48);
-  padding: 5px 2px;
-}
-/* 타임라인 블록을 끌어 시간 제거하려 할 때 미지정 영역 강조 */
-.day-allday[data-drop-active] {
-  background: color-mix(in srgb, var(--color-primary) 12%, var(--color-tile-3));
-  outline: 2px dashed var(--color-primary);
-  outline-offset: -2px;
-}
-
-/* 작업 상세 휴지통 버튼 — hover 시 빨강 */
-.detail-delete-btn:hover {
-  color: #ff453a;
-}
-
-/* 드래그 고스트 (미지정 칩 ↔ 타임라인 블록 모핑).
-   너비/높이는 JS 가 원본 UI 크기를 측정해 inline 으로 지정한다(가변).
-   커서 기준 가로 중앙 정렬(translateX(-50%))이라 너비 변화가 "양옆으로" 늘어난다.
-   너비/높이/모서리에만 transition 을 걸어 부드럽게 stretch. */
-.chip-drag-ghost {
-  position: fixed;
-  z-index: 60;
-  pointer-events: none;
-  box-sizing: border-box;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 10px;
-  color: var(--color-ink);
-  font-size: 12px;
-  background: var(--color-tile-2);
-  border: 1px solid var(--color-primary);
-  border-left: 3px solid var(--color-primary);
-  box-shadow:
-    0 6px 20px rgba(0, 0, 0, 0.28),
-    0 0 0 2px color-mix(in srgb, var(--color-primary) 45%, transparent);
-  overflow: hidden;
-  white-space: nowrap;
-  /* 커서 기준 가로 중앙 정렬 → 너비 변화가 양옆으로 늘어난다 */
-  transform: translate(-50%, -50%);
-  transition:
-    width 0.2s cubic-bezier(0.32, 0.9, 0.3, 1),
-    height 0.2s cubic-bezier(0.32, 0.9, 0.3, 1),
-    border-radius 0.2s ease;
-}
-.chip-drag-ghost[data-form="chip"] {
-  border-radius: var(--r-pill);
-}
-.chip-drag-ghost[data-form="block"] {
-  border-radius: var(--r-sm);
-}
-.chip-drag-ghost-title {
-  min-width: 0;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  font-weight: 500;
-}
-.chip-drag-ghost-time {
-  flex: 0 0 auto;
-  font-size: 12px;
-  color: var(--color-body-muted);
-  font-variant-numeric: tabular-nums;
-}
-
-/* 스크롤 가능한 시간축 영역 */
-.day-timeline-scroll {
+.cal-scroll {
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
-  /* 00:00 라벨(상단 row 라벨은 top:-7px)이 잘리지 않도록 위쪽 여유 공간 확보 */
-  padding-top: 12px;
-}
-.day-timeline-grid {
+  overflow: auto;
+  overscroll-behavior: contain;
   position: relative;
 }
+.cal-scroll:focus {
+  outline: none;
+}
+.cal-root :is(button, [role="button"]):focus-visible {
+  outline: 2px solid var(--primary-h);
+  outline-offset: 1px;
+}
 
-/* 시각 눈금 줄 + 라벨 */
-.day-hour-row {
+/* ---------- 도구 막대 ---------- */
+.cal-ttl {
+  min-width: 0;
+}
+.cal-vwb {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 8px 0 11px;
+  border: 1px solid var(--line2);
+  border-radius: var(--r);
+  background: var(--s1);
+  font-size: 13px;
+  color: var(--ink);
+  white-space: nowrap;
+  flex: none;
+}
+.cal-vwb svg {
+  color: var(--ink3);
+  transition: transform 0.15s;
+}
+.cal-vwb[aria-expanded="true"] {
+  border-color: var(--primary);
+}
+.cal-vwb[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+.cal-vwb:focus-visible,
+.cal-vwm button:focus-visible {
+  outline: 2px solid var(--primary-h);
+  outline-offset: 1px;
+}
+.cal-vwm {
+  position: fixed;
+  z-index: 80;
+  min-width: 140px;
+  padding: 4px;
+  border: 1px solid var(--line2);
+  border-radius: var(--r2);
+  background: var(--s3);
+  box-shadow: var(--rs-shadow);
+  display: flex;
+  flex-direction: column;
+  font: 400 13px/1.45 var(--font);
+}
+.cal-vwm button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 30px;
+  padding: 0 8px 0 10px;
+  border-radius: 5px;
+  color: var(--ink2);
+  text-align: left;
+}
+.cal-vwm button span {
+  flex: 1;
+}
+.cal-vwm button svg {
+  color: var(--primary-h);
+}
+.cal-vwm button:hover,
+.cal-vwm button:focus-visible {
+  background: var(--s4);
+  color: var(--ink);
+}
+.cal-vwm button[aria-checked="true"] {
+  color: var(--ink);
+}
+
+/* ---------- 주간·일간: 옆으로 이어지는 날짜 열 ---------- */
+.cal-wk {
+  width: max-content;
+  min-width: 100%;
+}
+.cal-wtop {
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  background: var(--canvas);
+}
+.cal-wrow {
+  display: grid;
+  grid-template-columns: 56px repeat(var(--n), var(--cw));
+}
+.cal-corner {
+  position: sticky;
+  left: 0;
+  z-index: 5;
+  background: var(--canvas);
+}
+.cal-tz {
+  font-size: 12px;
+  color: var(--ink4);
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding: 0 8px 8px 0;
+}
+.cal-dh {
+  padding: 10px 6px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  text-align: center;
+}
+.cal-dh.drop {
+  background: var(--primary-a);
+}
+.cal-dh.we {
+  background: var(--we);
+}
+.cal-dh button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  border-radius: 6px;
+  padding: 2px 6px;
+}
+.cal-dh button:hover {
+  background: var(--s2);
+}
+.cal-dw {
+  font-size: 12px;
+  color: var(--ink3);
+  white-space: nowrap;
+}
+.cal-dw b {
+  font-weight: 600;
+  color: var(--ink2);
+  margin-right: 4px;
+}
+.cal-dn {
+  font: 500 16px/28px var(--font);
+  font-variant-numeric: tabular-nums;
+  width: 28px;
+  height: 28px;
+  display: block;
+  text-align: center;
+  border-radius: 50%;
+  color: var(--ink);
+}
+.cal-dh.today .cal-dn {
+  background: var(--primary);
+  color: var(--ink);
+}
+.cal-dh.today .cal-dw {
+  color: var(--primary-h);
+}
+.cal-dh.past .cal-dn,
+.cal-dh.past .cal-dw {
+  color: var(--ink4);
+}
+.cal-dh.sel:not(.today) .cal-dn {
+  box-shadow: inset 0 0 0 1px var(--line2);
+}
+.cal-dh.sun:not(.today) .cal-dw {
+  color: var(--sun);
+}
+.cal-dh.sat:not(.today) .cal-dw {
+  color: var(--sat);
+}
+.cal-dh.past.sun .cal-dw,
+.cal-dh.past.sat .cal-dw {
+  opacity: 0.6;
+}
+.cal-bm {
+  color: var(--primary-h);
+  display: inline-flex;
+  vertical-align: -2px;
+  margin-left: 3px;
+}
+
+/* 종일 줄 */
+.cal-wrow.ad {
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.cal-lb {
+  font-size: 12px;
+  color: var(--ink4);
+  text-align: right;
+  padding: 9px 8px 0 0;
+}
+.cal-adg {
+  grid-column: 2 / -1;
+  display: grid;
+  grid-template-columns: repeat(var(--n), var(--cw));
+  grid-auto-flow: row dense;
+  gap: 4px 0;
+  padding: 6px 0;
+  min-height: 36px;
+  background: linear-gradient(
+      90deg,
+      var(--we) 0 var(--cw),
+      transparent var(--cw) calc(var(--cw) * 6),
+      var(--we) calc(var(--cw) * 6) calc(var(--cw) * 7)
+    )
+    0 0 / calc(var(--cw) * 7) 100% repeat-x;
+}
+.cal-adg > .cal-adb {
+  margin: 0 4px;
+}
+
+/* 시간 칸 */
+.cal-gut {
+  position: relative;
+  height: calc(24 * var(--hh));
+}
+.cal-gut span {
+  position: absolute;
+  right: 8px;
+  transform: translateY(-6px);
+  font-size: 12px;
+  color: var(--ink4);
+  white-space: nowrap;
+}
+.cal-col {
+  position: relative;
+  height: calc(24 * var(--hh));
+  border-left: 1px solid var(--line);
+  background-image: repeating-linear-gradient(to bottom, var(--line) 0 1px, transparent 1px var(--hh));
+}
+.cal-col.we {
+  background-color: var(--we);
+}
+.cal-col.drop {
+  background-color: var(--primary-a);
+}
+.cal-nl {
+  position: absolute;
+  left: -1px;
+  right: 0;
+  height: 0;
+  border-top: 2px solid var(--primary);
+  z-index: 4;
+  pointer-events: none;
+}
+.cal-nl::before {
+  content: "";
+  position: absolute;
+  left: -5px;
+  top: -6px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--primary);
+}
+.cal-nl.faint {
+  border-top-width: 1px;
+  opacity: 0.35;
+}
+.cal-nl.faint::before {
+  display: none;
+}
+.cal-new {
+  position: absolute;
+  left: 3px;
+  right: 6px;
+  z-index: 5;
+  border-radius: 4px;
+  border: 1px solid var(--primary);
+  background: var(--primary-a);
+  padding: 2px 6px;
+  font: 400 12px var(--mono);
+  color: var(--ink2);
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* 일간: 하루가 화면 하나, 옆으로 넘기면 다음 날 */
+.cal-scroll.dayv {
+  scroll-snap-type: x mandatory;
+}
+.dayv .cal-dh {
+  scroll-snap-align: start;
+  scroll-margin-left: 56px;
+  flex-direction: row;
+  justify-content: flex-start;
+  padding: 12px 16px 10px;
+}
+.dayv .cal-dh button {
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  padding: 2px 8px 2px 2px;
+}
+.dayv .cal-dn {
+  order: -1;
+  font-size: 20px;
+  min-width: 38px;
+  height: 38px;
+  line-height: 38px;
+  width: auto;
+}
+.dayv .cal-dw {
+  font-size: 14px;
+  color: var(--ink2);
+}
+.dayv .cal-col {
+  border-right: 1px solid var(--line);
+}
+.dayv .cal-col .cal-ev {
+  right: 12px;
+}
+.dayv .cal-ev .cal-ev-t {
+  -webkit-line-clamp: 1;
+}
+.dayv .cal-ev .cal-ev-nt {
+  display: block;
+}
+.dayv .cal-ev:not(.xs) .cal-tgs {
+  margin-top: 2px;
+}
+
+/* ---------- 할 일 카드(시안 카드 6번: 상태 색 바탕과 띠) ---------- */
+.cal-tgs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 8px;
+  align-self: flex-start;
+}
+.cal-tg {
+  font-size: 12px;
+  color: var(--ink3);
+  white-space: nowrap;
+}
+.cal-tg::before {
+  content: "#";
+  margin-right: 2px;
+  color: var(--ink4);
+}
+.cal-ev {
+  position: absolute;
+  left: 3px;
+  right: 6px;
+  border-radius: 4px;
+  padding: 3px 6px 3px 9px;
+  background: color-mix(in srgb, var(--tc) 17%, var(--canvas));
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 12px;
+  line-height: 1.3;
+  cursor: grab;
+  touch-action: none;
+  transition: background 0.12s;
+}
+.cal-ev::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--tc);
+}
+.cal-ev:hover {
+  background: color-mix(in srgb, var(--tc) 26%, var(--canvas));
+  z-index: 2;
+}
+.cal-ev-t {
+  font-weight: 500;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  padding-right: 8px;
+}
+.cal-ev-w {
+  font: 400 12px var(--mono);
+  color: var(--ink2);
+  white-space: nowrap;
+}
+.cal-ev-wt {
+  margin-left: 8px;
+  font-family: var(--font);
+  color: var(--ink3);
+}
+.cal-ev-wt::before {
+  content: "#";
+  margin-right: 1px;
+  color: var(--ink4);
+}
+.cal-ev .cal-tgs {
+  margin-top: auto;
+}
+.cal-ev-nt {
+  display: none;
+  font-size: 12px;
+  color: var(--ink3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cal-ev.xs {
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+.cal-ev.xs .cal-ev-t {
+  -webkit-line-clamp: 1;
+  flex: 0 1 auto;
+}
+.cal-ev.sm .cal-ev-t {
+  -webkit-line-clamp: 1;
+}
+.cal-ev[data-dragging] {
+  z-index: 6;
+  box-shadow: 0 0 0 1.5px var(--tc), var(--rs-shadow);
+}
+.cal-ev[aria-current="true"] {
+  box-shadow: 0 0 0 1.5px var(--tc);
+  z-index: 3;
+}
+.cal-ev-rs {
   position: absolute;
   left: 0;
   right: 0;
+  bottom: 0;
+  height: 6px;
+  cursor: ns-resize;
 }
-.day-hour-label {
+/* 캘린더 색 책갈피(상태 색과 겹치지 않게 오른쪽 위 작은 리본) */
+.cal-ev[data-cal]::after,
+.cal-adb[data-cal]::after {
+  content: "";
   position: absolute;
-  left: 0;
-  top: -7px;
-  width: 52px;
-  text-align: right;
-  font-size: 12px;
-  color: var(--color-body-muted);
-  font-variant-numeric: tabular-nums;
-}
-.day-hour-line {
-  position: absolute;
-  left: 64px;
-  right: 12px;
   top: 0;
-  border-top: 1px solid var(--color-divider-soft);
+  right: 8px;
+  width: 6px;
+  height: 10px;
+  background: var(--cc);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 72%, 0 100%);
 }
 
-/* 현재 시각선 — Linear design: lavender line + pill label */
-.day-now-line {
-  position: absolute;
-  left: 0;
-  right: 12px;
-  height: 0;
-  border-top: 1.5px solid #5e69d1;
-  z-index: 5;
-  pointer-events: none;
-}
-.day-now-pill {
-  position: absolute;
-  left: 2px;
-  top: -9px;
-  height: 18px;
-  padding: 0 6px;
-  border-radius: 9px;
-  background: #5e69d1;
-  color: #fff;
-  font-size: 12px;
-  font-weight: 700;
+/* 종일 칩 */
+.cal-adb {
+  position: relative;
   display: flex;
   align-items: center;
-  font-variant-numeric: tabular-nums;
+  gap: 8px;
+  height: 22px;
+  padding: 0 8px 0 10px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--tc) 17%, var(--canvas));
+  font-size: 12px;
+  font-weight: 500;
+  overflow: hidden;
   white-space: nowrap;
+  min-width: 0;
+  cursor: grab;
+  touch-action: none;
 }
-
-/* 블록이 놓이는 트랙 (시각 거터를 비운 영역) */
-.day-timeline-track {
+.cal-adb::before {
+  content: "";
   position: absolute;
-  left: 64px;
-  right: 12px;
+  left: 0;
   top: 0;
   bottom: 0;
+  width: 3px;
+  background: var(--tc);
+}
+.cal-adb span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cal-adb em {
+  font: 400 12px var(--mono);
+  color: var(--ink3);
+  font-style: normal;
+  margin-left: auto;
+  padding-right: 10px;
 }
 
-/* 마감일 지정 할 일 span 블록 — 배경 오버레이, 드래그 불가 */
-.day-block[data-span] {
-  cursor: pointer;
-  touch-action: auto;
-  transition: box-shadow 0.12s ease, opacity 0.12s ease;
-  opacity: 0.38;
-  z-index: 0;
+/* 기간 막대(시안 마감 표시 4번: 마감 쪽으로 진해지는 바탕, 지나면 빗금) */
+.cal-db {
+  --g: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--tc) 8%, var(--canvas)),
+    color-mix(in srgb, var(--tc) var(--hp), var(--canvas))
+  );
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 24px;
+  padding-left: 10px;
+  margin: 0 4px;
+  border-radius: 4px;
+  font-size: 12px;
+  overflow: hidden;
+  white-space: nowrap;
+  min-width: 0;
+  background: var(--g);
+  border: 1px solid color-mix(in srgb, var(--tc) 30%, transparent);
+  border-right: 3px solid var(--tc);
+  cursor: grab;
+  touch-action: none;
+}
+.cal-db.late {
+  background:
+    repeating-linear-gradient(135deg, transparent 0 6px, color-mix(in srgb, var(--tc) 22%, transparent) 6px 8px),
+    var(--g);
+}
+.cal-db.fin {
+  background: color-mix(in srgb, var(--tc) 10%, var(--s1));
+}
+.cal-db.cut-l {
+  margin-left: 0;
+  border-left: 0;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+.cal-db.cut-r {
+  margin-right: 0;
+  border-right: 0;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.cal-db-t {
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.cal-db-r {
+  margin-left: auto;
+  padding-right: 8px;
+  font: 400 12px var(--mono);
+  color: var(--ink2);
+  flex: none;
+}
+.cal-db-r b {
+  font-weight: 600;
+  color: var(--ink);
+}
+.cal-db-gh {
+  margin-left: auto;
+  padding-right: 6px;
+  color: var(--ink3);
+  font-weight: 400;
+}
+:is(.cal-adb, .cal-db)[data-dragging] {
+  box-shadow: 0 0 0 1.5px var(--tc);
 }
 
-/* 시간 블록 */
-.day-block {
+/* ---------- 월간: 위아래로 이어지는 주 ---------- */
+.cal-mo-h {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  background: var(--canvas);
+  border-bottom: 1px solid var(--line);
+}
+.cal-mo-h div {
+  text-align: center;
+  font-size: 12px;
+  color: var(--ink3);
+  padding: 9px 0;
+}
+.cal-mo-h div.we {
+  background: var(--we);
+}
+.cal-mo-h div.sun {
+  color: var(--sun);
+}
+.cal-mo-h div.sat {
+  color: var(--sat);
+}
+.cal-mo-g {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-auto-rows: var(--rh);
+}
+.cal-mc {
+  border-left: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  padding: 4px 0 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  overflow: hidden;
+  transition: opacity 0.15s;
+}
+.cal-mc.we {
+  background: var(--we);
+}
+.cal-mc.sun .cal-mn {
+  color: var(--sun);
+}
+.cal-mc.sat .cal-mn {
+  color: var(--sat);
+}
+.cal-mc.dim > * {
+  opacity: 0.4;
+}
+.cal-mc.drop {
+  background: var(--primary-a);
+}
+.cal-mh {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 2px 4px 4px;
+  position: relative;
+}
+.cal-mn {
+  font: 500 12px/1 var(--font);
+  font-variant-numeric: tabular-nums;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 6px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  color: var(--ink2);
+}
+.cal-mn:hover {
+  background: var(--s3);
+}
+.cal-mm {
+  font-weight: 600;
+  margin-right: 3px;
+  color: var(--ink);
+}
+.cal-mc.today .cal-mn {
+  background: var(--primary);
+  color: var(--ink);
+}
+.cal-mn[aria-current="date"]:not(:is(.today *)) {
+  box-shadow: inset 0 0 0 1px var(--line2);
+}
+.cal-mh .cal-bm {
   position: absolute;
-  z-index: 1;
-  box-sizing: border-box;
-  padding: 5px 9px;
-  border-radius: var(--r-sm);
-  background: var(--color-tile-2);
-  border: 1px solid var(--color-divider-soft);
-  border-left: 3px solid var(--color-body-muted);
-  color: var(--color-ink);
+  right: 6px;
+  top: 4px;
+  margin: 0;
+}
+.cal-more {
+  margin: 0 4px;
+  font-size: 12px;
+  color: var(--ink3);
+  text-align: left;
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+.cal-more:hover {
+  color: var(--ink);
+  background: var(--s3);
+}
+/* 월간 카드 1번: 상태 색 바탕 + 왼쪽 띠, 시각이 제목 앞 */
+.cal-mi {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 20px;
+  margin: 0 4px;
+  padding: 0 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  min-width: 0;
+  white-space: nowrap;
   overflow: hidden;
   cursor: grab;
   touch-action: none;
-  transition: box-shadow 0.12s ease, top 0.1s ease, left 0.1s ease, width 0.1s ease, transform 120ms ease;
+  flex: none;
+  background: color-mix(in srgb, var(--tc) 16%, var(--canvas));
+  box-shadow: inset 2px 0 var(--tc);
 }
-.day-block:not([data-span]):hover:not([data-dragging]) {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
-  transform: translateY(-1px);
-  z-index: 5;
+.cal-mi:hover {
+  background: color-mix(in srgb, var(--tc) 24%, var(--canvas));
 }
-.day-block[data-dragging] {
-  cursor: grabbing;
-  z-index: 10;
-  /* 드래그 중 파란 테두리 + 글로우 강조 */
-  border-color: var(--color-primary);
-  border-left-color: var(--color-primary);
-  box-shadow:
-    0 8px 24px rgba(0, 0, 0, 0.45),
-    0 0 0 2px color-mix(in srgb, var(--color-primary) 60%, transparent);
-  opacity: 0.97;
-  /* 드래그 블록은 커서를 즉시 따라가야 하므로 위치 transition 제거 */
-  transition: box-shadow 0.12s ease;
-}
-.day-block[data-active] {
-  border-color: var(--color-primary);
-  border-left-color: var(--color-primary);
-}
-.day-block[data-status="in-progress"] {
-  background: rgba(94, 106, 210, 0.16);
-  border-left-color: var(--color-primary);
-}
-.day-block[data-status="done"] {
-  background: rgba(39, 166, 68, 0.12);
-  border-left-color: var(--color-status-done);
-}
-.day-block[data-status="done"] .day-block-title {
-  color: var(--color-status-done);
-  text-decoration: line-through;
-}
-.day-block-head {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.day-block-title {
-  font-size: 12px;
-  font-weight: 600;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-.day-block-time {
-  display: block;
-  margin-top: 2px;
-  font-size: 12px;
-  color: var(--color-body-muted);
-  font-variant-numeric: tabular-nums;
-}
-.day-block-auto {
-  color: var(--color-primary-on-dark);
-}
-
-/* 리사이즈 핸들 (블록 상단·하단 8px) */
-.day-block-resize {
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 8px;
-  z-index: 2;
-  cursor: ns-resize;
-  border-radius: inherit;
-  flex-shrink: 0;
-}
-.day-block-resize-t {
-  top: 0;
-}
-.day-block-resize-b {
-  bottom: 0;
-}
-.day-block-resize::after {
-  content: "";
-  display: block;
-  margin: 3px 30%;
-  height: 2px;
-  border-radius: 1px;
-  background: transparent;
-  transition: background 0.15s ease;
-}
-.day-block-resize:hover::after {
-  background: rgba(255, 255, 255, 0.28);
-}
-
-
-/* Todo chip inside MonthGrid cells — left accent bar + status colors */
-.todo-month-chip {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  width: 100%;
-  text-align: left;
-  font-size: 14px;
-  padding: 3px 6px 3px 7px;
-  border-radius: 4px;
-  border: none;
-  border-left: 3px solid #8a8f98;
-  background: var(--color-tile-2);
-  color: var(--color-ink);
-  cursor: default;
-  position: relative;
-  transition: box-shadow 120ms ease, transform 120ms ease, filter 120ms ease;
-}
-.todo-month-chip-title {
-  min-width: 0;
-  flex: 1;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-.todo-month-chip:hover:not([data-dragging="true"]) {
-  filter: brightness(1.12);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.28);
-  transform: translateY(-1px);
-}
-.todo-month-chip[data-span] {
-  background: var(--color-tile-3);
-  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.32);
-}
-.todo-month-chip[data-span]:hover:not([data-dragging="true"]) {
-  filter: brightness(1.15);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.42);
-}
-.todo-month-chip[data-status="done"] {
-  background: rgba(39, 166, 68, 0.09);
-  border-left-color: #27a644;
-  color: var(--color-status-done);
-  text-decoration: line-through;
-}
-.todo-month-chip[data-status="in-progress"] {
-  background: rgba(94, 106, 210, 0.16);
-  border-left-color: #5e6ad2;
-  color: var(--color-primary-on-dark);
-}
-
-/* Week view chip */
-.week-chip {
-  display: block;
-  width: 100%;
-  text-align: left;
-  padding: 5px 8px;
-  border-radius: 5px;
-  border: none;
-  border-left: 3px solid #8a8f98;
-  background: var(--color-tile-2);
-  cursor: pointer;
-  position: relative;
-  transition: box-shadow 120ms ease, transform 120ms ease, background 100ms ease;
-}
-.week-chip:hover:not([data-dragging="true"]) {
-  filter: brightness(1.12);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.28);
-  transform: translateY(-1px);
-}
-.week-chip[data-span] {
-  background: var(--color-tile-3);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
-}
-.week-chip[data-span]:hover:not([data-dragging="true"]) {
-  filter: brightness(1.15);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.42);
-}
-.week-chip[data-status="in-progress"] {
-  background: rgba(94, 106, 210, 0.16);
-  border-left-color: #5e6ad2;
-}
-.week-chip[data-status="done"] {
-  background: rgba(39, 166, 68, 0.09);
-  border-left-color: #27a644;
-}
-.week-chip-time {
-  margin: 0 0 1px;
-  font-size: 12px;
-  color: var(--color-body-muted);
-  font-variant-numeric: tabular-nums;
-}
-.week-chip-title {
-  margin: 0;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--color-ink);
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-.week-chip-tags {
-  margin: 3px 0 0;
-}
-
-/* ---------- 칩 우측 리사이즈 핸들 (마감일 조절) ---------- */
-.chip-resize-handle {
-  position: absolute;
-  right: 0;
-  top: 0;
-  bottom: 0;
-  width: 12px;
-  cursor: ew-resize;
-  z-index: 2;
-  touch-action: none;
-  user-select: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.chip-resize-handle::after {
-  content: "";
-  width: 3px;
-  height: 45%;
-  border-left: 1.5px solid rgba(255, 255, 255, 0);
-  border-right: 1.5px solid rgba(255, 255, 255, 0);
-  border-radius: 1px;
-  transition: border-color 120ms;
-}
-.week-chip:hover .chip-resize-handle::after,
-.todo-month-chip:hover .chip-resize-handle::after {
-  border-color: rgba(255, 255, 255, 0.35);
-}
-.chip-resize-handle:hover::after {
-  border-color: rgba(255, 255, 255, 0.7) !important;
-}
-.week-chip[data-status="done"] .week-chip-title {
-  color: var(--color-status-done);
-  text-decoration: line-through;
-}
-
-/* ---------- 월간 셀 + 버튼 ----------
- * 표시/숨김을 React state 대신 CSS :hover 로 처리한다 — 호버 때마다
- * 그리드 42셀 전체가 리렌더되던 것을 제거(렌더 0회). */
-.month-cell-add-btn {
-  visibility: hidden;
-}
-.month-day-cell:hover .month-cell-add-btn,
-.month-cell-add-btn[data-adding="true"] {
-  visibility: visible;
-}
-
-/* ---------- 인라인 할일 추가 입력 (MonthGrid 셀 / DayTimeline 트랙) ---------- */
-.month-add-input {
-  width: 100%;
-  font-size: 12px;
-  padding: 4px 7px;
-  border-radius: 4px;
-  border: 1.5px solid var(--color-primary);
-  background: var(--color-tile-2);
-  color: var(--color-ink);
-  outline: none;
-  box-sizing: border-box;
-}
-
-.day-add-block {
-  pointer-events: none;
-}
-.day-add-block * {
-  pointer-events: auto;
-}
-
-/* ---------- Google Calendar 이벤트 칩 (읽기 전용) ---------- */
-/* todo 칩과 구분: 점선 테두리 + 캘린더 액센트(보라), 드래그/체크 불가 표현. */
-.cal-event-chip {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  width: 100%;
-  text-align: left;
-  padding: 4px 8px;
-  border-radius: 5px;
-  border: 1px dashed var(--color-divider);
-  border-left: 3px solid #8b5cf6;
-  background: rgba(139, 92, 246, 0.08);
-  color: var(--color-ink);
-  text-decoration: none;
-  cursor: pointer;
-  box-sizing: border-box;
-  transition: background 100ms ease;
-}
-.cal-event-chip:hover {
-  background: rgba(139, 92, 246, 0.16);
-}
-.cal-event-chip--static {
-  cursor: default;
-}
-.cal-event-chip-time {
-  flex: 0 0 auto;
-  font-size: 12px;
-  color: var(--color-body-muted);
-  font-variant-numeric: tabular-nums;
-}
-.cal-event-chip-title {
+.cal-mi-tt {
   flex: 1;
   min-width: 0;
-  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-weight: 500;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
 }
-.cal-event-chip-ext {
-  flex: 0 0 auto;
-  color: #8b5cf6;
-  opacity: 0.7;
+.cal-mi-tm {
+  order: -1;
+  font: 400 12px var(--mono);
+  font-style: normal;
+  color: var(--ink2);
+  flex: none;
+}
+.cal-mi-dd {
+  margin-left: auto;
+  font: 600 12px var(--mono);
+  color: var(--ink2);
+}
+.cal-mi.k-sp {
+  margin: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+.cal-mi.k-sp .cal-mi-tm {
+  display: none;
+}
+.cal-mi.k-sp.s {
+  margin-left: 4px;
+  border-radius: 4px 0 0 4px;
+  box-shadow: inset 2px 0 var(--tc);
+}
+.cal-mi.k-sp.e {
+  margin-right: 4px;
+  border-radius: 0 4px 4px 0;
+}
+.cal-mi[data-dragging] {
+  box-shadow: inset 0 0 0 1px var(--tc);
 }
 
-/* DayTimeline 상단 Google Calendar 이벤트 행 */
-.day-events {
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
-  padding: 12px 18px;
-  border-bottom: 1px solid var(--color-divider-soft);
-  background: var(--color-tile-2);
+/* ---------- 흐린 칸(AI 추천, Task 10) ---------- */
+[data-ghost]:is(.cal-ev, .cal-adb, .cal-db, .cal-mi) {
+  --tc: var(--ai);
+  opacity: 0.6;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--ai) 10%, transparent);
+  outline: 1px dashed color-mix(in srgb, var(--ai) 70%, transparent);
+  outline-offset: -1px;
 }
-.day-events-items {
+.cal-ai {
+  align-self: flex-start;
+  font: 600 12px/1 var(--mono);
+  color: var(--ai);
+  flex: none;
+}
+
+/* ---------- 사이드바 ---------- */
+.cal-sh2 {
+  margin: 0 0 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink4);
+  letter-spacing: 0.06em;
+}
+.cal-sh2.hx {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.cal-sh2.hx .sh-ibtn {
+  width: 20px;
+  height: 20px;
+  color: var(--ink4);
+}
+
+/* 미니 달력 */
+.cal-mini {
+  width: 100%;
+}
+.cal-mini-h {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2px 6px;
+}
+.cal-mini-h b {
+  font-size: 13px;
+  font-weight: 600;
+}
+.cal-mini-g {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  text-align: center;
+}
+.cal-mini-dw {
+  font-size: 12px;
+  color: var(--ink4);
+  padding: 2px 0;
+}
+.cal-mini-g button {
+  height: 28px;
+  border-radius: var(--r);
+  font: 500 12px/1 var(--mono);
+  color: var(--ink2);
+  position: relative;
+}
+.cal-mini-g button:hover {
+  background: var(--s3);
+}
+.cal-mini-g button.other {
+  color: var(--ink4);
+}
+.cal-mini-g button.today {
+  color: var(--primary-h);
+  font-weight: 700;
+}
+.cal-mini-g button[aria-current="date"] {
+  background: var(--primary);
+  color: var(--ink);
+}
+.cal-mini-g button i {
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--ink3);
+  transform: translateX(-50%);
+}
+.cal-mini-g button i.r {
+  background: var(--primary-h);
+  width: 8px;
+  border-radius: 2px;
+  height: 2px;
+}
+
+/* 오늘 회고 5번: 미니 달력 아래 한 줄 */
+.cal-rd5 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 0;
+  padding: 8px 8px 0;
+  border-top: 1px solid var(--line);
+  font-size: 13px;
+  color: var(--ink3);
+}
+.cal-rd5 svg {
+  flex: none;
+  color: var(--ink4);
+}
+.cal-rd5.on svg {
+  color: var(--primary-h);
+  fill: currentColor;
+}
+.cal-rd5 span {
+  flex: 1;
+  min-width: 0;
+}
+.cal-rd5 button {
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 500;
+  color: var(--primary-h);
+}
+.cal-rd5 button:hover {
+  background: var(--s3);
+}
+
+/* 캘린더 목록 */
+.cal-cl {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 28px;
+  padding: 0 4px 0 8px;
+  border-radius: var(--r);
+}
+.cal-cl:hover {
+  background: var(--s3);
+}
+.cal-cl-t {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 100%;
+  font-size: 13px;
+  color: var(--ink2);
+  text-align: left;
+}
+.cal-cl-t i {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  background: var(--cc);
+  box-shadow: inset 0 0 0 1.5px var(--cc);
+}
+.cal-cl-t span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cal-cl-t em {
+  font-style: normal;
+  font-size: 12px;
+  color: var(--ink4);
+  border: 1px solid var(--line2);
+  border-radius: 3px;
+  padding: 0 4px;
+}
+.cal-cl.off .cal-cl-t {
+  color: var(--ink4);
+}
+.cal-cl.off .cal-cl-t i {
+  background: none;
+}
+.cal-cl-n {
+  font: 500 12px var(--mono);
+  color: var(--ink4);
+  padding: 0 4px;
+}
+.cal-cl-a {
+  display: none;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  color: var(--ink3);
+}
+.cal-cl-a:hover {
+  background: var(--s4);
+  color: var(--ink);
+}
+.cal-cl:is(:hover, :focus-within) .cal-cl-a {
+  display: grid;
+}
+.cal-cl:is(:hover, :focus-within) .cal-cl-n {
+  display: none;
+}
+.cal-cl-m {
+  margin: 2px 0 0;
+  padding: 0 8px;
+  height: 24px;
+  font-size: 12px;
+  color: var(--ink4);
+}
+.cal-cl-m:hover {
+  color: var(--ink);
+}
+
+/* 태그 */
+.cal-ch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: var(--r);
+  color: var(--ink3);
+  width: 100%;
+  text-align: left;
+  font-size: 13px;
+}
+.cal-ch:hover {
+  background: var(--s3);
+  color: var(--ink);
+}
+.cal-ch[aria-pressed="true"] {
+  background: var(--primary-a);
+  color: var(--ink);
+  box-shadow: inset 2px 0 var(--primary);
+}
+.cal-ch-h {
+  font-family: var(--mono);
+  color: var(--ink4);
+}
+.cal-ch-l {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cal-ch-n {
+  margin-left: auto;
+  font: 500 12px var(--mono);
+  color: var(--ink4);
+}
+
+/* 연동 문제 3번: 서비스 아이콘 + 바로 고치기 */
+.cal-probs :is(b, span) {
+  word-break: keep-all;
+}
+.cal-pb3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 4px 6px 8px;
+  border-radius: var(--r);
+}
+.cal-pb3 + .cal-pb3 {
+  margin-top: 2px;
+}
+.cal-pb3-i {
+  position: relative;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: var(--s3);
+}
+.cal-pb3-i i {
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  display: grid;
+  place-items: center;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--warn);
+  color: var(--canvas);
+  font: 700 12px/1 var(--font);
+  font-style: normal;
+}
+.cal-pb3-t {
+  flex: 1;
+  min-width: 0;
+}
+.cal-pb3-t b {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink2);
+}
+.cal-pb3-t small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  color: var(--ink3);
+}
+.cal-pb3 > button {
+  flex: none;
+  height: 24px;
+  padding: 0 8px;
+  border: 1px solid var(--line2);
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--ink2);
+  white-space: nowrap;
+}
+.cal-pb3 > button:hover {
+  background: var(--s3);
+  color: var(--ink);
+}
+.cal-br {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+.cal-br-gh {
+  color: var(--ink);
+}
+.cal-br-gc .w {
+  fill: var(--sv-gc-paper);
+}
+.cal-br-gc .b {
+  fill: var(--sv-gc-blue);
+}
+.cal-br-gc .y {
+  fill: var(--sv-gc-yellow);
+}
+.cal-br-gc .g {
+  fill: var(--sv-gc-green);
+}
+.cal-br-gc .d {
+  fill: var(--sv-gc-dark);
+}
+.cal-br-gc .r {
+  fill: var(--sv-gc-red);
+}
+
+/* 캘린더 관리 창 */
+.cal-cm {
+  width: min(720px, calc(100vw - 32px));
+  padding: 0;
+  border: 1px solid var(--line2);
+  border-radius: 12px;
+  background: var(--s2);
+  color: var(--ink);
+  box-shadow: var(--rs-shadow);
+  font: 400 13px/1.45 var(--font);
+}
+.cal-cm::backdrop {
+  background: var(--rs-scrim);
+}
+.cal-cm-in {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  min-height: 420px;
+}
+.cal-cm-l {
+  border-right: 1px solid var(--line);
+  background: var(--s1);
+  padding: 14px 10px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 2px;
+}
+.cal-cm-h {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink4);
+  letter-spacing: 0.06em;
+  padding: 0 6px 6px;
+}
+.cal-cm-i {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 30px;
+  padding: 0 8px;
+  border-radius: var(--r);
+  color: var(--ink2);
+  text-align: left;
+}
+.cal-cm-i i {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  background: var(--cc);
+}
+.cal-cm-i span {
   flex: 1;
   min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-.day-add-input {
-  display: block;
-  width: 100%;
+.cal-cm-i em {
+  font-style: normal;
   font-size: 12px;
-  font-weight: 500;
-  padding: 6px 9px;
-  border-radius: var(--r-sm);
-  border: 1.5px solid var(--color-primary);
-  background: var(--color-tile-1);
-  color: var(--color-ink);
+  color: var(--ink4);
+}
+.cal-cm-i:hover {
+  background: var(--s3);
+}
+.cal-cm-i[aria-current="true"] {
+  background: var(--s4);
+  color: var(--ink);
+}
+.cal-cm-add {
+  margin-top: 6px;
+  height: 30px;
+  padding: 0 8px;
+  text-align: left;
+  color: var(--ink3);
+  border-radius: var(--r);
+}
+.cal-cm-add:hover {
+  color: var(--ink);
+  background: var(--s3);
+}
+.cal-cm-r {
+  padding: 14px 18px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+.cal-cm-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: var(--ink3);
+}
+.cal-cm-name {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.cal-cm-name i {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  background: var(--cc);
+}
+.cal-cm-name input {
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--line2);
+  font-size: 18px;
+  font-weight: 600;
+  padding: 4px 0;
+  color: var(--ink);
+}
+.cal-cm-name input:focus {
   outline: none;
-  box-sizing: border-box;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  border-bottom-color: var(--primary);
 }
-.day-add-time {
-  display: block;
-  font-size: 12px;
-  color: var(--color-primary-on-dark);
-  margin-top: 3px;
-  padding-left: 2px;
-  font-variant-numeric: tabular-nums;
+.cal-cm-row {
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  align-items: center;
+  gap: 8px;
+}
+.cal-cm-row > span {
+  color: var(--ink3);
+}
+.cal-cm-sw {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.cal-cm-sw button {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: var(--sw);
+}
+.cal-cm-sw button[aria-checked="true"] {
+  box-shadow: 0 0 0 2px var(--s2), 0 0 0 4px var(--sw);
+}
+.cal-cm-tgl {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink2);
+  justify-self: start;
+}
+.cal-cm-tgl i {
+  width: 28px;
+  height: 16px;
+  border-radius: 8px;
+  background: var(--line2);
+  position: relative;
+}
+.cal-cm-tgl i::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--ink);
+  transition: transform 0.15s;
+}
+.cal-cm-tgl[aria-pressed="true"] i {
+  background: var(--primary);
+}
+.cal-cm-tgl[aria-pressed="true"] i::after {
+  transform: translateX(12px);
+}
+.cal-cm-row .sh-btn {
+  justify-self: start;
+}
+.cal-cm-note {
+  margin: 0;
+  color: var(--ink2);
+}
+.cal-cm-del {
+  margin-top: auto;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+}
+.cal-cm-del p {
+  margin: 0;
+  color: var(--ink3);
+}
+.cal-cm-delb {
+  color: var(--danger);
+  border: 1px solid var(--line2);
+  border-radius: var(--r);
+  padding: 4px 10px;
+}
+.cal-cm-delb:hover {
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+}
+.cal-cm :is(button, input):focus-visible {
+  outline: 2px solid var(--primary-h);
+  outline-offset: 1px;
+}
+@media (max-width: 560px) {
+  .cal-cm-in {
+    grid-template-columns: 1fr;
+  }
+  .cal-cm-l {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+}
+
+/* 작업 상세 휴지통 버튼 — hover 시 빨강 (TaskDetailPanel, Task 2 가 바꾸면 지움) */
+.detail-delete-btn:hover {
+  color: var(--danger);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cal-root *,
+  .cal-vwb svg,
+  .cal-cm-tgl i::after {
+    transition: none !important;
+  }
 }

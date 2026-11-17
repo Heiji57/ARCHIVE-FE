@@ -5,5 +5,8 @@
  */
 export { authI18n } from "./auth";
 export { settingsSheetI18n } from "./settings";
+export { retroI18n } from "./retro";
+export { calendarI18n } from "./calendar";
 export { shellI18n } from "./shell";
+export { todoEditorI18n } from "./todoEditor";
 export { topicI18n } from "./topic";

@@ -50,12 +50,13 @@ import {
   type SummaryKind,
   type SummaryReadiness,
 } from "@/entities/summary/model/types";
-import type { Todo } from "@/entities/todo/model/types";
+import type { RecurrenceRule, Todo } from "@/entities/todo/model/types";
 import type { Topic } from "@/entities/topic/model/types";
 import { boardRangeWindow } from "@/entities/todo/lib/boardRange";
 import { getTodosInRange, sortTodos } from "@/entities/todo/lib/selectors";
 import { getEntriesInRange } from "@/entities/entry/lib/selectors";
 import { DEMO_ANCHOR_DATE_KEY, isDemoMode } from "@/app/config/demo";
+import { DEMO_GITHUB_STATE, demoCommitsOn } from "@/entities/github/model/demo";
 import {
   addDays,
   computeAutoTodoTime,
@@ -658,18 +659,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const runGitHubRefresh = () => {
-    // 데모: GitHub 연결을 제공하지 않는다(가짜 연결/목 데이터 없이 미연결 유지).
+    // 데모: 시안과 같은 데모 연결 상태(entities/github/model/demo). 서버는 부르지 않는다.
     if (isDemoMode()) {
       dispatch({
         type: "github/setLinked",
         payload: {
-          status: "not-connected",
-          repositories: [],
-          login: null,
-          pushTargetRepositoryId: null,
-          hasVerifiedEmails: false,
+          status: DEMO_GITHUB_STATE.status,
+          repositories: DEMO_GITHUB_STATE.linkedRepositories,
+          login: DEMO_GITHUB_STATE.login,
+          pushTargetRepositoryId: DEMO_GITHUB_STATE.pushTargetRepositoryId,
+          hasVerifiedEmails: DEMO_GITHUB_STATE.hasVerifiedEmails,
         },
       });
+      dispatch({ type: "github/setCommits", payload: { commits: DEMO_GITHUB_STATE.commits } });
       return;
     }
     if (!USE_API) {
@@ -976,6 +978,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [],
   );
 
+  // 데모/mock: 반복 규칙을 로컬 한 건에만 적는다(서버 반복 펼치기 없음).
+  const setLocalRecurrence = (id: string, rule: RecurrenceRule) => {
+    const todo = state.todos.find((t) => t.id === id);
+    if (todo) dispatch({ type: "todo/upsert", payload: { todo: { ...todo, recurrenceRule: rule } } });
+  };
+
   // ─── Context value ────────────────────────────────────────────────────────
   const sortedTodos = useMemo(() => sortTodos(state.todos), [state.todos]);
   const sortedState = useMemo(
@@ -1070,8 +1078,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
     },
     updateTodoRecurrence: async (id, rule) => {
-      // 데모/mock 은 반복 확장(가상 인스턴스 생성) 로직 자체가 없어 지원하지 않는다.
-      if (!apiActive) return null;
+      // 데모/mock 은 반복 확장(가상 인스턴스 생성) 로직이 없다. 보이는 한 건에 규칙만 적어 둔다(표시용).
+      if (!apiActive) {
+        setLocalRecurrence(id, rule);
+        return null;
+      }
       // 큐를 거치지 않고 즉시 전송 — following 스코프는 서버가 새 시리즈(새 id)를
       // 만드는 1회성 명시적 액션이라 디바운스 코얼레싱 대상이 아니다.
       try {
@@ -1089,8 +1100,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
     },
     convertTodoToRecurring: async (id, rule) => {
-      // 데모/mock 은 반복 확장 로직 자체가 없어 지원하지 않는다.
-      if (!apiActive) return null;
+      // 데모/mock 은 반복 확장 로직이 없다. 보이는 한 건에 규칙만 적어 둔다(표시용, addTodo 와 같음).
+      if (!apiActive) {
+        setLocalRecurrence(id, rule);
+        return null;
+      }
       // scope 를 지정하지 않는다 — 대상이 어떤 시리즈에도 속하지 않은 단독 항목일 때만
       // 서버가 이 규칙을 받아 그 자리에서 시리즈 base 로 전환한다(recurrence_scope 무관).
       try {
@@ -1413,6 +1427,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (!USE_API) {
         return MOCK_COMMITS;
       }
+      // 데모: 서버를 부르지 않고 데모 커밋.
+      if (isDemoMode()) return demoCommitsOn(date);
       try {
         return await apiGetCommits(date);
       } catch {

@@ -19,7 +19,7 @@ import { DndProvider } from "@/shared/lib/dnd";
 import { TodoDragGhost } from "@/app/TodoDragGhost";
 import { RetroDragGhost } from "@/app/RetroDragGhost";
 import { I18nProvider, useTranslation } from "@/shared/lib/i18n";
-import { AppShell, ShellPage } from "@/widgets/app-shell";
+import { AppShell, ShellPage, useSettingsSheet } from "@/widgets/app-shell";
 import { useRegisterPaletteCommand } from "@/widgets/global-search";
 import { TodoEditorProvider, useTodoEditor } from "@/widgets/todo-editor";
 import { useServerFeature } from "@/shared/lib/serverFeatures";
@@ -277,24 +277,32 @@ function AppContent({
   );
 
   return (
-    <TodoEditorProvider>
+    <>
       <AppShell route={route} onNavigate={onNavigate} onRetroNavigate={onRetroNavigate}>
-        <ShellCommands />
-        {/* 페이지 청크를 불러오는 동안에도 셸 틀은 그린다.
-            key 로 같은 화면 탭을 다시 눌러도 페이지가 새로 마운트되게 한다. */}
-        <Suspense fallback={<ShellPage rail={page === "calendar" || page === "todos"} />}>
-          <PageRenderer key={page} page={page} pages={pages} />
-        </Suspense>
+        <TodoEditorHost>
+          <ShellCommands />
+          {/* 페이지 청크를 불러오는 동안에도 셸 틀은 그린다.
+              key 로 같은 화면 탭을 다시 눌러도 페이지가 새로 마운트되게 한다. */}
+          <Suspense fallback={<ShellPage rail={page === "calendar" || page === "todos"} />}>
+            <PageRenderer key={page} page={page} pages={pages} />
+          </Suspense>
+        </TodoEditorHost>
       </AppShell>
       <ToastViewport notifications={state.notifications} />
       <SummaryOverlay />
       <SummaryFloatingChip />
       {isDemo && <DemoBanner />}
-    </TodoEditorProvider>
+    </>
   );
 }
 
 type PageKey = "ai" | "calendar" | "todos" | "retrospectives";
+
+/** 할 일 창(26, 3)을 셸 안에 둔다. Google 캘린더 연결 메뉴가 설정 시트를 열 수 있게. */
+function TodoEditorHost({ children }: { children: ReactNode }) {
+  const sheet = useSettingsSheet();
+  return <TodoEditorProvider onOpenSettings={sheet.open}>{children}</TodoEditorProvider>;
+}
 
 /** 어느 화면에서나 되는 팔레트 명령(새 할 일). 설정 열기는 AppShell 이 등록한다. */
 function ShellCommands() {

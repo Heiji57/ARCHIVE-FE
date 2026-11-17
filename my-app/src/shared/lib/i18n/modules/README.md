@@ -81,6 +81,7 @@ function TrashButton() {
 | 사용자 메뉴 (usermenu.css) | `--um-shadow --um-scrim --um-danger` |
 | 빗금이 (pet.css) | `--pet-*`, `--hx-line --hx-edge --hx-bg --hx-eye` |
 | 셸 주말 (planner.css) | `--we --we-h --sun --sat` |
+| 사용자 캘린더 색 (planner.js P.CALC) | `--cal-c1..c8` (`UserCalendar.color` 가 "c1".."c8") |
 | 이월/모달 변경 (lab3.css) | `--x-chg --x-chg-bg --x-over` |
 | 할 일 상세 반복 (lab4.css) | `--z-scrim --z-danger-bg --z-ok --z-span` |
 
@@ -97,7 +98,10 @@ function TrashButton() {
 (Task 1 에서 결정, `app/config/demo-redesign` 은 지웠다)
 - 위젯 하나만 쓰는 데모 데이터: 그 위젯의 `model/demo*.ts`.
 - 여러 위젯이 같이 쓰는 것(캘린더 목록, 커밋, 주제 정리 결과): `entities/<entity>/model/demo.ts`.
-- 데모 모드(`isDemoMode()`)에서만 읽는다. 날짜는 `DEMO_ANCHOR_DATE_KEY`(2026-06-15) 기준.
+- 데모 모드(`isDemoMode()`)에서만 읽는다. 날짜는 `DEMO_ANCHOR_DATE_KEY`(2026-11-03, 시안과 같음) 기준. 데모의 "지금"은 `DEMO_NOW_MINUTES`(오후 2시 20분), 훅은 `useNowMinutes()`(`@/app/providers/useToday`).
+- 시작 할 일: `app/config/seed/todoSeed.ts`(`seedState.todos` 가 import, 데모 `getInitialAppState` 도 이것을 쓴다). 회고는 같은 방식으로 `seed/` 에 따로(Task 4).
+- 사용자 캘린더: `entities/calendar/model/demo.ts`(`DEMO_USER_CALENDARS`, 할 일 배정 `DEMO_TODO_CALENDAR`). 태그 순서: `entities/todo/model/demo.ts`(`DEMO_TAG_ORDER`).
+- GitHub: `entities/github/model/demo.ts`(`DEMO_GITHUB_STATE` 연결됨·이메일 권한 없음, `DEMO_COMMITS`, `demoCommitsOn(dateKey)`, 커밋↔할 일 `DEMO_COMMIT_TODO_LINKS`). 데모의 `loadCommits(date)` 는 서버 대신 이것을 돌려준다.
 
 ## 6. 테스트
 
@@ -132,3 +136,15 @@ function TrashButton() {
 - 빗금이 자리: `widgets/app-shell/ui/PetSlot.tsx`(Task 9).
 - 셸 CSS 는 `app/styles/layout/redesign-shell.css`(접두 `sh- um- nt- cp- ss- te-`). 공통 버튼 `sh-btn`, `sh-btn-p`, `sh-ibtn`, 제목 `sh-title`.
 - GitHub 기능 표시: `canUseGithub(state.github)`(`@/shared/lib/permissions`). 계정 유형(`accountType`)으로 가르지 않는다.
+
+## 8. 캘린더 (Task 3)
+
+전부 `@/widgets/calendar-dashboard` 에서 가져온다.
+
+- 화면 상태: `const ctl = useCalendarController()` → `{ view, date, todayKey, weekStart, pick(d, {view?, force?}), goToday(), setView(v), step(±1), ... }`. 페이지가 만들어 `CalendarSidebar`, `CalendarToolbar`, `CalendarDashboard` 에 넘긴다.
+- 사이드바: `<CalendarSidebar selectedDate={d} onPickDate={(d) => ...} onWriteRetro?={(today) => ...} />`. 미니 달력, 오늘 회고 한 줄(기본 "쓰기"는 회고 화면으로, Task 8 이 하루 닫기로 바꿈), 사용자 캘린더(`userCalendars`), 태그, 연동 문제.
+- 거르기(태그, 숨긴 캘린더)는 화면 사이에 공유: `useCalendarFilter()`, `passesFilter(todo, filter, calendarId)`, `useUserCalendars().calendarOf(todo)`(기능이 꺼지면 null).
+- 할 일 카드: `<EventCard todo variant="week"|"month"|"allday" ghost? layout? />`. `ghost` 는 눌리지 않는 흐린 칸.
+- 흐린 칸 자리(Task 10): `setCalendarOverlay(id, items | null)`, `items: { key, todo }[]`. 캘린더의 `CalendarOverlaySlot` 이 날짜마다 `EventCard ghost` 로 그린다(시간 있으면 시간 칸, 없으면 종일 줄·월간 칸).
+- 주 시작 요일: `weekStartPreference()`(지금 "sun"), `weekDays(anchor, weekStart)`.
+- 팔레트 명령: 오늘로 이동(20), 주간(30), 월간(40)을 캘린더가 등록한다. 단축키 t, j, k.
