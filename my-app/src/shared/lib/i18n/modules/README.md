@@ -94,8 +94,41 @@ function TrashButton() {
 
 ## 5. 데모 데이터 자리
 
-`src/app/config/demo-redesign/index.ts`. 기능마다 파일 하나(`demoCalendars` 등)를 만들고 `index.ts`에 한 줄로 내보낸다. app 레이어라 widgets/pages에서 직접 import하지 않는다(형식 주석 참고).
+(Task 1 에서 결정, `app/config/demo-redesign` 은 지웠다)
+- 위젯 하나만 쓰는 데모 데이터: 그 위젯의 `model/demo*.ts`.
+- 여러 위젯이 같이 쓰는 것(캘린더 목록, 커밋, 주제 정리 결과): `entities/<entity>/model/demo.ts`.
+- 데모 모드(`isDemoMode()`)에서만 읽는다. 날짜는 `DEMO_ANCHOR_DATE_KEY`(2026-06-15) 기준.
 
 ## 6. 테스트
 
 `cd my-app && pnpm test` (Vitest, node 환경, `src/**/*.test.{ts,tsx}`, `@` alias 사용 가능). 컴포넌트 HTML 확인은 `react-dom/server`의 `renderToStaticMarkup` (예: `shared/ui/icons/icons.test.tsx`).
+
+## 7. 앱 셸 (Task 1)
+
+전부 `@/widgets/app-shell` 에서 가져온다.
+
+```tsx
+<ShellPage
+  rail                      // 오른쪽 줄(패널 버튼, 알림 벨)과 오른쪽 패널. 캘린더와 할 일만 true
+  sidebar={<MySidebar />}   // 로고와 사용자 메뉴 사이
+  toolbar={<MyToolbar />}   // 상단 왼쪽(오늘, 제목, 보기). 오른쪽 탭과 검색 버튼은 셸이 그림
+  panelTitle="11월 3일 화요일" // 오른쪽 패널 맨 위 제목(선택)
+>
+  {본문}
+</ShellPage>
+```
+
+- 오른쪽 패널: `useRightPanel()` → `{ open, tab, setTab, toggle, close }`. 탭 내용은 모듈을 불러올 때
+  `registerRightPanelTab("day", { labelKey, count?, render: () => <DayTab />, visible? })` 로 등록한다(같은 탭을 다시 등록하면 덮어씀).
+  `count` 와 `render` 는 탭마다 작은 컴포넌트 안에서 불리므로 훅을 써도 된다. `visible(ctx)` 는 훅 없는 순수 함수(`ctx.route`, `ctx.githubOn`).
+  `"ai"` 탭은 탭 글자 줄에 없고 오른쪽 줄의 AI 추천 버튼으로 연다(등록돼 있고 보일 때만 버튼이 생김).
+- 오른쪽 줄 추가 버튼(예: 오늘 마무리): `registerRightRailItem(id, { order, render: () => <Btn />, visible? })`. 버튼 클래스는 `sh-strip-b`.
+- 설정 시트: `useSettingsSheet()` → `{ open(section?), close(), section }`. 섹션 이름 `SettingsSection`(`@/shared/config/settingsSections`).
+  `/settings#link` 로 들어와도 열린다. 시트 내용은 `widgets/app-shell/ui/SettingsSheetHost.tsx` 의 `.ss-sc` 안(Task 6).
+- 할 일 창: `useTodoEditor()`(`@/widgets/todo-editor`) → `{ openTodo(id), createTodo(defaults?), close() }`.
+- 명령 팔레트 명령: `useRegisterPaletteCommand({ id, labelKey, hint?, order, run })`(`@/widgets/global-search`). 마운트된 동안만 보인다.
+  시안 순서 order: 새 할 일 10, 오늘로 이동 20, 주간 30, 월간 40, 오늘 회고 50, 하루 닫기 60, 설정 70.
+- 회고 경로: `RetroRouteParams` 에 `area`, `topicId`, `topicView`. `/retrospectives/topics[/<id>[/graph]]`.
+- 빗금이 자리: `widgets/app-shell/ui/PetSlot.tsx`(Task 9).
+- 셸 CSS 는 `app/styles/layout/redesign-shell.css`(접두 `sh- um- nt- cp- ss- te-`). 공통 버튼 `sh-btn`, `sh-btn-p`, `sh-ibtn`, 제목 `sh-title`.
+- GitHub 기능 표시: `canUseGithub(state.github)`(`@/shared/lib/permissions`). 계정 유형(`accountType`)으로 가르지 않는다.

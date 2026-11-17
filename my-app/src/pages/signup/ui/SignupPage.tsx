@@ -1,5 +1,4 @@
 import type { AuthRoute } from "@/app/router/authRoute";
-import { useTranslation } from "@/shared/lib/i18n";
 import { AuthShell, SignupForm } from "@/widgets/auth";
 
 interface SignupPageProps {
@@ -7,9 +6,8 @@ interface SignupPageProps {
 }
 
 export function SignupPage({ onAuthNavigate }: SignupPageProps) {
-  const { t } = useTranslation();
   return (
-    <AuthShell title={t("auth.signup.title")} subtitle={t("auth.signup.subtitle")}>
+    <AuthShell>
       <SignupForm onAuthNavigate={onAuthNavigate} />
     </AuthShell>
   );

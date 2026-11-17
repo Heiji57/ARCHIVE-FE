@@ -10,7 +10,7 @@ import type {
   SummaryReadiness,
 } from "@/entities/summary/model/types";
 import { fromDateKey } from "@/shared/lib/date";
-import { can } from "@/shared/lib/permissions";
+import { canUseGithub } from "@/shared/lib/permissions";
 import { ConfirmModal } from "@/shared/ui/confirm-modal/ConfirmModal";
 import { TextField } from "@/shared/ui/text-field/TextField";
 import { useTranslation } from "@/shared/lib/i18n";
@@ -471,7 +471,7 @@ export function RetrospectiveStudio({ retroParams, onRetroNavigate }: { retroPar
           onSelect={openEntry}
           onSummarize={handleSummarize}
           onNewDaily={handleNewDaily}
-          showSyncBadge={can(state.settings.accountType, "github")}
+          showSyncBadge={canUseGithub(state.github)}
           listEntries={listEntries}
           currentPage={currentPage}
           totalPages={totalPages}

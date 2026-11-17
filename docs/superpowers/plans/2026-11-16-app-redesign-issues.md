@@ -25,3 +25,40 @@
 
 - [시안] `d-retro2.html?empty=1`이 스크립트 오류(983행, `undefined.date`)로 셸(사이드바, 상단)을 그리지 못하고 빈 화면 문구만 보인다. 앱에서는 셸 안에 빈 화면 한 줄을 넣는다(Task 4).
 - [결정] 데모 데이터 위치: 위젯 하나만 쓰는 것은 그 위젯의 `model/demo*.ts`, 여러 위젯이 같이 쓰는 것(캘린더 목록, 커밋, 주제 정리 결과)은 `entities/<entity>/model/demo.ts`. `app/config/demo-redesign`은 Task 1에서 지운다.
+
+## Task 7 (로그인과 가입)
+
+- [결정] 로고 표식(39번 둥근 날개)은 Task 1의 `AppLogo`가 아직 없어 `widgets/auth/ui/AuthParts.tsx`의 `AuthBrand`에 따로 그렸다. Task 1이 합쳐지면 `AppLogo`로 바꾼다(통합 점검 Task 11).
+- [결정] Google 로고 네 색은 시안 `d-auth.html`의 `:root`(`--au-g-b/g/y/r`)를 `tokens/redesign.css` 끝에 새 묶음으로 넣었다(README 표에는 아직 안 적음).
+- [결정] 인증 코드는 시안처럼 6칸이지만 서버 코드가 영숫자 6자(예: PW1YOT)라 숫자 키패드(`inputmode=numeric`)를 쓰지 않고, 칸 읽기 이름도 "n번째 숫자" 대신 "n번째 글자". 붙여넣기와 `one-time-code` 자동 완성은 칸을 차례로 채운다(`model/code.ts`, 테스트 있음).
+- [결정] 가입 프로필 단계에 시안에 없는 "로그인 상태 유지" 스위치를 남겼다(기존 동작, 기본 켬). 가입 2, 3단계에도 "이미 계정이 있으신가요? 로그인"을 남겼다(시안은 1단계만). 이동 경로를 줄이지 않으려고.
+- [결정] 비밀번호 찾기 발송 후 문구는 시안("you@example.com으로 보냈어요")이 아니라 기존 `auth.forgot.linkSent`("가입되어 있다면 보냈습니다")를 쓴다. 가입 여부를 드러내지 않는 기존 보안 방침. 시안의 "메일의 링크 열기 (시안)" 버튼은 옮기지 않았다.
+- [결정] 재설정 링크 만료(`token-expired`)는 시안의 "링크가 만료됐어요" 화면 대신 기존처럼 폼 위 오류 문구로 보인다(오류 코드 → 문구 매핑 유지). 토큰 없이 들어오면 제목 + 오류 + "재설정 링크 다시 받기" 버튼.
+- [결정] 오류는 시안의 `.er` 상자(폼 위)로 모았다. 비밀번호 확인 불일치만 칸 아래에 둔다. 비밀번호 칸의 보기 버튼(기존)은 남겼다.
+- [결정] mock 모드(`VITE_USE_API` 아님)의 콘솔 안내 상자는 시안에 없지만 남겼다(실제 모드에서는 안 보임).
+- [결정] 시안 글자 크기(라벨·링크 13px, 입력·버튼 14px, 제목 24px)를 따랐다. CLAUDE.md 10장(12/16/18) 밖의 값.
+- [버그] 기존 `auth.forgot.subtitle`("인증 코드를 보내드려요")와 영어 `auth.forgot.emailSubmit`("Send reset code")가 링크 방식과 맞지 않았다. 새 키 `auth.forgot.lead`, `auth.forgot.sendLink`로 바꿔 쓰고 옛 키는 남겼다(Task 11 정리 대상: `auth.forgot.subtitle`, `auth.forgot.emailSubmit`, `auth.forgot.codeSubmit`, `auth.forgot.newPasswordSubmit`, `auth.forgot.success`, `auth.signup.subtitle`, `auth.onboarding.subtitle`, `auth.reset.success`).
+- [버그] 기존 OAuth 버튼의 로딩 아이콘 `className="spin"`은 CSS가 없어 돌지 않았다. `auth-spin`으로 바꿨다.
+- [결정] `auth.css`의 계정 유형 카드(`actype-*`)와 `.auth-secondary`는 `AccountTypeForm`이 아직 쓰므로 남겼다. Task 1이 그 화면을 지울 때 함께 지운다.
+- [시안] 시안 로그인 화면의 로고는 링크(`d-auth.html`)지만 앱에서는 이동을 새로 만들지 않으려고 링크 없이 둔다.
+## Task 1 (앱 셸)
+
+- [결정] 계약에 더한 것(모두 선택 사항, 기존 모양은 계획 그대로): `ShellPage`의 `panelTitle?`(오른쪽 패널 맨 위 날짜 제목), `registerRightRailItem(id, { order, render, visible? })`(Task 8의 "오늘 마무리" 버튼 자리), `useRegisterPaletteCommand(...)`(화면별 팔레트 명령), `registerRightPanelTab`이 해제 함수를 돌려줌, `useShell()`.
+- [결정] `SettingsSection` 타입은 `shared/config/settingsSections.ts`에 둔다(app 라우터와 위젯이 같이 씀). `useSettingsSheet`가 다시 내보낸다.
+- [결정] `AppRoute`에 "dashboard", "settings"는 남겼다(랜딩의 데모 진입 `hashToRoute`가 "settings"를 씀, 랜딩은 건드리지 않음). `/dashboard`는 주소를 `/`로 바꾸고 캘린더, `/settings#<섹션>`은 캘린더 위에 설정 시트, 시트를 닫으면 `/`.
+- [결정] 서버에 AI가 없으면(실제 모드) 상단 "AI" 탭을 숨기고 `/ai`는 캘린더를 보인다.
+- [결정] "ai" 탭은 오른쪽 패널 탭 글자 줄에 넣지 않고 오른쪽 줄의 AI 추천 버튼으로만 연다(시안 cal-aip: AI 추천일 때 탭 줄 없음). 등록돼 있고 보일 때만 버튼이 생긴다.
+- [결정] 오른쪽 패널 기본 틀로 하루, 시간표(할 일 화면만), 시간 미정, 마감, 커밋(GitHub 연결 때만) 탭 이름을 미리 등록해 두었다. Task 8이 같은 탭을 등록하면 덮어쓴다.
+- [결정] 1000px 이하에서 시안은 사이드바를 아예 숨기지만, 그러면 사용자 메뉴(설정, 로그아웃)에 닿을 수 없어 52px 아이콘 레일로 접는다. 오른쪽 패널은 본문 위에 겹쳐 열리고 기본은 닫힘.
+- [결정] 접힌 레일 맨 위는 시안의 보라 네모 대신 로고(39번) 표식. 레일의 화면별 아이콘(미니 달력, 캘린더와 태그, 연동)은 페이지 사이드바 내용이라 넣지 않았다.
+- [결정] 사용자 메뉴의 "도움말과 의견"(사용법 보기, 의견 보내기, 바뀐 점)은 갈 곳(문서, 엔드포인트)이 없어 뺐다. 데모(로그인 전)는 이름 대신 "게스트", 로그아웃 대신 "로그인".
+- [결정] 단축키 창에 시안 목록 중 AI 탭 두 줄(Enter, Shift Enter)은 빼고 사이드바 `[`를 넣었다.
+- [결정] 팔레트 명령은 셸이 "새 할 일", "설정 열기"만 등록한다. 시안의 "오늘로 이동, 주간 보기, 월간 보기, 오늘 회고 쓰기, 하루 닫기"는 그 화면 Task(3, 4, 8)가 `useRegisterPaletteCommand`로 올린다. 빗금이에게 묻기 줄은 Task 9.
+- [결정] 팔레트에서 할 일을 고르면 지금처럼 `requestFocus` + 캘린더로 간다(Task 2, 3에서 `useTodoEditor().openTodo`로 바꿀 수 있음).
+- [결정] 데모 배너는 시안 rest.js(?demo=1)처럼 맨 위 32px 줄(닫기 없음). 기존 배너 CSS(`lp-demo-banner`)는 이미 없어서 화면에 안 보이던 상태였다.
+- [결정] 계정 유형 제거: `canUseGithub(github)`는 연결 상태로만 판단. 설정의 GitHub 카드는 이제 항상 보인다(연결하려면 보여야 함). 회고 편집기의 "GitHub 연결하기" 안내는 연결 전에는 안 보인다. `accountType` 데이터 필드와 `setAccountType`, i18n 키는 서버 계약이라 그대로 두었다.
+- [결정] 할 일 창(Task 2 전 임시): 기존 TaskDetailPanel을 가운데 `<dialog>`로, 새 할 일은 제목만 받는 작은 창.
+- [시안] 375px에서 시안 상단 막대가 글자 단위로 줄바꿈된다(오늘, 탭). 앱은 줄바꿈 없이 도구 막대가 줄고 검색 버튼은 아이콘만.
+- [기존] 데모로 처음 들어오면(자동 요약 마지막 확인 기록이 없어) "AI 요약 처리 중" 창이 바로 뜬다. 셸과 무관, 확인 화면은 최소화 후 찍었다.
+- [기존] 데모 시작 데이터가 비어 있다(`getInitialAppState`가 데모에서 빈 상태). 확인 화면의 캘린더, 회고, 팔레트가 비어 보이는 이유. 각 Task의 데모 데이터에서 채운다.
+- [기존] 옛 셸 CSS(`layout/nav.css`의 global-nav, `widgets/search.css`, 알림 side-panel 일부)는 쓰는 곳이 없어졌지만 지우지 않았다(Task 11 정리).

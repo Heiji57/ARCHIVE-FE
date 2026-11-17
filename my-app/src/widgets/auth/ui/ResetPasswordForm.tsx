@@ -3,6 +3,7 @@ import { useArchiveApp } from "@/app/providers/useArchiveApp";
 import type { AuthRoute } from "@/app/router/authRoute";
 import { useTranslation } from "@/shared/lib/i18n";
 import { PasswordField } from "@/shared/ui";
+import { AuthAlert, AuthHeading } from "./AuthParts";
 
 interface ResetPasswordFormProps {
   /** 이메일 링크의 ?token= 값 */
@@ -66,16 +67,11 @@ export function ResetPasswordForm({
   if (!token) {
     return (
       <>
-        <div className="auth-error-block">{t("auth.reset.error.tokenInvalid")}</div>
-        <p className="auth-footer">
-          <button
-            type="button"
-            className="auth-link"
-            onClick={() => onAuthNavigate("forgot-password")}
-          >
-            {t("auth.reset.requestAgain")}
-          </button>
-        </p>
+        <AuthHeading title={t("auth.reset.title")} />
+        <AuthAlert>{t("auth.reset.error.tokenInvalid")}</AuthAlert>
+        <button type="button" className="auth-submit" onClick={() => onAuthNavigate("forgot-password")}>
+          {t("auth.reset.requestAgain")}
+        </button>
       </>
     );
   }
@@ -83,23 +79,19 @@ export function ResetPasswordForm({
   if (done) {
     return (
       <>
-        <div className="auth-success">{t("auth.reset.success")}</div>
-        <p className="auth-footer">
-          <button
-            type="button"
-            className="auth-link"
-            onClick={() => onAuthNavigate("login")}
-          >
-            {t("auth.reset.goLogin")}
-          </button>
-        </p>
+        <AuthHeading title={t("auth.reset.doneTitle")} lead={t("auth.reset.doneLead")} />
+        <button type="button" className="auth-submit" onClick={() => onAuthNavigate("login")}>
+          {t("auth.reset.goLogin")}
+        </button>
       </>
     );
   }
 
   return (
     <>
+      <AuthHeading title={t("auth.reset.title")} lead={t("auth.reset.subtitle")} />
       <form className="auth-form" onSubmit={(e) => void submit(e)}>
+        {error && !mismatch ? <AuthAlert>{error}</AuthAlert> : null}
         <PasswordField
           autoComplete="new-password"
           label={t("auth.reset.newPassword")}
@@ -114,26 +106,16 @@ export function ResetPasswordForm({
           label={t("auth.signup.passwordConfirm")}
           value={newPasswordConfirm}
           onChange={(e) => setNewPasswordConfirm(e.target.value)}
-          error={
-            mismatch
-              ? t("auth.signup.passwordMismatch")
-              : error ?? undefined
-          }
+          error={mismatch ? t("auth.signup.passwordMismatch") : undefined}
           required
         />
         <button type="submit" className="auth-submit" disabled={!canSubmit || submitting}>
-          {submitting
-            ? t("auth.login.submitting")
-            : t("auth.reset.submit")}
+          {submitting ? t("auth.login.submitting") : t("auth.reset.submit")}
         </button>
       </form>
 
-      <p className="auth-footer">
-        <button
-          type="button"
-          className="auth-link"
-          onClick={() => onAuthNavigate("login")}
-        >
+      <p className="auth-foot">
+        <button type="button" className="auth-link" onClick={() => onAuthNavigate("login")}>
           {t("auth.forgot.backToLogin")}
         </button>
       </p>
