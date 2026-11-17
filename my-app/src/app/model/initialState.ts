@@ -1,4 +1,5 @@
 import { isDemoMode } from "@/app/config/demo";
+import { retroSeedEntries, retroSeedFolders } from "@/app/config/seed/retroSeed";
 import { seedState } from "@/app/config/seedState";
 import { loadAppState } from "@/app/lib/storage";
 import { DEFAULT_SETTINGS } from "@/app/model/settings";
@@ -15,13 +16,13 @@ import { initialGuestLocale } from "@/shared/lib/i18n";
 
 export function getInitialAppState(): AppState {
   // 데모 모드: localStorage 없이 시작(일회성 체험). 기본 설정·기본 템플릿과
-  // 시안 데이터(app/config/seed)만 넣는다. GitHub 은 데모용 연결 상태(entities/github/model/demo).
+  // 시안 데이터(app/config/seed: 할 일, 회고)만 넣는다. GitHub 은 데모용 연결 상태(entities/github/model/demo).
   if (isDemoMode()) {
     const locale = initialGuestLocale();
     return {
       todos: seedState.todos.map((t) => ({ ...t, tags: [...t.tags] })),
-      entries: [],
-      folders: [],
+      entries: retroSeedEntries(),
+      folders: retroSeedFolders(),
       notifications: [],
       settings: { ...DEFAULT_SETTINGS, locale },
       pendingSummary: null,

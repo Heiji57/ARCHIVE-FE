@@ -116,3 +116,26 @@
 - [기존] 375px 에서 셸 도구 막대가 좁아 달 제목이 0 폭으로 줄고 보기 버튼이 탭에 가린다(넘침은 없음). Task 1 의 375px 처리와 같이 Task 11 에서 볼 것.
 - [서버] 사용자 캘린더(목록, 색, 기본, 할 일 배정)와 태그 순서·색은 서버에 없다(be-request 6단계). 실제 모드에서는 숨긴다.
 - [시안] 시안 미니 달력·주간 머리의 회고 표시는 회고 데모(Task 4)가 들어와야 보인다. 지금 데모 회고는 비어 있다.
+
+## Task 4 (회고 목록, 레일, 편집기, 새 회고 창)
+
+- [결정] 구조: `RetroStudioProvider`(상태와 동작, `widgets/retrospective-studio/model/RetroStudioContext.tsx`)를 페이지가 감싸고, 셸 슬롯에 `RetroSidebar`(sidebar), `RetroTopbar`(toolbar: 오늘 + 회고/주제)를 넣는다. 본문은 `RetrospectiveStudio`(회고 영역 + 창들), 주제 영역 분기(`area === "topic"` → `TopicStudio`)는 위젯끼리 import 하지 않게 페이지(`RetrospectivesPage`)에 두었다(계획은 RetrospectiveStudio 안). 주제 영역에서도 같은 사이드바와 도구 막대가 보인다.
+- [결정] 계획의 "도구 막대(연도, 월, 주 ...)"는 시안대로 본문 위 줄(`RetroToolbar`)이고, 셸 상단 toolbar 슬롯은 `RetroTopbar`. 시안 상단의 "한 화면씩"은 시안 번호(RL) 글자라 옮기지 않았다.
+- [결정] `RetroRail`(`@/widgets/retrospective-studio`)은 Task 5의 TopicRail 구현을 옮겨 props(items, currentId, onGo, trackLabel, prevLabel, nextLabel, posText)에 `marks`(점 줄 아래 달 이름)와 currentId 따라가기(기간을 고르면 그 회고로)를 더했다. `topic-studio/ui/TopicRail.tsx`는 이것을 다시 내보내는 한 줄로 바꿨다. 넘기기 CSS는 `.rv-l1 .crl`(retro.css)과 `.tpv .crl`(topic-v.css)에 두 벌 있다(Task 11에서 하나로).
+- [결정] 회고 데모: `app/config/seed/retroSeed.ts`(시안 12편, 폴더 2개, id 는 시안 id `d1102`, `w1025` ... 로 Task 5 근거와 같음). seedState(mock)와 데모 시작 상태가 같이 쓴다. 요약 dateKey 는 서버 계약대로 기간 끝, 주는 ISO(월~일)라 시안의 10/25~10/31 주간은 10/26~11/1, 10/18~10/24 는 10/19~10/25 로 옮겼다. 시안 본문의 `[[회고 링크]]`, `#태그`는 앱에 없는 기능이라 평문.
+- [시안] 시안 주간은 일~토(10/25~10/31)인데 서버 요약 주는 ISO 월~일이다. 앱은 서버를 따른다. 요약 만들기 창의 주 이름("10월 4주")과 요약 제목("10월 4주차 회고")은 시작일이 그 달 몇째 칠일인지(시안 제목과 맞춤). 시안은 창의 "10월 5주"와 제목 "10월 4주차"가 서로 달랐다.
+- [결정] 요약 제목은 이 화면에서 시안 모양("10월 4주차 회고", "10월 회고", "2025년 회고")으로 만든다(`model/format.ts` `retroTitle`). 다른 화면(명령 팔레트 등)은 아직 기존 `entryDisplayTitle`("2026-W44 주간 회고")이라 다르게 보인다(Task 11).
+- [결정] 제목 없는 일간 회고는 "11월 1일 회고"로 보이고, 기존 서버 기본 제목("2026-11-03 일일 회고" 꼴)도 같은 이름으로 보인다. 새 회고 창에서 제목을 비우면 "11월 3일 회고"로 저장한다.
+- [서버] 일간 회고는 하루 한 편(createDailyEntry, JOURNAL_ENTRY_ALREADY_EXISTS)이라 시안의 "이미 1편이 있어요. 따로 한 편으로 저장돼요"는 할 수 없다. 이미 있는 날을 고르면 "만들면 그 회고를 열어요"로 안내하고 연다.
+- [서버] `/entries/paginated`에 폴더 거르기가 없고 `/folders/contents`는 검색, 기간을 받지 않는다. 실제 모드에서 폴더를 고르면 폴더 내용을 페이지씩 받아 그 안에서 검색, 기간을 거른다(받은 범위 안에서만).
+- [결정] 폴더: 사이드바 "폴더"를 펴면 전체 + 폴더 트리(하위 폴더 들여쓰기). 폴더를 누르면 거르기(위 칩으로 풀기), 줄 옆 ⋯ 메뉴로 이름 바꾸기, 안에 폴더 만들기, 삭제. 카드를 폴더 줄에 끌어 놓으면 옮기고, 폴더 줄을 다른 폴더 줄에 놓으면 그 안으로 넣는다(기존 기능 유지). 시안의 폴더 카드 격자는 없다.
+- [결정] "N개 더 보기": 데모/mock 은 9장씩, 실제 모드는 서버 20개씩 이어 받아 9장씩 보인다.
+- [결정] 편집기는 시안 기본 분기(ed 없음, 문서 한 장)를 옮겼다. 본문은 기존 TipTap(rich-editor, 슬래시 메뉴, 블록 손잡이) 그대로이고 손잡이 자리 58px는 760px 이상에서 왼쪽 여백으로 뺐다. 시안 본문의 `[[` 회고 링크 고르기는 마크다운 저장과 맞지 않아 옮기지 않았다(placeholder 문구도 "/ 를 치면 블록").
+- [결정] 기존 동작 유지: GitHub 연결 시 그날 커밋 목록과 "GitHub에 저장"(⋯ 메뉴), 저장 상태 점(GitHub 저장됨/저장 대기), AI 요약 되돌리기 확인, 요약 생성 중/실패 띠. 기존 확장 모드(목차 오버레이)는 시안의 집중 쓰기(Ctrl+Shift+F, Esc)로 바꿨다.
+- [결정] "지난번에 해 보자고 한 것"은 바로 앞 일간 회고들에서 '내일/다음/tomorrow/next' 머리글 아래 목록을 찾는다(`prevActions`). 체크는 화면 안 상태(시안도 저장 안 함). "→ 할 일로"(목록 줄 옆)는 내일 할 일로 만든다. 시안의 "할 일에 넣음" 표시는 마크다운에 남길 수 없어 빼고 알림만 띄운다.
+- [결정] 요약 만들기 창: 데모에서는 고르는 데까지 되고 "요약 만들기"를 누르면 기존처럼 로그인 안내(demo.locked). 덮어쓰기, 데이터 부족 확인은 시안처럼 같은 창 안에서 바뀐다(기존 ConfirmModal 두 개와 PeriodPickerModal 대신).
+- [결정] 빈 화면: 회고가 하나도 없으면 셸 안 가운데에 시안 rest.js 문구("아직 회고가 없어요" + 첫 회고 쓰기). 거른 결과가 없을 때는 시안 `.q-empty` 상자. 데모에는 회고 시드가 있어서 빈 화면 확인은 시드 모듈을 비워 찍었다.
+- [결정] 새 회고 창 폴더 기본값: 거르는 폴더, 없으면 가장 최근 일간 회고의 폴더(시안 기본 "ARCHIVE 개발"과 같은 결과).
+- [결정] 단축키: N 새 회고, / 찾기, ←→ 넘기기(트랙에 포커스), Esc 메뉴, 창, 집중 끝내기. 팔레트 명령 "오늘 회고 쓰기"(order 50)는 회고 탭이 마운트된 동안만(셸 계약).
+- [기존] 옛 회고 위젯 파일(RetroGallery, RetroCard, RetroFolderCard, RetroDocHead/Rail, RetroExpandOverlay, PeriodPickerModal, EntryFolderPicker, RetroTabBar, useRetroFilter, useFolderContents, useFolderNav, useRetroEntriesPage 등)과 옛 주제 파일(Topic*, useTopic*, topic-studio.css)을 지웠다. retro.css 는 새 화면 것만 남겼다. 남은 쓰지 않는 i18n 키(`retro.gallery.*`, `retro.period.*`, `retro.expand.*`, `retro.filter.*` 등)는 Task 11 정리 대상.
+- [기존] 데모로 처음 들어오면 "AI 요약 처리 중" 창이 뜨는 문제는 그대로(최소화하고 찍었다).

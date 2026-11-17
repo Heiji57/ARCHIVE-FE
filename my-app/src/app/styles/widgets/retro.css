@@ -1,829 +1,1688 @@
-/* ---------- Retrospective page ---------- */
-.retro-page {
-  padding-top: 32px;
-  /* 갤러리가 페이지 높이를 채우도록 flex 컬럼으로 — 카드 그리드/페이저를
-     하단으로 밀어내기 위한 높이 체인의 시작점. */
+/* ------------------------------------------------------------------
+   회고 화면 (Task 4). 시안 prototypes/linear-shell/d-retro2.html 회고 영역(인라인 스타일의 확정 분기),
+   shared/retro-cards.css(.rcx + .rcv5 날짜 잉크), retro-views.css(.crl 넘기기),
+   retro-editor.css, retro-new.css(nd1: 제목 먼저 + 알약), rest.css(빈 화면 rs-e1).
+   색과 글꼴은 tokens/redesign.css 토큰만. 접두: rv-
+   ------------------------------------------------------------------ */
+
+/* ---------- 사이드바(셸 sidebar 슬롯) ---------- */
+.rv-side {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.rv-side h2 {
+  margin: 0 0 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink4);
+  letter-spacing: 0.06em;
+}
+.rv-side h2.hx {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.rv-fold-t {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  border-radius: 4px;
+}
+.rv-fold-t .cv {
+  transition: transform 0.12s;
+}
+.rv-fold-t[aria-expanded="false"] .cv {
+  transform: rotate(-90deg);
+}
+.rv-ch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: var(--r);
+  color: var(--ink3);
+  text-align: left;
+  font-size: 13px;
+  min-width: 0;
+}
+.rv-ch svg {
+  color: var(--ink4);
+  flex: none;
+}
+.rv-ch:hover {
+  background: var(--s3);
+  color: var(--ink);
+}
+.rv-ch[aria-pressed="true"] {
+  background: var(--primary-a);
+  color: var(--ink);
+  box-shadow: inset 2px 0 var(--primary);
+}
+.rv-ch .nm {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rv-ch .n {
+  margin-left: auto;
+  font: 500 12px var(--mono);
+  color: var(--ink4);
+}
+.rv-frow {
+  position: relative;
+  display: flex;
+  align-items: center;
+  border-radius: var(--r);
+}
+.rv-frow > .rv-ch {
+  flex: 1;
+}
+.rv-frow .rv-fmore {
+  position: absolute;
+  right: 2px;
+  opacity: 0;
+}
+.rv-frow:hover .rv-fmore,
+.rv-frow .rv-fmore:focus-visible,
+.rv-frow .rv-fmore[aria-expanded="true"] {
+  opacity: 1;
+}
+.rv-frow:hover .rv-ch .n {
+  visibility: hidden;
+}
+.rv-frow[data-drop-active] {
+  outline: 1px dashed var(--line2);
+}
+.rv-frow[data-drop-over] {
+  outline: 2px solid var(--rc-focus);
+  background: var(--primary-a);
+}
+.rv-frow[data-dragging] {
+  opacity: 0.5;
+}
+
+/* ---------- 공통 버튼과 메뉴(시안 .q-bt .q-ib .q-pop) ---------- */
+.rv-bt {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 10px;
+  border-radius: var(--r);
+  font-size: 13px;
+  color: var(--ink2);
+  border: 1px solid var(--line2);
+  background: var(--s1);
+  white-space: nowrap;
+}
+.rv-bt:hover {
+  background: var(--s3);
+  color: var(--ink);
+}
+.rv-bt.p {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--rc-on-accent);
+}
+.rv-bt.p:hover {
+  background: var(--primary-h);
+  border-color: var(--primary-h);
+}
+.rv-bt.g {
+  border-color: transparent;
+  background: none;
+  color: var(--ink3);
+}
+.rv-bt.g:hover {
+  background: var(--s3);
+  color: var(--ink);
+}
+.rv-bt:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.rv-ib {
+  width: 30px;
+  height: 30px;
+  flex: none;
+  border-radius: var(--r);
+  display: inline-grid;
+  place-items: center;
+  color: var(--ink3);
+}
+.rv-ib:hover,
+.rv-ib[aria-pressed="true"] {
+  background: var(--s3);
+  color: var(--ink);
+}
+.rv-ib:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+.rv-ib.sm {
+  width: 20px;
+  height: 20px;
+  color: var(--ink4);
+}
+.rv-ib.xs {
+  width: 20px;
+  height: 20px;
+}
+.rv-wrap {
+  position: relative;
+  display: inline-flex;
+}
+.rv-pop {
+  position: absolute;
+  top: 34px;
+  z-index: 40;
+  min-width: 200px;
+  padding: 5px;
+  border: 1px solid var(--line2);
+  border-radius: 8px;
+  background: var(--s2);
+  box-shadow: var(--rs-shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.rv-pop.r {
+  right: 0;
+}
+.rv-pop.l {
+  left: 0;
+}
+.rv-pop > button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: 5px;
+  text-align: left;
+  font-size: 13px;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.rv-pop > button:hover,
+.rv-pop > button:focus-visible {
+  background: var(--s4);
+  outline: none;
+}
+.rv-pop > button.danger {
+  color: var(--danger);
+}
+.rv-pop > button small {
+  margin-left: auto;
+  padding-left: 14px;
+  font: 400 12px var(--mono);
+  color: var(--ink4);
+}
+.rv-pop > button[aria-checked="true"]::after {
+  content: "✓";
+  margin-left: auto;
+  padding-left: 14px;
+  color: var(--primary-h);
+}
+.rv-pop hr {
+  border: 0;
+  border-top: 1px solid var(--line);
+  margin: 4px 2px;
+  width: auto;
+}
+.rv-pop svg {
+  color: var(--ink4);
+  flex: none;
+}
+.rv-pop-h {
+  margin: 4px 8px;
+  font-size: 12px;
+  color: var(--rc-ink-3);
+}
+.rv-pop:has(.rv-fs) {
+  min-width: 240px;
+}
+.rv-fs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  padding: 0 8px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--rc-rule);
+  color: var(--rc-ink-3);
+}
+.rv-fs input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  outline: 0;
+  font: 13px var(--font);
+  color: var(--rc-ink);
+}
+.rv-fs input::placeholder {
+  color: var(--rc-ink-3);
+}
+:is(.rv-l1, .rv-ed, .rv-dlg, .rv-side, .rv-frow, .rv-first) :is(button, a, select, [tabindex]:not(.ProseMirror)):focus-visible {
+  outline: 2px solid var(--rc-focus);
+  outline-offset: 2px;
+}
+.rv-kbd {
+  font: 500 12px var(--mono);
+  padding: 1px 5px;
+  border: 1px solid var(--rc-rule-strong);
+  border-radius: 4px;
+  color: var(--rc-ink-2);
+  background: var(--rc-surface-active);
+}
+
+/* ---------- 목록 바탕(시안 .l1 한 화면씩) ---------- */
+.rv-l1 {
+  height: 100%;
+  overflow: auto;
+  font: 400 14px/1.45 var(--font);
+  color: var(--ink);
+}
+.rv-pg {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 24px 28px 60px;
+}
+.rv-l1.vm-rail {
+  overflow: hidden;
+}
+.rv-l1.vm-rail .rv-pg {
+  max-width: none;
+  padding-bottom: 0;
+}
+
+/* 도구 줄 */
+.rv-hd {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 0 0 var(--rc-s5);
+}
+.rv-hd .sp {
+  flex: 1;
+}
+.rv-per {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  height: 32px;
+  padding: 2px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--s1);
+  max-width: 100%;
+  min-width: 0;
+}
+.rv-per select {
+  appearance: none;
+  height: 26px;
+  min-width: 0;
+  padding: 0 24px 0 10px;
+  border: 0;
+  border-radius: 6px;
+  background-color: transparent;
+  background-image: linear-gradient(45deg, transparent 50%, var(--ink3) 50%), linear-gradient(-45deg, transparent 50%, var(--ink3) 50%);
+  background-position: right 12px center, right 8px center;
+  background-size: 4px 4px, 4px 4px;
+  background-repeat: no-repeat;
+  font: 500 13px var(--font);
+  color: var(--ink);
+  cursor: pointer;
+}
+.rv-per select:hover {
+  background-color: var(--s3);
+}
+.rv-per select:disabled {
+  color: var(--ink4);
+  cursor: default;
+  background-image: none;
+}
+.rv-per select option {
+  background: var(--s2);
+  color: var(--ink);
+}
+.rv-per i {
+  width: 1px;
+  height: 14px;
+  background: var(--line2);
+  flex: none;
+}
+.rv-per .st {
+  width: 26px;
+  height: 26px;
+  flex: none;
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+  color: var(--ink3);
+}
+.rv-per .st:hover {
+  background: var(--s3);
+  color: var(--ink);
+}
+.rv-srch {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  width: 220px;
+  max-width: 100%;
+  padding: 0 4px 0 9px;
+  border: 1px solid var(--line2);
+  border-radius: 8px;
+  background: var(--s1);
+  color: var(--ink4);
+}
+.rv-srch input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: none;
+  outline: 0;
+  font-size: 13px;
+  color: var(--ink);
+}
+.rv-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  padding: 0 4px 0 9px;
+  border-radius: 12px;
+  background: var(--s3);
+  font-size: 12px;
+  color: var(--ink2);
+}
+.rv-chip button {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: var(--ink4);
+}
+.rv-chip button:hover {
+  background: var(--s4);
+  color: var(--ink);
+}
+
+/* ---------- 달 묶음과 카드(retro-cards.css .rcx + .rcv5) ---------- */
+.rv-mg {
+  margin: 0 0 calc(var(--rc-s5) + var(--rc-s1));
+}
+.rv-mg h3 {
+  display: flex;
+  align-items: baseline;
+  gap: var(--rc-s2);
+  margin: 0 0 var(--rc-s3);
+  font: 600 14px var(--rc-font);
+  color: var(--rc-ink);
+}
+.rv-mg h3 small {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--rc-ink-3);
+}
+.rv-cg {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 12px;
+}
+.k-daily { --k: var(--rc-d); --kw: var(--rc-d-well); --kt: var(--rc-d-tab); --ke: var(--rc-d-edge); }
+.k-weekly { --k: var(--rc-w); --kw: var(--rc-w-well); --kt: var(--rc-w-tab); --ke: var(--rc-w-edge); }
+.k-monthly { --k: var(--rc-m); --kw: var(--rc-m-well); --kt: var(--rc-m-tab); --ke: var(--rc-m-edge); }
+.k-yearly { --k: var(--rc-y); --kw: var(--rc-y-well); --kt: var(--rc-y-tab); --ke: var(--rc-y-edge); }
+
+.rv-cd {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--rc-s2);
+  min-width: 0;
+  min-height: 148px;
+  padding: var(--rc-s4);
+  border: 1px solid var(--rc-rule);
+  border-radius: var(--rc-radius);
+  background: var(--rc-surface);
+  color: var(--rc-ink);
+  font-family: var(--rc-font);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--rc-dur) ease-out, border-color var(--rc-dur) ease-out;
+}
+.rv-cd:hover {
+  background: var(--rc-surface-hover);
+  border-color: var(--rc-rule-strong);
+}
+.rv-cd:active {
+  background: var(--rc-surface-active);
+}
+.rv-cd[aria-current="true"] {
+  border-color: var(--rc-focus);
+}
+.rv-cd[data-dragging] {
+  opacity: 0.5;
+}
+.rv-cd .q-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--rc-s3);
+  min-width: 0;
+}
+.rv-cd .q-num {
+  display: flex;
+  align-items: baseline;
+  gap: var(--rc-s2);
+  color: var(--k);
+  white-space: nowrap;
+}
+.rv-cd .q-num b {
+  font: 600 34px/1 var(--rc-mono);
+  letter-spacing: -1px;
+}
+.rv-cd .q-num b.s {
+  font-size: 20px;
+  letter-spacing: 0;
+}
+.rv-cd.k-yearly .q-num b.s {
+  font-size: 34px;
+  letter-spacing: -1px;
+}
+.rv-cd .q-num b i {
+  font-style: normal;
+  font-size: 16px;
+}
+.rv-cd .q-num small {
+  font-size: 12px;
+  color: var(--rc-ink-2);
+}
+.rv-cd .mt {
+  display: flex;
+  align-items: center;
+  gap: var(--rc-s2);
+  min-width: 0;
+  font-size: 12px;
+  color: var(--rc-ink-3);
+}
+.rv-cd .mt .sp {
+  flex: 1;
+}
+.rv-cd .q-ty {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--rc-s1);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--k);
+}
+.rv-cd .tt {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: -0.2px;
+  color: var(--rc-ink);
+  overflow-wrap: break-word;
+  min-width: 0;
+}
+.rv-cd .ex {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--rc-ink-2);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.rv-cd .ft {
+  display: flex;
+  align-items: center;
+  gap: var(--rc-s2);
+  margin-top: auto;
+  font-size: 12px;
+  color: var(--rc-ink-3);
+}
+.rv-cd .ft svg {
+  flex-shrink: 0;
+}
+.rv-cd[data-state="pending"] .ex {
+  color: var(--rc-ink-3);
+}
+.rv-cd[data-state="failed"] {
+  border-color: var(--rc-err-well);
+}
+.rv-cd.today {
+  background: var(--rc-d-well);
+  border: 1px dashed var(--rc-d-edge);
+}
+.rv-cd.today:hover {
+  border-style: solid;
+  border-color: var(--rc-d);
+}
+.q-st {
+  font-size: 12px;
+  line-height: 18px;
+  padding: 0 var(--rc-s2);
+  border-radius: 9px;
+  background: var(--rc-rule);
+  color: var(--rc-ink);
+  white-space: nowrap;
+}
+.q-st.t {
+  background: var(--rc-accent);
+  color: var(--rc-on-accent);
+}
+.q-st.f {
+  background: var(--rc-err-well);
+  color: var(--rc-err);
+}
+.rv-more {
+  display: flex;
+  justify-content: center;
+  padding: 14px 0;
+}
+.rv-none {
+  padding: 48px 20px;
+  text-align: center;
+  color: var(--ink3);
+  font-size: 13px;
+  border: 1px dashed var(--line2);
+  border-radius: 12px;
+}
+.rv-none h3 {
+  margin: 0 0 6px;
+  font-size: 16px;
+  color: var(--ink);
+  font-weight: 600;
+}
+.rv-none p {
+  margin: 0;
+}
+.rv-none .rv-bt {
+  margin-top: 14px;
+}
+.rv-load,
+.rv-none-l {
+  margin: 0;
+  padding: 2px 8px;
+  font-size: 13px;
+  color: var(--ink4);
+}
+
+/* ---------- 빈 화면(rest.css rs-e1) ---------- */
+.rv-first {
+  height: 100%;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+}
+.rv-e1 {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  max-width: 420px;
+  padding: 24px;
+  border-radius: var(--r2);
+  text-align: center;
+}
+.rv-e1 h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--ink);
+  text-wrap: balance;
+}
+.rv-e1 p {
+  margin: 0 0 8px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--ink3);
+}
+.rv-p {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  padding: 0 16px;
+  border-radius: var(--r);
+  font-size: 13px;
+  font-weight: 600;
+  background: var(--ink);
+  color: var(--canvas);
+}
+.rv-p:hover {
+  background: var(--ink2);
+}
+
+/* ---------- 좌우로 넘기기(retro-views.css .crl) ---------- */
+.rv-l1 .crl {
+  --rl-w: min(580px, 72vw);
+  position: relative;
+  margin: 0 calc(-1 * var(--rc-s5));
+}
+.rv-l1 .crl-track {
+  display: flex;
+  align-items: stretch;
+  gap: var(--rc-s5);
+  height: max(420px, calc(100vh - 250px));
+  height: max(420px, calc(100dvh - 250px - var(--sh-demo-h, 0px)));
+  padding: var(--rc-s2) 0 var(--rc-s4);
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  position: relative;
+}
+.rv-l1 .crl-track::-webkit-scrollbar {
+  display: none;
+}
+.rv-l1 .crl-track::before,
+.rv-l1 .crl-track::after {
+  content: "";
+  flex: 0 0 calc(50% - var(--rl-w) / 2 - var(--rc-s5));
+}
+.rv-l1 .crl-track:focus-visible {
+  outline: 2px solid var(--rc-focus);
+  outline-offset: -2px;
+}
+.rv-l1 .crl-s {
+  flex: 0 0 var(--rl-w);
+  scroll-snap-align: center;
+  display: flex;
+  min-width: 0;
+  cursor: pointer;
+}
+.rv-l1 .crl-s.cur {
+  cursor: default;
+}
+.rv-l1 .crl-c {
   flex: 1;
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  padding: var(--rc-s5);
+  border: 1px solid var(--rc-rule);
+  border-radius: 14px;
+  background: var(--rc-surface);
+  transform: scale(0.9);
+  opacity: 0.42;
+  transition: transform 220ms ease-out, opacity 220ms ease-out, border-color var(--rc-dur) ease-out;
+}
+.rv-l1 .crl-s:not(.cur):hover .crl-c {
+  opacity: 0.6;
+}
+.rv-l1 .crl-s.cur .crl-c {
+  transform: none;
+  opacity: 1;
+  border-color: var(--rc-rule-strong);
+}
+.rv-l1 .crl-h {
+  display: flex;
+  align-items: baseline;
+  gap: var(--rc-s3);
+  flex-shrink: 0;
+}
+.rv-l1 .crl-h .sp {
+  flex: 1;
+}
+.rv-l1 .crl-n {
+  display: flex;
+  align-items: baseline;
+  gap: var(--rc-s2);
+  color: var(--k);
+  white-space: nowrap;
+}
+.rv-l1 .crl-n b {
+  font: 600 44px/1 var(--rc-mono);
+  letter-spacing: -1.5px;
+}
+.rv-l1 .crl-n b.s {
+  font-size: 28px;
+  letter-spacing: -0.5px;
+}
+.rv-l1 .crl-n b i {
+  font-style: normal;
+  font-size: 20px;
+  margin-left: 2px;
+}
+.rv-l1 .crl-n small {
+  font-size: 13px;
+  color: var(--rc-ink-2);
+}
+.rv-l1 .crl-k {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--rc-s1);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--k);
+}
+.rv-l1 .crl-t {
+  margin: var(--rc-s4) 0 var(--rc-s3);
+  font-size: 24px;
+  font-weight: 650;
+  letter-spacing: -0.4px;
+  line-height: 1.35;
+  color: var(--rc-ink);
+  overflow-wrap: break-word;
+  min-width: 0;
+  flex-shrink: 0;
+}
+.rv-l1 .crl-b {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  color: var(--rc-ink-2);
+}
+.rv-l1 .crl-b .rv-body {
+  font-size: 14px;
+  line-height: 1.75;
+}
+.rv-l1 .crl-s.cur .crl-b {
+  overflow-y: auto;
+}
+.rv-l1 .crl-f {
+  display: flex;
+  align-items: center;
+  gap: var(--rc-s2);
+  flex-shrink: 0;
+  padding-top: var(--rc-s4);
+  margin-top: var(--rc-s3);
+  border-top: 1px solid var(--rc-rule);
+  font-size: 13px;
+  color: var(--rc-ink-3);
+}
+.rv-l1 .crl-fd {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--rc-s2);
+}
+.rv-l1 .crl-f .sp {
+  flex: 1;
+}
+.rv-l1 .crl-s:not(.cur) .crl-f .rv-bt {
+  visibility: hidden;
+}
+.rv-l1 .crl-nav {
+  position: absolute;
+  top: calc(50% - 40px);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--rc-rule-strong);
+  background: var(--rc-surface);
+  color: var(--rc-ink-2);
+  z-index: 2;
+  transition: background-color var(--rc-dur) ease-out;
+}
+.rv-l1 .crl-nav:hover {
+  background: var(--rc-surface-hover);
+  color: var(--rc-ink);
+}
+.rv-l1 .crl-nav:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+.rv-l1 .crl-nav.prev {
+  left: calc(50% - var(--rl-w) / 2 - 64px);
+}
+.rv-l1 .crl-nav.next {
+  right: calc(50% - var(--rl-w) / 2 - 64px);
+}
+.rv-l1 .crl-bar {
+  max-width: 760px;
+  margin: var(--rc-s2) auto 0;
+  padding: 0 var(--rc-s5);
+}
+.rv-l1 .crl-pos {
+  display: block;
+  text-align: center;
+  font-size: 13px;
+  color: var(--rc-ink-2);
+  white-space: pre;
+  margin-bottom: var(--rc-s3);
+  min-height: 18px;
+  font-variant-numeric: tabular-nums;
+}
+.rv-l1 .crl-line {
+  position: relative;
+  height: 34px;
+  border-top: 1px solid var(--rc-rule);
+}
+.rv-l1 .crl-dot {
+  position: absolute;
+  top: -5px;
+  width: 10px;
+  height: 10px;
+  margin-left: -5px;
+  border-radius: 50%;
+  background: var(--ke, var(--rc-rule-strong));
+  transition: transform var(--rc-dur) ease-out, background-color var(--rc-dur) ease-out;
+}
+.rv-l1 .crl-dot:hover {
+  transform: scale(1.4);
+}
+.rv-l1 .crl-dot[aria-current] {
+  background: var(--k, var(--rc-d));
+  transform: scale(1.4);
+}
+.rv-l1 .crl-cur {
+  position: absolute;
+  top: -12px;
+  width: 1px;
+  height: 24px;
+  background: var(--rc-ink-3);
+  pointer-events: none;
+  transition: left 220ms ease-out;
+}
+.rv-l1 .crl-m {
+  position: absolute;
+  top: 12px;
+  transform: translateX(-4px);
+  font-size: 12px;
+  color: var(--rc-ink-3);
+  white-space: nowrap;
 }
 
-/* 갤러리 섹션이 남은 높이를 모두 차지하고, 그 안에서 그리드를 아래로 민다. */
-.retro-gallery {
-  flex: 1;
+/* ---------- 본문 글(편집기와 넘기기 공통, 시안 .q-body) ---------- */
+.rv-body {
+  font-size: 16px;
+  line-height: 1.7;
+  color: var(--ink2);
+  overflow-wrap: break-word;
+}
+.rv-body :is(p, ul, ol, blockquote) {
+  margin: 0 0 0.9em;
+}
+.rv-body > :first-child {
+  margin-top: 0;
+}
+.rv-body h1,
+.rv-body h2 {
+  margin: 1.7em 0 0.5em;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--ink);
+}
+.rv-body h3 {
+  margin: 1.4em 0 0.4em;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--ink);
+}
+.rv-body > :is(h1, h2, h3):first-child {
+  margin-top: 0;
+}
+.rv-body :is(ul, ol) {
+  padding-left: 1.3em;
+}
+.rv-body ul {
+  list-style: disc;
+}
+.rv-body ol {
+  list-style: decimal;
+}
+.rv-body li {
+  margin: 0 0 0.35em;
+}
+.rv-body li > p {
+  margin: 0;
+}
+.rv-body li::marker {
+  color: var(--ink4);
+}
+.rv-body code {
+  font: 13px var(--mono);
+  background: var(--s3);
+  padding: 1px 5px;
+  border-radius: 4px;
+  color: var(--ink);
+}
+.rv-body blockquote {
+  padding: 2px 0 2px 14px;
+  border-left: 3px solid var(--line2);
+  color: var(--ink3);
+}
+.rv-body a {
+  color: var(--primary-h);
+}
+
+/* ---------- 편집기(시안 editor(): .q-ed .q-eb .q-doc) ---------- */
+.rv-ed {
+  position: relative;
   display: flex;
   flex-direction: column;
   min-height: 0;
+  height: 100%;
+  font: 400 14px/1.45 var(--font);
+  color: var(--ink);
+  background: var(--canvas);
 }
-
-/* ---------- Editor: back link ---------- */
-.retro-back-link {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--s-xxs);
-  margin-bottom: var(--s-md);
-  padding: var(--s-xxs) 0;
-  font-size: 16px;
-  color: var(--color-body-muted);
-  transition: color 120ms ease;
-}
-.retro-back-link:hover {
-  color: var(--color-ink);
-}
-
-/* ---------- Gallery header ---------- */
-.retro-gallery-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 22px;
-  flex-wrap: wrap;
-}
-.retro-gallery-tools {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-/* Search — expands to the right on focus; AI/filter buttons shift along. */
-.retro-gallery-search {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 240px;
-  max-width: 100%;
-  padding: 9px 14px;
-  background: var(--color-tile-3);
-  border: 1px solid var(--color-divider-soft);
-  border-radius: var(--r-pill);
-  transition:
-    width 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
-    border-color 120ms ease;
-}
-.retro-gallery-search:focus-within {
-  width: 340px;
-  border-color: var(--color-primary);
-}
-.retro-gallery-search-icon {
-  color: var(--color-body-muted);
-  flex-shrink: 0;
-}
-.retro-gallery-search input {
-  flex: 1;
-  min-width: 0;
-  font-size: 16px;
-  background: transparent;
-}
-
-/* Icon buttons (period filter, AI summary) + popovers */
-.retro-gallery-pop {
-  position: relative;
-}
-.retro-gallery-icon-btn {
-  width: 38px;
-  height: 38px;
-  border-radius: var(--r-pill);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--color-tile-3);
-  color: var(--color-body-muted);
-  border: 1px solid var(--color-divider-soft);
-  transition:
-    background-color 120ms ease,
-    color 120ms ease;
-}
-.retro-gallery-icon-btn:hover:not(:disabled) {
-  background: var(--color-tile-4);
-  color: var(--color-ink);
-}
-.retro-gallery-icon-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-.retro-gallery-ai-btn {
-  color: var(--color-primary);
-}
-
-.retro-gallery-pop-backdrop {
+.rv-ed.zen {
   position: fixed;
   inset: 0;
-  z-index: 40;
+  z-index: 60;
 }
-.retro-gallery-pop-panel {
-  position: absolute;
-  top: calc(100% + 8px);
-  left: 0;
-  z-index: 41;
-  min-width: 210px;
-  padding: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  background: var(--color-tile-1);
-  border: 1px solid var(--color-divider-soft);
-  border-radius: var(--r-md);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
-}
-.retro-gallery-ai-menu {
-  left: auto;
-  right: 0;
-  min-width: 160px;
-  padding: 6px;
-}
-.retro-gallery-ai-item {
+.rv-eb {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 9px 12px;
-  border-radius: var(--r-sm);
-  font-size: 16px;
-  color: var(--color-ink);
-  text-align: left;
-  transition: background-color 120ms ease;
-}
-.retro-gallery-ai-item:hover {
-  background: var(--color-tile-3);
-}
-.retro-gallery-pop-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  font-size: 12px;
-  color: var(--color-body-muted);
-}
-.retro-gallery-pop-row .select {
-  min-width: 110px;
-}
-.retro-gallery-pop-hint {
-  margin: 2px 0 0;
-  font-size: 12px;
-  line-height: 1.4;
-  color: var(--color-body-muted);
-}
-
-/* Type chips */
-.retro-gallery-tabs {
-  display: inline-flex;
-  gap: 2px;
-  padding: 3px;
-  background: var(--color-tile-3);
-  border-radius: var(--r-pill);
-}
-.retro-gallery-chip {
-  padding: 7px 14px;
-  border-radius: var(--r-pill);
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--color-body-muted);
-  transition:
-    background-color 120ms ease,
-    color 120ms ease;
-}
-.retro-gallery-chip[data-active="true"] {
-  background: var(--color-tile-4);
-  color: var(--color-ink);
-}
-
-/* ---------- Folder breadcrumb ---------- */
-.retro-breadcrumb {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin: -8px 0 18px;
-}
-
-/* 검색·기간 필터 중 브레드크럼 자리를 대신한다. 검색은 폴더를 가로질러 전체를
-   훑으므로 폴더 경로를 현재 위치가 아니라 '돌아갈 곳'으로 제시한다. */
-.retro-search-scope {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--s-xs);
-  margin: -8px 0 18px;
-}
-.retro-search-scope-label {
-  font-size: 12px;
-  color: var(--color-body-muted);
-}
-.retro-search-scope-back {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--s-xxs);
-  padding: 5px 10px;
-  border-radius: var(--r-sm);
-  background: var(--color-tile-2);
-  border: 1px solid var(--color-hairline);
-  color: var(--color-ink-muted-80);
-  font-size: 12px;
-  cursor: pointer;
-  transition: color 120ms ease, border-color 120ms ease;
-}
-.retro-search-scope-back:hover {
-  color: var(--color-ink);
-  border-color: var(--color-hairline-strong);
-}
-.retro-breadcrumb-item {
-  padding: 5px 10px;
-  border-radius: var(--r-sm);
-  font-size: 12px;
-  color: var(--color-body-muted);
-  cursor: pointer;
-  transition: background-color 120ms ease, color 120ms ease;
-}
-.retro-breadcrumb-item:not([data-current="true"]):hover {
-  background: var(--color-tile-3);
-  color: var(--color-ink);
-}
-.retro-breadcrumb-item[data-current="true"] {
-  color: var(--color-ink);
-  font-weight: 600;
-  cursor: default;
-}
-.retro-breadcrumb-item::after {
-  content: "/";
-  margin-left: 10px;
-  color: var(--color-hairline-strong);
-}
-.retro-breadcrumb-item:last-child::after {
-  content: "";
-  margin-left: 0;
-}
-
-/* ---------- Card grid ---------- */
-.retro-gallery-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 16px;
-  /* 행 최소 높이를 회고 카드의 자연 높이(브라우저 실측 ≈ 169.7px)에 맞춘다.
-     폴더 카드는 뱃지 줄이 없어 내용이 더 작으므로, 이게 없으면 행 높이가 회고
-     카드 유무에 따라 154↔170px 로 바뀌어 폴더 카드 크기가 달라진다.
-     내용이 더 커지면(뱃지 줄바꿈 등) auto 로 늘어난다. */
-  grid-auto-rows: minmax(170px, auto);
-  /* 그리드를 헤더 아래 고정 지점으로 내린다 — 회고록 개수와 무관하게 "새 회고록
-     만들기"/첫 카드 위치를 항상 여기에 고정(페이저만 margin-top:auto 로 하단 유지). */
-  margin-top: 50px;
-}
-
-/* ---------- Folder card ---------- */
-/* .retro-card.retro-folder-card(복합 셀렉터)로 명시도를 높여 아래 .retro-card
-   베이스 규칙(padding 등)이 소스 순서와 무관하게 항상 이기도록 한다. */
-.retro-card.retro-folder-card {
-  position: relative;
-  padding: 0;
-  cursor: default;
-}
-.retro-folder-card-open {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 18px;
-  text-align: left;
-  cursor: pointer;
-}
-.retro-folder-card-icon {
-  background: var(--color-tile-4);
-  color: var(--color-primary);
-}
-.retro-folder-card-meta {
-  margin-top: auto;
-  font-size: 12px;
-  color: var(--color-body-muted);
-  font-variant-numeric: tabular-nums;
-}
-.retro-folder-card-menu {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-}
-.retro-folder-card-menu-btn {
-  width: 26px;
-  height: 26px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--r-sm);
-  color: var(--color-body-muted);
-  opacity: 0;
-  transition: opacity 120ms ease, background-color 120ms ease, color 120ms ease;
-}
-.retro-folder-card:hover .retro-folder-card-menu-btn,
-.retro-folder-card-menu-btn:focus-visible {
-  opacity: 1;
-}
-.retro-folder-card-menu-btn:hover {
-  background: var(--color-tile-4);
-  color: var(--color-ink);
-}
-.retro-folder-card-menu-panel {
-  top: calc(100% + 4px);
-  left: auto;
-  right: 0;
-  min-width: 150px;
-  padding: 6px;
-}
-
-.retro-card {
-  text-align: left;
-  display: flex;
-  flex-direction: column;
-  min-height: 154px;
-  padding: 18px;
-  gap: 12px;
-  border-radius: var(--r-lg);
-  background: var(--color-tile-2);
-  border: 1px solid var(--color-divider-soft);
-  cursor: pointer;
-  transition:
-    background-color 140ms ease,
-    border-color 140ms ease;
-}
-.retro-card:hover {
-  background: var(--color-tile-3);
-  border-color: var(--color-hairline-strong);
-}
-.retro-card[data-active="true"] {
-  border-color: var(--color-primary);
-}
-.retro-card[data-today="true"] {
-  border-color: var(--color-primary);
-}
-
-.retro-card-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.retro-card-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: var(--r-sm);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-}
-/* 차분한 뮤트 팔레트 — 카드마다 은은한 다양성, 알록달록하지 않게 채도 억제. */
-.retro-card-icon-tone-0 { background: #6b7a99; } /* slate */
-.retro-card-icon-tone-1 { background: #5f8a78; } /* sage */
-.retro-card-icon-tone-2 { background: #a3745f; } /* clay */
-.retro-card-icon-tone-3 { background: #9a8a55; } /* sand */
-.retro-card-icon-tone-4 { background: #837196; } /* mauve */
-.retro-card-icon-tone-5 { background: #5d8296; } /* dusty blue */
-
-.retro-card-title {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 600;
-  letter-spacing: -0.2px;
-  color: var(--color-ink);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.retro-card-meta {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: auto;
-}
-
-/* 검색 결과 카드의 소속 폴더 경로. margin-right:auto 로 날짜에 붙여 왼쪽에
-   두고, 남는 공간을 흡수해 sync 뱃지를 오른쪽 끝에 유지한다(3요소가 공간을
-   균등 분배해 칩이 가운데 뜨는 것을 막는다). */
-.retro-card-folder {
-  margin-right: auto;
-  min-width: 0;
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  padding: 2px var(--s-xs);
-  border-radius: var(--r-sm);
-  background: var(--color-tile-3);
-  font-size: 12px;
-  color: var(--color-body-muted);
-}
-.retro-card-date {
+  gap: 6px;
+  height: 46px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--line);
+  flex: none;
   font-size: 13px;
-  color: var(--color-body-muted);
+  color: var(--ink3);
 }
-.retro-card-sync {
+.rv-ed.zen .rv-eb {
+  border-bottom-color: transparent;
+}
+.rv-eb .sp {
+  flex: 1;
+}
+.rv-eb .sv {
+  font-size: 12px;
+  color: var(--ink4);
+  white-space: nowrap;
+}
+.rv-sync {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  font-size: 14px;
-  color: var(--color-body-muted);
+  font-size: 12px;
+  color: var(--ink3);
+  white-space: nowrap;
 }
-.retro-card-sync-dot {
+.rv-sync::before {
+  content: "";
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--color-status-todo);
+  background: var(--warn);
 }
-.retro-card-sync.is-synced .retro-card-sync-dot {
-  background: var(--color-status-done);
+.rv-sync.on::before {
+  background: var(--done);
 }
-.retro-card-sync.is-draft .retro-card-sync-dot {
-  background: var(--color-warn);
+.rv-es {
+  flex: 1;
+  overflow: auto;
 }
-.retro-card-badges {
+.rv-doc {
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 30px 40px 90px;
+}
+.rv-ed.zen .rv-doc {
+  max-width: 680px;
+  padding-top: 12vh;
+}
+.rv-ed.zen .rv-body {
+  line-height: 1.9;
+}
+.rv-meta {
   display: flex;
+  align-items: center;
+  gap: 8px;
   flex-wrap: wrap;
-  gap: 6px;
-  min-height: 15px;
-}
-
-/* New-retrospective card */
-.retro-card-new {
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  border-style: dashed;
-  background: transparent;
-  color: var(--color-body-muted);
-}
-.retro-card-new:hover {
-  background: var(--color-tile-2);
-  color: var(--color-ink);
-}
-.retro-card-new-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: var(--r-sm);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--color-tile-3);
-}
-.retro-card-new-label {
-  font-size: 16px;
-  font-weight: 500;
-}
-
-/* ---------- First-run empty state ---------- */
-.retro-gallery-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  padding: 80px 20px;
-  text-align: center;
-}
-.retro-gallery-empty-icon {
-  width: 52px;
-  height: 52px;
-  margin-bottom: 4px;
-  border-radius: var(--r-md);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--color-tile-3);
-  color: var(--color-body-muted);
-}
-.retro-gallery-empty-title {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--color-ink);
-}
-.retro-gallery-empty-desc {
-  margin: 0 0 8px;
-  max-width: 360px;
-  font-size: 16px;
-  line-height: 1.5;
-  color: var(--color-body-muted);
-}
-
-/* ---------- Warn badge (readiness modal) ---------- */
-.retro-warn-badge {
-  width: 40px;
-  height: 40px;
-  border-radius: var(--r-sm);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: color-mix(in srgb, var(--color-warn) 18%, transparent);
-  color: var(--color-warn);
-}
-
-/* ─── 문서형 회고 에디터 ─────────────────────────────────────────────── */
-.retro-doc {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  justify-content: center;
-  gap: var(--s-xl);
-}
-
-/* 본문을 뷰포트 정중앙에 앉히기 위한 유령 컬럼 — 우측 레일과 flex 값이
-   같아야 본문 좌우 여백이 대칭이 된다. 레일 값 수정 시 함께 맞출 것. */
-.retro-doc::before {
-  content: "";
-  flex: 1 1 240px;
-  min-width: 0;
-  max-width: 320px;
-}
-
-.retro-doc-main {
-  flex: 1 1 320px;
-  min-width: 0;
-  max-width: 900px;
-  display: flex;
-  flex-direction: column;
-
-}
-
-.retro-doc-rail {
-  flex: 1 1 240px;
-  min-width: 0;
-  max-width: 320px;
-  position: sticky;
-  top: var(--s-md);
-  align-self: flex-start;
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-lg);
-  padding-top: var(--s-xs);
-}
-
-.retro-doc-head {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-sm);
-  padding-bottom: var(--s-lg);
-  border-bottom: 1px solid var(--color-hairline);
-}
-
-.retro-doc-meta {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--s-xs);
   font-size: 12px;
-  color: var(--color-body-muted);
+  color: var(--ink3);
 }
-
-.retro-doc-type {
-  padding: var(--s-xxs) var(--s-xs);
-  border-radius: var(--r-sm);
-  background: var(--color-tile-2);
-  border: 1px solid var(--color-hairline);
-  color: var(--color-ink);
+.rv-meta .q-ty {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 20px;
+  padding: 0 7px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink2);
+  background: var(--s3);
 }
-
-.retro-doc-date {
-  font-family: var(--font-mono);
-  color: var(--color-ink-muted-48);
+.rv-meta .q-ty.ai {
+  color: var(--primary-h);
+  background: var(--primary-a);
 }
-
-.retro-doc-title {
+.rv-ttl {
+  display: block;
   width: 100%;
-  box-sizing: border-box;
+  margin: 10px 0 2px;
   padding: 0;
-  background: transparent;
-  border: none;
-  outline: none;
-  color: var(--color-ink);
-  font-family: var(--font-display);
-  font-size: clamp(32px, 3.4vw, 44px);
-  font-weight: 600;
-  line-height: 1.1;
-  letter-spacing: var(--headline-tracking);
-  caret-color: var(--color-primary);
+  border: 0;
+  background: none;
+  outline: 0;
+  font-size: 26px;
+  font-weight: 650;
+  letter-spacing: -0.5px;
+  color: var(--ink);
 }
-
-.retro-doc-title::placeholder {
-  color: var(--color-ink-muted-32);
+.rv-ttl::placeholder {
+  color: var(--ink4);
 }
-
-.retro-doc-hint {
-  margin: 0;
+.rv-ttl[readonly] {
+  cursor: default;
+}
+.rv-hint {
+  margin: 0 0 20px;
   font-size: 12px;
-  color: var(--color-ink-muted-48);
+  color: var(--ink4);
 }
-
-.retro-doc-section {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-sm);
-  padding: var(--s-lg) 0;
-  border-bottom: 1px solid var(--color-hairline);
-}
-
-.retro-doc-section:last-child {
-  border-bottom: none;
-}
-
-.retro-doc-section-head {
+.rv-ban {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--s-sm);
+  gap: 10px;
   flex-wrap: wrap;
+  margin: 0 0 20px;
+  padding: 9px 12px;
+  border-radius: var(--r);
+  background: var(--primary-a);
+  font-size: 13px;
+  color: var(--ink2);
 }
-
-.retro-doc-section-title {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--color-ink);
-}
-
-.retro-doc-section-meta {
-  display: flex;
-  align-items: center;
-  gap: var(--s-xs);
-  font-size: 12px;
-  color: var(--color-ink-muted-48);
-}
-
-.retro-doc-list {
-  display: flex;
-  flex-direction: column;
-}
-
-.retro-doc-row {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  align-items: baseline;
-  gap: var(--s-sm);
-  padding: var(--s-xs) 0;
-  border-bottom: 1px solid var(--color-divider-soft);
-}
-
-.retro-doc-row:last-child {
-  border-bottom: none;
-}
-
-.retro-doc-empty {
-  margin: 0;
-  font-size: 16px;
-  color: var(--color-ink-muted-48);
-}
-
-.retro-doc-banner {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--s-sm);
-  padding: var(--s-sm) var(--s-md);
-  border-radius: var(--r-md);
-  background: color-mix(in srgb, var(--color-warn) 7%, transparent);
-  border: 1px solid color-mix(in srgb, var(--color-warn) 32%, transparent);
-  font-size: 12px;
-  color: var(--color-ink-muted-80);
-}
-
-.retro-doc-banner[data-tone="ai"] {
-  background: var(--color-chip-translucent);
-  border-color: color-mix(in srgb, var(--color-primary) 32%, transparent);
-}
-
-.retro-doc-banner[data-tone="danger"] {
-  background: color-mix(in srgb, var(--color-danger) 6%, transparent);
-  border-color: color-mix(in srgb, var(--color-danger) 30%, transparent);
-}
-
-.retro-rail-group {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-sm);
-}
-
-.retro-rail-label {
-  font-size: 12px;
-  letter-spacing: var(--eyebrow-tracking);
-  color: var(--color-ink-muted-48);
-}
-
-.retro-rail-autosaved {
+.rv-ban b {
   display: inline-flex;
   align-items: center;
-  gap: var(--s-xxs);
-  font-size: 12px;
-  color: var(--color-ink-muted-48);
+  gap: 5px;
+  color: var(--primary-h);
+  font-weight: 600;
 }
-
-.retro-rail-stat {
+.rv-ban span {
+  flex: 1;
+  min-width: 120px;
+}
+.rv-ban.wait {
+  background: var(--s2);
+  border: 1px solid var(--line);
+}
+.rv-ban.fail {
+  background: var(--rc-err-well);
+}
+.rv-ban.fail b {
+  color: var(--danger);
+}
+.rv-spin {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--line2);
+  border-top-color: var(--primary-h);
+  animation: rv-spin 0.8s linear infinite;
+  flex: none;
+}
+@keyframes rv-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.rv-prev {
+  margin: 0 0 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 13px;
+}
+.rv-prev > button {
   display: flex;
-  justify-content: space-between;
-  gap: var(--s-xs);
-  font-size: 12px;
-  color: var(--color-body-muted);
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 34px;
+  padding: 0 12px;
+  color: var(--ink3);
+  text-align: left;
 }
-
-.retro-rail-stat > b {
+.rv-prev > button:hover {
+  color: var(--ink);
+}
+.rv-prev > button b {
+  color: var(--ink2);
   font-weight: 500;
-  color: var(--color-ink-muted-80);
+}
+.rv-prev > button .cv {
+  margin-left: auto;
+  transition: transform 0.12s;
+}
+.rv-prev[data-open] > button .cv {
+  transform: rotate(180deg);
+}
+.rv-prev ul {
+  list-style: none;
+  margin: 0;
+  padding: 0 8px 8px;
+}
+.rv-prev li {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 5px 6px;
+  border-radius: 5px;
+  color: var(--ink2);
+}
+.rv-prev li button {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  color: inherit;
+}
+.rv-prev li.on span {
+  color: var(--ink4);
+  text-decoration: line-through;
+}
+.rv-prev li small {
+  margin-left: auto;
+  font: 400 12px var(--mono);
+  color: var(--ink4);
+}
+.rv-ask {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 6px;
+  font-size: 13px;
+  color: var(--ink3);
+}
+.rv-ask b {
+  font-weight: 500;
+  color: var(--ink2);
+}
+.rv-ask button {
+  font-size: 12px;
+  color: var(--ink4);
+}
+.rv-ask button:hover {
+  color: var(--primary-h);
+}
+/* 편집기 안 TipTap 을 시안 본문 글처럼. 블록 손잡이 자리(58px)는 넓은 화면에서 왼쪽 여백으로 뺀다 */
+.rv-doc .rv-body .rich-editor {
+  min-height: 0;
+  padding: 0;
+  color: var(--ink2);
+}
+.rv-doc .rv-body .rich-editor .ProseMirror {
+  min-height: 140px;
+  max-width: calc(68ch + 58px);
+  font-family: var(--font);
+  font-size: 16px;
+  line-height: 1.7;
+  color: var(--ink2);
+  caret-color: var(--ink);
+}
+.rv-doc .rv-body .rich-editor .ProseMirror > * + * {
+  margin-top: 0;
+}
+.rv-doc .rv-body .rich-editor .ProseMirror :is(p, ul, ol, blockquote) {
+  margin: 0 0 0.9em;
+}
+.rv-doc .rv-body .rich-editor .ProseMirror :is(h1, h2) {
+  margin: 1.7em 0 0.5em;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--ink);
+}
+.rv-doc .rv-body .rich-editor .ProseMirror h3 {
+  margin: 1.4em 0 0.4em;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.rv-doc .rv-body .rich-editor .ProseMirror > :first-child {
+  margin-top: 0;
+}
+.rv-doc .rv-body .rich-editor .ProseMirror li {
+  margin: 0 0 0.35em;
+}
+.rv-doc .rv-body .rich-editor .ProseMirror li > p {
+  margin: 0;
+}
+.rv-doc .rv-body .rich-editor .ProseMirror li::marker {
+  color: var(--ink4);
+}
+.rv-doc .rv-body .rich-editor .ProseMirror code {
+  font: 13px var(--mono);
+  background: var(--s3);
+  color: var(--ink);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+@media (min-width: 760px) {
+  .rv-doc .rv-body .rich-editor {
+    margin-left: -58px;
+  }
+}
+.rv-f1 {
+  position: absolute;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 5px;
+  border: 1px solid var(--line2);
+  background: var(--s2);
+  font-size: 12px;
+  color: var(--ink2);
+  box-shadow: var(--rs-shadow);
+}
+.rv-f1:hover {
+  color: var(--ink);
+  border-color: var(--primary);
+}
+.rv-done {
+  margin-top: 34px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+.rv-done h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink3);
+}
+.rv-done h3 em {
+  font: 500 12px var(--mono);
+  color: var(--ink4);
+  font-style: normal;
+}
+.rv-mr {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 30px;
+  padding: 3px 8px;
+  border-radius: 5px;
+  font-size: 13px;
+  color: var(--ink2);
+}
+a.rv-mr:hover,
+.rv-mr:hover {
+  background: var(--s2);
+}
+.rv-mr > span:not(.rv-ck) {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rv-mr em {
+  font: 500 12px var(--mono);
+  color: var(--ink4);
+  font-style: normal;
+  white-space: nowrap;
+}
+.rv-mr code {
+  font: 12px var(--mono);
+  color: var(--ink4);
+}
+.rv-mr .f3 {
+  display: none;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 5px;
+  border: 1px solid var(--line2);
+  font-size: 12px;
+  color: var(--ink2);
+}
+.rv-mr:hover .f3,
+.rv-mr .f3:focus-visible {
+  display: inline-flex;
+  align-items: center;
+}
+.rv-mr .f3:hover {
+  border-color: var(--primary);
+  color: var(--ink);
+}
+.rv-mr.moved > span {
+  color: var(--ink4);
+}
+.rv-mr.moved em {
+  color: var(--primary-h);
+}
+.rv-ck {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--done);
+  color: var(--rc-on-accent);
+}
+.rv-ck.o {
+  background: none;
+  border: 1.5px solid var(--ink4);
+}
+.rv-ck.d {
+  background: none;
+  border: 1.5px solid var(--primary);
+  position: relative;
+}
+.rv-ck.d::after {
+  content: "";
+  position: absolute;
+  inset: 2px;
+  border-radius: 50%;
+  background: var(--primary);
+  clip-path: inset(0 50% 0 0);
 }
 
-.retro-rail-divider {
-  height: 1px;
-  background: var(--color-hairline);
+/* ---------- 창(새 회고, 요약 만들기): 시안 .q-dlg, retro-new.css nd1 ---------- */
+.rv-dlg {
+  margin: 12vh auto auto;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--rc-ink);
+  overflow: visible;
+  max-width: calc(100vw - 32px);
+  font: 400 14px/1.45 var(--font);
+}
+.rv-dlg::backdrop {
+  background: var(--rs-scrim);
+}
+.rv-nd,
+.rv-sd {
+  position: relative;
+  width: min(520px, calc(100vw - 32px));
+  padding: var(--rc-s5);
+  border: 1px solid var(--rc-rule-strong);
+  border-radius: 14px;
+  background: var(--rc-surface);
+  box-shadow: var(--rs-shadow);
+}
+.rv-sd {
+  width: min(440px, calc(100vw - 32px));
+  padding: 18px;
+  border-radius: 12px;
+}
+.nd-t4 {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.nd-t4 input {
+  width: 100%;
+  min-width: 0;
+  padding: 0 130px 0 0;
+  border: 0;
+  background: none;
+  outline: 0;
+  font: 600 24px var(--font);
+  letter-spacing: -0.3px;
+  color: var(--rc-ink);
+}
+.nd-t4 input::placeholder {
+  color: var(--rc-ink-3);
+}
+.nd-tab {
+  position: absolute;
+  right: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--rc-s1);
+  font-size: 12px;
+  color: var(--rc-ink-3);
+  pointer-events: none;
+}
+.nd-sub {
+  margin: var(--rc-s2) 0 var(--rc-s5);
+  font-size: 13px;
+  color: var(--rc-ink-3);
+  line-height: 1.5;
+}
+.nd-props {
+  display: flex;
+  gap: var(--rc-s2);
+  flex-wrap: wrap;
+  align-items: center;
+  padding-top: var(--rc-s4);
+  border-top: 1px solid var(--rc-rule);
+}
+.nd-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--rc-s2);
+  height: 30px;
+  padding: 0 var(--rc-s3);
+  border: 1px solid var(--rc-rule-strong);
+  border-radius: 15px;
+  font-size: 13px;
+  color: var(--rc-ink-2);
+  background: var(--rc-surface-active);
+}
+.nd-pill:hover,
+.nd-pill[aria-expanded="true"] {
+  color: var(--rc-ink);
+  border-color: var(--rc-d-edge);
+}
+.nd-pill svg {
+  color: var(--rc-ink-3);
+}
+.nd-ft {
+  display: flex;
+  align-items: center;
+  gap: var(--rc-s2);
+  margin-top: var(--rc-s4);
+}
+.nd-ft .sp {
+  flex: 1;
+}
+.nd-hint {
+  font-size: 12px;
+  color: var(--rc-ink-3);
+}
+.rv-ndpop {
+  top: 38px;
+  min-width: 220px;
+}
+.rv-ndpop.svc {
+  width: 300px;
+  max-width: calc(100vw - 48px);
+  padding: var(--rc-s3);
+}
+.svc-mh {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: var(--rc-s2) var(--rc-s1);
+}
+.svc-mh b {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--rc-ink);
+}
+.svc-mh .rv-ib {
+  width: 28px;
+  height: 28px;
+}
+.svc-g {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+.svc-g > span {
+  text-align: center;
+  font-size: 12px;
+  color: var(--rc-ink-3);
+  padding-bottom: 2px;
+}
+.svc-g button {
+  aspect-ratio: 1 / 1;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+  background: var(--rc-surface-active);
+  font: 500 13px var(--rc-mono);
+  color: var(--rc-ink);
+}
+.svc-g button.out {
+  color: var(--rc-ink-3);
+  background: transparent;
+}
+.svc-g button.today {
+  box-shadow: inset 0 0 0 1px var(--rc-d-edge);
+}
+.svc-g button:hover:not(:disabled) {
+  background: var(--rc-surface-hover);
+}
+.svc-g button[aria-pressed="true"] {
+  background: var(--rc-accent);
+  color: var(--rc-on-accent);
+}
+.svc-g button:disabled {
+  color: var(--rc-rule-strong);
+  background: transparent;
+  cursor: default;
+}
+.svc-ft {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--rc-s2);
+  margin-top: var(--rc-s2);
+  padding-top: var(--rc-s2);
+  border-top: 1px solid var(--rc-rule);
+  font-size: 13px;
+  color: var(--rc-ink-2);
+}
+/* 요약 만들기 */
+.rv-sd h3 {
+  margin: 0 0 4px;
+  font-size: 16px;
+  font-weight: 600;
+}
+.rv-sd p {
+  margin: 0 0 14px;
+  font-size: 13px;
+  color: var(--ink3);
+  line-height: 1.55;
+}
+.rv-sd .sg {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  margin: 0 0 10px;
+}
+.rv-sd .sg button {
+  flex: 1;
+  height: 28px;
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--ink3);
+}
+.rv-sd .sg button[aria-pressed="true"] {
+  background: var(--s4);
+  color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--line2);
+}
+.rv-sd .ops {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 220px;
+  overflow: auto;
+  margin: 0 0 14px;
+}
+.rv-sd .ops button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  text-align: left;
+  font-size: 13px;
+  color: var(--ink);
+}
+.rv-sd .ops button:hover {
+  background: var(--s3);
+}
+.rv-sd .ops button[aria-selected="true"] {
+  background: var(--primary-a);
+}
+.rv-sd .ops small {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--ink4);
+}
+.rv-sd .ops small.now {
+  color: var(--primary-h);
+}
+.rv-sd .ops small.has {
+  color: var(--warn);
 }
 
-/* 3단(유령·본문·레일)이 한 줄에 못 들어가면 유령 컬럼이 줄바꿈을 유발하며
-   본문을 오른쪽으로 밀어낸다 — 그 전에 걷어내고 본문+레일만 가운데 정렬. */
-@media (max-width: 960px) {
-  .retro-doc::before {
+/* ---------- 좁은 화면 ---------- */
+@media (max-width: 900px) {
+  .rv-l1 .crl-nav {
     display: none;
   }
 }
-
-@media (max-width: 900px) {
-  .retro-doc-rail {
-    position: static;
-    max-width: none;
+@media (max-width: 640px) {
+  .rv-pg {
+    padding: 16px 16px 48px;
+  }
+  .rv-l1 .crl {
+    margin: 0 -16px;
+  }
+  .rv-doc {
+    padding: 20px 16px 80px;
+  }
+  .rv-cg {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .rv-per select {
+    padding-right: 18px;
+  }
+  .nd-t4 input {
+    padding-right: 0;
+    font-size: 20px;
+  }
+  .nd-tab {
+    display: none;
   }
 }
-
-.retro-folder-pick {
-  position: relative;
-}
-
-.retro-folder-pick-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--s-xxs);
-  padding: var(--s-xxs) var(--s-xs);
-  border-radius: var(--r-sm);
-  background: var(--color-tile-2);
-  border: 1px solid var(--color-hairline);
-  color: var(--color-ink-muted-80);
-  font-size: 12px;
-  cursor: pointer;
-}
-
-.retro-folder-pick-btn:hover {
-  color: var(--color-ink);
-  border-color: var(--color-hairline-strong);
-}
-
-.retro-folder-pick-menu {
-  position: absolute;
-  top: calc(100% + var(--s-xxs));
-  left: 0;
-  z-index: 41;
-  min-width: 200px;
-  max-height: 280px;
-  overflow: auto;
-  padding: var(--s-xxs);
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-xxs);
-  background: var(--color-tile-1);
-  border: 1px solid var(--color-divider-soft);
-  border-radius: var(--r-md);
-  box-shadow: var(--shadow-popover);
-}
-
-.retro-folder-pick-item {
-  padding: var(--s-xs);
-  border: none;
-  border-radius: var(--r-sm);
-  background: transparent;
-  color: var(--color-body-muted);
-  font-size: 12px;
-  text-align: left;
-  cursor: pointer;
-}
-
-.retro-folder-pick-item:hover {
-  background: var(--color-tile-3);
-  color: var(--color-ink);
-}
-
-.retro-folder-pick-item[data-active="true"] {
-  color: var(--color-ink);
-}
-
-.retro-commit-msg {
-  font-family: var(--font-mono);
-  font-size: 16px;
-  line-height: 1.5;
-  color: var(--color-ink-muted-80);
-  word-break: break-word;
-}
-
-.retro-commit-sha {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--s-xxs);
-  font-family: var(--font-mono);
-  font-size: 12px;
-  color: var(--color-ink-muted-48);
-  text-decoration: none;
-  white-space: nowrap;
-}
-
-.retro-commit-sha:hover {
-  color: var(--color-primary-on-dark);
+@media (prefers-reduced-motion: reduce) {
+  .rv-cd,
+  .rv-l1 .crl-c,
+  .rv-l1 .crl-dot,
+  .rv-l1 .crl-cur,
+  .rv-fold-t .cv,
+  .rv-prev > button .cv {
+    transition: none;
+  }
+  .rv-spin {
+    animation: none;
+  }
 }
