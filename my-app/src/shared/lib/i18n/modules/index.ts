@@ -5,3 +5,4 @@
  */
 export { authI18n } from "./auth";
 export { shellI18n } from "./shell";
+export { topicI18n } from "./topic";
