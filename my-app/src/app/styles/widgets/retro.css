@@ -938,6 +938,12 @@
 .rv-body :is(ul, ol) {
   padding-left: 1.3em;
 }
+.rv-body ul {
+  list-style: disc;
+}
+.rv-body ol {
+  list-style: decimal;
+}
 .rv-body li {
   margin: 0 0 0.35em;
 }

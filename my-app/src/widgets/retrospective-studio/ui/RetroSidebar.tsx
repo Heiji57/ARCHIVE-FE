@@ -19,7 +19,7 @@ export function RetroSidebar() {
   const walk = (parent: string | null, depth: number) => {
     s.folders
       .filter((f) => f.parentFolderId === parent)
-      .sort((a, b) => a.name.localeCompare(b.name))
+      .sort((a, b) => a.name.localeCompare(b.name, "en"))
       .forEach((f) => {
         ordered.push({ f, depth });
         if (depth < 6) walk(f.id, depth + 1);

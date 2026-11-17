@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useArchiveApp } from "@/app/providers/useArchiveApp";
 import type { JournalEntry, RetrospectiveType } from "@/entities/entry/model/types";
-import { entryInRange, plainExcerpt, sortForList, type PeriodRange } from "./retroList";
+import { entryInRange, plainExcerpt, retroPeriod, sortForList, type PeriodRange } from "./retroList";
 
 /** 카드 목록 한 번에 보이는 수(시안 PAGE 9). "N개 더 보기"로 늘린다. */
 export const RETRO_PAGE = 9;
@@ -123,9 +123,11 @@ export function useRetroList(query: RetroListQuery): RetroListResult {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, state.entries, server, key, folder]);
 
+  // 넘기기: 기간 끝날 순서(오래된 것부터, 시안 railKey = until || date)
   const railAll = useMemo(() => {
-    if (mode === true) return [...all].reverse();
-    return sortForList(filterLocal(state.entries, false)).reverse();
+    const end = (e: JournalEntry) => retroPeriod(e.retroType, e.dateKey).end;
+    const src = mode === true ? all : filterLocal(state.entries, false);
+    return [...src].sort((a, b) => end(a).localeCompare(end(b)) || a.id.localeCompare(b.id));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, all, state.entries, key]);
 
