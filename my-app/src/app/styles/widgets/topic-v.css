@@ -87,6 +87,8 @@
 .tpv .crl-b { flex: 1; min-height: 0; overflow: hidden; color: var(--rc-ink-2); font-size: 14px; line-height: 1.75; }
 .tpv .crl-s.cur .crl-b { overflow-y: auto; }
 .tpv .crl-f { display: flex; align-items: center; gap: 12px; flex-shrink: 0; padding-top: var(--rc-s4); margin-top: var(--rc-s3); border-top: 1px solid var(--rc-rule); font-size: 13px; color: var(--rc-ink-3); }
+.tpv .crl-f { flex-wrap: wrap; row-gap: 8px; }
+.tpv .crl-f > span { white-space: nowrap; }
 .tpv .crl-s:not(.cur) .crl-f .q-bt { visibility: hidden; }
 .tpv .crl-nav { position: absolute; top: calc(50% - 40px); width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; border: 1px solid var(--rc-rule-strong); background: var(--rc-surface); color: var(--rc-ink-2); z-index: 2; transition: background-color var(--rc-dur) ease-out; }
 .tpv .crl-nav:hover { background: var(--rc-surface-hover); color: var(--rc-ink); }
