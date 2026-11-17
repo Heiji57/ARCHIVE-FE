@@ -1195,10 +1195,6 @@
   overflow: auto;
   padding: var(--ag-s5) var(--ag-s6) var(--ag-s6);
 }
-/* 기존 SettingsStudio 를 시트 안에 넣는 동안(Task 6 전) 바깥 여백을 없앤다 */
-.ss-sc > .page {
-  padding: 0;
-}
 @keyframes ss-in {
   from {
     opacity: 0;

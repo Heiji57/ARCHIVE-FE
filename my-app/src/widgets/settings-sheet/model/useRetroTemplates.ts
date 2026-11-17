@@ -23,6 +23,7 @@ import { useToast } from "./useToast";
  */
 export type Period = "day" | "week" | "month" | "year";
 export const PERIODS: readonly Period[] = ["day", "week", "month", "year"];
+export const perKey = (p: Period) => `settingsSheet.per.${p}` as TranslationKey;
 type SumType = SummaryTemplate["summaryType"];
 const SUM_TYPE: Record<Exclude<Period, "day">, SumType> = { week: "weekly", month: "monthly", year: "annual" };
 const PERIOD_OF: Record<SumType, Period> = { weekly: "week", monthly: "month", annual: "year" };

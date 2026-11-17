@@ -126,12 +126,13 @@ export function ExportBlock() {
   const on = useServerFeature("exports");
   const ai = useServerFeature("ai");
   const s = exportStore.use();
+  const [now] = useState(() => new Date());
   if (!on) return null;
   const set = (p: Partial<ExportState>) => exportStore.set((c) => ({ ...c, ...p }));
   const EXP = (["retro", "todo", "ai"] as const).filter((k) => ai || k !== "ai");
   const picked = EXP.filter((k) => s.pick[k]);
-  const ago30 = formatMonthDay(new Date(Date.now() - 30 * 864e5), locale);
-  const y = new Date().getFullYear();
+  const ago30 = formatMonthDay(new Date(now.getTime() - 30 * 864e5), locale);
+  const y = now.getFullYear();
   const rngOpts = (["all", "year", "d30", "own"] as const).map((v) => ({
     value: v,
     label: t(`settingsSheet.exp.rng.${v}`),
@@ -146,7 +147,7 @@ export function ExportBlock() {
   const fmt = t(`settingsSheet.exp.fmt.${s.fmt}`);
   const what = picked.map((k) => t(`settingsSheet.exp.${k}`)).join(", ");
   const p = locale === "ko" ? (picked[picked.length - 1] === "todo" ? "을" : "를") : "";
-  const file = `archive-${iso(new Date())}.zip`;
+  const file = `archive-${iso(now)}.zip`;
   const make = () => {
     set({ phase: "making" });
     window.setTimeout(() => set({ phase: "ready", last: true }), 1200);
@@ -188,12 +189,12 @@ export function ExportBlock() {
                 <div className="sxe-own">
                   <label>
                     <span>{t("settingsSheet.start")}</span>
-                    <input type="date" className="sx-in" value={s.from} max={iso(new Date())} onChange={(e) => set({ from: e.target.value })} />
+                    <input type="date" className="sx-in" value={s.from} max={iso(now)} onChange={(e) => set({ from: e.target.value })} />
                   </label>
                   <span className="sxe-til">{t("settingsSheet.from")}</span>
                   <label>
                     <span>{t("settingsSheet.end")}</span>
-                    <input type="date" className="sx-in" value={s.to} max={iso(new Date())} onChange={(e) => set({ to: e.target.value })} />
+                    <input type="date" className="sx-in" value={s.to} max={iso(now)} onChange={(e) => set({ to: e.target.value })} />
                   </label>
                   <span className="sxe-til">{t("settingsSheet.to")}</span>
                 </div>

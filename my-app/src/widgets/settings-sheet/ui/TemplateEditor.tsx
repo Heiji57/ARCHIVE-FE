@@ -3,13 +3,12 @@ import { ChevronLeft, MoreHorizontal } from "lucide-react";
 import { useTranslation, type TranslationKey } from "@/shared/lib/i18n";
 import { ICON_STROKE } from "@/shared/ui/icons";
 import { headingsOf, isBlankTemplate } from "../model/templateMarkdown";
-import type { Period, Tpl } from "../model/useRetroTemplates";
+import { perKey, type Period, type Tpl } from "../model/useRetroTemplates";
 import { useToast } from "../model/useToast";
 import { Btn, MenuItem, MoreMenu, Select, Toggle } from "./controls";
 import { MdBody } from "./MdBody";
 import { MdPreview } from "./MdPreview";
 
-export const perKey = (p: Period) => `settingsSheet.per.${p}` as TranslationKey;
 
 const STARTS: ReadonlyArray<{ id: string; label: TranslationKey; md: TranslationKey }> = [
   { id: "kpt", label: "settingsSheet.start.kpt", md: "settingsSheet.start.kptMd" },

@@ -5,13 +5,12 @@ import {
   useRef,
   useState,
   type ButtonHTMLAttributes,
-  type KeyboardEvent as ReactKeyboardEvent,
   type ReactNode,
-  type RefObject,
 } from "react";
 import { Check, ChevronDown, Search } from "lucide-react";
 import { useTranslation } from "@/shared/lib/i18n";
 import { ICON_STROKE } from "@/shared/ui/icons";
+import { arrowNav, useOutside } from "./popover";
 
 /** 시안 settings.css 손잡이: sx-tg(스위치), sx-seg, sxs(고르기), sx-b(버튼), sxa1(선택 카드), sxa2(라디오 목록). */
 
@@ -58,41 +57,13 @@ export function IconBtn({ label, children, className = "", ...rest }: { label: s
   );
 }
 
-/** 바깥을 누르면 닫는다. Esc 는 각 컴포넌트의 onKeyDown 이 받아서 시트까지 닫히지 않게 막는다. */
-export function useOutside(open: boolean, refs: ReadonlyArray<RefObject<HTMLElement | null>>, close: () => void) {
-  const closeRef = useRef(close);
-  useEffect(() => {
-    closeRef.current = close;
-  });
-  useEffect(() => {
-    if (!open) return;
-    const onDown = (e: PointerEvent) => {
-      const t = e.target as Node;
-      if (refs.some((r) => r.current?.contains(t))) return;
-      closeRef.current();
-    };
-    document.addEventListener("pointerdown", onDown, true);
-    return () => document.removeEventListener("pointerdown", onDown, true);
-  }, [open, refs]);
-}
-
-/** 메뉴 안에서 위아래 화살표로 다음 항목에 초점. */
-export function arrowNav(e: ReactKeyboardEvent<HTMLElement>, selector = "button:not(:disabled)") {
-  if (e.key !== "ArrowDown" && e.key !== "ArrowUp" && e.key !== "Home" && e.key !== "End") return;
-  const items = [...e.currentTarget.querySelectorAll<HTMLElement>(selector)];
-  if (!items.length) return;
-  e.preventDefault();
-  const i = items.indexOf(document.activeElement as HTMLElement);
-  const n =
-    e.key === "Home" ? 0 : e.key === "End" ? items.length - 1 : (i + (e.key === "ArrowDown" ? 1 : -1) + items.length) % items.length;
-  items[n].focus();
-}
-
 export interface SelectOption<V extends string> {
   value: V;
   label: string;
   desc?: string;
   icon?: ReactNode;
+  /** 찾기에만 쓰는 낱말 */
+  kw?: string;
 }
 
 interface SelectProps<V extends string> {
@@ -122,7 +93,7 @@ export function Select<V extends string>({ value, options, label, onChange, sear
   const cur = options.find((o) => o.value === value);
   const shown = useMemo(() => {
     const n = q.trim().toLowerCase();
-    return n ? options.filter((o) => `${o.label} ${o.desc ?? ""} ${o.value}`.toLowerCase().includes(n)) : options;
+    return n ? options.filter((o) => `${o.label} ${o.desc ?? ""} ${o.kw ?? ""} ${o.value}`.toLowerCase().includes(n)) : options;
   }, [options, q]);
 
   const close = (focus = true) => {

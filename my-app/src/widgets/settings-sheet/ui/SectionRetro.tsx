@@ -9,11 +9,11 @@ import { DEMO_SCHED } from "../model/demo";
 import { formatHm, formatMonthDay } from "../model/format";
 import { useLocalPrefs } from "../model/localPrefs";
 import { headingsOf } from "../model/templateMarkdown";
-import { PERIODS, useRetroTemplates, type Period, type Tpl } from "../model/useRetroTemplates";
+import { PERIODS, perKey, useRetroTemplates, type Period, type Tpl } from "../model/useRetroTemplates";
 import { useToast } from "../model/useToast";
 import { Btn, Select, TimeInput, Toggle } from "./controls";
 import { Block, Card, Row } from "./Row";
-import { TemplateEditor, perKey, type TemplateDraft } from "./TemplateEditor";
+import { TemplateEditor, type TemplateDraft } from "./TemplateEditor";
 
 function CardDoc({ md }: { md: string }) {
   const { t } = useTranslation();
@@ -230,7 +230,7 @@ export function TemplatesJumpRow({ onGo }: { onGo: () => void }) {
   const { t } = useTranslation();
   return (
     <Row id="templates" title={t("settingsSheet.row.templates.t")} desc={t("settingsSheet.row.templates.d")}>
-      <Btn onClick={onGo}>{t("settingsSheet.ed.back", { per: t("settingsSheet.row.templates.t") })}</Btn>
+      <Btn onClick={onGo}>{t("settingsSheet.tpl.view")}</Btn>
     </Row>
   );
 }

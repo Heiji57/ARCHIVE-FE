@@ -62,11 +62,11 @@ export function RegionRow() {
   const countryOptions = useMemo(
     () =>
       sortedCountries()
-        .map((c) => ({ value: c.code, label: countryName(c.code, locale) }))
+        .map((c) => ({ value: c.code, label: countryName(c.code, locale), kw: c.name }))
         .sort((a, b) => a.label.localeCompare(b.label, locale)),
     [locale],
   );
-  const own = tzs && tzs.code === shown ? tzs.list : [];
+  const own = useMemo(() => (tzs && tzs.code === shown ? tzs.list : []), [tzs, shown]);
   const allTz = useMemo(() => supportedTimeZones(), []);
   const tzOptions = useMemo(() => {
     const first = own.length ? own : baseTz ? [baseTz] : [];

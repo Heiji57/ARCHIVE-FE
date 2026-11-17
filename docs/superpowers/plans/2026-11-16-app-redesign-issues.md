@@ -139,3 +139,21 @@
 - [결정] 단축키: N 새 회고, / 찾기, ←→ 넘기기(트랙에 포커스), Esc 메뉴, 창, 집중 끝내기. 팔레트 명령 "오늘 회고 쓰기"(order 50)는 회고 탭이 마운트된 동안만(셸 계약).
 - [기존] 옛 회고 위젯 파일(RetroGallery, RetroCard, RetroFolderCard, RetroDocHead/Rail, RetroExpandOverlay, PeriodPickerModal, EntryFolderPicker, RetroTabBar, useRetroFilter, useFolderContents, useFolderNav, useRetroEntriesPage 등)과 옛 주제 파일(Topic*, useTopic*, topic-studio.css)을 지웠다. retro.css 는 새 화면 것만 남겼다. 남은 쓰지 않는 i18n 키(`retro.gallery.*`, `retro.period.*`, `retro.expand.*`, `retro.filter.*` 등)는 Task 11 정리 대상.
 - [기존] 데모로 처음 들어오면 "AI 요약 처리 중" 창이 뜨는 문제는 그대로(최소화하고 찍었다).
+
+## Task 6 (설정 시트)
+
+- [시안] 명세와 계획은 "일하는 시간 4번"인데 `d-settings.html`의 번호 없는 기본값은 `wd=2`(요일별 표)이고 시안 기준 스크린샷 `proto/set-work.png`도 2번이다. 명세(4번: 요일별 하루 막대 + 시작, 끝 단계 버튼, 기본 길이 단계 버튼, 끝낸 일 라디오)를 따랐다. 서버 요청(03 `workSchedule.perDay`)은 요일별 시간을 받지만 4번 화면은 모든 날 같은 시간이다.
+- [결정] 계획대로 "주 시작 요일"은 일반이 아니라 할 일과 캘린더 섹션에 두었다(시안은 일반). 기존 "전체 보기 기간"(할 일 보드 범위, 이 브라우저 저장)은 "지난 일 표시"라는 이름으로 같은 섹션에 시안 sx-range 모양 눈금자로 옮겼다(제곱근 눈금, 끌기, 화살표 키 동작 그대로).
+- [결정] 데모 값: 서버에 없는 줄(settingsExt, notificationPrefs, ai, userCalendars, tagAdmin, exports, trash, accountDelete, avatar)은 `widgets/settings-sheet/model/localPrefs.ts` 등 위젯 안 상태로만 바뀐다(새로 고치면 처음 값). 주 시작 기본은 계획 단계 결정대로 일요일. 캘린더의 `weekStartPreference()`(Task 3)에는 아직 잇지 않았다(서버 03 `week_start` 가 오면 둘 다 그 값을 읽게 한다).
+- [결정] 데모 연동: AppProvider 는 데모에서 GitHub 을 "연결 안 됨"으로 두지만, 설정 시트는 시안처럼 GitHub 연결 + 이메일 권한 경고, Google Calendar 연결을 화면 안 상태로 보인다(`model/useIntegrations.ts`, 서버 호출 0건). 그래서 데모에서 설정의 GitHub 상태와 캘린더 오른쪽 패널의 커밋 탭(연결 때만)이 다르다. 데모 GitHub 을 전역으로 연결할지는 Task 11에서 정한다.
+- [서버] GitHub 계정 연결 해제 API 가 없다. 연동 카드 ⋯ 메뉴의 "연결 해제" 자리는 기존 동작인 "저장소 연결 모두 해제"(`unlinkAllGitHubRepos`)로 두었다. 캘린더는 기존 `disconnectCalendar`.
+- [결정] 국가와 시간대: 시안은 시간대가 하나인 나라면 글자로만 보이지만, 기존 동작(아무 IANA 시간대나 고르기, PATCH /settings/timezone)을 지키려고 시간대도 찾기 있는 고르기로 둔다(그 나라 시간대가 맨 위). 국가를 바꾸면 기존 ConfirmModal 대신 시안의 줄 안 확인 상자("기존 시간대 유지 / 새 국가 기준으로")를 쓴다. 시간대 이름은 `Intl`로 "Seoul (UTC+9)"(도시 이름은 영어).
+- [결정] 회고 템플릿: 일간은 기존 `/templates`(AppProvider), 주간, 월간, 연간은 `/summaries/templates`(AI 요약 템플릿). 기존 카드의 자동 저장 대신 시안 1번처럼 "등록하기 / 저장"을 눌러 저장한다. 이미 있는 템플릿은 기간을 바꿀 수 없다(저장소가 다르다). 일간 기본 제공 템플릿은 이름 고정, 지우기 없음, ⋯ 메뉴에 "처음 내용으로 되돌리기". AI 요약 템플릿의 "사용 안 함"(활성 없음)으로 되돌리는 손잡이는 카드에 없다(시안은 늘 기본 하나). 데모의 주간, 월간, 연간 템플릿은 화면 안 상태(`model/demo.ts`).
+- [결정] 템플릿 본문은 TipTap 대신 시안처럼 마크다운 textarea + 같은 글꼴 구문 강조 + "/" 블록 목록(제목, 목록, 할 일, 인용, 콜아웃, 코드, 구분선). 시안의 표, 토글은 리치 에디터 마크다운 저장과 맞지 않아 뺐다. "본문 크게 보기"의 미리보기는 HTML 문자열 없이 React 로 그리는 작은 마크다운 보기.
+- [결정] 찾기: `searchSettings(q, locale, { demo, github, calendar })`. 결과는 섹션별로 같은 줄 컴포넌트를 그리고 접힌 줄은 펼쳐서 보인다. 시안처럼 커스텀 섹션(일하는 시간 등)의 일반형 줄을 따로 만들지 않고 섹션 화면의 블록을 그대로 보인다. "회고 템플릿" 결과는 회고 섹션으로 가는 버튼.
+- [결정] 760px 이하에서 셸이 왼쪽 섹션 목록을 숨기므로(시안도 숨김, 갈 곳이 없어짐) 제목 아래에 섹션 고르기를 하나 두었다.
+- [결정] 데모(로그인 전) 계정 섹션: 이름 developer, developer@archive.dev(시안 값, 화면 안 상태). 로그아웃 줄은 서버 로그아웃을 부르지 않고 "로그인"(/login). 사용자 메뉴는 여전히 "게스트"라 이름이 다르게 보인다.
+- [결정] 빗금이 끄기: `usePetEnabled()`(`@/widgets/settings-sheet`), localStorage `archive.petEnabled`("true"/"false", 없으면 켬), 같은 탭은 이벤트, 다른 탭은 storage 이벤트로 따라간다. 시안의 `archive.petOff` 키는 쓰지 않는다.
+- [결정] 처음 열 화면의 "AI" 선택지와 알림 종류의 "예약한 일 실행", 내보내기의 "AI 대화"는 `ai` 기능이 꺼지면 함께 숨긴다.
+- [기존] 옛 `widgets/settings-studio`와 `app/styles/widgets/settings.css`를 지웠다. 그 위젯만 쓰던 i18n 키(`settings.section.*`, `settings.group.*`, `settings.github.preview*`, `settings.language.rowHint` 등)는 `keys.ts`에 남았다(Task 11 정리). 오류 문구 키(`settings.github.connectFailed`, `settings.templates.error.*`, `settings.todoRange.*`, `settings.sessions.*` 등)는 새 시트가 계속 쓴다.
+- [확인] 캘린더 사이드바의 GitHub 문제 "권한 받기"는 `useSettingsSheet().open("link")`로 이 시트의 연동 섹션을 연다(`CalendarSidebar.tsx`). 실제 모드에서 `hasVerifiedEmails === false`면 연동 카드에 "주의 이메일 권한이 필요해요 / 자세히"와 "GitHub 권한 다시 받기"(= 기존 `linkGitHubAccount`)가 보인다.
