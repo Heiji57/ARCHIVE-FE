@@ -1,639 +1,232 @@
-import { Fragment, memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Plus, X } from "lucide-react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { Bookmark } from "lucide-react";
 import type { Todo } from "@/entities/todo/model/types";
-import { StatusIcon } from "@/entities/todo/ui/StatusIcon";
-import { TagDots } from "@/entities/todo/ui/TagDots";
-import { useDraggable } from "@/shared/lib/dnd";
-import { useLatestRef } from "@/shared/lib/useLatestRef";
-import {
-  formatFullDate,
-  fromDateKey,
-  getMonthGrid,
-  isSameMonth,
-  toDateKey,
-} from "@/shared/lib/date";
 import { useTranslation } from "@/shared/lib/i18n";
-import { MONTH_HEADER_KEYS, TODO_DRAG_KIND } from "../model/constants";
-import { assignSpanRows, buildSpanEvents, type SpanEventWithRow } from "../model/spanEvents";
-import { DayCell } from "./DayCell";
-import { DraggableMonthChip } from "./DraggableMonthChip";
-
-const MONTH_SPAN_ROW_HEIGHT = 28;
-const MONTH_DATE_HEADER_HEIGHT = 36;
-
-// ── Month span chip (multi-day, 태그 미표시) ─────────────────────────────────
-
-interface MonthSpanChipProps {
-  evt: SpanEventWithRow;
-  onSelect: (id: string) => void;
-  onResizeStart: (e: React.PointerEvent, todoId: string) => void;
-}
-
-const MonthSpanChip = memo(function MonthSpanChipImpl({
-  evt,
-  onSelect,
-  onResizeStart,
-}: MonthSpanChipProps) {
-  const { isDragging, ...dragHandlers } = useDraggable({
-    kind: TODO_DRAG_KIND,
-    data: { id: evt.todo.id },
-  });
-  return (
-    <button
-      type="button"
-      className="todo-month-chip"
-      data-status={evt.todo.status}
-      data-span=""
-      data-draggable="true"
-      data-dragging={isDragging ? "true" : undefined}
-      onClick={() => onSelect(evt.todo.id)}
-      style={{
-        gridColumn: `${evt.startCol + 1} / ${evt.startCol + evt.colSpan + 1}`,
-        gridRow: evt.row + 1,
-        alignSelf: "start",
-        margin: "2px 10px",
-        width: "auto",
-        position: "relative",
-        zIndex: 1,
-        minWidth: 0,
-        borderRadius: `${evt.isStart ? 4 : 0}px ${evt.isEnd ? 4 : 0}px ${evt.isEnd ? 4 : 0}px ${evt.isStart ? 4 : 0}px`,
-        borderLeft: evt.isStart ? undefined : "none",
-        overflow: "hidden",
-        whiteSpace: "nowrap",
-        textOverflow: "ellipsis",
-      }}
-      {...dragHandlers}
-    >
-      <span style={{ overflow: "hidden", textOverflow: "ellipsis", flex: 1, minWidth: 0 }}>
-        {evt.todo.title}
-      </span>
-      {evt.isStart && evt.todo.tags.length > 0 ? (
-        <TagDots tags={evt.todo.tags} />
-      ) : null}
-      {evt.isEnd ? (
-        <div
-          className="chip-resize-handle"
-          onPointerDown={(e) => onResizeStart(e, evt.todo.id)}
-        />
-      ) : null}
-    </button>
-  );
-});
+import { fromDateKey } from "@/shared/lib/date";
+import { addDaysKey, daysBetween, isMultiDay } from "../model/eventInfo";
+import { fmtLongDay, fmtMonthShort, fmtWeekday } from "../model/dateFormat";
+import { timesOf } from "../model/grid";
+import type { DragPreview, useCalendarDrag } from "../model/useCalendarDrag";
+import {
+  setCalendarViewport,
+  useCalendarViewport,
+  type CalendarController,
+} from "../model/useCalendarController";
+import { monthGridStart, weekStartDay, weekdayOrder } from "../model/weekDays";
+import { CalendarOverlaySlot } from "./CalendarOverlaySlot";
+import { EventCard } from "./EventCard";
 
 export interface MonthGridProps {
-  cursor: Date;
-  byDate: Record<string, Todo[]>;
-  spanningTodos?: Todo[];
-  todayKey: string;
-  onSelect: (id: string) => void;
-  onDropTodo: (todoId: string, dateKey: string) => void;
-  onAddTodo: (title: string, dateKey: string) => void;
-  onResizeDueDate: (id: string, dueDate: string | null) => void;
+  ctl: CalendarController;
+  todos: Todo[];
+  drag: ReturnType<typeof useCalendarDrag>;
+  preview: DragPreview | null;
+  retroDays: ReadonlySet<string>;
+  onOpen(id: string): void;
+  onCreate(dateKey: string): void;
+  onVisibleRange(from: string, to: string): void;
 }
 
-export function MonthGrid({
-  cursor,
-  byDate,
-  spanningTodos = [],
-  todayKey,
-  onSelect,
-  onDropTodo,
-  onAddTodo,
-  onResizeDueDate,
-}: MonthGridProps) {
+const HEAD_H = 34;
+
+/**
+ * 월간(시안 d-calendar.html): 주가 위아래로 끝없이 이어진다. 가운데 달이 아닌 칸은 흐리게.
+ * 칸 안의 할 일은 시안 월간 카드 1번(상태 색 바탕 + 왼쪽 띠, 시각이 제목 앞), 기간 할 일은 칸을 이은 조각.
+ */
+export function MonthGrid({ ctl, todos, drag, preview, retroDays, onOpen, onCreate, onVisibleRange }: MonthGridProps) {
   const { t, locale } = useTranslation();
-  const cells = getMonthGrid(cursor);
-  const anchorKey = todayKey;
+  const vp = useCalendarViewport();
+  const { start, n } = ctl.monthRange;
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [height, setHeight] = useState(0);
+  const rh = height ? Math.max(96, Math.floor(((height - HEAD_H) * 0.8) / 5)) : 124;
+  const room = Math.max(2, Math.floor((rh - 56) / 22));
+  const focusMonth = (vp.anchor ?? ctl.date).slice(0, 7);
+  const ws = weekStartDay(ctl.weekStart);
 
-  // 6주 행으로 분리
-  const weeks = useMemo(
-    () => Array.from({ length: 6 }, (_, i) => cells.slice(i * 7, (i + 1) * 7)),
-    [cells],
-  );
+  const cells = useMemo(() => Array.from({ length: n * 7 }, (_, i) => addDaysKey(start, i)), [start, n]);
+  const byDay = useMemo(() => {
+    const first = cells[0];
+    const last = cells[cells.length - 1];
+    const m = new Map<string, Todo[]>();
+    for (const td of todos) {
+      const end = isMultiDay(td) ? td.dueDate! : td.dateKey;
+      if (end < first || td.dateKey > last) continue;
+      for (let d = td.dateKey < first ? first : td.dateKey; d <= end && d <= last; d = addDaysKey(d, 1)) {
+        const l = m.get(d) ?? [];
+        l.push(td);
+        m.set(d, l);
+      }
+    }
+    for (const [d, l] of m) {
+      const spans = l.filter(isMultiDay).sort((a, b) => a.dateKey.localeCompare(b.dateKey));
+      const rest = l
+        .filter((x) => !isMultiDay(x))
+        .sort((a, b) => (timesOf(a)?.start ?? -1) - (timesOf(b)?.start ?? -1));
+      m.set(d, [...spans, ...rest]);
+    }
+    return m;
+  }, [todos, cells]);
 
-  // ── Resize state ────────────────────────────────────────────────────────
-  const gridBodyRef = useRef<HTMLDivElement | null>(null);
-  const [resizing, setResizing] = useState<{ todoId: string; dueDate: string } | null>(null);
+  /* ---------- 크기와 스크롤 ---------- */
+  useLayoutEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setHeight(el.clientHeight));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
-  const byDateRef = useLatestRef(byDate);
-  const spanningTodosRef = useLatestRef(spanningTodos);
-  const onResizeDueDateRef = useLatestRef(onResizeDueDate);
-  const weeksRef = useLatestRef(weeks);
-
-  const findTodo = useCallback((id: string): Todo | undefined => {
-    return (
-      spanningTodosRef.current.find(t => t.id === id) ??
-      Object.values(byDateRef.current).flat().find(t => t.id === id)
-    );
-  }, [byDateRef, spanningTodosRef]);
-
-  const getDateKeyAtPoint = useCallback((clientX: number, clientY: number): string | null => {
-    if (!gridBodyRef.current) return null;
-    const r = gridBodyRef.current.getBoundingClientRect();
-    const col = Math.min(6, Math.max(0, Math.floor((clientX - r.left) / (r.width / 7))));
-    const relY = clientY - r.top;
-    const weekHeight = r.height / 6;
-    const weekIdx = Math.min(5, Math.max(0, Math.floor(relY / weekHeight)));
-    const weekDays = weeksRef.current[weekIdx];
-    if (!weekDays) return null;
-    return toDateKey(weekDays[col]);
-  }, [weeksRef]);
-
-  const startResize = useCallback((e: React.PointerEvent, todoId: string) => {
-    e.stopPropagation();
-    e.preventDefault();
-    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-    const todo = findTodo(todoId);
-    if (!todo) return;
-    setResizing({ todoId, dueDate: todo.dueDate ?? todo.dateKey });
-  }, [findTodo]);
-
-  const handleResizeMove = useCallback((e: PointerEvent) => {
-    setResizing(prev => {
-      if (!prev) return null;
-      const todo = findTodo(prev.todoId);
-      if (!todo) return prev;
-      const newDue = getDateKeyAtPoint(e.clientX, e.clientY);
-      if (!newDue || newDue < todo.dateKey) return prev;
-      return newDue !== prev.dueDate ? { ...prev, dueDate: newDue } : prev;
-    });
-  }, [findTodo, getDateKeyAtPoint]);
-
-  const handleResizeUp = useCallback((_e: PointerEvent) => {
-    setResizing(prev => {
-      if (!prev) return null;
-      const todo = findTodo(prev.todoId);
-      if (!todo) return null;
-      const newDueDate = prev.dueDate > todo.dateKey ? prev.dueDate : null;
-      onResizeDueDateRef.current(prev.todoId, newDueDate);
-      return null;
-    });
-  }, [findTodo, onResizeDueDateRef]);
-
-  const isResizing = resizing !== null;
+  const pendingRows = useRef(0);
+  const extending = useRef(false);
+  const tick = useRef(false);
+  const ctlRef = useRef(ctl);
+  const rhRef = useRef(rh);
   useEffect(() => {
-    if (!isResizing) return;
-    window.addEventListener('pointermove', handleResizeMove);
-    window.addEventListener('pointerup', handleResizeUp);
-    return () => {
-      window.removeEventListener('pointermove', handleResizeMove);
-      window.removeEventListener('pointerup', handleResizeUp);
-    };
-  }, [isResizing, handleResizeMove, handleResizeUp]);
+    ctlRef.current = ctl;
+    rhRef.current = rh;
+  });
 
-  // ── Span events per week (리사이즈 미리보기 포함) ─────────────────────────
-  const effectiveSpanTodos = useMemo(() => {
-    if (!resizing) return spanningTodos;
-    const isAlreadySpan = spanningTodos.some(t => t.id === resizing.todoId);
-    if (isAlreadySpan) {
-      return spanningTodos.map(t =>
-        t.id === resizing.todoId ? { ...t, dueDate: resizing.dueDate } : t,
-      );
+  useLayoutEffect(() => {
+    const el = scrollRef.current;
+    if (el && pendingRows.current) {
+      el.scrollTop += pendingRows.current * rh;
+      pendingRows.current = 0;
     }
-    const todo = Object.values(byDate).flat().find(t => t.id === resizing.todoId);
-    if (!todo || resizing.dueDate <= todo.dateKey) return spanningTodos;
-    return [...spanningTodos, { ...todo, dueDate: resizing.dueDate }];
-  }, [spanningTodos, byDate, resizing]);
+    extending.current = false;
+  }, [start, n, rh]);
 
-  const spanEventsByWeek = useMemo(
-    () =>
-      weeks.map((weekDays) => {
-        const wk = weekDays.map(d => toDateKey(d));
-        return assignSpanRows(buildSpanEvents(effectiveSpanTodos, wk));
-      }),
-    [effectiveSpanTodos, weeks],
-  );
-
-  const resizingRegularId = useMemo(() => {
-    if (!resizing) return null;
-    if (spanningTodos.some(t => t.id === resizing.todoId)) return null;
-    const todo = Object.values(byDate).flat().find(t => t.id === resizing.todoId);
-    if (!todo || resizing.dueDate <= todo.dateKey) return null;
-    return resizing.todoId;
-  }, [resizing, spanningTodos, byDate]);
-
-  // ── Inline add & modal state ─────────────────────────────────────────────
-  const [modalDate, setModalDate] = useState<string | null>(null);
-  const [addingDate, setAddingDate] = useState<string | null>(null);
-  const [addingTitle, setAddingTitle] = useState("");
-  const [modalAdding, setModalAdding] = useState(false);
-  const [modalAddTitle, setModalAddTitle] = useState("");
-  const cellInputRef = useRef<HTMLInputElement | null>(null);
-  const modalInputRef = useRef<HTMLInputElement | null>(null);
-  const modalTodos = modalDate ? (byDate[modalDate] ?? []) : [];
-
-  const startCellAdd = (dateKey: string) => {
-    setAddingDate(dateKey);
-    setAddingTitle("");
-    setTimeout(() => cellInputRef.current?.focus(), 0);
+  const report = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const c = ctlRef.current;
+    const h = rhRef.current;
+    const st = el.scrollTop;
+    const s0 = c.monthRange.start;
+    const r0 = Math.floor(st / h);
+    const rows = Math.max(1, Math.floor((el.clientHeight - HEAD_H) / h));
+    const mid = Math.floor((st + (el.clientHeight - HEAD_H) / 2) / h);
+    const tr = Math.floor(daysBetween(s0, c.todayKey) / 7);
+    setCalendarViewport({
+      anchor: addDaysKey(s0, mid * 7 + 3),
+      todayDir: tr < r0 ? "up" : tr > r0 + rows - 1 ? "down" : "in",
+    });
+    onVisibleRange(addDaysKey(s0, r0 * 7), addDaysKey(s0, (r0 + rows + 1) * 7 - 1));
   };
 
-  const commitCellAdd = () => {
-    if (addingTitle.trim() && addingDate) {
-      onAddTodo(addingTitle.trim(), addingDate);
+  useLayoutEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const c = ctlRef.current;
+    const i = Math.floor(daysBetween(c.monthRange.start, c.date) / 7);
+    const visible = i * rh >= el.scrollTop - 1 && (i + 1) * rh <= el.scrollTop + el.clientHeight - HEAD_H + 1;
+    if (c.jump.force || !visible) {
+      el.scrollTop = Math.floor(daysBetween(c.monthRange.start, monthGridStart(c.date, c.weekStart)) / 7) * rh;
     }
-    setAddingDate(null);
-    setAddingTitle("");
+    report();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ctl.jump.seq, rh]);
+
+  const onScroll = () => {
+    if (tick.current) return;
+    tick.current = true;
+    requestAnimationFrame(() => {
+      tick.current = false;
+      const el = scrollRef.current;
+      if (!el) return;
+      const h = rhRef.current;
+      if (!extending.current) {
+        if (el.scrollTop < h * 3) {
+          extending.current = true;
+          pendingRows.current += ctlRef.current.extend("month", -1) / 7;
+        } else if (el.scrollTop + el.clientHeight > el.scrollHeight - h * 3) {
+          extending.current = true;
+          ctlRef.current.extend("month", 1);
+        }
+      }
+      report();
+    });
   };
 
-  const startModalAdd = () => {
-    setModalAdding(true);
-    setModalAddTitle("");
-    setTimeout(() => modalInputRef.current?.focus(), 0);
-  };
-
-  const commitModalAdd = () => {
-    if (modalAddTitle.trim() && modalDate) {
-      onAddTodo(modalAddTitle.trim(), modalDate);
-    }
-    setModalAdding(false);
-    setModalAddTitle("");
-  };
+  const draggingId = preview?.todo?.id ?? null;
 
   return (
-    <div>
-      {/* Day-of-week header */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(7, 1fr)",
-          marginBottom: 8,
-        }}
-      >
-        {MONTH_HEADER_KEYS.map((key, i) => (
-          <div
-            key={i}
-            style={{
-              padding: "8px 4px",
-              fontSize: 12,
-              letterSpacing: "0.18em",
-              fontWeight: 600,
-              textTransform: "uppercase",
-              color: i === 6 ? "var(--color-warn)" : "var(--color-body-muted)",
-            }}
-          >
-            {t(key)}
+    <div ref={scrollRef} className="cal-scroll" onScroll={onScroll} tabIndex={-1}>
+      <div className="cal-mo-h">
+        {weekdayOrder(ctl.weekStart).map((w) => (
+          <div key={w} className={w === 0 ? "we sun" : w === 6 ? "we sat" : undefined}>
+            {fmtWeekday(locale, w)}
           </div>
         ))}
       </div>
-
-      {/* 6주 그리드 */}
-      <div ref={gridBodyRef} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-        {weeks.map((weekDays, weekIdx) => {
-          const weekSpanEvents = spanEventsByWeek[weekIdx];
-          const numSpanRows = weekSpanEvents.length > 0
-            ? Math.max(...weekSpanEvents.map(e => e.row))
-            : 0;
-          const weekSpanIds = new Set(weekSpanEvents.map(e => e.todo.id));
-          const colLocalSpanRows = Array.from({ length: 7 }, (_, ci) =>
-            weekSpanEvents.reduce<number>((max, evt) => {
-              if (ci >= evt.startCol && ci < evt.startCol + evt.colSpan) return Math.max(max, evt.row);
-              return max;
-            }, 0),
-          );
-
+      <div className="cal-mo-g" style={{ "--rh": `${rh}px` } as CSSProperties}>
+        {cells.map((d) => {
+          const x = fromDateKey(d);
+          const dow = x.getDay();
+          const l = byDay.get(d) ?? [];
+          const shown = l.slice(0, room);
+          const more = l.length - shown.length;
+          const cls = [
+            "cal-mc",
+            dow === 0 ? "we sun" : dow === 6 ? "we sat" : "",
+            d === ctl.todayKey ? "today" : "",
+            d.slice(0, 7) !== focusMonth ? "dim" : "",
+            preview?.over === d ? "drop" : "",
+          ]
+            .filter(Boolean)
+            .join(" ");
           return (
             <div
-              key={weekIdx}
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(7, minmax(0, 1fr))",
-                gridTemplateRows: numSpanRows > 0
-                  ? `${MONTH_DATE_HEADER_HEIGHT}px ${Array(numSpanRows).fill(`${MONTH_SPAN_ROW_HEIGHT}px`).join(' ')} auto`
-                  : `${MONTH_DATE_HEADER_HEIGHT}px auto`,
-                columnGap: 4,
-                rowGap: 0,
+              key={d}
+              className={cls}
+              data-drop={d}
+              onClick={(e) => {
+                if (e.target === e.currentTarget) onCreate(d);
               }}
             >
-              {/* 날짜 헤더(gridRow:1) + day cell 배경/todos — Fragment로 묶어 한 번에 렌더 */}
-              {weekDays.map((d, ci) => {
-                const k = toDateKey(d);
-                const todayCell = k === anchorKey;
-                const inMonth = isSameMonth(d, cursor);
-                const allItems = byDate[k] ?? [];
-                const regularItems = allItems.filter(
-                  item => !weekSpanIds.has(item.id) && item.id !== resizingRegularId,
-                );
-                const visible = regularItems.slice(0, 3);
-                const more = regularItems.length - visible.length;
-                const isAdding = addingDate === k;
-                const local = colLocalSpanRows[ci];
-
+              <div className="cal-mh">
+                <button
+                  type="button"
+                  className="cal-mn"
+                  aria-label={t("cal.day.aria", { date: fmtLongDay(locale, d), n: l.length })}
+                  aria-current={d === ctl.date ? "date" : undefined}
+                  onClick={() => ctl.pick(d)}
+                >
+                  {x.getDate() === 1 ? <span className="cal-mm">{fmtMonthShort(locale, d)}</span> : null}
+                  {x.getDate()}
+                </button>
+                {retroDays.has(d) ? (
+                  <span className="cal-bm" title={t("cal.retroMark")}>
+                    <Bookmark size={12} aria-label={t("cal.retroMark")} />
+                  </span>
+                ) : null}
+              </div>
+              {shown.map((td) => {
+                const multi = isMultiDay(td);
+                const pos = !multi ? undefined : d === td.dateKey ? "s" : d === td.dueDate ? "e" : "m";
                 return (
-                  <Fragment key={k}>
-                    {/* 날짜 헤더 — 항상 최상단 (gridRow:1, zIndex:2 > span chip zIndex:1) */}
-                    <div
-                      style={{
-                        gridColumn: ci + 1,
-                        gridRow: 1,
-                        position: "relative",
-                        zIndex: 2,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        padding: "10px 10px 4px 10px",
-                        opacity: inMonth ? 1 : 0.35,
-                      }}
-                    >
-                      <span
-                        style={{
-                          fontSize: 16,
-                          fontWeight: 600,
-                          color: todayCell
-                            ? "var(--color-primary-on-dark)"
-                            : "var(--color-ink)",
-                        }}
-                      >
-                        {d.getDate()}
-                      </span>
-                      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                        {todayCell ? (
-                          <span
-                            style={{
-                              fontSize: 12,
-                              letterSpacing: "0.14em",
-                              color: "var(--color-primary-on-dark)",
-                              fontWeight: 600,
-                              textTransform: "uppercase",
-                            }}
-                          >
-                            {t("calendar.today")}
-                          </span>
-                        ) : null}
-                        {inMonth ? (
-                          <button
-                            type="button"
-                            className="month-cell-add-btn"
-                            data-adding={isAdding ? "true" : undefined}
-                            onClick={(e) => { e.stopPropagation(); startCellAdd(k); }}
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              width: 18,
-                              height: 18,
-                              borderRadius: 4,
-                              background: "var(--color-primary)",
-                              border: "none",
-                              cursor: "default",
-                              flexShrink: 0,
-                            }}
-                            title={t("calendar.addTodo")}
-                          >
-                            <Plus size={11} color="#fff" strokeWidth={2.5} />
-                          </button>
-                        ) : null}
-                      </div>
-                    </div>
-
-                    {/* Day cell — 배경/border/드롭타겟, 전체 행 커버, todos만 포함 */}
-                    <DayCell
-                      dateKey={k}
-                      onDropTodo={onDropTodo}
-                      className="month-day-cell"
-                      style={{
-                        gridColumn: ci + 1,
-                        gridRow: `1 / ${numSpanRows + 3}`,
-                        background: todayCell
-                          ? "rgba(94, 106, 210, 0.06)"
-                          : "var(--color-tile-2)",
-                        minHeight: 124,
-                        paddingTop: MONTH_DATE_HEADER_HEIGHT + local * MONTH_SPAN_ROW_HEIGHT + 6,
-                        paddingLeft: 10,
-                        paddingRight: 10,
-                        paddingBottom: 10,
-                        opacity: inMonth ? 1 : 0.35,
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: 6,
-                        borderRadius: "var(--r-sm)",
-                        border: todayCell
-                          ? "1px solid var(--color-primary)"
-                          : "1px solid var(--color-divider-soft)",
-                        position: "relative",
-                      }}
-                    >
-                      {/* 칩 목록 */}
-                      <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-                        {visible.map((item) => (
-                          <DraggableMonthChip
-                            key={item.id}
-                            todo={item}
-                            onSelect={onSelect}
-                            onResizeStart={startResize}
-                          />
-                        ))}
-                        {more > 0 ? (
-                          <button
-                            type="button"
-                            onClick={() => setModalDate(k)}
-                            style={{
-                              margin: 0,
-                              fontSize: 12,
-                              color: "var(--color-primary-on-dark)",
-                              background: "transparent",
-                              border: "none",
-                              padding: "2px 0",
-                              cursor: "default",
-                              textAlign: "left",
-                            }}
-                          >
-                            {t("calendar.moreItems", { n: more })}
-                          </button>
-                        ) : null}
-                      </div>
-
-                      {/* 인라인 추가 입력 */}
-                      {isAdding ? (
-                        <input
-                          ref={cellInputRef}
-                          className="month-add-input"
-                          placeholder={t("calendar.addCard.placeholder")}
-                          value={addingTitle}
-                          onChange={(e) => setAddingTitle(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") {
-                              commitCellAdd();
-                            } else if (e.key === "Escape") {
-                              setAddingDate(null);
-                              setAddingTitle("");
-                            }
-                          }}
-                          onBlur={commitCellAdd}
-                        />
-                      ) : null}
-                    </DayCell>
-                  </Fragment>
+                  <EventCard
+                    key={td.id}
+                    todo={td}
+                    variant="month"
+                    piece={pos ? { pos, label: pos === "s" || dow === ws } : undefined}
+                    dragging={draggingId === td.id}
+                    onOpen={onOpen}
+                    onPointerDown={drag.startMove}
+                  />
                 );
               })}
-
-              {/* Span chips after day cells so they render on top */}
-              {weekSpanEvents.map(evt => (
-                <MonthSpanChip
-                  key={`span-${evt.todo.id}-w${weekIdx}`}
-                  evt={evt}
-                  onSelect={onSelect}
-                  onResizeStart={startResize}
-                />
-              ))}
+              <CalendarOverlaySlot dateKey={d} variant="month" />
+              {more > 0 ? (
+                <button type="button" className="cal-more" onClick={() => ctl.pick(d, { view: "week", force: true })}>
+                  {t("cal.more", { n: more })}
+                </button>
+              ) : null}
             </div>
           );
         })}
       </div>
-
-      {/* "n개 더 보기" 모달 */}
-      {modalDate ? (
-        <>
-          <div
-            style={{
-              position: "fixed",
-              inset: 0,
-              background: "rgba(0,0,0,0.48)",
-              zIndex: 200,
-            }}
-            onClick={() => { setModalDate(null); setModalAdding(false); }}
-          />
-          <div
-            style={{
-              position: "fixed",
-              top: "50%",
-              left: "50%",
-              transform: "translate(-50%, -50%)",
-              zIndex: 201,
-              width: 360,
-              maxHeight: "70vh",
-              display: "flex",
-              flexDirection: "column",
-              background: "var(--color-tile-2)",
-              borderRadius: "var(--r-lg)",
-              border: "1px solid var(--color-divider-soft)",
-              boxShadow: "0 24px 56px rgba(0,0,0,0.55)",
-              overflow: "hidden",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                padding: "16px 20px 14px",
-                borderBottom: "1px solid var(--color-divider-soft)",
-                flexShrink: 0,
-              }}
-            >
-              <p
-                style={{
-                  margin: 0,
-                  fontSize: 16,
-                  fontWeight: 600,
-                  color: "var(--color-ink)",
-                }}
-              >
-                {formatFullDate(fromDateKey(modalDate), locale)}
-              </p>
-              <button
-                type="button"
-                className="btn-icon"
-                onClick={() => { setModalDate(null); setModalAdding(false); }}
-                aria-label={t("calendar.taskDetail.close")}
-              >
-                <X size={16} />
-              </button>
-            </div>
-
-            <div
-              style={{
-                overflowY: "auto",
-                padding: "12px 16px 0",
-                display: "flex",
-                flexDirection: "column",
-                gap: 6,
-                flex: 1,
-              }}
-            >
-              {modalTodos.map((todo) => (
-                <button
-                  key={todo.id}
-                  type="button"
-                  onClick={() => {
-                    onSelect(todo.id);
-                    setModalDate(null);
-                  }}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 10,
-                    padding: "10px 12px",
-                    borderRadius: "var(--r-sm)",
-                    background: "var(--color-tile-2)",
-                    border: "1px solid var(--color-divider-soft)",
-                    cursor: "pointer",
-                    textAlign: "left",
-                    fontSize: 16,
-                    color: "var(--color-ink)",
-                    flexShrink: 0,
-                  }}
-                >
-                  <StatusIcon status={todo.status} size={14} />
-                  <span
-                    style={{
-                      overflow: "hidden",
-                      whiteSpace: "nowrap",
-                      textOverflow: "ellipsis",
-                      flex: 1,
-                      color:
-                        todo.status === "done"
-                          ? "var(--color-status-done)"
-                          : "var(--color-ink)",
-                    }}
-                  >
-                    {todo.title}
-                  </span>
-                  <TagDots tags={todo.tags} />
-                </button>
-              ))}
-
-              {modalAdding ? (
-                <input
-                  ref={modalInputRef}
-                  className="month-add-input"
-                  placeholder={t("calendar.addCard.placeholder")}
-                  value={modalAddTitle}
-                  onChange={(e) => setModalAddTitle(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") commitModalAdd();
-                    else if (e.key === "Escape") { setModalAdding(false); setModalAddTitle(""); }
-                  }}
-                  onBlur={commitModalAdd}
-                  style={{ flexShrink: 0 }}
-                />
-              ) : null}
-            </div>
-
-            <button
-              type="button"
-              onClick={startModalAdd}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 7,
-                margin: "10px 16px 16px",
-                padding: "9px 12px",
-                borderRadius: "var(--r-sm)",
-                background: "transparent",
-                border: "1px dashed var(--color-divider-soft)",
-                cursor: "pointer",
-                fontSize: 12,
-                color: "var(--color-body-muted)",
-                flexShrink: 0,
-              }}
-            >
-              <Plus size={13} />
-              {t("calendar.addCard")}
-            </button>
-          </div>
-        </>
-      ) : null}
     </div>
   );
 }
+

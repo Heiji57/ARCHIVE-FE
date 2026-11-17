@@ -220,6 +220,16 @@
   --sun: #e0806f;
   --sat: #7f97e0;
 
+  /* planner.js P.CALC — 사용자 캘린더 색 팔레트(UserCalendar.color "c1".."c8") */
+  --cal-c1: #5e6ad2;
+  --cal-c2: #4cb7a5;
+  --cal-c3: #d6a24a;
+  --cal-c4: #d16ba5;
+  --cal-c5: #4ea7fc;
+  --cal-c6: #e0794c;
+  --cal-c7: #9b8afb;
+  --cal-c8: #8a8f98;
+
   /* lab3.css — 하루 닫기 이월, 할 일 모달 바뀐 값 표시(x) */
   --x-chg: var(--primary-h);
   --x-chg-bg: var(--primary-a);
