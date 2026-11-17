@@ -75,3 +75,8 @@
 - [결정] 설명 고치기는 시안의 contenteditable 대신 `textarea`(`field-sizing: content`, Enter 저장, Esc 되돌림).
 - [결정] 760px 아래: 카드 한 줄 한 장, 하루 카드의 큰 주제 열은 한 일 아래 줄, 연결 옆 칸은 그래프 아래.
 - [기존] `widgets/retrospective-studio`의 옛 주제 파일(`TopicsPane`, `TopicDocument`, `TopicPicker`, `TopicPillBar`, `TopicSourceListModal`, `useTopics`, `useTopicDigest`, `useTopicStats`, `useLastViewedTopic`, `app/styles/widgets/topic-studio.css`)은 `RetrospectiveStudio.tsx`(Task 4)가 아직 `TopicsPane`을 import 해서 남겼다. Task 4가 주제 영역을 `TopicStudio`로 바꾸면 지울 수 있고 lint 오류 4개가 함께 없어진다. 실제 모드 동작(정리 생성 202, SSE+폴링, 열 때 진행 중 이어받기)은 `widgets/topic-studio/model/useLiveTopics.ts`로 옮겼다.
+
+## 리뷰 (오케스트레이터, Task 5)
+
+- [남은 일] 연결 그래프의 고리 이름이 셋(큰 주제, 회고, 할 일)만 보이고 시안의 바깥 "커밋" 고리 이름이 없다. Task 11에서 확인하고 고친다.
+- [남은 일] 주제 화면의 회고 사이드바와 도구 막대는 Task 4가 붙인다.
