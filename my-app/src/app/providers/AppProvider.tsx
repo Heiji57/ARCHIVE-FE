@@ -50,7 +50,7 @@ import {
   type SummaryKind,
   type SummaryReadiness,
 } from "@/entities/summary/model/types";
-import type { Todo } from "@/entities/todo/model/types";
+import type { RecurrenceRule, Todo } from "@/entities/todo/model/types";
 import type { Topic } from "@/entities/topic/model/types";
 import { boardRangeWindow } from "@/entities/todo/lib/boardRange";
 import { getTodosInRange, sortTodos } from "@/entities/todo/lib/selectors";
@@ -978,6 +978,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [],
   );
 
+  // 데모/mock: 반복 규칙을 로컬 한 건에만 적는다(서버 반복 펼치기 없음).
+  const setLocalRecurrence = (id: string, rule: RecurrenceRule) => {
+    const todo = state.todos.find((t) => t.id === id);
+    if (todo) dispatch({ type: "todo/upsert", payload: { todo: { ...todo, recurrenceRule: rule } } });
+  };
+
   // ─── Context value ────────────────────────────────────────────────────────
   const sortedTodos = useMemo(() => sortTodos(state.todos), [state.todos]);
   const sortedState = useMemo(
@@ -1072,8 +1078,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
     },
     updateTodoRecurrence: async (id, rule) => {
-      // 데모/mock 은 반복 확장(가상 인스턴스 생성) 로직 자체가 없어 지원하지 않는다.
-      if (!apiActive) return null;
+      // 데모/mock 은 반복 확장(가상 인스턴스 생성) 로직이 없다. 보이는 한 건에 규칙만 적어 둔다(표시용).
+      if (!apiActive) {
+        setLocalRecurrence(id, rule);
+        return null;
+      }
       // 큐를 거치지 않고 즉시 전송 — following 스코프는 서버가 새 시리즈(새 id)를
       // 만드는 1회성 명시적 액션이라 디바운스 코얼레싱 대상이 아니다.
       try {
@@ -1091,8 +1100,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
     },
     convertTodoToRecurring: async (id, rule) => {
-      // 데모/mock 은 반복 확장 로직 자체가 없어 지원하지 않는다.
-      if (!apiActive) return null;
+      // 데모/mock 은 반복 확장 로직이 없다. 보이는 한 건에 규칙만 적어 둔다(표시용, addTodo 와 같음).
+      if (!apiActive) {
+        setLocalRecurrence(id, rule);
+        return null;
+      }
       // scope 를 지정하지 않는다 — 대상이 어떤 시리즈에도 속하지 않은 단독 항목일 때만
       // 서버가 이 규칙을 받아 그 자리에서 시리즈 base 로 전환한다(recurrence_scope 무관).
       try {

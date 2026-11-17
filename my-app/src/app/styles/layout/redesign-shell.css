@@ -1206,57 +1206,6 @@
   }
 }
 
-/* ---------- 할 일 편집 창 (Task 2 전 임시: 기존 TaskDetailPanel 을 가운데 모달로) ---------- */
-.te-dlg {
-  width: min(560px, calc(100vw - 32px));
-  max-height: min(85vh, 820px);
-  padding: 0;
-  border: 1px solid var(--line2);
-  border-radius: 12px;
-  background: var(--s2);
-  color: var(--ink);
-  box-shadow: var(--nw-sh);
-  overflow: auto;
-}
-.te-dlg::backdrop {
-  background: var(--tm-scrim);
-}
-.te-new,
-.te-empty {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  padding: 20px;
-  font: 400 14px/1.45 var(--font);
-  letter-spacing: normal;
-}
-.te-new h2 {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 600;
-}
-.te-empty p {
-  margin: 0;
-  color: var(--ink3);
-}
-.te-in {
-  height: 36px;
-  padding: 0 10px;
-  border: 1px solid var(--line2);
-  border-radius: var(--r);
-  background: var(--s1);
-  font-size: 14px;
-  color: var(--ink);
-}
-.te-in:focus {
-  border-color: var(--primary);
-}
-.te-ft {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-}
-
 /* ---------- 자리 표시 ---------- */
 .sh-placeholder {
   margin: 0;

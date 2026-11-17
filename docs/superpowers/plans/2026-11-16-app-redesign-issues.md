@@ -63,6 +63,23 @@
 - [기존] 데모 시작 데이터가 비어 있다(`getInitialAppState`가 데모에서 빈 상태). 확인 화면의 캘린더, 회고, 팔레트가 비어 보이는 이유. 각 Task의 데모 데이터에서 채운다.
 - [기존] 옛 셸 CSS(`layout/nav.css`의 global-nav, `widgets/search.css`, 알림 side-panel 일부)는 쓰는 곳이 없어졌지만 지우지 않았다(Task 11 정리).
 
+## Task 2 (할 일 모달 26, 새 할 일 창 3)
+
+- [서버] `PATCH /todos/{id}`의 `recurrence_scope`는 `this | following` 뿐이라 "모든 반복 일정"(all)을 직접 보낼 수 없다. 지금은 시리즈 base(첫 회차) id에 `following`으로 보낸다(`toEditorCalls`). base에 following을 보낼 때 서버가 시리즈 전체(이미 있는 예외 회차 포함)를 바꾸는지 확인이 필요하고, 안 되면 `recurrence_scope: all`을 추가해야 한다. 시간 변경(all)은 base가 목록에 없으면 `updateTodoTimeRecurrence`가 날짜를 몰라 보내지 않는다.
+- [결정] 범위 계산은 `widgets/todo-editor/model/applyScope.ts`: `applyScope(series, instanceDateKey, patch, scope)` → `ScopedChange[]`(this=회차 하나, following=전날까지 끊고 그날부터 새 시리즈, all=시리즈 자체, 첫날의 following=all), `toEditorCalls(changes, ctx)` → `useArchiveApp()` 액션 호출 목록. 반복 규칙 변경은 시안처럼 묻지 않고 "이 일정부터 이후 전체"(가상 회차) 또는 반복 전환.
+- [결정] 데모/mock은 반복을 펼치지 않아 보이는 한 건이 시리즈 전체다. 범위와 상관없이 그 한 건을 로컬에서 고친다. 데모에서 반복을 만들 수 있게 `AppProvider`의 `convertTodoToRecurring`/`updateTodoRecurrence` 데모 분기가 로컬 한 건에 규칙만 적는다(`setLocalRecurrence`, 새 상태 없음). 전에는 아무것도 안 했다.
+- [결정] 반복 변경(following/all) 뒤 실제 모드는 응답의 새 base로 모달을 옮긴다(같은 날짜 회차가 목록에 있으면 그 회차). 보이는 범위 재조회는 화면(Task 3, 8)이 한다. 모달이 범위를 모르기 때문.
+- [결정] 할 일 창은 `App.tsx`에서 `AppShell` 안(`TodoEditorHost`)으로 옮겼다. Google 캘린더 줄의 "설정에서 연결"이 `useSettingsSheet().open("link")`을 부르려고. `TodoEditorProvider` props: `calendars?`, `calendarOf?`, `onCalendarChange?`, `onOpenSettings?`.
+- [결정] 사용자 캘린더 목록은 Task 3 전 임시로 위젯 안 `FALLBACK_CALENDARS`(개인, ARCHIVE 팀, 스터디)와 임시 색 토큰 `--te-cal-me/team/study`(`widgets/todo-editor.css`의 `:root`). 할 일마다 고른 캘린더는 위젯 안에만 기억한다(서버 필드 없음). Task 3이 `entities/calendar/model/demo.ts`를 만들면 `TodoEditorHost`에서 `calendars`, `calendarOf`, `onCalendarChange`로 넘기고 임시 목록과 색 토큰을 지운다.
+- [결정] Google 캘린더 줄은 시안처럼 늘 있고(값이 없으면 빈 속성), 연결 전이면 메뉴에 "설정에서 연결", 다시 연결 필요면 "설정에서 다시 연결", 연결돼 있으면 추가/다시 보내기/빼기(`toggleTodoCalendarLink`).
+- [결정] 새 할 일 창의 값 메뉴는 26번과 같은 찾기 메뉴(찾기 칸 + 목록)를 쓴다. 시안 3번의 "다른 날" 입력(pickers.js 달력)은 메뉴 안 "다른 날" → 같은 달력으로, 시간 직접 입력(pickers.js 2번)은 30분 칸 목록(07:00~21:30)과 찾기로 대신했다. 추가하면 창을 닫는다(시안). 토스트("…에 추가했어요")는 앱에 토스트가 없어 뺐다.
+- [결정] 상세 설명은 시안의 contenteditable 문단 대신 textarea(서버 description은 평문).
+- [결정] `addTodo`가 지금 시각 기준 시간을 자동으로 넣으므로, 새 할 일 창은 만든 뒤 고른 시간대(없으면 종일)를 `setTodoTime`으로 다시 적는다. 실제 모드에서 새 id가 목록에 들어온 뒤 하도록 Provider가 기다린다(`afterCreate`). 실제 모드는 생성 POST 뒤 PATCH가 한 번 더 간다.
+- [버그] Chrome은 사용자 활성화 없이 연달아 누른 Esc(두 번째 close request)에서 `cancel`을 막아도 `<dialog>`를 닫는다. 메뉴, 범위 질문의 Esc는 `keydown`에서 먼저 처리한다. 다른 Task의 중첩 Esc도 같은 문제가 있을 수 있다.
+- [버그] Enter로 제목 입력을 끝내면 그 Enter가 바로 뜬 범위 질문의 첫 단추를 누르던 것을 막았다(`preventDefault`, 질문 포커스는 다음 프레임).
+- [기존] `TaskDetailPanel`은 `CalendarDashboard`, `TodoBoard`(`TodoDetailPane`)가 아직 써서 지우지 않았다. 두 화면이 `useTodoEditor().openTodo`로 바뀌면(Task 3, 8) `TaskDetailPanel`, `TodoDetailPane`, `RecurrencePopover`, `DatePickerPopover`, `RecurrenceScopeDialog`, `RecurrenceCustomDialog`, `TagEditor`를 지운다(TagEditor의 lint 오류도 같이 없어짐).
+- [기존] `shell.todoEditor.*` i18n 키(Task 1 임시 창)는 이제 안 쓴다. Task 11 정리 대상.
+- [시안] 시안 26의 상태 줄 아이콘은 회색 원(진행 전)인데 앱은 기존 `StatusIcon`(lucide) 색을 따른다. 크기와 자리는 같다.
 ## Task 5 (회고 주제)
 
 - [결정] 주제 색: `createdAt` 순서로 `--tpc1..4`를 돌려 쓰고(`assignTopicColors`), 실제 모드는 정한 색을 localStorage(`archive.topicColors`)에 기억해서 앞서 만든 주제를 지워도 남은 주제 색이 그대로다. 새 기기에서는 다시 `createdAt` 순서. 완전히 고정하려면 서버에 색을 두어야 하는데 06 §5 결정으로 만들지 않는다.

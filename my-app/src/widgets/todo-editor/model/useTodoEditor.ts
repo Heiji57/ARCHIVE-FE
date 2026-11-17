@@ -17,8 +17,7 @@ export interface TodoEditorApi {
 export const TodoEditorCtx = createContext<TodoEditorApi | null>(null);
 
 /**
- * 할 일 편집 창. Task 2 가 할 일 모달(26)과 새 할 일 창(3)으로 구현을 바꿔도 useTodoEditor() 모양은 유지한다.
- * 지금은 기존 TaskDetailPanel 을 가운데 모달에 띄우고, 새 할 일은 제목만 받는 작은 창이다.
+ * 할 일 편집 창: openTodo 는 할 일 모달(26번), createTodo 는 새 할 일 창(3번).
  */
 export function useTodoEditor(): TodoEditorApi {
   const v = useContext(TodoEditorCtx);
