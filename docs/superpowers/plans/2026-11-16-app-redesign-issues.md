@@ -157,3 +157,9 @@
 - [결정] 처음 열 화면의 "AI" 선택지와 알림 종류의 "예약한 일 실행", 내보내기의 "AI 대화"는 `ai` 기능이 꺼지면 함께 숨긴다.
 - [기존] 옛 `widgets/settings-studio`와 `app/styles/widgets/settings.css`를 지웠다. 그 위젯만 쓰던 i18n 키(`settings.section.*`, `settings.group.*`, `settings.github.preview*`, `settings.language.rowHint` 등)는 `keys.ts`에 남았다(Task 11 정리). 오류 문구 키(`settings.github.connectFailed`, `settings.templates.error.*`, `settings.todoRange.*`, `settings.sessions.*` 등)는 새 시트가 계속 쓴다.
 - [확인] 캘린더 사이드바의 GitHub 문제 "권한 받기"는 `useSettingsSheet().open("link")`로 이 시트의 연동 섹션을 연다(`CalendarSidebar.tsx`). 실제 모드에서 `hasVerifiedEmails === false`면 연동 카드에 "주의 이메일 권한이 필요해요 / 자세히"와 "GitHub 권한 다시 받기"(= 기존 `linkGitHubAccount`)가 보인다.
+
+## 리뷰 (오케스트레이터, Task 6)
+
+- [결정, 사용자 확인 필요] 일하는 시간: 명세(1장 "설정")는 4번(하루 막대 + 단계 버튼)인데, 시안 `d-settings.html`을 번호 없이 열면 기본이 2번(요일별 표, `pickV('wd', 2)`)이다. 명세대로 4번으로 만들었다.
+- [남은 일] 데모에서 설정 시트는 GitHub 연결 상태를 시안처럼 보여 주지만 다른 화면(AppProvider 데모)은 다르게 볼 수 있다. 사용자 메뉴는 "게스트", 설정은 developer. Task 11에서 데모 계정 상태를 하나로 맞춘다.
+- [남은 일] 설정의 주 시작 요일 값(데모)이 캘린더 `weekStartPreference()`에 아직 이어지지 않았다. Task 11.
