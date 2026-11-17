@@ -10,7 +10,6 @@ import type { Folder } from "@/entities/folder/model/types";
  * 시안 본문의 [[회고 링크]]와 #태그는 앱에 없는 기능이라 평문으로 바꿨다.
  */
 
-const T = "2026-11-03T09:00:00.000Z";
 
 export const RETRO_SEED_FOLDERS: Folder[] = [
   { id: "folder-dev", name: "ARCHIVE 개발", parentFolderId: null, folderCount: 0, entryCount: 8, createdAt: "2026-09-01T00:00:00.000Z", updatedAt: null },
@@ -185,6 +184,3 @@ ARCHIVE 를 처음 만든 해. 회고 212편, 커밋 1,480개.`,
 /** 시작 상태에 넣을 사본(상태가 바뀌어도 원본 배열은 그대로). */
 export const retroSeedEntries = (): JournalEntry[] => RETRO_SEED_ENTRIES.map((x) => ({ ...x }));
 export const retroSeedFolders = (): Folder[] => RETRO_SEED_FOLDERS.map((x) => ({ ...x }));
-
-// updatedAt 기본값을 쓰지 않는 항목이 생기면 여기 기준 시각을 쓴다.
-export const RETRO_SEED_UPDATED_AT = T;

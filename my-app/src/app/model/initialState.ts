@@ -1,4 +1,5 @@
 import { isDemoMode } from "@/app/config/demo";
+import { retroSeedEntries, retroSeedFolders } from "@/app/config/seed/retroSeed";
 import { seedState } from "@/app/config/seedState";
 import { loadAppState } from "@/app/lib/storage";
 import { DEFAULT_SETTINGS } from "@/app/model/settings";
@@ -13,14 +14,14 @@ import {
 import { initialGuestLocale } from "@/shared/lib/i18n";
 
 export function getInitialAppState(): AppState {
-  // 데모 모드: 목 시드/localStorage 없이 빈 상태로 시작(일회성 체험).
+  // 데모 모드: localStorage 없이 시작(일회성 체험). 회고는 데모 데이터(retroSeed)로 채운다.
   // 기본 설정·기본 템플릿만 유지한다.
   if (isDemoMode()) {
     const locale = initialGuestLocale();
     return {
       todos: [],
-      entries: [],
-      folders: [],
+      entries: retroSeedEntries(),
+      folders: retroSeedFolders(),
       notifications: [],
       settings: { ...DEFAULT_SETTINGS, locale },
       pendingSummary: null,
