@@ -4,8 +4,9 @@
  * 여기서 export 한 것은 전부 I18nModule 이어야 한다(registry.ts 가 컴파일 단계에서 확인).
  */
 export { authI18n } from "./auth";
-export { retroI18n } from "./retro";
 export { calendarI18n } from "./calendar";
+export { retroI18n } from "./retro";
+export { settingsSheetI18n } from "./settings";
 export { shellI18n } from "./shell";
 export { todoEditorI18n } from "./todoEditor";
 export { topicI18n } from "./topic";
