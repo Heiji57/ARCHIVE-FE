@@ -51,6 +51,7 @@
 @import "./widgets/topic-studio.css";
 @import "./widgets/rich-editor.css";
 @import "./widgets/todo-board.css";
+@import "./widgets/todo-editor.css";
 @import "./widgets/disconnect-banner.css";
 @import "./widgets/dnd.css";
 @import "./widgets/landing.css";
