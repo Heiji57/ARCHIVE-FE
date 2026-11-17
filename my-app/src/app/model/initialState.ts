@@ -5,6 +5,7 @@ import { loadAppState } from "@/app/lib/storage";
 import { DEFAULT_SETTINGS } from "@/app/model/settings";
 import type { AppState, PersistedAppState } from "@/app/model/types";
 import { INITIAL_CALENDAR_STATE } from "@/entities/calendar/model/types";
+import { DEMO_GITHUB_STATE } from "@/entities/github/model/demo";
 import { INITIAL_GITHUB_STATE } from "@/entities/github/model/types";
 import {
   DEFAULT_ACTIVE_TEMPLATE_IDS,
@@ -14,12 +15,12 @@ import {
 import { initialGuestLocale } from "@/shared/lib/i18n";
 
 export function getInitialAppState(): AppState {
-  // 데모 모드: localStorage 없이 시작(일회성 체험). 회고는 데모 데이터(retroSeed)로 채운다.
-  // 기본 설정·기본 템플릿만 유지한다.
+  // 데모 모드: localStorage 없이 시작(일회성 체험). 기본 설정·기본 템플릿과
+  // 시안 데이터(app/config/seed: 할 일, 회고)만 넣는다. GitHub 은 데모용 연결 상태(entities/github/model/demo).
   if (isDemoMode()) {
     const locale = initialGuestLocale();
     return {
-      todos: [],
+      todos: seedState.todos.map((t) => ({ ...t, tags: [...t.tags] })),
       entries: retroSeedEntries(),
       folders: retroSeedFolders(),
       notifications: [],
@@ -29,7 +30,7 @@ export function getInitialAppState(): AppState {
       rememberMe: false,
       templates: localizeDefaultTemplates(DEFAULT_TEMPLATES, locale),
       activeTemplateIds: DEFAULT_ACTIVE_TEMPLATE_IDS,
-      github: INITIAL_GITHUB_STATE,
+      github: DEMO_GITHUB_STATE,
       calendar: INITIAL_CALENDAR_STATE,
       lastTodoIdReplacement: null,
     };

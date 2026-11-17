@@ -5,5 +5,6 @@
  */
 export { authI18n } from "./auth";
 export { retroI18n } from "./retro";
+export { calendarI18n } from "./calendar";
 export { shellI18n } from "./shell";
 export { topicI18n } from "./topic";

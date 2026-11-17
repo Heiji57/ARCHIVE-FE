@@ -56,6 +56,7 @@ import { boardRangeWindow } from "@/entities/todo/lib/boardRange";
 import { getTodosInRange, sortTodos } from "@/entities/todo/lib/selectors";
 import { getEntriesInRange } from "@/entities/entry/lib/selectors";
 import { DEMO_ANCHOR_DATE_KEY, isDemoMode } from "@/app/config/demo";
+import { DEMO_GITHUB_STATE, demoCommitsOn } from "@/entities/github/model/demo";
 import {
   addDays,
   computeAutoTodoTime,
@@ -658,18 +659,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const runGitHubRefresh = () => {
-    // 데모: GitHub 연결을 제공하지 않는다(가짜 연결/목 데이터 없이 미연결 유지).
+    // 데모: 시안과 같은 데모 연결 상태(entities/github/model/demo). 서버는 부르지 않는다.
     if (isDemoMode()) {
       dispatch({
         type: "github/setLinked",
         payload: {
-          status: "not-connected",
-          repositories: [],
-          login: null,
-          pushTargetRepositoryId: null,
-          hasVerifiedEmails: false,
+          status: DEMO_GITHUB_STATE.status,
+          repositories: DEMO_GITHUB_STATE.linkedRepositories,
+          login: DEMO_GITHUB_STATE.login,
+          pushTargetRepositoryId: DEMO_GITHUB_STATE.pushTargetRepositoryId,
+          hasVerifiedEmails: DEMO_GITHUB_STATE.hasVerifiedEmails,
         },
       });
+      dispatch({ type: "github/setCommits", payload: { commits: DEMO_GITHUB_STATE.commits } });
       return;
     }
     if (!USE_API) {
@@ -1413,6 +1415,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (!USE_API) {
         return MOCK_COMMITS;
       }
+      // 데모: 서버를 부르지 않고 데모 커밋.
+      if (isDemoMode()) return demoCommitsOn(date);
       try {
         return await apiGetCommits(date);
       } catch {

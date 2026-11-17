@@ -1,301 +1,149 @@
-import { Minimize2 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useArchiveApp } from "@/app/providers/useArchiveApp";
-import { useTodayKey } from "@/app/providers/useToday";
-import { collectAllTags, collectRecentTags, findTodoById } from "@/entities/todo/lib/selectors";
+import { useNowMinutes } from "@/app/providers/useToday";
 import type { Todo } from "@/entities/todo/model/types";
-import { useTranslation } from "@/shared/lib/i18n";
-import {
-  addDays,
-  endOfISOWeek,
-  endOfMonth,
-  fromDateKey,
-  startOfISOWeek,
-  startOfMonth,
-  toDateKey,
-} from "@/shared/lib/date";
-import { useCalendarNav } from "../model/useCalendarNav";
-import { CalendarToolbar } from "./CalendarToolbar";
-import { DayTimeline } from "./DayTimeline";
+import { useRegisterPaletteCommand } from "@/widgets/global-search";
+import { useTodoEditor } from "@/widgets/todo-editor";
+import { passesFilter, useCalendarFilter } from "../model/calendarFilter";
+import { addDaysKey, daysBetween } from "../model/eventInfo";
+import { applyPreview, useCalendarDrag, type TodoChange } from "../model/useCalendarDrag";
+import type { CalendarController } from "../model/useCalendarController";
+import { userCalendarActions, useUserCalendars } from "../model/userCalendars";
 import { MonthGrid } from "./MonthGrid";
-import { TaskDetailPanel } from "@/entities/todo/ui/TaskDetailPanel";
 import { WeekGrid } from "./WeekGrid";
 
-export function CalendarDashboard() {
-  const {
-    state,
-    addTodo,
-    updateTodo,
-    updateTodoRecurrence,
-    updateTodoTimeRecurrence,
-    updateTodoFollowing,
-    convertTodoToRecurring,
-    moveTodo,
-    setTodoTime,
-    removeTodo,
-    loadTodosForView,
-    toggleTodoCalendarLink,
-    focusTarget,
-    clearFocus,
-    clearTodoIdReplacement,
-  } = useArchiveApp();
-  const { t } = useTranslation();
-  // "오늘" = user.timezone 기준 (데모는 앵커 날짜). useTodayKey 가 분기 처리.
-  const todayCellKey = useTodayKey();
-  const anchorDate = useMemo(
-    () => fromDateKey(todayCellKey),
-    [todayCellKey],
-  );
-  const { view, setView, cursor, setCursor, navigate, goToday } = useCalendarNav(anchorDate);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const allTags = useMemo(() => collectAllTags(state.todos), [state.todos]);
-  const recentTags = useMemo(() => collectRecentTags(state.todos), [state.todos]);
-  // 확대(전체화면) 모드 — 버튼 또는 Ctrl+Shift+F 로 토글.
-  const [expanded, setExpanded] = useState(false);
+/** 서버 목록 조회 한 번의 최대 범위(일). */
+const MAX_RANGE = 62;
 
-  // 전역 검색에서 특정 할 일로 이동 요청 → 일간 뷰로 해당 날짜를 열고 상세 패널을 표시.
+/**
+ * 캘린더 본문(주간, 일간, 월간). 페이지가 useCalendarController 로 만든 ctl 을 사이드바, 도구 막대와 같이 넘긴다.
+ * 할 일을 누르면 할 일 창(useTodoEditor), 빈 칸을 누르거나 끌면 그 시간으로 새 할 일.
+ */
+export function CalendarDashboard({ ctl }: { ctl: CalendarController }) {
+  const { state, moveTodo, updateTodo, setTodoTime, loadTodosForView, focusTarget, clearFocus } = useArchiveApp();
+  const editor = useTodoEditor();
+  const filter = useCalendarFilter();
+  const { calendarOf, defaultId } = useUserCalendars();
+  const nowMin = useNowMinutes();
+
+  const visible = useMemo(
+    () => state.todos.filter((td) => passesFilter(td, filter, calendarOf(td)?.id ?? null)),
+    [state.todos, filter, calendarOf],
+  );
+
+  const commit = useCallback(
+    (c: TodoChange, a: Todo) => {
+      const dueChanged = (a.dueDate ?? null) !== c.dueDate;
+      if (dueChanged) updateTodo(a.id, { dateKey: c.dateKey, dueDate: c.dueDate });
+      else if (c.dateKey !== a.dateKey) moveTodo(a.id, c.dateKey);
+      if ((a.startTime ?? null) !== c.startTime || (a.endTime ?? null) !== c.endTime) setTodoTime(a.id, c.startTime, c.endTime);
+    },
+    [updateTodo, moveTodo, setTodoTime],
+  );
+  const drag = useCalendarDrag({
+    onCommit: commit,
+    onOpen: editor.openTodo,
+    onCreate: (r) => editor.createTodo(r),
+  });
+  const todos = useMemo(() => applyPreview(visible, drag.preview), [visible, drag.preview]);
+
+  const retroDays = useMemo(
+    () => new Set(state.entries.filter((e) => e.retroType === "daily" && !e.isSummary).map((e) => e.dateKey)),
+    [state.entries],
+  );
+
+  // 보이는 범위가 불러온 범위를 벗어나면 다시 불러온다(서버 62일 제한, hydrate 는 목록을 통째로 바꿈).
+  const loaded = useRef<{ from: string; to: string } | null>(null);
+  const timer = useRef<number | undefined>(undefined);
+  const onVisibleRange = useCallback(
+    (from: string, to: string) => {
+      const l = loaded.current;
+      if (l && from >= l.from && to <= l.to) return;
+      window.clearTimeout(timer.current);
+      timer.current = window.setTimeout(() => {
+        const span = daysBetween(from, to) + 1;
+        const pad = Math.max(0, Math.floor((MAX_RANGE - span) / 2));
+        const range = { from: addDaysKey(from, -pad), to: addDaysKey(to, Math.min(pad, MAX_RANGE - span - pad)) };
+        loaded.current = range;
+        void loadTodosForView(range.from, range.to);
+      }, 250);
+    },
+    [loadTodosForView],
+  );
+  useEffect(() => () => window.clearTimeout(timer.current), []);
+
+  // 새로 만든 할 일은 기본 캘린더에(데모의 사용자 캘린더). 할 일 창이 만든 id 를 모르므로 처음 보이는 id 를 배정.
+  const known = useRef<Set<string> | null>(null);
+  useEffect(() => {
+    if (!defaultId) return;
+    if (!known.current) {
+      known.current = new Set(state.todos.map((td) => td.id));
+      return;
+    }
+    for (const td of state.todos) {
+      if (known.current.has(td.id)) continue;
+      known.current.add(td.id);
+      userCalendarActions.assignTodo(td.id, defaultId);
+    }
+  }, [state.todos, defaultId]);
+
+  // 검색에서 할 일을 고르면: 그 날짜로 옮기고 할 일 창을 연다.
   useEffect(() => {
     if (focusTarget?.kind !== "todo") return;
-    setView("day");
-    setCursor(fromDateKey(focusTarget.dateKey));
-    setSelectedId(focusTarget.todoId);
+    ctl.pick(focusTarget.dateKey, { force: true });
+    editor.openTodo(focusTarget.todoId);
     clearFocus();
-    // setView/setCursor 는 안정적이므로 focusTarget 만 관찰한다.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focusTarget]);
 
-  // Ctrl/Cmd+Shift+F → 확대 토글, Esc → 확대 닫기.
+  // 단축키: t 오늘, j/k 다음/이전(입력칸, 창이 열려 있으면 무시)
+  const ctlRef = useRef(ctl);
+  useEffect(() => {
+    ctlRef.current = ctl;
+  });
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === "f") {
-        e.preventDefault();
-        setExpanded((v) => !v);
-        return;
-      }
-      if (e.key === "Escape") setExpanded((v) => (v ? false : v));
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      const tg = e.target as HTMLElement | null;
+      if (tg?.closest("input, textarea, select, [contenteditable=true], dialog") || document.querySelector("dialog[open]")) return;
+      const k = e.key.toLowerCase();
+      if (k === "t") ctlRef.current.goToday();
+      else if (k === "j") ctlRef.current.step(1);
+      else if (k === "k") ctlRef.current.step(-1);
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, []);
 
-  // 확대 중에는 배경 스크롤 잠금.
-  useEffect(() => {
-    if (!expanded) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, [expanded]);
-
-  // 현재 뷰(일/주/월)가 커버하는 날짜 범위 — 재조회(뷰 전환 시 + 반복 변경 후) 공용.
-  const viewRange = useMemo(() => {
-    if (view === "day") {
-      const to = toDateKey(cursor);
-      // 마감일 지정 할 일이 이전 날에 시작해 오늘에 걸칠 수 있으므로
-      // 30일 이전부터 로드해 span 블록이 중간/마감일에도 표시되도록 한다.
-      const from = toDateKey(addDays(fromDateKey(to), -30));
-      return { from, to };
-    }
-    if (view === "week") {
-      // WeekGrid 는 월요일 시작(ISO) 주를 그리므로 조회 범위도 동일 기준이어야
-      // 일요일(마지막 칸)이 조회 범위에서 빠지지 않는다.
-      return { from: toDateKey(startOfISOWeek(cursor)), to: toDateKey(endOfISOWeek(cursor)) };
-    }
-    return { from: toDateKey(startOfMonth(cursor)), to: toDateKey(endOfMonth(cursor)) };
-  }, [view, cursor]);
-
-  // view 또는 cursor 가 바뀌면 해당 범위의 할 일 + 캘린더 이벤트를 재조회한다.
-  // 서버 62일 제한에 맞게 뷰 단위로 요청한다.
-  useEffect(() => {
-    void loadTodosForView(viewRange.from, viewRange.to);
-    // loadTodosForView 는 useCallback([]) 으로 안정화되어 있으므로 deps 에서 제외한다.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [viewRange]);
-
-  const selectedTodo = selectedId
-    ? findTodoById(state.todos, selectedId)
-    : null;
-
-  // 반복 시리즈 가상 인스턴스를 편집하면 debounce 된 PATCH 응답으로 서버가 새 id 를
-  // 발급할 수 있다(todo/replaceId) — selectedId 가 이를 따라가지 않으면 findTodoById 가
-  // null 을 반환해 side-panel 은 열린 채(.open) 내용만 사라져 빈 검은 패널로 보인다.
-  useEffect(() => {
-    const rep = state.lastTodoIdReplacement;
-    if (!rep || rep.localId !== selectedId) return;
-    setSelectedId(rep.newId);
-    clearTodoIdReplacement();
-  }, [state.lastTodoIdReplacement, selectedId, clearTodoIdReplacement]);
-
-  // 반복 전환/규칙변경 PATCH 응답은 base row 원본 형태라 목록에 나오는 가상 인스턴스
-  // 모양과 다르다 — 재조회 후, 그 새 base 에서 파생된(같은 날짜) 항목을 찾아 선택을
-  // 옮겨야 상세 패널이 갑자기 빈 화면이 되지 않는다.
-  const followRecurrenceMutation = async (
-    mutate: () => Promise<Todo | null>,
-    originalDateKey: string,
-  ) => {
-    const serverTodo = await mutate();
-    if (!serverTodo) return;
-    const todos = await loadTodosForView(viewRange.from, viewRange.to);
-    const match = todos.find(
-      (t) => t.seriesId === serverTodo.id && t.dateKey === originalDateKey,
-    );
-    setSelectedId(match ? match.id : serverTodo.id);
-  };
-
-  const byDate = useMemo(() => {
-    const m: Record<string, Todo[]> = {};
-    for (const item of state.todos) {
-      if (!m[item.dateKey]) m[item.dateKey] = [];
-      m[item.dateKey].push(item);
-    }
-    return m;
-  }, [state.todos]);
-
-  const spanningTodos = useMemo(
-    () => state.todos.filter((t) => t.dueDate && t.dueDate > t.dateKey),
-    [state.todos],
-  );
-
-  const handleDropTodo = (todoId: string, dateKey: string) => {
-    moveTodo(todoId, dateKey);
-  };
-
-  const handleResizeDueDate = (id: string, dueDate: string | null) => {
-    updateTodo(id, { dueDate });
-  };
+  useRegisterPaletteCommand({ id: "cal.today", labelKey: "cal.palette.today", hint: "T", order: 20, run: () => ctl.goToday() });
+  useRegisterPaletteCommand({ id: "cal.week", labelKey: "cal.palette.week", order: 30, run: () => ctl.setView("week") });
+  useRegisterPaletteCommand({ id: "cal.month", labelKey: "cal.palette.month", order: 40, run: () => ctl.setView("month") });
 
   return (
-    <div className={`calendar-shell${expanded ? " calendar-shell-expanded" : ""}`}>
-      {expanded && (
-        <button
-          type="button"
-          className="calendar-expand-float-btn"
-          onClick={() => setExpanded(false)}
-          aria-label={t("calendar.collapse")}
-          title={`${t("calendar.collapse")} (Esc / Ctrl+Shift+F)`}
-        >
-          <Minimize2 size={16} />
-        </button>
-      )}
-      <div className="page calendar-page">
-        <CalendarToolbar
-          view={view}
-          cursor={cursor}
-          onViewChange={setView}
-          onPrev={() => navigate(-1)}
-          onToday={goToday}
-          onNext={() => navigate(1)}
-          expanded={expanded}
-          onToggleExpand={() => setExpanded((v) => !v)}
+    <div className="cal-root" data-dragging={drag.preview ? "" : undefined}>
+      {ctl.view === "month" ? (
+        <MonthGrid
+          ctl={ctl}
+          todos={todos}
+          drag={drag}
+          preview={drag.preview}
+          retroDays={retroDays}
+          onOpen={editor.openTodo}
+          onCreate={(dateKey) => editor.createTodo({ dateKey })}
+          onVisibleRange={onVisibleRange}
         />
-
-        {view === "day" ? (
-          <DayTimeline
-            dayKey={toDateKey(cursor)}
-            todayKey={todayCellKey}
-            todos={state.todos}
-            spanningTodos={spanningTodos}
-            selectedId={selectedId}
-            onSelect={setSelectedId}
-            onReschedule={(id, startTime, endTime) =>
-              setTodoTime(id, startTime, endTime)
-            }
-            onUntime={(id) => setTodoTime(id, null, null)}
-            onAddTodo={(title, dateKey, opts) => {
-              addTodo(title, dateKey, undefined, (newId) => {
-                setSelectedId(newId);
-                setTodoTime(newId, opts.startTime, opts.endTime);
-              });
-            }}
-          />
-        ) : view === "week" ? (
-          <WeekGrid
-            cursor={cursor}
-            byDate={byDate}
-            spanningTodos={spanningTodos}
-            todayKey={todayCellKey}
-            selectedId={selectedId}
-            onSelect={setSelectedId}
-            onDropTodo={handleDropTodo}
-            onAddTodo={(title, dateKey) =>
-              addTodo(title, dateKey, undefined, setSelectedId)
-            }
-            onResizeDueDate={handleResizeDueDate}
-          />
-        ) : (
-          <MonthGrid
-            cursor={cursor}
-            byDate={byDate}
-            spanningTodos={spanningTodos}
-            todayKey={todayCellKey}
-            onSelect={setSelectedId}
-            onDropTodo={handleDropTodo}
-            onAddTodo={(title, dateKey) =>
-              addTodo(title, dateKey, undefined, setSelectedId)
-            }
-            onResizeDueDate={handleResizeDueDate}
-          />
-        )}
-      </div>
-
-      <div
-        className={`side-panel-overlay ${selectedId ? "open" : ""}`}
-        onClick={() => setSelectedId(null)}
-      />
-
-      <aside
-        className={`side-panel ${selectedId ? "open" : ""}`}
-        aria-hidden={!selectedId}
-      >
-        {selectedTodo ? (
-          <TaskDetailPanel
-            key={selectedTodo.id}
-            todo={selectedTodo}
-            tagSuggestions={allTags}
-            recentTags={recentTags}
-            onClose={() => setSelectedId(null)}
-            onUpdate={(patch) => updateTodo(selectedTodo.id, patch)}
-            onUpdateFollowing={(patch) =>
-              void followRecurrenceMutation(
-                () => updateTodoFollowing(selectedTodo.id, patch),
-                selectedTodo.dateKey,
-              )
-            }
-            onSetTime={(startTime, endTime) =>
-              setTodoTime(selectedTodo.id, startTime, endTime)
-            }
-            onSetTimeFollowing={(startTime, endTime) =>
-              void followRecurrenceMutation(
-                () => updateTodoTimeRecurrence(selectedTodo.id, startTime, endTime),
-                selectedTodo.dateKey,
-              )
-            }
-            onDelete={(scope) => {
-              removeTodo(selectedTodo.id, scope);
-              setSelectedId(null);
-            }}
-            onUpdateRecurrence={(rule) =>
-              void followRecurrenceMutation(
-                () => updateTodoRecurrence(selectedTodo.id, rule),
-                selectedTodo.dateKey,
-              )
-            }
-            onConvertToRecurring={(rule) =>
-              void followRecurrenceMutation(
-                () => convertTodoToRecurring(selectedTodo.id, rule),
-                selectedTodo.dateKey,
-              )
-            }
-            onToggleCalendarLink={
-              state.calendar.status === "connected" || state.calendar.status === "needs-reauth"
-                ? () => toggleTodoCalendarLink(selectedTodo.id)
-                : undefined
-            }
-            calendarNeedsReauth={state.calendar.status === "needs-reauth"}
-          />
-        ) : null}
-      </aside>
+      ) : (
+        <WeekGrid
+          ctl={ctl}
+          todos={todos}
+          drag={drag}
+          preview={drag.preview}
+          retroDays={retroDays}
+          nowMin={nowMin}
+          onOpen={editor.openTodo}
+          onVisibleRange={onVisibleRange}
+        />
+      )}
     </div>
   );
 }
