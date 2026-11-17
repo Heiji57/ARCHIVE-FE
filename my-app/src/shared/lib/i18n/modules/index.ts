@@ -6,3 +6,4 @@
 export { authI18n } from "./auth";
 export { shellI18n } from "./shell";
 export { todoEditorI18n } from "./todoEditor";
+export { topicI18n } from "./topic";

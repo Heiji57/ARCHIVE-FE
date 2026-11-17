@@ -80,3 +80,20 @@
 - [기존] `TaskDetailPanel`은 `CalendarDashboard`, `TodoBoard`(`TodoDetailPane`)가 아직 써서 지우지 않았다. 두 화면이 `useTodoEditor().openTodo`로 바뀌면(Task 3, 8) `TaskDetailPanel`, `TodoDetailPane`, `RecurrencePopover`, `DatePickerPopover`, `RecurrenceScopeDialog`, `RecurrenceCustomDialog`, `TagEditor`를 지운다(TagEditor의 lint 오류도 같이 없어짐).
 - [기존] `shell.todoEditor.*` i18n 키(Task 1 임시 창)는 이제 안 쓴다. Task 11 정리 대상.
 - [시안] 시안 26의 상태 줄 아이콘은 회색 원(진행 전)인데 앱은 기존 `StatusIcon`(lucide) 색을 따른다. 크기와 자리는 같다.
+## Task 5 (회고 주제)
+
+- [결정] 주제 색: `createdAt` 순서로 `--tpc1..4`를 돌려 쓰고(`assignTopicColors`), 실제 모드는 정한 색을 localStorage(`archive.topicColors`)에 기억해서 앞서 만든 주제를 지워도 남은 주제 색이 그대로다. 새 기기에서는 다시 `createdAt` 순서. 완전히 고정하려면 서버에 색을 두어야 하는데 06 §5 결정으로 만들지 않는다.
+- [결정] 주제 데모(`entities/topic/model/demo.ts`, `buildDemoTopics(today)`)는 시안 TOPICS/TV 데이터를 그대로 쓰고 날짜만 `today - 2026-11-03` 만큼 옮긴다(기준일이 11-03이 되면 시안 날짜 그대로). 근거 회고 id는 시안 id(`d1102`, `w1025` ...)라 Task 4 데모 회고 id가 같으면 "회고 열기"가 그 회고로 간다. 제목 없는 회고는 화면이 기본 제목(`6월 2일 회고`, `6월 1주차 회고`)을 만든다.
+- [결정] 힘 배치 엔진(`shared/lib/force-graph/engine.ts`)은 확정 분기(GN=5 동심원, 원 점, 종류 색)만 옮겼다. 계획 API의 `mode: "shape" | "glyph"`, 시안의 hulls, 깊이, 시간 재생, 점 찾기는 없다. 종류 숨기기 `hide(kinds)`를 더했다. 계산(`createSimulation`, `fitView`, `zoomView`)과 SVG(`createForceGraph`)를 나눠 계산만 테스트한다.
+- [시안] 명세는 큰 주제 거르기에서 "하나를 고르면 나머지 흐리게"인데 시안 동작은 고르지 않은 항목, 빈 날, 빈 주를 숨긴다. 시안 동작을 따랐다(고르지 않은 거르기 글자는 흐리게).
+- [시안] 연결 위 바의 안내 글("휠로 확대 ...")은 시안에 스타일이 없어 14px 본문색으로 보인다. 시안 그대로 맞췄다.
+- [서버] 실제 모드 목록 카드에는 한 줄 요약, 기간, 정리 상태, 새 회고 수, 최근에 한 일이 없다(06 §3). 지금은 설명, 수, `digest_watermark_date_key` 유무("정리 전")만 보인다. 연결의 커밋은 07 §2 기간 커밋 조회가 있어야 해서 데모에서만 보인다.
+- [결정] 실제 모드에서 넘기기 카드의 "정리하기"는 그 주제를 열고(정리 감시는 열린 주제 하나만 한다) 본문의 정리하기로 한다. 데모는 그 자리에서 1.8초 뒤 정리됨.
+- [결정] 설명 고치기는 시안의 contenteditable 대신 `textarea`(`field-sizing: content`, Enter 저장, Esc 되돌림).
+- [결정] 760px 아래: 카드 한 줄 한 장, 하루 카드의 큰 주제 열은 한 일 아래 줄, 연결 옆 칸은 그래프 아래.
+- [기존] `widgets/retrospective-studio`의 옛 주제 파일(`TopicsPane`, `TopicDocument`, `TopicPicker`, `TopicPillBar`, `TopicSourceListModal`, `useTopics`, `useTopicDigest`, `useTopicStats`, `useLastViewedTopic`, `app/styles/widgets/topic-studio.css`)은 `RetrospectiveStudio.tsx`(Task 4)가 아직 `TopicsPane`을 import 해서 남겼다. Task 4가 주제 영역을 `TopicStudio`로 바꾸면 지울 수 있고 lint 오류 4개가 함께 없어진다. 실제 모드 동작(정리 생성 202, SSE+폴링, 열 때 진행 중 이어받기)은 `widgets/topic-studio/model/useLiveTopics.ts`로 옮겼다.
+
+## 리뷰 (오케스트레이터, Task 5)
+
+- [남은 일] 연결 그래프의 고리 이름이 셋(큰 주제, 회고, 할 일)만 보이고 시안의 바깥 "커밋" 고리 이름이 없다. Task 11에서 확인하고 고친다.
+- [남은 일] 주제 화면의 회고 사이드바와 도구 막대는 Task 4가 붙인다.
