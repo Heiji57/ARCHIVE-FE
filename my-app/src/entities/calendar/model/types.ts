@@ -30,3 +30,20 @@ export const INITIAL_CALENDAR_STATE: CalendarState = {
   googleUserId: null,
   lastSyncedAt: null,
 };
+
+/**
+ * 사용자 캘린더(개인, 팀, 스터디처럼 할 일을 묶는 목록). 서버(api.yaml)에 아직 없다.
+ * 데모 모드에서만 쓰고(`useServerFeature("userCalendars")`), 실제 모드에서는 목록과 책갈피를 숨긴다.
+ */
+export interface UserCalendar {
+  id: string;
+  name: string;
+  /** 팔레트 칸 이름. 색은 토큰 `--cal-<color>` (app/styles/tokens/redesign.css). */
+  color: CalendarColor;
+  /** 새 할 일이 들어가는 기본 캘린더. 하나만 true. */
+  isDefault: boolean;
+}
+
+/** 캘린더 색 팔레트(시안 planner.js P.CALC 순서). */
+export const CALENDAR_COLORS = ["c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8"] as const;
+export type CalendarColor = (typeof CALENDAR_COLORS)[number];

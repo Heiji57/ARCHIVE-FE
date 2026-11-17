@@ -4,6 +4,7 @@ import { DEFAULT_ACTIVE_TEMPLATE_IDS, DEFAULT_TEMPLATES } from "@/entities/templ
 import { addDays, toDateKey } from "@/shared/lib/date";
 import { readSpellCheckPref } from "@/shared/lib/spellCheckPrefs";
 import { readTodoBoardRange } from "@/shared/lib/todoRangePrefs";
+import { todoSeed } from "./seed/todoSeed";
 
 const baseDate = new Date(2023, 9, 25, 12);
 const previousDay = addDays(baseDate, -1);
@@ -12,93 +13,8 @@ const monthlyDate = new Date(2023, 8, 30, 12);
 const yearlyDate = new Date(2022, 11, 31, 12);
 
 export const seedState: PersistedAppState = {
-  todos: [
-    {
-      id: "todo-1",
-      title: "API 명세서 작성",
-      tags: ["업무"],
-      completed: true,
-      dateKey: "2023-10-25",
-      createdAt: baseDate.toISOString(),
-      completedAt: baseDate.toISOString(),
-      status: "done",
-      description: "백엔드 API 명세를 문서화하고 팀 공유용 요약까지 정리합니다.",
-      calendarLinked: false,
-      calendarPushStatus: null,
-      isVirtual: false,
-      seriesId: null,
-      originalDateKey: null,
-      recurrenceRule: null,
-    },
-    {
-      id: "todo-2",
-      title: "Redis 캐싱 적용",
-      tags: ["사이드"],
-      completed: false,
-      dateKey: "2023-10-26",
-      createdAt: addDays(baseDate, 1).toISOString(),
-      completedAt: null,
-      status: "in-progress",
-      description: "주요 조회 API에 Redis 캐시 레이어를 붙이고 만료 정책을 검토합니다.",
-      calendarLinked: false,
-      calendarPushStatus: null,
-      isVirtual: false,
-      seriesId: null,
-      originalDateKey: null,
-      recurrenceRule: null,
-    },
-    {
-      id: "todo-3",
-      title: "팀 주간 회의",
-      tags: ["업무"],
-      completed: true,
-      dateKey: "2023-10-26",
-      createdAt: addDays(baseDate, 1).toISOString(),
-      completedAt: addDays(baseDate, 1).toISOString(),
-      status: "done",
-      description: "주간 회고와 다음 스프린트 우선순위를 논의하는 회의입니다.",
-      calendarLinked: false,
-      calendarPushStatus: null,
-      isVirtual: false,
-      seriesId: null,
-      originalDateKey: null,
-      recurrenceRule: null,
-    },
-    {
-      id: "todo-4",
-      title: "Next.js 라우팅 설정",
-      tags: ["학습"],
-      completed: false,
-      dateKey: "2023-10-27",
-      createdAt: addDays(baseDate, 2).toISOString(),
-      completedAt: null,
-      status: "not-start",
-      description: "페이지별 라우팅을 정리하고 공통 레이아웃과 연결합니다.",
-      calendarLinked: false,
-      calendarPushStatus: null,
-      isVirtual: false,
-      seriesId: null,
-      originalDateKey: null,
-      recurrenceRule: null,
-    },
-    {
-      id: "todo-5",
-      title: "GitHub OAuth 연동",
-      tags: ["사이드"],
-      completed: false,
-      dateKey: "2023-10-27",
-      createdAt: addDays(baseDate, 2).toISOString(),
-      completedAt: null,
-      status: "not-start",
-      description: "GitHub 계정 연결과 토큰 저장 흐름을 설계합니다.",
-      calendarLinked: false,
-      calendarPushStatus: null,
-      isVirtual: false,
-      seriesId: null,
-      originalDateKey: null,
-      recurrenceRule: null,
-    },
-  ],
+  // 할 일 시작 데이터는 seed/todoSeed.ts(시안 데이터). 회고는 Task 4 가 같은 방식으로 뺀다.
+  todos: todoSeed,
   entries: [
     {
       id: "entry-1",
