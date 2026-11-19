@@ -1,0 +1,273 @@
+/* 빗금이 팝오버 — 오른쪽 아래 고정 */
+
+.pet-wrap {
+  position: fixed;
+  z-index: 55;
+  right: 20px;
+  bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+/* 아이콘 버튼 */
+.pet-btn {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--r2, 12px);
+  border: 1px solid var(--ink4, #555);
+  background: var(--s2, #222);
+  cursor: pointer;
+  transition: background 0.12s ease-out;
+}
+
+.pet-btn:hover {
+  background: var(--s3, #2a2a2a);
+}
+
+.pet-btn:focus-visible {
+  outline: 2px solid var(--primary-h, #7c6af5);
+  outline-offset: 2px;
+}
+
+/* 카드 */
+.pet-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 320px;
+  max-width: calc(100vw - 32px);
+  max-height: min(480px, 72vh);
+  padding: 12px;
+  border: 1px solid var(--ink4, #555);
+  border-radius: var(--r2, 12px);
+  background: var(--s3, #222);
+  color: var(--ink, #eee);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  animation: pet-in 0.12s ease-out;
+  overflow: hidden;
+}
+
+@keyframes pet-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 헤더 */
+.pet-h {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 24px;
+}
+
+.pet-h b {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink, #eee);
+}
+
+.pet-h small {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--ink3, #888);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pet-tx {
+  flex: none;
+  padding: 0 4px;
+  font-size: 12px;
+  color: var(--ink3, #888);
+  border-radius: 4px;
+}
+
+.pet-tx:hover {
+  color: var(--ink, #eee);
+  background: var(--s4, #333);
+}
+
+.pet-x {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--r, 6px);
+  color: var(--ink3, #888);
+}
+
+.pet-x:hover {
+  background: var(--s4, #333);
+  color: var(--ink, #eee);
+}
+
+.pet-x .i {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+/* 대화 스레드 */
+.pet-th {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.pet-t {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pet-b {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink2, #aaa);
+}
+
+.pet-y {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink, #eee);
+}
+
+/* 아랫부분 */
+.pet-low {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pet-low:empty {
+  display: none;
+}
+
+/* 빠른 질문 버튼 */
+.pet-qs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.pet-qs button {
+  padding: 4px 8px;
+  border: 1px solid var(--line2, #444);
+  border-radius: var(--r, 6px);
+  font-size: 13px;
+  color: var(--ink2, #aaa);
+  text-align: left;
+  background: none;
+}
+
+.pet-qs button:hover {
+  background: var(--s4, #333);
+  color: var(--ink, #eee);
+}
+
+/* 입력 행 */
+.pet-in {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 4px 4px 12px;
+  border: 1px solid var(--line2, #444);
+  border-radius: var(--r2, 12px);
+  background: var(--s1, #1a1a1a);
+}
+
+.pet-in:focus-within {
+  border-color: var(--primary-h, #7c6af5);
+}
+
+.pet-in input {
+  flex: 1;
+  min-width: 0;
+  height: 28px;
+  border: 0;
+  background: none;
+  font-size: 14px;
+  color: var(--ink, #eee);
+}
+
+.pet-in input:focus-visible {
+  outline: 0;
+}
+
+.pet-in input::placeholder {
+  color: var(--ink3, #888);
+}
+
+.pet-go {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--r, 6px);
+  color: var(--ink2, #aaa);
+  background: none;
+  border: none;
+}
+
+.pet-go:hover {
+  background: var(--s4, #333);
+  color: var(--ink, #eee);
+}
+
+.pet-go .i {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+/* 접근성: 포커스 */
+.pet-btn:focus-visible,
+.pet-card button:focus-visible,
+.pet-card input:focus-visible {
+  outline: 2px solid var(--primary-h, #7c6af5);
+  outline-offset: 2px;
+}
+
+/* 움직임 줄이기 */
+@media (prefers-reduced-motion: reduce) {
+  .pet-card {
+    animation: none;
+  }
+}
+
+/* 375px 이하에서 넘침 없음 */
+@media (max-width: 375px) {
+  .pet-wrap {
+    right: 8px;
+    bottom: 8px;
+  }
+
+  .pet-card {
+    width: calc(100vw - 16px);
+    max-width: none;
+  }
+}

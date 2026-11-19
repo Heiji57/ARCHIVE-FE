@@ -1,12 +1,25 @@
 import { useTranslation } from "@/shared/lib/i18n";
+import { useServerFeature } from "@/shared/lib/serverFeatures";
 import { ShellPage } from "@/widgets/app-shell";
+import { AiHome } from "@/widgets/ai-assistant";
 
-/** AI 탭 자리. 내용(가운데 입력, 지난 대화 사이드바)은 Task 9 가 채운다. 오른쪽 줄과 알림은 없다. */
+/**
+ * AI 탭 화면.
+ * - `useServerFeature("ai")` 가 false(실제 모드)면 AI 탭은 없어야 하므로
+ *   이 페이지 자체도 fallback 메시지만 보여 준다.
+ * - 데모 모드(`?demo=true`)에서는 `useServerFeature("ai")` = true → AiHome 표시.
+ */
 export function AiPage() {
   const { t } = useTranslation();
+  const aiEnabled = useServerFeature("ai");
+
   return (
     <ShellPage toolbar={<h1 className="sh-title">{t("shell.tab.ai")}</h1>}>
-      <p className="sh-placeholder">{t("shell.ai.placeholder")}</p>
+      {aiEnabled ? (
+        <AiHome />
+      ) : (
+        <p className="sh-placeholder">{t("shell.ai.placeholder")}</p>
+      )}
     </ShellPage>
   );
 }
