@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { useTranslation } from "@/shared/lib/i18n";
 import { ShellPage, useRightPanel } from "@/widgets/app-shell";
 import { CalendarSidebar, fmtLongDay, useCalendarController } from "@/widgets/calendar-dashboard";
+import "@/widgets/ai-suggestions";
 import { CloseDayHost, closeDayActions } from "@/widgets/close-day";
 import { useRegisterPaletteCommand } from "@/widgets/global-search";
 import { usePanelDateSync } from "@/widgets/right-panel-tabs";

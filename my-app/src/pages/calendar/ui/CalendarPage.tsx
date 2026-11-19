@@ -7,6 +7,7 @@ import {
   fmtLongDay,
   useCalendarController,
 } from "@/widgets/calendar-dashboard";
+import "@/widgets/ai-suggestions";
 import { CloseDayHost, closeDayActions } from "@/widgets/close-day";
 import { usePanelDateSync } from "@/widgets/right-panel-tabs";
 
