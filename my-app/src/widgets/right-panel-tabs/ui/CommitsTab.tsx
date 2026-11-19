@@ -5,6 +5,7 @@ import { commitTime, repoName, useDayCommits } from "../model/useDayCommits";
 import { usePanelDate } from "../model/panelDate";
 
 /** 커밋 탭 숫자. 불러오는 중이면 숫자 없음. */
+// eslint-disable-next-line react-refresh/only-export-components
 export function useCommitCount(): number | null {
   const list = useDayCommits(usePanelDate());
   return list ? list.length : null;

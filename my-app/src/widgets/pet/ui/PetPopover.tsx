@@ -14,18 +14,13 @@ function usePageName(): string {
   return t("shell.tab.calendar");
 }
 
-interface PetPopoverProps {
-  /** 팝오버 열기 요청 (Ctrl+/ 등에서 외부로 열기). */
-  onOpenRequest?: () => void;
-}
-
 /**
  * 빗금이 버튼 + 팝오버 카드.
  * - 오른쪽 아래 고정 위치
  * - Ctrl+/ 단축키로 열고 닫기
  * - prefers-reduced-motion 반영은 pet.css에서
  */
-export function PetPopover({ onOpenRequest: _onOpenRequest }: PetPopoverProps = {}) {
+export function PetPopover() {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");

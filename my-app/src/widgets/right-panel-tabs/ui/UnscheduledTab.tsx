@@ -12,6 +12,7 @@ import { PanelRow } from "./PanelRow";
 const hm = (min: number) => `${String(Math.floor(min / 60)).padStart(2, "0")}:${String(min % 60).padStart(2, "0")}`;
 
 /** 그날 시간 미정 할 일 수(탭 숫자). */
+// eslint-disable-next-line react-refresh/only-export-components
 export function useUnscheduledCount(): number {
   const { state } = useArchiveApp();
   const date = usePanelDate();

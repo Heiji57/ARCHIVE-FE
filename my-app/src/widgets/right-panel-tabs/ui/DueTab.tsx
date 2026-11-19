@@ -9,6 +9,7 @@ import { dueBand, dueTag, nextDay } from "../model/dueBand";
 import { PanelRow } from "./PanelRow";
 
 /** 마감 탭 숫자(지난 마감 + 7일 안)와 지난 마감이 있는지. */
+// eslint-disable-next-line react-refresh/only-export-components
 export function useDueSummary(): { n: number; late: boolean } {
   const { state } = useArchiveApp();
   const today = useTodayKey();

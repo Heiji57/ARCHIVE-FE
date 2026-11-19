@@ -59,4 +59,5 @@ export function LandingNav({ onNavigateAuth }: LandingNavProps) {
   )
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export { scrollToId }

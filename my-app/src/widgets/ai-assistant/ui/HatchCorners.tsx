@@ -2,33 +2,43 @@
  * 화면 네 모서리에 인디고 빗금 장식 (bg=10 시안).
  * pointer-events: none, z-index: 0으로 콘텐츠 뒤에 위치.
  */
-export function HatchCorners() {
-  const size = 160;
-  // 대각선 빗금 경로 (gap=8, 범위 0~size)
-  const lines: string[] = [];
-  for (let i = -size; i < size * 2; i += 10) {
-    lines.push(`M${i} 0l${size} ${size}`);
-  }
-  const d = lines.join(" ");
-  const id = "hc-clip";
 
-  const Corner = ({ pos }: { pos: "tl" | "tr" | "bl" | "br" }) => (
+const SIZE = 160;
+const GAP = 10;
+const CLIP_ID = "hc-clip";
+
+function buildHatchPath(): string {
+  const lines: string[] = [];
+  for (let i = -SIZE; i < SIZE * 2; i += GAP) {
+    lines.push(`M${i} 0l${SIZE} ${SIZE}`);
+  }
+  return lines.join(" ");
+}
+
+const HATCH_D = buildHatchPath();
+
+function Corner({ pos }: { pos: "tl" | "tr" | "bl" | "br" }) {
+  const points =
+    pos === "tl" ? `0,0 ${SIZE},0 0,${SIZE}` :
+    pos === "tr" ? `0,0 ${SIZE},0 ${SIZE},${SIZE}` :
+    pos === "bl" ? `0,0 0,${SIZE} ${SIZE},${SIZE}` :
+    `${SIZE},0 0,${SIZE} ${SIZE},${SIZE}`;
+  return (
     <svg
       className={`hatch-corner ${pos}`}
-      width={size}
-      height={size}
-      viewBox={`0 0 ${size} ${size}`}
+      width={SIZE}
+      height={SIZE}
+      viewBox={`0 0 ${SIZE} ${SIZE}`}
       aria-hidden="true"
     >
       <defs>
-        <clipPath id={`${id}-${pos}`}>
-          {/* 모서리 삼각형 클리핑 */}
-          <polygon points={`0,0 ${size},0 0,${size}`} />
+        <clipPath id={`${CLIP_ID}-${pos}`}>
+          <polygon points={points} />
         </clipPath>
       </defs>
-      <g clipPath={`url(#${id}-${pos})`}>
+      <g clipPath={`url(#${CLIP_ID}-${pos})`}>
         <path
-          d={d}
+          d={HATCH_D}
           fill="none"
           stroke="var(--primary-h, #7c6af5)"
           strokeWidth="1.5"
@@ -37,7 +47,9 @@ export function HatchCorners() {
       </g>
     </svg>
   );
+}
 
+export function HatchCorners() {
   return (
     <div className="hatch-corners" aria-hidden="true">
       <Corner pos="tl" />
