@@ -44,7 +44,6 @@
 @import "./widgets/search.css";
 @import "./widgets/summary.css";
 @import "./widgets/auth.css";
-@import "./widgets/todo-filter.css";
 @import "./widgets/settings.css";
 @import "./widgets/calendar.css";
 @import "./widgets/retro.css";
@@ -52,6 +51,8 @@
 @import "./widgets/topic-v.css";
 @import "./widgets/rich-editor.css";
 @import "./widgets/todo-board.css";
+@import "./widgets/right-panel-tabs.css";
+@import "./widgets/close-day.css";
 @import "./widgets/todo-editor.css";
 @import "./widgets/disconnect-banner.css";
 @import "./widgets/dnd.css";

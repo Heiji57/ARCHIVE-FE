@@ -5,9 +5,11 @@ import type { Todo } from "@/entities/todo/model/types";
 import type { SettingsSection } from "@/shared/config/settingsSections";
 import { NewTodoDialog } from "../ui/NewTodoDialog";
 import { TodoModal } from "../ui/TodoModal";
-import { defaultCalendar, FALLBACK_CALENDARS, type EditorCalendar } from "./calendars";
+import { defaultCalendar, type EditorCalendar } from "./calendars";
 import type { EditorEnv } from "./editorEnv";
 import { TodoEditorCtx, type TodoEditorApi, type TodoEditorDefaults } from "./useTodoEditor";
+
+const NO_CALENDARS: EditorCalendar[] = [];
 
 type Mode = { kind: "edit"; id: string } | { kind: "new"; defaults: Partial<TodoEditorDefaults> } | null;
 
@@ -15,7 +17,7 @@ export interface TodoEditorProviderProps {
   children: ReactNode;
   /**
    * 사용자 캘린더 목록(`useServerFeature("userCalendars")` 일 때만 보임).
-   * 안 주면 위젯 안 임시 목록(개인, ARCHIVE 팀, 스터디). Task 3 이 `entities/calendar/model/demo.ts` 를 넘긴다.
+   * App 의 TodoEditorHost 가 캘린더 사이드바와 같은 목록(`useUserCalendars`)을 넘긴다. 안 주면 캘린더 줄이 없다.
    */
   calendars?: EditorCalendar[];
   /** 할 일의 캘린더 id. 안 주거나 null 이면 이 창에서 고른 값, 그것도 없으면 기본 캘린더. */
@@ -31,7 +33,7 @@ export interface TodoEditorProviderProps {
  */
 export function TodoEditorProvider({
   children,
-  calendars = FALLBACK_CALENDARS,
+  calendars = NO_CALENDARS,
   calendarOf,
   onCalendarChange,
   onOpenSettings,
@@ -73,7 +75,7 @@ export function TodoEditorProvider({
   const env = useMemo<EditorEnv>(
     () => ({
       calendars,
-      calendarIdOf: (todo) => calendarOf?.(todo) ?? picked[todo.id] ?? defaultCalendar(calendars).id,
+      calendarIdOf: (todo) => calendarOf?.(todo) ?? picked[todo.id] ?? defaultCalendar(calendars)?.id ?? "",
       setCalendar,
       openSettings: onOpenSettings,
       afterCreate: (id, run) => {

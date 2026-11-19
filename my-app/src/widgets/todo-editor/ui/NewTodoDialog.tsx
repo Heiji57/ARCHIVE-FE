@@ -49,7 +49,7 @@ export function NewTodoDialog({
   const { t, locale } = useTranslation();
   const today = useTodayKey();
   const userCals = useServerFeature("userCalendars");
-  const [d, patch] = useTodoDraft(() => draftFromDefaults(defaults, today, defaultCalendar(env.calendars).id));
+  const [d, patch] = useTodoDraft(() => draftFromDefaults(defaults, today, defaultCalendar(env.calendars)?.id ?? ""));
   const [menu, setMenu] = useState<Menu | null>(null);
   const [moreStatus, setMoreStatus] = useState(false);
   const [shake, setShake] = useState(false);
@@ -112,7 +112,7 @@ export function NewTodoDialog({
       value: d.dueDate ? t("todoEditor.nw.dueUntil", { date: dateLabel(d.dueDate, locale) }) : "",
       empty: t("todoEditor.nw.dueNone"),
     },
-    ...(userCals
+    ...(userCals && calendar
       ? [{ key: "cal" as const, label: t("todoEditor.prop.calendar"), icon: dot(calendar.color), value: calendar.name, empty: "" }]
       : []),
     { key: "tags", label: t("todoEditor.prop.tags"), icon: ic(Tag), value: tagsLabel(d.tags), empty: t("todoEditor.nw.tagsNone") },
@@ -369,7 +369,7 @@ export function NewTodoDialog({
       >
         <div className="nw3-top">
           <p className="nw3-crumb">
-            {userCals ? (
+            {userCals && calendar ? (
               <span className="te-cal">
                 {dot(calendar.color)}
                 {calendar.name}

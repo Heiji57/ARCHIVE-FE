@@ -1,4 +1,4 @@
-import { lazy, startTransition, Suspense, useEffect, useMemo, useState, type ReactNode } from "react";
+import { lazy, startTransition, Suspense, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import type { AppRoute } from "@/app/model/types";
 import { AppProvider } from "@/app/providers/AppProvider";
 import { useArchiveApp } from "@/app/providers/useArchiveApp";
@@ -19,7 +19,9 @@ import { DndProvider } from "@/shared/lib/dnd";
 import { TodoDragGhost } from "@/app/TodoDragGhost";
 import { RetroDragGhost } from "@/app/RetroDragGhost";
 import { I18nProvider, useTranslation } from "@/shared/lib/i18n";
+import type { Todo } from "@/entities/todo/model/types";
 import { AppShell, ShellPage, useSettingsSheet } from "@/widgets/app-shell";
+import { calendarColorVar, userCalendarActions, useUserCalendars } from "@/widgets/calendar-dashboard";
 import { useRegisterPaletteCommand } from "@/widgets/global-search";
 import { TodoEditorProvider, useTodoEditor } from "@/widgets/todo-editor";
 import { useServerFeature } from "@/shared/lib/serverFeatures";
@@ -298,10 +300,29 @@ function AppContent({
 
 type PageKey = "ai" | "calendar" | "todos" | "retrospectives";
 
-/** 할 일 창(26, 3)을 셸 안에 둔다. Google 캘린더 연결 메뉴가 설정 시트를 열 수 있게. */
+/**
+ * 할 일 창(26, 3)을 셸 안에 둔다. Google 캘린더 연결 메뉴가 설정 시트를 열 수 있게.
+ * 사용자 캘린더(`userCalendars`, 데모만)는 캘린더 사이드바와 같은 목록과 배정을 쓴다.
+ */
 function TodoEditorHost({ children }: { children: ReactNode }) {
   const sheet = useSettingsSheet();
-  return <TodoEditorProvider onOpenSettings={sheet.open}>{children}</TodoEditorProvider>;
+  const uc = useUserCalendars();
+  const calendars = useMemo(
+    () => uc.calendars.map((c) => ({ id: c.id, name: c.name, color: calendarColorVar(c.color), isDefault: c.isDefault })),
+    [uc.calendars],
+  );
+  const { calendarOf } = uc;
+  const calendarIdOf = useCallback((todo: Todo) => calendarOf(todo)?.id ?? null, [calendarOf]);
+  return (
+    <TodoEditorProvider
+      calendars={calendars}
+      calendarOf={calendarIdOf}
+      onCalendarChange={userCalendarActions.assignTodo}
+      onOpenSettings={sheet.open}
+    >
+      {children}
+    </TodoEditorProvider>
+  );
 }
 
 /** 어느 화면에서나 되는 팔레트 명령(새 할 일). 설정 열기는 AppShell 이 등록한다. */

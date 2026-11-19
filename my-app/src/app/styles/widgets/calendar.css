@@ -1332,11 +1332,6 @@
   }
 }
 
-/* 작업 상세 휴지통 버튼 — hover 시 빨강 (TaskDetailPanel, Task 2 가 바꾸면 지움) */
-.detail-delete-btn:hover {
-  color: var(--danger);
-}
-
 @media (prefers-reduced-motion: reduce) {
   .cal-root *,
   .cal-vwb svg,

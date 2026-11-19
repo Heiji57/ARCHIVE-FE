@@ -4,13 +4,6 @@
    색과 글꼴은 tokens/redesign.css 토큰만 쓴다.
    ------------------------------------------------------------------ */
 
-/* 사용자 캘린더 임시 색(시안 planner.js A.cals). Task 3 의 캘린더 목록이 들어오면 그쪽 색을 쓴다. */
-:root {
-  --te-cal-me: #9b8afb;
-  --te-cal-team: #4cb7a5;
-  --te-cal-study: #d6a24a;
-}
-
 /* ---------- 창 ---------- */
 .te-dlg {
   width: min(640px, calc(100vw - 32px));

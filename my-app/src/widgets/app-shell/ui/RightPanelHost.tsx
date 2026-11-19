@@ -89,7 +89,8 @@ export function RightPanelHost({ title }: { title?: ReactNode }) {
 
 function TabCount({ def }: { def: RightPanelTabDef }) {
   const n = def.count?.() ?? null;
-  return n === null ? null : <em>{n}</em>;
+  const warn = def.countWarn?.() ?? false;
+  return n === null ? null : <em className={warn ? "warn" : undefined}>{n}</em>;
 }
 
 function TabPane({ def }: { def: RightPanelTabDef }) {

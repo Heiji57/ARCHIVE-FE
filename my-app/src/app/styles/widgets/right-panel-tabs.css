@@ -1,0 +1,301 @@
+/* 오른쪽 패널 탭 내용(하루, 시간표, 시간 미정, 마감, 커밋). 접두 rp-
+   시안: prototypes/linear-shell/shared/rpanel.css(.rx-r .rx-t .rx-a .rx-e .rx-tip, 하루 2번 .px-now .px-next,
+   마감 2번 .px-week, 커밋 4번 .px-tl.gc), shared/shared.css(.sd 상태 점). 틀(제목, 탭 줄)은 셸 .sh-rp. */
+
+.sh-rp-pane :is(button, [role="button"]):focus-visible {
+  outline: 2px solid var(--primary-h);
+  outline-offset: 1px;
+}
+.sh-rp-pane button:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.rp-e {
+  margin: 0;
+  padding: 8px;
+  font-size: 13px;
+  color: var(--ink3);
+}
+.rp-tip {
+  margin: 2px 4px 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ink3);
+}
+.rp-sub {
+  margin: 4px 4px 0;
+  font-size: 12px;
+  color: var(--ink3);
+}
+.rp-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* 할 일 한 줄 */
+.rp-r {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 4px 0 6px;
+  border-radius: 6px;
+}
+.rp-r:hover {
+  background: var(--s2);
+}
+.rp-t {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--ink);
+  cursor: grab;
+  touch-action: none;
+}
+.rp-t > span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rp-r small {
+  flex: none;
+  font-size: 12px;
+  color: var(--ink3);
+}
+.rp-r.late small {
+  color: var(--rx-late);
+}
+.rp-r.soon small {
+  color: var(--rx-soon);
+}
+.rp-a {
+  flex: none;
+  height: 24px;
+  padding: 0 8px;
+  border: 1px solid var(--line2);
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--ink2);
+  white-space: nowrap;
+}
+.rp-a:hover {
+  border-color: var(--primary);
+  color: var(--ink);
+}
+
+/* 상태 점 */
+.rp-sd {
+  position: relative;
+  flex: none;
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border: 1.5px solid var(--ink3);
+  border-radius: 50%;
+}
+.rp-sd[data-st="in-progress"] {
+  border-color: var(--warn);
+}
+.rp-sd[data-st="in-progress"]::after {
+  content: "";
+  position: absolute;
+  inset: 1.5px;
+  border-radius: 50%;
+  background: var(--warn);
+  clip-path: inset(0 50% 0 0);
+}
+.rp-sd[data-st="done"] {
+  border-color: var(--done);
+  background: var(--done);
+}
+.rp-sd[data-st="done"]::after {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 0;
+  width: 3px;
+  height: 6px;
+  border: solid var(--canvas);
+  border-width: 0 1.5px 1.5px 0;
+  transform: rotate(40deg) scale(0.8);
+}
+
+/* 하루: 지금과 다음 */
+.rp-now,
+.rp-next {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  padding: 12px;
+  border-radius: var(--r2);
+  text-align: left;
+  color: var(--ink);
+}
+.rp-now {
+  border: 1px solid var(--primary);
+  background: var(--primary-a);
+}
+.rp-now.quiet {
+  border-color: var(--line);
+  background: var(--s2);
+}
+.rp-next {
+  border: 1px solid var(--line);
+}
+button.rp-next:hover {
+  background: var(--s2);
+}
+.rp-now b,
+.rp-next b {
+  font-size: 15px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.rp-k {
+  font-size: 12px;
+  color: var(--ink3);
+}
+.rp-m {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink3);
+}
+.rp-bar {
+  display: block;
+  height: 4px;
+  margin-top: 4px;
+  border-radius: 2px;
+  background: var(--s4);
+  overflow: hidden;
+}
+.rp-bar i {
+  display: block;
+  height: 100%;
+  background: var(--primary);
+}
+
+/* 시간표 */
+.rp-tl {
+  height: calc(100vh - 180px);
+  min-height: 320px;
+  border: 1px solid var(--line);
+  border-radius: var(--r2);
+  overflow: hidden;
+  background: var(--canvas);
+}
+
+/* 마감: 일주일 띠 */
+.rp-week {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 2px;
+}
+.rp-week button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 0;
+  border-radius: var(--r);
+}
+.rp-week button:hover {
+  background: var(--s3);
+}
+.rp-week button[aria-pressed="true"] {
+  background: var(--primary-a);
+  box-shadow: inset 0 0 0 1px var(--primary);
+}
+.rp-week small {
+  font-size: 12px;
+  color: var(--ink3);
+}
+.rp-week b {
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink2);
+}
+.rp-week .today b {
+  color: var(--primary-h);
+}
+.rp-week .late :is(small, b) {
+  color: var(--rx-late);
+}
+.rp-week button > span {
+  display: flex;
+  gap: 2px;
+  height: 6px;
+}
+.rp-week button > span i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--ink2);
+}
+.rp-week .late > span i {
+  background: var(--rx-late);
+}
+
+/* 커밋: 세로 시간 줄 */
+.rp-ctl {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.rp-ctl::before {
+  content: "";
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  left: 51px;
+  width: 1px;
+  background: var(--line2);
+}
+.rp-ctl li {
+  position: relative;
+  display: grid;
+  grid-template-columns: 40px 12px minmax(0, 1fr);
+  align-items: start;
+  gap: 4px;
+  padding: 6px 0;
+}
+.rp-ctl time {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink3);
+  text-align: right;
+}
+.rp-ctl li > i {
+  justify-self: center;
+  width: 7px;
+  height: 7px;
+  margin-top: 5px;
+  border-radius: 50%;
+  background: var(--done);
+}
+.rp-ctl p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ink);
+  word-break: break-word;
+}
+.rp-ctl small {
+  font-size: 12px;
+  color: var(--ink3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sh-rp-pane button:active:not(:disabled) {
+    transform: none;
+  }
+}
