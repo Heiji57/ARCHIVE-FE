@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useArchiveApp } from "@/app/providers/useArchiveApp";
 import { useNowMinutes } from "@/app/providers/useToday";
-import type { Todo } from "@/entities/todo/model/types";
 import { useRegisterPaletteCommand } from "@/widgets/global-search";
 import { useTodoEditor } from "@/widgets/todo-editor";
 import { passesFilter, useCalendarFilter } from "../model/calendarFilter";
 import { addDaysKey, daysBetween } from "../model/eventInfo";
-import { applyPreview, useCalendarDrag, type TodoChange } from "../model/useCalendarDrag";
+import { applyPreview } from "../model/useCalendarDrag";
+import { useTodoDrag } from "../model/useTodoDrag";
 import type { CalendarController } from "../model/useCalendarController";
 import { userCalendarActions, useUserCalendars } from "../model/userCalendars";
 import { MonthGrid } from "./MonthGrid";
@@ -20,7 +20,7 @@ const MAX_RANGE = 62;
  * 할 일을 누르면 할 일 창(useTodoEditor), 빈 칸을 누르거나 끌면 그 시간으로 새 할 일.
  */
 export function CalendarDashboard({ ctl }: { ctl: CalendarController }) {
-  const { state, moveTodo, updateTodo, setTodoTime, loadTodosForView, focusTarget, clearFocus } = useArchiveApp();
+  const { state, loadTodosForView, focusTarget, clearFocus } = useArchiveApp();
   const editor = useTodoEditor();
   const filter = useCalendarFilter();
   const { calendarOf, defaultId } = useUserCalendars();
@@ -31,20 +31,7 @@ export function CalendarDashboard({ ctl }: { ctl: CalendarController }) {
     [state.todos, filter, calendarOf],
   );
 
-  const commit = useCallback(
-    (c: TodoChange, a: Todo) => {
-      const dueChanged = (a.dueDate ?? null) !== c.dueDate;
-      if (dueChanged) updateTodo(a.id, { dateKey: c.dateKey, dueDate: c.dueDate });
-      else if (c.dateKey !== a.dateKey) moveTodo(a.id, c.dateKey);
-      if ((a.startTime ?? null) !== c.startTime || (a.endTime ?? null) !== c.endTime) setTodoTime(a.id, c.startTime, c.endTime);
-    },
-    [updateTodo, moveTodo, setTodoTime],
-  );
-  const drag = useCalendarDrag({
-    onCommit: commit,
-    onOpen: editor.openTodo,
-    onCreate: (r) => editor.createTodo(r),
-  });
+  const drag = useTodoDrag();
   const todos = useMemo(() => applyPreview(visible, drag.preview), [visible, drag.preview]);
 
   const retroDays = useMemo(

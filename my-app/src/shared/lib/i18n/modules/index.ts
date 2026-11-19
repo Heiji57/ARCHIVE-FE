@@ -9,4 +9,5 @@ export { retroI18n } from "./retro";
 export { settingsSheetI18n } from "./settings";
 export { shellI18n } from "./shell";
 export { todoEditorI18n } from "./todoEditor";
+export { todosI18n } from "./todos";
 export { topicI18n } from "./topic";

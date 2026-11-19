@@ -436,6 +436,9 @@
   font-style: normal;
   color: var(--ink4);
 }
+.sh-rp-tabs em.warn {
+  color: var(--rx-late);
+}
 .sh-rp-pane {
   display: flex;
   flex-direction: column;

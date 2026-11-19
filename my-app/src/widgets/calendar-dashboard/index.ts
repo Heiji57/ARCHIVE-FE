@@ -14,3 +14,21 @@ export { useCalendarFilter, passesFilter, calendarFilterActions, type CalendarFi
 export { useUserCalendars, type UserCalendarsApi } from "./model/userCalendars";
 export { weekDays, weekStartPreference, type WeekStart } from "./model/weekDays";
 export { fmtLongDay } from "./model/dateFormat";
+export { DaySchedule } from "./ui/DaySchedule";
+export { useTodoDrag } from "./model/useTodoDrag";
+export { applyPreview, type DragPreview } from "./model/useCalendarDrag";
+export { userCalendarActions, calendarColorVar } from "./model/userCalendars";
+export { STATUS_COLOR, STATUS_KEY, dueText } from "./model/eventLabels";
+export {
+  addDaysKey,
+  daysBetween,
+  dueInfo,
+  durationLabel,
+  formatClock,
+  formatRange,
+  isMultiDay,
+  isOnDay,
+  monthDay,
+  spanHeat,
+} from "./model/eventInfo";
+export { fmtYearMonth, fmtMonthDayShort, formatKey } from "./model/dateFormat";

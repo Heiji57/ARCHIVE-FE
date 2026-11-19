@@ -30,6 +30,8 @@ export interface RightPanelTabDef {
    * 탭마다 작은 컴포넌트 안에서 늘 같은 순서로 불리므로 안에서 훅을 써도 된다.
    */
   count?: () => number | null;
+  /** 숫자를 경고 색으로(예: 지난 마감이 있을 때). count 와 같은 컴포넌트 안에서 불린다. */
+  countWarn?: () => boolean;
   /** 패널 내용. 컴포넌트 안에서 불리므로 `() => <DayTab />` 처럼 컴포넌트를 돌려주는 것을 권한다. */
   render: () => ReactNode;
   /** 이 탭을 보일지. 없으면 늘 보인다. 훅을 쓰지 않는 순수 함수여야 한다. */

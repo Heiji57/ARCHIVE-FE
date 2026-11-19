@@ -1424,11 +1424,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       // 결과를 전역 state 에 저장하지 않고 직접 반환한다.
       // RetroEditor 가 로컬 useState 로 관리하므로, 다른 날짜 회고로 이동해도
       // 각 에디터 인스턴스(key=entry.id 로 재마운트)가 독립적인 커밋 목록을 가진다.
+      // 데모: 서버를 부르지 않고 데모 커밋(서버 없는 mock 빌드에서도 데모는 데모 커밋).
+      if (isDemoMode()) return demoCommitsOn(date);
       if (!USE_API) {
         return MOCK_COMMITS;
       }
-      // 데모: 서버를 부르지 않고 데모 커밋.
-      if (isDemoMode()) return demoCommitsOn(date);
       try {
         return await apiGetCommits(date);
       } catch {
