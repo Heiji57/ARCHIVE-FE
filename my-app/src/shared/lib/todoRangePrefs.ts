@@ -45,7 +45,9 @@ export function readTodoBoardRange(fallback: TodoBoardRange): TodoBoardRange {
       // 예전 값은 오늘 기준 앞뒤로 반씩 나눠 쓰던 합계 — 같은 구간이 되도록 나눈다.
       const total = Math.min(legacy, TODO_RANGE_MAX_DAYS * 2);
       const pastDays = Math.floor(total / 2);
-      return { pastDays: clampRangeDays(pastDays), futureDays: clampRangeDays(total - pastDays) };
+      const migrated = { pastDays: clampRangeDays(pastDays), futureDays: clampRangeDays(total - pastDays) };
+      writeTodoBoardRange(migrated);
+      return migrated;
     }
     return fallback;
   } catch {

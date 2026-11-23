@@ -9,7 +9,7 @@ import type {
 import type { SummaryKind } from "@/entities/summary/model/types";
 import type { Todo } from "@/entities/todo/model/types";
 import { createId } from "@/shared/lib/id";
-import { translate } from "@/shared/lib/i18n";
+import { translate, type TranslationKey } from "@/shared/lib/i18n";
 
 const KIND_TO_TYPE: Record<SummaryKind, RetrospectiveType> = {
   weekly: "weekly",
@@ -17,9 +17,15 @@ const KIND_TO_TYPE: Record<SummaryKind, RetrospectiveType> = {
   yearly: "yearly",
 };
 
+const KIND_LABEL_KEY: Record<SummaryKind, TranslationKey> = {
+  weekly: "summary.kind.weekly",
+  monthly: "summary.kind.monthly",
+  yearly: "summary.kind.yearly",
+};
+
 function summaryTitle(kind: SummaryKind, locale: Locale): string {
   return translate(locale, "summary.mock.title", {
-    kind: translate(locale, `summary.kind.${kind}`),
+    kind: translate(locale, KIND_LABEL_KEY[kind]),
   });
 }
 

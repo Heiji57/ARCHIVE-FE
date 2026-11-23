@@ -55,13 +55,18 @@ export function localizeDefaultTemplates(
   let changed = false;
   const next = templates.map((tpl) => {
     if (!tpl.isDefault) return tpl;
-    const key = CONTENT_KEY[tpl.retroType];
+    const contentKey = CONTENT_KEY[tpl.retroType];
+    const nameKey = NAME_KEY[tpl.retroType];
     const current = norm(tpl.content);
-    const untouched = Object.values(DICTIONARIES).some((dict) => norm(dict[key]) === current);
+    const contentUntouched = Object.values(DICTIONARIES).some((dict) => norm(dict[contentKey]) === current);
+    const nameUntouched = Object.values(DICTIONARIES).some((dict) => dict[nameKey] === tpl.name);
     const content = defaultTemplateContent(tpl.retroType, locale);
-    if (!untouched || tpl.content === content) return tpl;
+    const name = translate(locale, nameKey);
+    const contentChanged = contentUntouched && tpl.content !== content;
+    const nameChanged = nameUntouched && tpl.name !== name;
+    if (!contentChanged && !nameChanged) return tpl;
     changed = true;
-    return { ...tpl, content };
+    return { ...tpl, ...(contentChanged ? { content } : {}), ...(nameChanged ? { name } : {}) };
   });
   return changed ? next : templates;
 }

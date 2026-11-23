@@ -58,7 +58,8 @@ export function useSuggestions(open: boolean) {
     };
   }, [aiOn, open, visible, applied]);
 
-  const apply = useCallback((id: string) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const apply = useCallback((id: string, _actionCode: string) => {
     setApplied((prev) => new Set([...prev, id]));
   }, []);
 

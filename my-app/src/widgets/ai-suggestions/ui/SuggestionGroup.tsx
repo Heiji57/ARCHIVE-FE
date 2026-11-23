@@ -5,7 +5,7 @@ interface Props {
   kind: AiSuggestion["kind"];
   items: AiSuggestion[];
   applied: Set<string>;
-  onApply(id: string, actionIdx: number): void;
+  onApply(id: string, actionCode: string): void;
   onDismiss(id: string): void;
 }
 
@@ -31,12 +31,12 @@ export function SuggestionGroup({ kind, items, applied, onApply, onDismiss }: Pr
               <div className="asg-item-reason">{s.reason}</div>
               {!isApplied && (
                 <div className="asg-item-actions">
-                  {s.actions.map((a, i) => (
+                  {s.actions.map((a) => (
                     <button
-                      key={i}
+                      key={a.code}
                       type="button"
                       className="asg-action-btn"
-                      onClick={() => onApply(s.id, i)}
+                      onClick={() => onApply(s.id, a.code)}
                     >
                       {a.label}
                     </button>

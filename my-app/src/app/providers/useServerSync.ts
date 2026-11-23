@@ -108,6 +108,11 @@ export function useServerSync({ userId, todos, dispatch }: UseServerSyncArgs) {
   useEffect(() => {
     if (!USE_API || isDemoMode()) return;
 
+    const currentIds = new Set(todos.map((t) => t.id));
+    for (const id of prevStatusRef.current.keys()) {
+      if (!currentIds.has(id)) prevStatusRef.current.delete(id);
+    }
+
     const byDateKey = new Map<string, string[]>();
     for (const todo of todos) {
       const prevStatus = prevStatusRef.current.get(todo.id);

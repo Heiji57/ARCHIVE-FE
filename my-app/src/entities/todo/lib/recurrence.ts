@@ -170,6 +170,8 @@ export function formatRecurrenceRule(
           : t("todo.recurrence.rule.everyNYears", { n, date });
       break;
     }
+    default:
+      return dateKey;
   }
   return r.until ? t("todo.recurrence.rule.until", { rule: label, date: r.until }) : label;
 }

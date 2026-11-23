@@ -11,6 +11,8 @@ export const USE_API = import.meta.env.VITE_USE_API === "true";
 export const API_BASE_URL =
   (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "/api/v1";
 
+const _v2Derived = API_BASE_URL.replace(/\/v1\/?$/, "/v2");
+// Fallback only works when API_BASE_URL ends in /v1; otherwise set VITE_API_V2_BASE_URL explicitly.
 export const API_V2_BASE_URL =
   (import.meta.env.VITE_API_V2_BASE_URL as string | undefined) ??
-  API_BASE_URL.replace(/\/v1\/?$/, "/v2");
+  (_v2Derived !== API_BASE_URL ? _v2Derived : API_BASE_URL);
