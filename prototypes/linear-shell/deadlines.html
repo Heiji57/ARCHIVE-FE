@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>마감일 할 일 시안</title>
+<meta name="description" content="시작일과 마감일이 다른 할 일을 카드와 주간 막대로 보여 주는 다섯 가지 방식 비교.">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="shared/shared.css">
+<link rel="stylesheet" href="shared/planner.css">
+<style>
+  body{height:auto;min-height:100%}
+  .wrap{padding:28px 24px 64px;max-width:1280px}
+  h1{margin:0 0 6px;font-size:18px;font-weight:600;letter-spacing:-.2px}
+  .lead{margin:0 0 8px;color:var(--ink3);font-size:13px;max-width:80ch;line-height:1.6}
+  .key{display:flex;gap:14px;flex-wrap:wrap;margin:0 0 24px;font-size:12px;color:var(--ink3)}
+  .key span{display:inline-flex;align-items:center;gap:6px}
+  .key i{width:8px;height:8px;border-radius:2px}
+  .v{display:grid;grid-template-columns:200px 272px minmax(0,1fr);gap:24px;padding:22px 0;border-top:1px solid var(--line)}
+  .v.cur{opacity:.72}
+  .v h2{margin:0;font-size:14px;font-weight:600;display:flex;gap:8px;align-items:baseline}
+  .v h2 .n{font-family:var(--mono);color:var(--ink4);font-weight:400}
+  .v p{margin:6px 0 12px;font-size:12px;color:var(--ink3);line-height:1.6}
+  .v .go{display:block;font-size:12px;color:var(--primary-h);margin-top:4px}
+  .v .go:hover{text-decoration:underline}
+  .cards{display:flex;flex-direction:column;gap:6px}
+  .lab{font-size:12px;color:var(--ink4);margin:0 0 8px}
+  .wkx{border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--canvas)}
+  .wkx-h{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border-bottom:1px solid var(--line)}
+  .wkx-h span{padding:6px 0;text-align:center;font-size:12px;color:var(--ink3);border-left:1px solid var(--line)}
+  .wkx-h span:first-child{border-left:0}
+  .wkx-h span.today{color:var(--primary-h);font-weight:600}
+  .wkx-h b{display:block;font:500 13px var(--mono);color:var(--ink2)}
+  .wkx-h .today b{color:var(--primary-h)}
+  .wkx-b{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));grid-auto-flow:row dense;gap:4px 0;padding:8px 0;background-image:repeating-linear-gradient(90deg,transparent 0 calc(100%/7 - 1px),var(--line) calc(100%/7 - 1px) calc(100%/7))}
+  @media (max-width:1000px){.v{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>마감일 할 일 시안</h1>
+  <p class="lead">시작일과 마감일이 다른 할 일 다섯 개를 각 시안으로 보여 줍니다. 오늘은 11월 3일 화요일입니다. 바탕 색은 그대로 상태(대기 · 진행 · 완료)를 따르고, 마감이 가까우면 앰버, 지나면 빨강, 끝내면 초록이 덧붙습니다. 오른쪽 위 작은 리본은 캘린더 색입니다. "할 일 / 캘린더에서 보기"를 누르면 실제 페이지에 그 시안이 적용됩니다(월간 보기 포함).</p>
+  <div class="key"><span><i style="background:var(--ink3)"></i>진행 전</span><span><i style="background:var(--primary)"></i>진행 중</span><span><i style="background:var(--done)"></i>완료</span><span style="color:var(--ink4)">· 1 · 2 · 3 · 5번은 마감 2일 이내 <i style="background:var(--warn)"></i> / 지남 <i style="background:var(--danger)"></i> 강조색을 덧씀. 4번(열기)은 상태 3색만 씀.</span></div>
+  <div id="list"></div>
+</div>
+<dialog id="detail" aria-label="할 일 상세"></dialog>
+<script src="shared/shared.js"></script>
+<script src="shared/planner.js"></script>
+<script>
+  const A = ARC, P = PL;
+  const S = [
+    { id: 'x1', title: '온보딩 문서 개편', status: 'doing', date: '2026-11-01', until: '2026-11-06', tags: ['work'], cal: 'team' },
+    { id: 'x2', title: '릴리스 QA', status: 'todo', date: '2026-11-02', until: '2026-11-04', tags: ['work', '버그'], cal: 'team' },
+    { id: 'x3', title: '접근성 감사', status: 'doing', date: '2026-10-29', until: '2026-11-02', tags: ['side'], cal: 'me' },
+    { id: 'x4', title: '디자인 시스템 정리', status: 'done', date: '2026-10-31', until: '2026-11-05', tags: ['side'], cal: 'me' },
+    { id: 'x5', title: '리팩터링 스프린트', status: 'todo', date: '2026-11-04', until: '2026-11-07', tags: ['side', '리뷰'], cal: 'study' },
+  ];
+  const V = [
+    [0, '현재', '날짜 칸 막대(지난 날 채움) + 오른쪽 D-N. 막대는 끝에 "마감 · D-N" 깃발.'],
+    [1, '카운트다운', '카드 오른쪽 칸에 남은 날을 큰 숫자로. 몇 일 남았는지가 가장 먼저 읽힘. 막대는 끝 테두리와 D-N 굵게.'],
+    [2, '레일', '시작 점 ─ 오늘 선 ─ 마감 마름모를 한 줄로. 기간 속 현재 위치가 보임. 막대 대신 선과 끝점.'],
+    [3, '티켓', '절취선 뒤 "마감 스텁"에 날짜와 요일. 마감일 자체가 카드의 이름표가 됨.'],
+    [4, '열기 · 기본', '색은 상태 3가지(진행 전 · 진행 중 · 완료)만. 마감이 가까울수록 같은 색이 오른쪽 끝에서 진해지고, 마감이 지나면 빗금. 오늘 위치에 가는 선.'],
+    [5, '마일스톤', '맨 위 줄이 "◆ 11/6 금 마감". 아래는 "6일 중 4일째". 시작 전 할 일은 점선 테두리.'],
+  ];
+  const days = [...Array(7)].map((_, i) => A.add('2026-11-01', i));
+  function render() {
+    const keep = P.dlV;
+    document.getElementById('list').innerHTML = V.map(([v, name, desc]) => {
+      P.dlV = v;
+      const cards = S.map((t) => (v ? P.dlCard(t, v) : P.card(t, 6))).join('');
+      const bars = S.map((t) => (v ? P.dlBar(t, days, v) : P.spanBar(t, days))).join('');
+      return `<section class="v ${v === 0 ? 'cur' : ''}" aria-label="${v}. ${name}">
+        <div><h2><span class="n">${v}</span>${name}</h2><p>${desc}</p>
+          <a class="go" href="d-todos.html?card=6&dl=${v}">할 일에서 보기 →</a><a class="go" href="d-calendar.html?dl=${v}">캘린더에서 보기 →</a><a class="go" href="d-calendar.html?view=month&dl=${v}">월간에서 보기 →</a></div>
+        <div><p class="lab">할 일 카드</p><div class="cards vl v6">${cards}</div></div>
+        <div><p class="lab">주간 캘린더 종일 줄</p><div class="wkx"><div class="wkx-h">${days.map((d) => { const x = A.s2d(d); return `<span class="${d === A.TODAY ? 'today' : ''}">${A.DOW[x.getDay()]}<b>${x.getDate()}</b></span>`; }).join('')}</div>
+          <div class="wkx-b">${bars}</div></div></div></section>`;
+    }).join('');
+    P.dlV = keep;
+  }
+  A.init(render);
+</script>
+</body>
+</html>

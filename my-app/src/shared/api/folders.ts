@@ -1,6 +1,6 @@
 /** 회고록 폴더 도메인 API (중첩 가능한 폴더 정리). */
 import type { RetrospectiveType } from "@/entities/entry/model/types";
-import type { Folder } from "@/entities/folder/model/types";
+import type { Folder, FolderSummary } from "@/entities/folder/model/types";
 import { request } from "./client";
 import { toEntry, toFolder } from "./mappers";
 import type { components } from "./schema";
@@ -8,6 +8,7 @@ import type { EntryPage } from "./entries";
 
 type FolderResponse = components["schemas"]["FolderResponse"];
 type FolderContentsResponse = components["schemas"]["FolderContentsResponse"];
+type FolderListResponse = components["schemas"]["FolderListResponse"];
 
 export interface FolderContents extends Pick<EntryPage, "total" | "page" | "size"> {
   folders: Folder[];
@@ -30,8 +31,32 @@ export async function apiCreateFolder(input: {
 }
 
 /**
+ * GET /folders — 사용자의 전체 폴더를 평평한 배열로(페이지네이션 없음).
+ *
+ * 용도는 id → 이름 → 조상 사슬 해결이다. 검색처럼 폴더를 가로지르는 목록에서
+ * 각 결과의 소속 경로를 조립하려면 열어본 적 없는 폴더의 이름이 필요한데,
+ * GET /folders/contents 는 직계 하위만 주므로 조상을 알 수 없다.
+ * 개수·타임스탬프는 담기지 않는다(FolderSummary).
+ */
+export async function apiListFolders(): Promise<FolderSummary[]> {
+  const res = await request<FolderListResponse>("/folders");
+  return Array.isArray(res?.folders)
+    ? res.folders.map((f) => ({
+        id: f.id,
+        name: f.name,
+        parentFolderId: f.parentFolderId ?? null,
+      }))
+    : [];
+}
+
+/**
  * GET /folders/contents — 폴더 열람(직계 하위 폴더 + 직계 회고록).
  * folderId 생략 시 최상위. retroType 생략 시 4개 타입을 합친 "전체" 뷰.
+ *
+ * page/size 는 폴더와 회고록을 합친 하나의 시퀀스에 적용된다 —
+ * `[폴더: name ASC] ++ [회고록: dateKey DESC]` 에서 폴더 블록이 먼저 소진된 뒤
+ * 회고록이 이어진다. 따라서 folders 는 "이 페이지 구간의 조각"이지 직계 하위
+ * 폴더 전부가 아니고, total 은 폴더 총개수 + 회고록 총건수다.
  */
 export async function apiGetFolderContents(params: {
   folderId?: string;

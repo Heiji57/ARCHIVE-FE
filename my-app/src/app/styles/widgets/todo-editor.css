@@ -1,0 +1,810 @@
+/* ------------------------------------------------------------------
+   할 일 모달(26번)과 새 할 일 창(3번). 접두 te-.
+   시안: prototypes/linear-shell/shared/todomodal.css(.tm), lab4.css(.z-*, .zm, .z26), newtodo.css(.nw, .nw3).
+   색과 글꼴은 tokens/redesign.css 토큰만 쓴다.
+   ------------------------------------------------------------------ */
+
+/* ---------- 창 ---------- */
+.te-dlg {
+  width: min(640px, calc(100vw - 32px));
+  max-width: none;
+  max-height: none;
+  padding: 0;
+  border: 1px solid var(--line2);
+  border-radius: 12px;
+  background: var(--s2);
+  color: var(--ink);
+  box-shadow: var(--nw-sh);
+  font: 400 14px/1.45 var(--font);
+  letter-spacing: normal;
+  overflow: visible;
+}
+.te-dlg::backdrop {
+  background: var(--tm-scrim);
+}
+:where(.te-dlg) :where(button) {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+:where(.te-dlg) :where(button:disabled) {
+  cursor: not-allowed;
+}
+.te-dlg em {
+  font-style: normal;
+}
+.te-dlg :is(button, input, textarea):focus-visible {
+  outline: 2px solid var(--primary-h);
+  outline-offset: 1px;
+}
+
+/* ---------- 26 할 일 모달 ---------- */
+.tm {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: min(780px, calc(100vh - 64px));
+  padding: 24px;
+  overflow: auto;
+  color: var(--ink);
+}
+.te-missing {
+  align-items: flex-start;
+}
+.te-missing p {
+  margin: 0;
+  color: var(--ink3);
+}
+.tm-ib {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--r);
+  color: var(--ink3);
+}
+.tm-ib:hover {
+  background: var(--s3);
+  color: var(--ink);
+}
+.tm-dot {
+  display: inline-block;
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  background: var(--cc);
+}
+.z26-doc {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+.z26-top {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 28px;
+  margin: -4px -4px -4px 0;
+}
+.z26-crumb {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink3);
+}
+.te-cal {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.z-rb {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--s3);
+  font-size: 12px;
+  color: var(--ink2);
+}
+.z-del {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 8px;
+  border-radius: var(--r);
+  color: var(--ink3);
+}
+.z-del:hover {
+  background: var(--tm-danger-bg);
+  color: var(--ink);
+}
+.z-title {
+  width: 100%;
+  min-width: 0;
+  padding: 4px 0;
+  border: 0;
+  border-bottom: 1px solid transparent;
+  background: none;
+  font: 600 16px/1.35 var(--font);
+  color: var(--ink);
+}
+.z-title.big {
+  font-size: 20px;
+  letter-spacing: -0.2px;
+}
+.z-title:hover {
+  border-bottom-color: var(--line2);
+}
+.te-dlg .z-title:focus-visible {
+  outline: none;
+  border-bottom-color: var(--primary-h);
+}
+.z26-p {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+.z26-r {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+}
+.z26-k {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-left: 4px;
+  font-size: 13px;
+  color: var(--ink3);
+}
+.z26-k svg {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  color: var(--ink4);
+}
+.z26-k .status-icon {
+  color: var(--ink4);
+}
+.z26-more {
+  align-self: flex-start;
+  height: 28px;
+  margin-top: 4px;
+  padding: 0 8px;
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--ink3);
+}
+.z26-more:hover {
+  background: var(--s3);
+  color: var(--ink);
+}
+.z26-body .z-desc {
+  display: block;
+  width: 100%;
+  min-height: 200px;
+  padding: 8px 4px;
+  border: 1px solid transparent;
+  border-radius: var(--r2);
+  background: none;
+  font: 14px/1.7 var(--font);
+  color: var(--ink);
+  resize: none;
+}
+.z26-body .z-desc:hover {
+  border-color: var(--line);
+}
+.z26-body .z-desc::placeholder {
+  color: var(--ink4);
+}
+
+/* 값 단추와 찾기 메뉴 */
+.zm-a {
+  position: relative;
+  display: inline-flex;
+  min-width: 0;
+  max-width: 100%;
+}
+.zpb {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 30px;
+  padding: 0 8px;
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--ink);
+  text-align: left;
+}
+.zpb > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.zpb em {
+  margin-left: 6px;
+  font-size: 12px;
+  color: var(--ink3);
+}
+.te-dlg em.soon {
+  color: var(--warn);
+}
+.te-dlg em.late {
+  color: var(--danger);
+}
+.zpb.emp > span {
+  color: var(--ink4);
+}
+.zpb:hover,
+.zpb[aria-expanded="true"] {
+  background: var(--s3);
+}
+.zm {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  width: 280px;
+  max-width: calc(100vw - 48px);
+  border: 1px solid var(--line2);
+  border-radius: var(--r2);
+  background: var(--s2);
+  box-shadow: 0 16px 32px var(--z-scrim);
+}
+.zm.wide {
+  width: 320px;
+  padding: 10px;
+  gap: 8px;
+}
+.zm.wide .z-cal,
+.zm.wide .z-cx {
+  border: 0;
+  padding: 0;
+  background: none;
+}
+.zm-in {
+  width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: var(--r2) var(--r2) 0 0;
+  background: none;
+  font: 14px var(--font);
+  color: var(--ink);
+}
+.zm-in::placeholder {
+  color: var(--ink4);
+}
+.te-dlg .zm-in:focus-visible {
+  outline: none;
+  box-shadow: inset 0 -2px 0 var(--primary-h);
+}
+.zm-l {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  max-height: 260px;
+  padding: 4px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.zm-l button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  padding: 0 8px;
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--ink2);
+  text-align: left;
+}
+.zm-l button > span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+.zm-l button > span em {
+  font-size: 12px;
+  color: var(--ink4);
+}
+.zm-l button svg {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  color: var(--ink3);
+}
+.zm-l button.on {
+  color: var(--ink);
+}
+.zm-l button.on > svg {
+  color: var(--primary-h);
+}
+.zm-l button[aria-selected="true"],
+.zm-l button:hover {
+  background: var(--s4);
+  color: var(--ink);
+}
+.zm-l kbd {
+  min-width: 18px;
+  padding: 0 4px;
+  border: 1px solid var(--line2);
+  border-radius: 4px;
+  font: 12px/16px var(--mono);
+  color: var(--ink3);
+  text-align: center;
+}
+.zm-e,
+.zm-f {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink3);
+}
+.zm-e {
+  padding: 10px;
+}
+.zm-f {
+  padding: 6px 12px 8px;
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+  color: var(--ink4);
+}
+.zm-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  align-self: flex-start;
+  height: 26px;
+  padding: 0 6px 0 2px;
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--ink3);
+}
+.zm-back svg {
+  width: 14px;
+  height: 14px;
+}
+.zm-back:hover {
+  background: var(--s3);
+  color: var(--ink);
+}
+
+/* 달력 */
+.z-cal {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--line2);
+  border-radius: var(--r2);
+  background: var(--s1);
+}
+.z-mh {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.z-mh b {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.z-g {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 2px;
+}
+.z-w {
+  padding: 4px 0;
+  text-align: center;
+  font-size: 12px;
+  color: var(--ink4);
+}
+.z-g button {
+  height: 32px;
+  border-radius: 6px;
+  font: 500 13px var(--mono);
+  color: var(--ink2);
+}
+.z-g button:hover:not(:disabled) {
+  background: var(--s3);
+  color: var(--ink);
+}
+.z-g button.today {
+  color: var(--primary-h);
+}
+.z-g button[aria-pressed="true"]:not(:disabled) {
+  background: var(--primary);
+  color: var(--ink);
+}
+.z-g button:disabled {
+  color: var(--line2);
+}
+.z-ib {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  color: var(--ink3);
+}
+.z-ib svg {
+  width: 14px;
+  height: 14px;
+}
+.z-ib:hover:not(:disabled) {
+  background: var(--s3);
+  color: var(--ink);
+}
+.z-ib:disabled {
+  color: var(--ink4);
+}
+
+/* 맞춤 반복 */
+.z-cx {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--line2);
+  border-radius: var(--r2);
+  background: var(--s1);
+}
+.z-cxh {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.z-cr {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.z-lb {
+  width: 36px;
+  font-size: 13px;
+  color: var(--ink3);
+}
+.z-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--line2);
+  border-radius: var(--r);
+}
+.z-step b {
+  min-width: 24px;
+  text-align: center;
+  font: 500 13px var(--mono);
+  color: var(--ink);
+}
+.z-seg {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--line2);
+  border-radius: var(--r);
+  background: var(--canvas);
+}
+.z-seg button {
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--ink3);
+  white-space: nowrap;
+}
+.z-seg button:hover {
+  color: var(--ink);
+}
+.z-seg button[aria-checked="true"] {
+  background: var(--s4);
+  color: var(--ink);
+}
+.z-mu {
+  font-size: 13px;
+  color: var(--ink3);
+}
+.z-wd {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.z-wd button {
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--line2);
+  border-radius: 50%;
+  font-size: 13px;
+  color: var(--ink3);
+}
+.z-wd button:hover {
+  color: var(--ink);
+  border-color: var(--ink4);
+}
+.z-wd button[aria-pressed="true"] {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: var(--ink);
+}
+.z-hint {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ink3);
+}
+.z-pv {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  border-radius: var(--r);
+  background: var(--s3);
+}
+.z-pv b {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+}
+.z-pv span {
+  font-size: 12px;
+  color: var(--ink3);
+}
+.z-cf {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.z-b {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--line2);
+  border-radius: var(--r);
+  font-size: 13px;
+  color: var(--ink2);
+  white-space: nowrap;
+}
+.z-b:hover {
+  background: var(--s3);
+  color: var(--ink);
+}
+.z-b.p {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: var(--ink);
+}
+.z-b.p:hover {
+  background: var(--primary-h);
+}
+.z-b.danger {
+  border-color: var(--danger);
+  color: var(--ink);
+}
+.z-b.danger:hover {
+  background: var(--z-danger-bg);
+}
+.z-lnk {
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-size: 13px;
+  color: var(--ink3);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.z-lnk:hover {
+  color: var(--ink);
+}
+
+/* 범위 묻기 */
+.z-ask {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--z-scrim);
+}
+.z-ab {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(340px, 100%);
+  padding: 16px;
+  border: 1px solid var(--line2);
+  border-radius: 12px;
+  background: var(--s2);
+}
+.z-ab p {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.z-ab small {
+  font-size: 13px;
+  color: var(--warn);
+}
+.z-ao {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.z-ao .z-b {
+  justify-content: flex-start;
+  height: 36px;
+}
+.z-ab .z-lnk {
+  align-self: center;
+}
+
+/* ---------- 3 새 할 일 창 ---------- */
+.nw {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px;
+}
+.nw3-top {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 28px;
+  margin: -4px -4px -4px 0;
+}
+.nw3-crumb {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink3);
+}
+.nw3-crumb em {
+  padding: 2px 6px;
+  border: 1px solid var(--line2);
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--ink2);
+}
+.nw-title {
+  width: 100%;
+  min-width: 0;
+  padding: 4px 0 8px;
+  border: 0;
+  border-bottom: 1px solid transparent;
+  background: none;
+  font: 600 20px/1.4 var(--font);
+  color: var(--ink);
+}
+.nw-title::placeholder {
+  color: var(--ink4);
+  font-weight: 500;
+}
+.nw-title:hover {
+  border-bottom-color: var(--line2);
+}
+.te-dlg .nw-title:focus-visible {
+  outline: none;
+  border-bottom-color: var(--primary-h);
+}
+.nw-title.shake {
+  animation: te-shake 0.3s;
+}
+@keyframes te-shake {
+  25% {
+    transform: translateX(-4px);
+  }
+  75% {
+    transform: translateX(4px);
+  }
+}
+.nw3 .zpb {
+  font-size: 14px;
+}
+.nw3-desc {
+  width: 100%;
+  min-height: 96px;
+  padding: 4px;
+  border: 0;
+  border-radius: var(--r);
+  background: none;
+  font: 15px/1.7 var(--font);
+  color: var(--ink);
+  resize: vertical;
+}
+.nw3-desc::placeholder {
+  color: var(--ink4);
+}
+.te-dlg .nw3-desc:focus-visible {
+  outline: 1px solid var(--line2);
+}
+.nw-f {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+.nw-hint {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink3);
+  word-break: keep-all;
+}
+.nw-hint b {
+  font-weight: 500;
+  color: var(--warn);
+}
+
+/* ---------- 좁은 화면 ---------- */
+@media (max-width: 720px) {
+  .z26-r {
+    grid-template-columns: 96px minmax(0, 1fr);
+    position: relative;
+  }
+  .zm-a {
+    position: static;
+  }
+  .zm,
+  .zm.wide {
+    left: 0;
+    right: 0;
+    width: auto;
+    max-width: none;
+  }
+  .tm,
+  .nw {
+    padding: 20px 16px;
+  }
+  .te-kbd {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nw-title.shake {
+    animation: none;
+  }
+}

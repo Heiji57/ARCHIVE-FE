@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>회고 보기 모드</title>
+<meta name="description" content="회고 목록을 보는 방식 다섯 가지를 지금 카드 보기와 비교한다.">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="shared/shared.css">
+<style>
+  body{height:auto;min-height:100%}
+  .wrap{padding:28px 24px 64px;max-width:1480px}
+  h1{margin:0 0 6px;font-size:18px;font-weight:600;letter-spacing:-.2px}
+  .lead{margin:0 0 20px;color:var(--ink3);font-size:13px;max-width:84ch;line-height:1.6}
+  .tabs{position:sticky;top:0;z-index:2;display:flex;gap:4px;flex-wrap:wrap;padding:10px 0;background:var(--canvas);border-bottom:1px solid var(--line);margin-bottom:20px}
+  .tabs a{padding:5px 10px;border-radius:6px;font-size:13px;color:var(--ink3)}
+  .tabs a:hover{background:var(--s3);color:var(--ink)}
+  .tabs a b{font-family:var(--mono);color:var(--ink4);margin-right:6px;font-weight:400}
+  section{margin:0 0 36px;scroll-margin-top:60px}
+  .hd{display:flex;align-items:baseline;gap:12px;margin:0 0 8px}
+  h2{margin:0;font-size:14px;font-weight:600}
+  h2 span{font-family:var(--mono);color:var(--ink4);font-weight:400;margin-right:8px}
+  .hd p{margin:0;flex:1;font-size:12px;color:var(--ink3);line-height:1.5}
+  .hd a{font-size:12px;color:var(--primary-h);white-space:nowrap}
+  .hd a:hover{text-decoration:underline}
+  iframe{display:block;width:100%;height:780px;border:1px solid var(--line);border-radius:10px;background:var(--canvas)}
+  section.cur{opacity:.8}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>회고 보기 모드</h1>
+  <p class="lead">회고 화면 오른쪽 위 "보기" 메뉴에서 카드와 좌우로 넘기기를 바꿀 수 있습니다. 좌우로 넘기기에서는 기간 필터가 거르기 대신 그 기간으로 이동합니다.</p>
+  <nav class="tabs" id="tabs"></nav>
+  <div id="list"></div>
+</div>
+<script>
+  const V = [
+    ['grid', 0, '카드', '날짜 잉크 카드를 월별로 묶은 그리드. 찾고 고를 때.'],
+    ['rail', 1, '좌우로 넘기기', '쓴 회고만 한 줄로 이어 놓고 좌우로 넘겨 읽음. 가운데 카드가 크게, 양옆은 작고 흐리게. 아래 시간 막대로 바로 이동, ← → 키 · 휠 · 스와이프로 한 장씩. 처음엔 가장 최근 회고에 맞춰지고 오른쪽 끝은 새 회고 쓰기.'],
+  ];
+  document.getElementById('tabs').innerHTML = V.map(([k, v, n]) => `<a href="#${k}"><b>${v}</b>${n}</a>`).join('');
+  document.getElementById('list').innerHTML = V.map(([k, v, n, d]) => `<section id="${k}" class="${v === 0 ? 'cur' : ''}">
+    <div class="hd"><h2><span>${v}</span>${n}</h2><p>${d}</p><a href="d-retro2.html?rl=1&vm=${k}">이걸로 보기 →</a></div>
+    <iframe src="d-retro2.html?rl=1&vm=${k}" title="${v}. ${n}" loading="lazy"></iframe></section>`).join('');
+</script>
+</body>
+</html>

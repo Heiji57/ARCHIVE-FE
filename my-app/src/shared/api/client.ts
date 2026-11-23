@@ -25,6 +25,8 @@ export interface RequestOptions {
   retryOn401?: boolean;
   /** 추가 쿼리스트링 */
   query?: Record<string, string | number | boolean | undefined>;
+  /** base URL override (기본 API_BASE_URL). auth v2 엔드포인트는 API_V2_BASE_URL 을 넘긴다. */
+  baseUrl?: string;
 }
 
 // ─── 세션 무효화(탈취 감지) 글로벌 핸들러 ────────────────────────────────────
@@ -39,8 +41,12 @@ export function setSessionInvalidatedHandler(
   onSessionInvalidated = fn;
 }
 
-function buildUrl(path: string, query?: RequestOptions["query"]): string {
-  const url = `${API_BASE_URL}${path}`;
+function buildUrl(
+  path: string,
+  query?: RequestOptions["query"],
+  baseUrl: string = API_BASE_URL,
+): string {
+  const url = `${baseUrl}${path}`;
   if (!query) return url;
   const params = new URLSearchParams();
   for (const [k, v] of Object.entries(query)) {
@@ -51,14 +57,14 @@ function buildUrl(path: string, query?: RequestOptions["query"]): string {
 }
 
 async function rawRequest<T>(path: string, opts: RequestOptions): Promise<T> {
-  const { method = "GET", body, auth = true, query } = opts;
+  const { method = "GET", body, auth = true, query, baseUrl } = opts;
 
   const headers: Record<string, string> = {};
   if (body !== undefined) headers["Content-Type"] = "application/json";
   const token = getAccessToken();
   if (auth && token) headers["Authorization"] = `Bearer ${token}`;
 
-  const res = await fetch(buildUrl(path, query), {
+  const res = await fetch(buildUrl(path, query, baseUrl), {
     method,
     headers,
     credentials: "include",
@@ -76,10 +82,12 @@ async function rawRequest<T>(path: string, opts: RequestOptions): Promise<T> {
   }
 
   // 비-OK 응답의 상세를 콘솔에 출력해 디버깅을 돕는다.
+  // X-Request-ID 는 백엔드 로그와 대조하기 위한 값(문의 대응용).
   if (!res.ok) {
-     
+    const requestId = res.headers.get("X-Request-ID");
     console.error(
-      `[ARCHIVE API] ${res.status} ${res.statusText} — ${method} ${path}`,
+      `[ARCHIVE API] ${res.status} ${res.statusText} — ${method} ${path}` +
+        (requestId ? ` (request-id: ${requestId})` : ""),
       json ?? text,
     );
   }

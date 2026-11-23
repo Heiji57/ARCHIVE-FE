@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ARCHIVE 시안 C · 퀵 캡처 + 주간</title>
+<meta name="description" content="상단 퀵 캡처와 커맨드 팔레트 중심, 주간 그리드에 계획과 실제 활동을 겹쳐 보기">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="shared/shared.css">
+<style>
+  .app{display:grid;grid-template-columns:56px minmax(0,1fr);grid-template-rows:auto 1fr;height:100vh}
+  .ir{grid-row:1/3;background:var(--s1);border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 0}
+  .ir .lg{width:24px;height:24px;border-radius:7px;background:var(--primary);margin-bottom:10px}
+  .ir a{width:36px;height:36px;display:grid;place-items:center;border-radius:var(--r2);color:var(--ink3)}
+  .ir a:hover{background:var(--s3);color:var(--ink)}
+  .ir a[aria-current=page]{background:var(--s4);color:var(--ink);box-shadow:inset 0 0 0 1px var(--line2)}
+  .ir .sp{flex:1}
+  .ir .gh{position:static;border:0;padding:0;background:none;width:8px;height:8px;border-radius:50%;background:var(--done)}
+  .top{display:grid;grid-template-columns:1fr minmax(280px,560px) 1fr;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--line)}
+  .top .cap{height:38px;font-size:14px}
+  .top .l{display:flex;align-items:center;gap:8px;min-width:0}
+  .top .l h1{margin:0;font-size:16px;font-weight:600;letter-spacing:-.2px;white-space:nowrap}
+  .top .r{display:flex;justify-content:flex-end;gap:8px;align-items:center}
+  main{display:flex;flex-direction:column;min-width:0;min-height:0;position:relative}
+  .strip{display:flex;gap:16px;align-items:center;padding:8px 16px;border-bottom:1px solid var(--line);font-size:12px;color:var(--ink3);flex-wrap:wrap}
+  .strip b{color:var(--ink);font-family:var(--mono);font-weight:600}
+  .legend{display:inline-flex;gap:6px;align-items:center}
+  .legend i{width:14px;height:10px;border-radius:3px;display:inline-block}
+  .legend .p{background:var(--s3);border:1px solid var(--line2);border-left:2px solid var(--warn)}
+  .legend .g{border:1px dashed var(--line2)}
+  .scroll{flex:1;overflow:auto;min-height:0}
+  .drawer{position:absolute;right:0;top:0;bottom:0;width:360px;max-width:100%;background:var(--s1);border-left:1px solid var(--line2);box-shadow:-8px 0 24px rgba(0,0,0,.5);overflow:auto;z-index:10}
+  @media (max-width:760px){.app{grid-template-columns:1fr}.ir{display:none}.top{grid-template-columns:1fr}.top .l,.top .r{display:none}.wk{min-width:760px}}
+</style>
+</head>
+<body>
+<div class="app">
+  <nav class="ir" aria-label="주 메뉴">
+    <div class="lg" title="A.R.C.H.I.V.E"></div>
+    <a href="#" aria-label="대시보드" title="대시보드"><i data-ico="dash"></i></a>
+    <a href="#" aria-current="page" aria-label="캘린더" title="캘린더"><i data-ico="cal"></i></a>
+    <a href="#" aria-label="할 일" title="할 일"><i data-ico="todo"></i></a>
+    <a href="#" aria-label="회고" title="회고"><i data-ico="retro"></i></a>
+    <span class="sp"></span>
+    <a href="#" aria-label="설정" title="설정"><i data-ico="set"></i></a>
+    <span class="gh" title="GitHub 3개 연결"></span>
+  </nav>
+  <header class="top">
+    <div class="l"><h1 id="ttl"></h1><button class="ibtn" data-nav="-1" aria-label="이전"><i data-ico="l"></i></button><button class="btn" data-nav="today">오늘</button><button class="ibtn" data-nav="1" aria-label="다음"><i data-ico="r"></i></button></div>
+    <form class="cap" data-capform><i data-ico="plus"></i><input data-capture placeholder="내일 3시 PR 리뷰 #work  — 날짜·시간·태그를 알아서 읽어요 (C)" aria-label="퀵 캡처"><span class="kbd">⏎</span></form>
+    <div class="r"><div class="seg" role="group" aria-label="보기"><button data-view="day">일</button><button data-view="week">주</button><button data-view="month">월</button></div><button class="btn" data-act="palette"><i data-ico="search"></i><span class="kbd">Ctrl K</span></button></div>
+  </header>
+  <main>
+    <div class="strip" id="strip"></div>
+    <div class="scroll" id="view"></div>
+    <div id="close"></div>
+    <aside class="drawer" id="drawer" aria-label="작업 상세" hidden></aside>
+  </main>
+</div>
+<script src="shared/shared.js"></script>
+<script>
+  const $ = (q) => document.querySelector(q);
+  function render() {
+    const A = ARC, s = A.s; if (!s.cInit) { s.view = new URLSearchParams(location.search).get('view') || 'week'; s.cInit = 1; }
+    $('#ttl').textContent = A.title();
+    document.querySelectorAll('[data-view]').forEach((b) => b.setAttribute('aria-pressed', b.dataset.view === s.view));
+    const days = s.view === 'week' ? [...Array(7)].map((_, i) => A.add(A.weekStart(s.date), i)) : [s.date];
+    const tot = days.reduce((a, d) => { const x = A.stats(d); a.plan += x.plan; a.c += x.commits; a.n += x.n; a.done += x.done; return a; }, { plan: 0, c: 0, n: 0, done: 0 });
+    $('#strip').innerHTML = `<span>계획 <b>${tot.plan.toFixed(1)}h</b></span><span>완료 <b>${tot.done}/${tot.n}</b></span><span>커밋 <b>${tot.c}</b></span>
+      <span style="flex:1"></span><span class="legend"><i class="p"></i>계획</span><span class="legend"><i class="g"></i>실제 활동</span>
+      <button class="btn" data-act="ghost" aria-pressed="${s.ghost}" style="height:24px">활동 ${s.ghost ? '켬' : '끔'} (G)</button>`;
+    const v = $('#view'), top = v.scrollTop; v.innerHTML = A.viewHTML(true);
+    v.scrollTop = top || (s.view !== 'month' && !v.dataset.i ? (9 - A.H0) * A.HH : 0); v.dataset.i = 1;
+    $('#close').innerHTML = s.view === 'day' ? A.closeBarHTML() : `<div class="closebar"><span>선택한 날(${A.label(s.date)})을 정리하고 회고로 남겨요</span><span style="flex:1"></span><button class="btn btn-p" data-act="close-day">${A.ico.sparkle}하루 닫기 · 회고 초안</button></div>`;
+    const t = A.byId(s.sel), d = $('#drawer'); d.hidden = !t; d.innerHTML = A.panelHTML(t);
+  }
+  ARC.init(render);
+</script>
+</body>
+</html>

@@ -1,0 +1,1301 @@
+/* ------------------------------------------------------------------
+   리디자인 앱 셸 (Task 1). 시안: prototypes/linear-shell/shared/
+   planner.css(.app .side .top .strip .rp), usermenu.css, logo.css, rest.css(알림, 검색),
+   settings.css(sx-dlg), rpanel.css(rx-t6). 색과 글꼴은 tokens/redesign.css 토큰만.
+   접두: sh- 셸, um- 사용자 메뉴, nt- 알림, cp- 명령 팔레트, ss- 설정 시트, te- 할 일 편집 창.
+   ------------------------------------------------------------------ */
+
+/* ---------- 데모 안내 줄 (rest.css rs-bar) ---------- */
+:root:has(.sh-demo) {
+  --sh-demo-h: 32px;
+}
+.sh-demo {
+  position: fixed;
+  z-index: 80;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 32px;
+  padding: 0 12px;
+  font: 400 13px/1.45 var(--font);
+  letter-spacing: normal;
+  color: var(--ink);
+  background: var(--s4);
+  border-bottom: 1px solid var(--line2);
+  white-space: nowrap;
+  overflow: hidden;
+}
+.sh-demo span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sh-demo a {
+  flex: none;
+  color: var(--primary-h);
+  font-weight: 600;
+}
+
+/* ---------- 바탕 배치 ---------- */
+.sh-app {
+  --sh-side: 232px;
+  --sh-rp: 320px;
+  --sh-strip: 44px;
+  display: grid;
+  grid-template-columns: var(--sh-side) minmax(0, 1fr);
+  grid-template-rows: 48px minmax(0, 1fr);
+  height: calc(100vh - var(--sh-demo-h, 0px));
+  height: calc(100dvh - var(--sh-demo-h, 0px));
+  margin-top: var(--sh-demo-h, 0px);
+  background: var(--canvas);
+  color: var(--ink);
+}
+.sh-app[data-rail] {
+  grid-template-columns: var(--sh-side) minmax(0, 1fr) auto var(--sh-strip);
+}
+.sh-app[data-collapsed] {
+  --sh-side: 52px;
+}
+
+.sh-app :is(.sh-side, .sh-top, .sh-strip, .sh-rp) {
+  font: 400 14px/1.45 var(--font);
+  letter-spacing: normal;
+}
+
+.sh-main {
+  grid-column: 2;
+  grid-row: 2;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.sh-grow {
+  flex: 1;
+}
+
+/* 공통 버튼 */
+.sh-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--line2);
+  border-radius: var(--r);
+  color: var(--ink2);
+  background: var(--s1);
+  font-size: 13px;
+  white-space: nowrap;
+  transition: background 0.12s, border-color 0.12s;
+}
+.sh-btn:hover {
+  background: var(--s3);
+  color: var(--ink);
+}
+.sh-btn-p {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--ink);
+}
+.sh-btn-p:hover {
+  background: var(--primary-h);
+  border-color: var(--primary-h);
+  color: var(--ink);
+}
+.sh-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.sh-ibtn {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--r);
+  color: var(--ink3);
+  flex: none;
+}
+.sh-ibtn:hover {
+  background: var(--s3);
+  color: var(--ink);
+}
+.sh-kbd {
+  font: 500 12px/1 var(--mono);
+  color: var(--ink3);
+  border: 1px solid var(--line2);
+  border-radius: 4px;
+  padding: 3px 5px;
+  background: var(--s1);
+}
+.sh-av {
+  width: 24px;
+  height: 24px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--s4);
+  border: 1px solid var(--line2);
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  color: var(--ink);
+}
+.sh-app :is(button, a):focus-visible,
+.sh-btn:focus-visible {
+  outline: 2px solid var(--primary-h);
+  outline-offset: 1px;
+}
+
+/* ---------- 사이드바 ---------- */
+.sh-side {
+  grid-column: 1;
+  grid-row: 1 / 3;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 10px 12px 0;
+  overflow: auto;
+  background: var(--s1);
+  border-right: 1px solid var(--line);
+}
+.sh-ws {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 28px;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--ink);
+  flex: none;
+}
+.sh-ws-m {
+  color: var(--ink);
+  flex: none;
+}
+.sh-ws-w {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sh-ws-c {
+  margin-left: auto;
+  width: 24px;
+  height: 24px;
+}
+.sh-side-in {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 0;
+}
+.sh-foot {
+  margin-top: auto;
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  padding: 8px 0 10px;
+  border-top: 1px solid var(--line);
+  background: var(--s1);
+}
+
+/* 접힌 레일 */
+.sh-rl {
+  display: none;
+}
+.sh-app[data-collapsed] .sh-side {
+  padding: 10px 0;
+}
+.sh-app[data-collapsed] .sh-side > :not(.sh-rl) {
+  display: none;
+}
+.sh-app[data-collapsed] .sh-rl {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  height: 100%;
+}
+.sh-rl-ws {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  color: var(--ink);
+}
+.sh-rl-ws:hover {
+  background: var(--s3);
+}
+.sh-av-btn {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r2);
+}
+.sh-av-btn:hover,
+.sh-av-btn[aria-expanded="true"] {
+  background: var(--s3);
+}
+
+/* ---------- 상단 막대 ---------- */
+.sh-top {
+  grid-column: 2 / -1;
+  grid-row: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--line);
+  background: var(--canvas);
+}
+.sh-toolbar {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+}
+.sh-title {
+  margin: 0 6px;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sh-tabs {
+  display: flex;
+  gap: 2px;
+  margin-left: auto;
+  flex: none;
+}
+.sh-tabs a {
+  height: 48px;
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  color: var(--ink3);
+  font-size: 13px;
+  white-space: nowrap;
+}
+.sh-tabs a:hover {
+  color: var(--ink);
+}
+.sh-tabs a[aria-current="page"] {
+  color: var(--ink);
+  box-shadow: inset 0 -2px var(--primary);
+}
+.sh-tabs a:focus-visible {
+  outline-offset: -2px;
+}
+.sh-search {
+  flex: none;
+}
+
+/* ---------- 오른쪽 줄 ---------- */
+.sh-strip {
+  grid-column: 4;
+  grid-row: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 0;
+  border-left: 1px solid var(--line);
+  background: var(--canvas);
+}
+.sh-strip-b {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r);
+  color: var(--ink3);
+}
+.sh-strip-b:hover {
+  background: var(--s3);
+  color: var(--ink);
+}
+.sh-strip-b svg {
+  transition: transform 0.12s ease-out;
+}
+.sh-strip-b:active svg {
+  transform: scale(0.9);
+}
+.sh-strip-b:is([aria-pressed="true"], [aria-expanded="true"]) {
+  background: var(--line);
+  color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--line2);
+}
+.sh-strip-b:is([aria-pressed="true"], [aria-expanded="true"]) svg {
+  transform: scale(1.15);
+}
+.sh-strip-b:focus-visible {
+  outline: 2px solid var(--primary-h);
+  outline-offset: 2px;
+}
+.sh-bd {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--danger);
+  box-shadow: 0 0 0 2px var(--canvas);
+}
+
+/* ---------- 오른쪽 패널 ---------- */
+.sh-rp {
+  grid-column: 3;
+  grid-row: 2;
+  width: var(--sh-rp);
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--s1);
+  border-left: 1px solid var(--line);
+}
+.sh-rp-in {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+}
+.sh-rp-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 600;
+}
+.sh-rp-tabs {
+  display: flex;
+  margin: 0 -12px;
+  padding: 0 8px;
+  border-bottom: 1px solid var(--line);
+  overflow-x: auto;
+  scrollbar-width: none;
+  flex: none;
+}
+.sh-rp-tabs [role="tab"] {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+  height: 34px;
+  padding: 0 6px;
+  font-size: 13px;
+  color: var(--ink3);
+  white-space: nowrap;
+}
+.sh-rp-tabs [role="tab"]:hover {
+  color: var(--ink);
+}
+.sh-rp-tabs [role="tab"][aria-selected="true"] {
+  color: var(--ink);
+}
+.sh-rp-tabs [role="tab"][aria-selected="true"]::after {
+  content: "";
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  bottom: -1px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--primary-h);
+}
+.sh-rp-tabs [role="tab"]:focus-visible {
+  outline-offset: -2px;
+}
+.sh-rp-tabs em {
+  font: 400 12px var(--mono);
+  font-style: normal;
+  color: var(--ink4);
+}
+.sh-rp-tabs em.warn {
+  color: var(--rx-late);
+}
+.sh-rp-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 0;
+}
+.sh-rp-pane:focus-visible {
+  outline: 2px solid var(--primary-h);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* ---------- 사용자 메뉴 (usermenu.css) ---------- */
+.um-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 40px;
+  padding: 4px 8px;
+  margin: 0 -4px;
+  border-radius: var(--r2);
+  color: var(--ink2);
+  text-align: left;
+  font-size: 13px;
+}
+.um-btn:hover,
+.um-btn[aria-expanded="true"] {
+  background: var(--s3);
+  color: var(--ink);
+}
+.um-btn > svg {
+  color: var(--ink4);
+  flex: none;
+}
+.um-who {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.um-who b {
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.um-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 800;
+  pointer-events: none;
+}
+.um-menu {
+  pointer-events: auto;
+  position: fixed;
+  left: var(--um-x);
+  bottom: var(--um-y);
+  width: 264px;
+  max-width: calc(100vw - 16px);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 4px;
+  border: 1px solid var(--line2);
+  border-radius: 10px;
+  background: var(--s2);
+  box-shadow: 0 12px 32px var(--um-shadow);
+  color: var(--ink);
+  font: 400 13px/1.45 var(--font);
+  letter-spacing: normal;
+  animation: um-in 0.12s ease-out;
+}
+.um-menu :is(button, .um-a) {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 32px;
+  padding: 0 8px;
+  border-radius: 6px;
+  color: var(--ink2);
+  text-align: left;
+}
+.um-menu :is(button, .um-a) > svg {
+  flex: none;
+  color: var(--ink3);
+}
+.um-menu :is(button, .um-a) > span {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.um-menu small {
+  font-size: 12px;
+  color: var(--ink4);
+}
+.um-menu :is(button, .um-a):hover {
+  background: var(--s4);
+  color: var(--ink);
+}
+.um-menu :is(button, .um-a):focus-visible {
+  outline: 2px solid var(--primary-h);
+  outline-offset: -2px;
+}
+.um-menu :is(button, .um-a):active {
+  transform: translateY(1px);
+}
+.um-menu kbd {
+  font: 12px var(--mono);
+  color: var(--ink4);
+}
+.um-menu hr {
+  margin: 4px 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+.um-menu .um-me {
+  min-height: 56px;
+  padding: 8px;
+}
+.um-menu .um-me > .um-av {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  font-size: 13px;
+}
+.um-me b {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.um-me small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.um-bye {
+  padding: 12px;
+  gap: 12px;
+}
+.um-bye p {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.um-bye p b {
+  font-size: 14px;
+}
+.um-bye p span {
+  font-size: 13px;
+  color: var(--ink3);
+  line-height: 1.5;
+}
+.um-ft {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.um-menu .um-b {
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--line2);
+  justify-content: center;
+}
+.um-menu .um-b.p {
+  background: var(--um-danger);
+  border-color: var(--um-danger);
+  color: var(--ink);
+}
+.um-menu .um-b.p:hover {
+  filter: brightness(1.1);
+}
+@keyframes um-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+/* 단축키 창 */
+.um-keys {
+  width: min(420px, calc(100vw - 32px));
+  padding: 20px;
+  border: 1px solid var(--line2);
+  border-radius: 12px;
+  background: var(--s2);
+  color: var(--ink);
+  box-shadow: 0 16px 40px var(--um-shadow);
+  font: 400 13px/1.45 var(--font);
+  letter-spacing: normal;
+}
+.um-keys::backdrop {
+  background: var(--um-scrim);
+}
+.um-kh {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.um-kh b {
+  font-size: 16px;
+  font-weight: 600;
+}
+.um-ib {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+  color: var(--ink3);
+}
+.um-ib:hover {
+  background: var(--s4);
+  color: var(--ink);
+}
+.um-keys dl {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+}
+.um-keys dl div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 36px;
+  border-top: 1px solid var(--line);
+}
+.um-keys dt {
+  color: var(--ink2);
+}
+.um-keys dd {
+  margin: 0;
+  display: flex;
+  gap: 4px;
+}
+.um-keys kbd {
+  min-width: 24px;
+  padding: 2px 4px;
+  border: 1px solid var(--line2);
+  border-radius: 4px;
+  background: var(--s3);
+  font: 12px var(--mono);
+  color: var(--ink2);
+  text-align: center;
+}
+
+/* ---------- 알림 패널 (rest.css nt2) ---------- */
+.nt-p {
+  position: fixed;
+  z-index: 70;
+  top: calc(48px + var(--sh-demo-h, 0px));
+  bottom: 0;
+  right: 44px;
+  width: 320px;
+  display: flex;
+  flex-direction: column;
+  background: var(--s1);
+  color: var(--ink);
+  border-left: 1px solid var(--line);
+  font: 400 14px/1.45 var(--font);
+  letter-spacing: normal;
+}
+.nt-h {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 12px 8px 16px;
+}
+.nt-h div {
+  flex: 1;
+  min-width: 0;
+}
+.nt-h h2 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+.nt-h small {
+  font-size: 12px;
+  color: var(--ink3);
+}
+.nt-tx {
+  font-size: 13px;
+  color: var(--ink3);
+  border-radius: 4px;
+}
+.nt-tx:hover {
+  color: var(--ink);
+}
+.nt-tx:disabled {
+  color: var(--ink4);
+  cursor: default;
+}
+.nt-ix,
+.nt-x {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--r);
+  color: var(--ink3);
+}
+.nt-ix:hover,
+.nt-x:hover {
+  background: var(--s4);
+  color: var(--ink);
+}
+.nt-tabs,
+.cp-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 0 12px 8px;
+}
+.nt-tabs button,
+.cp-tabs button {
+  height: 28px;
+  padding: 0 8px;
+  border-radius: var(--r);
+  font-size: 13px;
+  color: var(--ink3);
+}
+.nt-tabs button:hover,
+.cp-tabs button:hover {
+  color: var(--ink);
+}
+.nt-tabs button[aria-selected="true"],
+.cp-tabs button[aria-selected="true"] {
+  background: var(--s4);
+  color: var(--ink);
+  font-weight: 600;
+}
+.nt-l {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  padding: 0 8px;
+  overflow-y: auto;
+  list-style: none;
+}
+.nt-n {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) 24px;
+  gap: 8px;
+  padding: 8px;
+  border-radius: var(--r);
+}
+.nt-n:hover {
+  background: var(--s4);
+}
+.nt-i {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  color: var(--ink2);
+}
+.nt-ic {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.k-warning .nt-i {
+  color: var(--warn);
+}
+.k-success .nt-i {
+  color: var(--done);
+}
+.nt-b {
+  grid-column: 2;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+  border-radius: 4px;
+}
+.nt-b b {
+  font-size: 14px;
+  font-weight: 600;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+.nt-b span {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ink2);
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+.nt-b small {
+  font-size: 12px;
+  color: var(--ink3);
+}
+.nt-n.read .nt-b b {
+  font-weight: 500;
+  color: var(--ink2);
+}
+.nt-n.read .nt-b span {
+  color: var(--ink3);
+}
+.nt-n.read .nt-i {
+  color: var(--ink4);
+}
+.nt-a {
+  grid-column: 2;
+  grid-row: 2;
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--line2);
+  border-radius: var(--r);
+  font-size: 12px;
+  color: var(--ink);
+}
+.nt-a:hover {
+  background: var(--s3);
+}
+.nt-x {
+  grid-column: 3;
+  grid-row: 1;
+  opacity: 0;
+}
+.nt-n:hover .nt-x,
+.nt-x:focus-visible {
+  opacity: 1;
+}
+.nt-e {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 40px 16px;
+  text-align: center;
+}
+.nt-e p {
+  margin: 0;
+  font-size: 14px;
+}
+.nt-e small {
+  font-size: 13px;
+  color: var(--ink3);
+}
+.nt-f {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--line2);
+}
+.nt-f small {
+  font-size: 12px;
+  color: var(--ink3);
+}
+.nt-p :is(button, a):focus-visible {
+  outline: 2px solid var(--primary-h);
+  outline-offset: 2px;
+}
+
+/* ---------- 명령 팔레트 (rest.css rs-c cp4) ---------- */
+.cp-dlg {
+  width: 620px;
+  max-width: calc(100vw - 32px);
+  padding: 0;
+  margin: 12vh auto auto;
+  border: 1px solid var(--ink4);
+  border-radius: 12px;
+  background: var(--s3);
+  color: var(--ink);
+  box-shadow: var(--rs-shadow);
+  overflow: hidden;
+  font: 400 14px/1.45 var(--font);
+  letter-spacing: normal;
+}
+.cp-dlg::backdrop {
+  background: var(--rs-scrim);
+}
+.cp-w {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.cp-s {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--line2);
+  color: var(--ink3);
+}
+.cp-s input {
+  flex: 1;
+  min-width: 0;
+  height: 48px;
+  border: 0;
+  background: none;
+  font-size: 16px;
+  color: var(--ink);
+  outline: 0;
+}
+.cp-s input::placeholder {
+  color: var(--ink3);
+}
+.cp-dlg kbd {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 4px;
+  border: 1px solid var(--line2);
+  border-radius: 4px;
+  font: 500 12px var(--font);
+  color: var(--ink3);
+}
+.cp-tabs {
+  padding: 8px 12px 0;
+}
+.cp-dlg ul {
+  max-height: min(420px, 56vh);
+  margin: 0;
+  padding: 8px;
+  overflow-y: auto;
+  list-style: none;
+}
+.cp-h {
+  padding: 8px 8px 4px;
+  font-size: 12px;
+  color: var(--ink3);
+}
+.cp-e {
+  padding: 32px 8px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--ink3);
+}
+.cp-dlg li[role="option"] {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 0 8px;
+  border-radius: var(--r);
+  font-size: 14px;
+  color: var(--ink2);
+  cursor: pointer;
+}
+.cp-dlg li[aria-selected="true"] {
+  background: var(--s4);
+  color: var(--ink);
+}
+.cp-dlg li > svg {
+  flex: none;
+}
+.cp-i {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.cp-l {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cp-dlg li small {
+  flex: none;
+  font-size: 12px;
+  color: var(--ink3);
+}
+.cp-f {
+  display: flex;
+  gap: 16px;
+  padding: 8px 16px;
+  border-top: 1px solid var(--line2);
+  font-size: 12px;
+  color: var(--ink3);
+}
+.cp-f span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.cp-dlg button:focus-visible {
+  outline: 2px solid var(--primary-h);
+  outline-offset: 2px;
+}
+
+/* ---------- 설정 시트 (settings.css sx-dlg) ---------- */
+.ss-dlg {
+  width: min(980px, calc(100vw - 48px));
+  height: min(700px, calc(100vh - 48px));
+  max-width: none;
+  max-height: none;
+  padding: 0;
+  border: 1px solid var(--ag-rule-strong);
+  border-radius: var(--ag-r-lg);
+  background: var(--ag-canvas);
+  color: var(--ag-ink);
+  box-shadow: 0 24px 64px var(--ag-shadow);
+  overflow: hidden;
+  font: 400 14px/1.45 var(--font);
+  letter-spacing: normal;
+  animation: ss-in 0.16s ease-out;
+}
+.ss-dlg::backdrop {
+  background: var(--sx-scrim);
+}
+.ss-in {
+  display: grid;
+  grid-template-columns: 232px minmax(0, 1fr);
+  height: 100%;
+}
+.ss-nav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ag-s3);
+  padding: var(--ag-s4) var(--ag-s3);
+  border-right: 1px solid var(--ag-rule);
+  background: var(--s1);
+  overflow: auto;
+}
+.ss-t {
+  margin: var(--ag-s1) var(--ag-s2) 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ag-ink-3);
+}
+.ss-q {
+  display: flex;
+  align-items: center;
+  gap: var(--ag-s2);
+  height: 32px;
+  padding: 0 var(--ag-s3);
+  border: 1px solid var(--ag-ink-4);
+  border-radius: var(--ag-r);
+  background: var(--ag-surface);
+  color: var(--ag-ink-3);
+}
+.ss-q svg {
+  flex: none;
+}
+.ss-q input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: none;
+  font: 14px var(--ag-font);
+  color: var(--ag-ink);
+  outline: none;
+}
+.ss-q input::-webkit-search-cancel-button {
+  display: none;
+}
+.ss-q:focus-within {
+  border-color: var(--ag-focus);
+}
+.ss-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ss-list button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 32px;
+  padding: 0 8px;
+  border-radius: var(--r);
+  color: var(--ink3);
+  text-align: left;
+  font-size: 13px;
+}
+.ss-list button:hover {
+  background: var(--s3);
+  color: var(--ink);
+}
+.ss-list button svg {
+  flex: none;
+  color: var(--ag-ink-4);
+}
+.ss-list button[aria-current="page"] {
+  background: var(--primary-a);
+  color: var(--ag-ink);
+  box-shadow: inset 2px 0 var(--primary);
+}
+.ss-list button[aria-current="page"] svg {
+  color: var(--ag-accent-text);
+}
+.ss-list button:focus-visible {
+  outline: 2px solid var(--ag-focus);
+  outline-offset: -2px;
+}
+.ss-none {
+  margin: 0;
+  padding: 8px;
+  font-size: 13px;
+  color: var(--ink3);
+}
+.ss-body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+.ss-h {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: var(--ag-s5) var(--ag-s6) 0;
+}
+.ss-h h1 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+  color: var(--ag-ink);
+  overflow-wrap: break-word;
+  min-width: 0;
+}
+.ss-x {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--ag-r);
+  color: var(--ag-ink-3);
+  border: 1px solid transparent;
+}
+.ss-x:hover {
+  background: var(--ag-surface-3);
+  color: var(--ag-ink);
+}
+.ss-x:focus-visible {
+  outline: 2px solid var(--ag-focus);
+  outline-offset: 1px;
+}
+.ss-sc {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: var(--ag-s5) var(--ag-s6) var(--ag-s6);
+}
+@keyframes ss-in {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+}
+
+/* ---------- 자리 표시 ---------- */
+.sh-placeholder {
+  margin: 0;
+  padding: 48px 24px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--ink3);
+}
+
+/* ---------- 좁은 화면 ---------- */
+@media (max-width: 1000px) {
+  /* 사이드바는 아이콘 레일로(사용자 메뉴에 닿을 수 있게), 오른쪽 패널은 본문 위에 겹쳐 연다 */
+  .sh-app {
+    --sh-side: 52px;
+  }
+  .sh-app[data-rail] {
+    grid-template-columns: var(--sh-side) minmax(0, 1fr) 0 var(--sh-strip);
+  }
+  .sh-app .sh-side {
+    padding: 10px 0;
+  }
+  .sh-app .sh-side > :not(.sh-rl) {
+    display: none;
+  }
+  .sh-app .sh-rl {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    height: 100%;
+  }
+  .sh-rp {
+    position: fixed;
+    z-index: 60;
+    top: calc(48px + var(--sh-demo-h, 0px));
+    bottom: 0;
+    right: var(--sh-strip);
+    width: min(var(--sh-rp), calc(100vw - var(--sh-strip) - 52px));
+    box-shadow: -12px 0 32px rgba(0, 0, 0, 0.55);
+  }
+}
+@media (max-width: 760px) {
+  .nt-p {
+    right: 0;
+    width: 100%;
+  }
+  .ss-in {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ss-nav {
+    display: none;
+  }
+  .ss-h,
+  .ss-sc {
+    padding-left: var(--ag-s4);
+    padding-right: var(--ag-s4);
+  }
+  .ss-dlg {
+    width: calc(100vw - 32px);
+    height: calc(100vh - 32px);
+  }
+}
+@media (max-width: 600px) {
+  .sh-top {
+    gap: 4px;
+    padding: 0 8px;
+  }
+  .sh-tabs a {
+    padding: 0 6px;
+  }
+  .sh-search {
+    width: 32px;
+    padding: 0;
+    justify-content: center;
+  }
+  .sh-search .sh-kbd {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .um-menu,
+  .ss-dlg {
+    animation: none;
+  }
+  .sh-strip-b svg {
+    transition: none;
+  }
+  .sh-strip-b:active svg,
+  .sh-strip-b:is([aria-pressed="true"], [aria-expanded="true"]) svg,
+  .um-menu :is(button, .um-a):active {
+    transform: none;
+  }
+}

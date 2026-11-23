@@ -1,463 +1,279 @@
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { Bookmark } from "lucide-react";
 import type { Todo } from "@/entities/todo/model/types";
-import { TagDots } from "@/entities/todo/ui/TagDots";
-import { useDraggable } from "@/shared/lib/dnd";
-import { addDays, startOfISOWeek, toDateKey } from "@/shared/lib/date";
-import { useLatestRef } from "@/shared/lib/useLatestRef";
 import { useTranslation } from "@/shared/lib/i18n";
-import { DAY_ABBR_KEYS, TODO_DRAG_KIND } from "../model/constants";
-import { assignSpanRows, buildSpanEvents, type SpanEventWithRow } from "../model/spanEvents";
-import { DayCell } from "./DayCell";
-
-
-// ── Regular chip (single day) ───────────────────────────────────────────────
-
-interface WeekChipProps {
-  todo: Todo;
-  onSelect: (id: string) => void;
-  onResizeStart: (e: React.PointerEvent, todoId: string) => void;
-}
-
-const WeekChip = memo(function WeekChipImpl({
-  todo,
-  onSelect,
-  onResizeStart,
-}: WeekChipProps) {
-  const { isDragging, ...dragHandlers } = useDraggable({
-    kind: TODO_DRAG_KIND,
-    data: { id: todo.id },
-  });
-  return (
-    <button
-      type="button"
-      onClick={() => onSelect(todo.id)}
-      data-draggable="true"
-      data-dragging={isDragging ? "true" : undefined}
-      data-status={todo.status}
-      className="week-chip"
-      {...dragHandlers}
-    >
-      {todo.startTime ? (
-        <p className="week-chip-time">{todo.startTime.slice(0, 5)}</p>
-      ) : null}
-      <p className="week-chip-title" style={{ paddingRight: 12 }}>{todo.title}</p>
-      {todo.tags.length > 0 ? (
-        <p className="week-chip-tags">
-          <TagDots tags={todo.tags} />
-        </p>
-      ) : null}
-      <div
-        className="chip-resize-handle"
-        onPointerDown={(e) => onResizeStart(e, todo.id)}
-      />
-    </button>
-  );
-});
-
-// ── Span chip (multi-day, 태그 미표시) ─────────────────────────────────────
-
-interface WeekSpanChipProps {
-  evt: SpanEventWithRow;
-  onSelect: (id: string) => void;
-  onResizeStart: (e: React.PointerEvent, todoId: string) => void;
-}
-
-const WeekSpanChip = memo(function WeekSpanChipImpl({
-  evt,
-  onSelect,
-  onResizeStart,
-}: WeekSpanChipProps) {
-  const { isDragging, ...dragHandlers } = useDraggable({
-    kind: TODO_DRAG_KIND,
-    data: { id: evt.todo.id },
-  });
-  return (
-    <button
-      key={`span-${evt.todo.id}`}
-      type="button"
-      className="week-chip"
-      data-status={evt.todo.status}
-      data-span=""
-      data-draggable="true"
-      data-dragging={isDragging ? "true" : undefined}
-      onClick={() => onSelect(evt.todo.id)}
-      style={{
-        gridColumn: `${evt.startCol + 1} / ${evt.startCol + evt.colSpan + 1}`,
-        gridRow: evt.row + 1,
-        alignSelf: "start",
-        margin: "3px 10px",
-        width: "auto",
-        position: "relative",
-        zIndex: 1,
-        minWidth: 0,
-        borderRadius: `${evt.isStart ? 5 : 0}px ${evt.isEnd ? 5 : 0}px ${evt.isEnd ? 5 : 0}px ${evt.isStart ? 5 : 0}px`,
-        borderLeft: evt.isStart ? undefined : "none",
-        overflow: "hidden",
-      }}
-      {...dragHandlers}
-    >
-      {evt.isStart && evt.todo.startTime ? (
-        <p className="week-chip-time">{evt.todo.startTime.slice(0, 5)}</p>
-      ) : null}
-      <div style={{ display: "flex", alignItems: "center", gap: 4, overflow: "hidden", paddingRight: evt.isEnd ? 12 : 0 }}>
-        <p className="week-chip-title" style={{ flex: 1, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-          {evt.todo.title}
-        </p>
-        {evt.isStart && evt.todo.tags.length > 0 ? (
-          <TagDots tags={evt.todo.tags} />
-        ) : null}
-      </div>
-      {evt.isEnd ? (
-        <div
-          className="chip-resize-handle"
-          onPointerDown={(e) => onResizeStart(e, evt.todo.id)}
-        />
-      ) : null}
-    </button>
-  );
-});
-
-const SPAN_ROW_HEIGHT = 60;
-
-// ── WeekGrid ────────────────────────────────────────────────────────────────
+import { fromDateKey } from "@/shared/lib/date";
+import { addDaysKey, daysBetween, isMultiDay, isOnDay } from "../model/eventInfo";
+import { fmtLongDay, fmtMonthShort, formatKey, gmtLabel } from "../model/dateFormat";
+import { GUTTER_W, HOUR_H, isTimed, placeDay, timesOf } from "../model/grid";
+import type { DragPreview, useCalendarDrag } from "../model/useCalendarDrag";
+import { setCalendarViewport, type CalendarController } from "../model/useCalendarController";
+import { weekStartOf } from "../model/weekDays";
+import { CalendarOverlaySlot } from "./CalendarOverlaySlot";
+import { DayTimeline, TimeGutter } from "./DayTimeline";
+import { EventCard } from "./EventCard";
 
 export interface WeekGridProps {
-  cursor: Date;
-  byDate: Record<string, Todo[]>;
-  spanningTodos?: Todo[];
-  todayKey: string;
-  selectedId: string | null;
-  onSelect: (id: string) => void;
-  onDropTodo: (todoId: string, dateKey: string) => void;
-  onAddTodo: (title: string, dateKey: string) => void;
-  onResizeDueDate: (id: string, dueDate: string | null) => void;
+  ctl: CalendarController;
+  /** 거르기를 통과하고 끌기 미리보기를 반영한 할 일. */
+  todos: Todo[];
+  drag: ReturnType<typeof useCalendarDrag>;
+  preview: DragPreview | null;
+  retroDays: ReadonlySet<string>;
+  nowMin: number;
+  onOpen(id: string): void;
+  onVisibleRange(from: string, to: string): void;
 }
 
-export function WeekGrid({
-  cursor,
-  byDate,
-  spanningTodos = [],
-  todayKey,
-  onSelect,
-  onDropTodo,
-  onAddTodo,
-  onResizeDueDate,
-}: WeekGridProps) {
-  const { t } = useTranslation();
-  const start = startOfISOWeek(cursor);
-  const days = Array.from({ length: 7 }, (_, i) => addDays(start, i));
-  const weekKeys = useMemo(() => days.map(d => toDateKey(d)), [cursor]); // eslint-disable-line react-hooks/exhaustive-deps
+/**
+ * 주간과 일간(시안 d-calendar.html: Notion Calendar 구조). 날짜 열이 옆으로 끝없이 이어지고
+ * (끝에 닿으면 4주씩 늘림) 위에 날짜 머리와 종일 줄이 붙어 있다. 일간은 같은 구조에서 한 열이 화면 하나.
+ */
+export function WeekGrid({ ctl, todos, drag, preview, retroDays, nowMin, onOpen, onVisibleRange }: WeekGridProps) {
+  const { t, locale } = useTranslation();
+  const day = ctl.view === "day";
+  const { start, n } = ctl.weekRange;
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [width, setWidth] = useState(0);
+  const cw = width ? (day ? Math.max(280, width - GUTTER_W) : Math.max(128, Math.floor((width - GUTTER_W) / 7))) : 140;
 
-  // ── Resize state ────────────────────────────────────────────────────────
-  const gridRef = useRef<HTMLDivElement | null>(null);
-  const [resizing, setResizing] = useState<{ todoId: string; dueDate: string } | null>(null);
+  const days = useMemo(() => Array.from({ length: n }, (_, i) => addDaysKey(start, i)), [start, n]);
+  const first = days[0];
+  const last = days[days.length - 1];
+  const todayWeek = weekStartOf(ctl.todayKey, ctl.weekStart);
 
-  const byDateRef = useLatestRef(byDate);
-  const spanningTodosRef = useLatestRef(spanningTodos);
-  const weekKeysRef = useLatestRef(weekKeys);
-  const onResizeDueDateRef = useLatestRef(onResizeDueDate);
+  const timedByDay = useMemo(() => {
+    const m = new Map<string, Todo[]>();
+    for (const td of todos) {
+      if (!isTimed(td)) continue;
+      if (td.dateKey < first || td.dateKey > last) continue;
+      const l = m.get(td.dateKey) ?? [];
+      l.push(td);
+      m.set(td.dateKey, l);
+    }
+    return m;
+  }, [todos, first, last]);
 
-  const getColAtX = useCallback((clientX: number): number => {
-    if (!gridRef.current) return 0;
-    const r = gridRef.current.getBoundingClientRect();
-    return Math.min(6, Math.max(0, Math.floor((clientX - r.left) / (r.width / 7))));
+  const placedByDay = useMemo(() => {
+    const m = new Map<string, ReturnType<typeof placeDay>>();
+    for (const [d, l] of timedByDay) m.set(d, placeDay(l));
+    return m;
+  }, [timedByDay]);
+  const noEvents = useMemo(() => [] as ReturnType<typeof placeDay>, []);
+
+  const allday = useMemo(
+    () =>
+      todos
+        .filter((td) => (isMultiDay(td) || !timesOf(td)) && td.dateKey <= last && (td.dueDate && isMultiDay(td) ? td.dueDate : td.dateKey) >= first)
+        .sort((a, b) => a.dateKey.localeCompare(b.dateKey) || (isMultiDay(b) ? 1 : 0) - (isMultiDay(a) ? 1 : 0)),
+    [todos, first, last],
+  );
+
+  /* ---------- 크기와 스크롤 ---------- */
+  useLayoutEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setWidth(el.clientWidth));
+    ro.observe(el);
+    return () => ro.disconnect();
   }, []);
 
-  const findTodo = useCallback((id: string): Todo | undefined => {
-    return (
-      spanningTodosRef.current.find(t => t.id === id) ??
-      Object.values(byDateRef.current).flat().find(t => t.id === id)
-    );
-  }, [byDateRef, spanningTodosRef]);
-
-  const startResize = useCallback((e: React.PointerEvent, todoId: string) => {
-    e.stopPropagation();
-    e.preventDefault();
-    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-    const todo = findTodo(todoId);
-    if (!todo) return;
-    setResizing({ todoId, dueDate: todo.dueDate ?? todo.dateKey });
-  }, [findTodo]);
-
-  const handleResizeMove = useCallback((e: PointerEvent) => {
-    setResizing(prev => {
-      if (!prev) return null;
-      const todo = findTodo(prev.todoId);
-      if (!todo) return prev;
-      const col = getColAtX(e.clientX);
-      const newDue = weekKeysRef.current[col];
-      if (!newDue || newDue < todo.dateKey) return prev;
-      return newDue !== prev.dueDate ? { ...prev, dueDate: newDue } : prev;
-    });
-  }, [findTodo, getColAtX, weekKeysRef]);
-
-  const handleResizeUp = useCallback((_e: PointerEvent) => {
-    setResizing(prev => {
-      if (!prev) return null;
-      const todo = findTodo(prev.todoId);
-      if (!todo) return null;
-      const newDueDate = prev.dueDate > todo.dateKey ? prev.dueDate : null;
-      onResizeDueDateRef.current(prev.todoId, newDueDate);
-      return null;
-    });
-  }, [findTodo, onResizeDueDateRef]);
-
-  const isResizing = resizing !== null;
+  const pendingShift = useRef(0);
+  const extending = useRef(false);
+  const col = useRef<number | null>(null);
+  const tick = useRef(false);
+  const ctlRef = useRef(ctl);
+  const cwRef = useRef(cw);
   useEffect(() => {
-    if (!isResizing) return;
-    window.addEventListener('pointermove', handleResizeMove);
-    window.addEventListener('pointerup', handleResizeUp);
-    return () => {
-      window.removeEventListener('pointermove', handleResizeMove);
-      window.removeEventListener('pointerup', handleResizeUp);
-    };
-  }, [isResizing, handleResizeMove, handleResizeUp]);
+    ctlRef.current = ctl;
+    cwRef.current = cw;
+  });
 
-  // ── Span events (리사이즈 미리보기 포함) ──────────────────────────────────
-  const effectiveSpanTodos = useMemo(() => {
-    if (!resizing) return spanningTodos;
-    const isAlreadySpan = spanningTodos.some(t => t.id === resizing.todoId);
-    if (isAlreadySpan) {
-      return spanningTodos.map(t =>
-        t.id === resizing.todoId ? { ...t, dueDate: resizing.dueDate } : t,
-      );
+  // 앞쪽으로 늘린 만큼 스크롤 위치를 옮겨 보던 날짜를 유지
+  useLayoutEffect(() => {
+    const el = scrollRef.current;
+    if (el && pendingShift.current) {
+      el.scrollLeft += pendingShift.current * cw;
+      pendingShift.current = 0;
     }
-    const todo = Object.values(byDate).flat().find(t => t.id === resizing.todoId);
-    if (!todo || resizing.dueDate <= todo.dateKey) return spanningTodos;
-    return [...spanningTodos, { ...todo, dueDate: resizing.dueDate }];
-  }, [spanningTodos, byDate, resizing]);
+    extending.current = false;
+  }, [start, n, cw]);
 
-  const spanEventsWithRows = useMemo(
-    () => assignSpanRows(buildSpanEvents(effectiveSpanTodos, weekKeys)),
-    [effectiveSpanTodos, weekKeys],
-  );
-  const numSpanRows = spanEventsWithRows.length > 0
-    ? Math.max(...spanEventsWithRows.map(e => e.row))
-    : 0;
+  // 폭이 바뀌면 보던 열 유지
+  useLayoutEffect(() => {
+    const el = scrollRef.current;
+    if (el && col.current !== null) el.scrollLeft = Math.round(col.current * cw);
+  }, [cw]);
 
-  const spanIds = useMemo(
-    () => new Set(spanEventsWithRows.map(e => e.todo.id)),
-    [spanEventsWithRows],
-  );
-
-  // 컬럼별 최대 span 행 번호 (span 없는 컬럼은 0)
-  const colLocalSpanRows = useMemo(
-    () =>
-      Array.from({ length: 7 }, (_, ci) =>
-        spanEventsWithRows.reduce<number>((max, evt) => {
-          if (ci >= evt.startCol && ci < evt.startCol + evt.colSpan) {
-            return Math.max(max, evt.row);
-          }
-          return max;
-        }, 0),
-      ),
-    [spanEventsWithRows],
-  );
-
-  const resizingRegularId = useMemo(() => {
-    if (!resizing) return null;
-    if (spanningTodos.some(t => t.id === resizing.todoId)) return null;
-    const todo = Object.values(byDate).flat().find(t => t.id === resizing.todoId);
-    if (!todo || resizing.dueDate <= todo.dateKey) return null;
-    return resizing.todoId;
-  }, [resizing, spanningTodos, byDate]);
-
-  // ── Inline add state ────────────────────────────────────────────────────
-  const [addingDate, setAddingDate] = useState<string | null>(null);
-  const [addingTitle, setAddingTitle] = useState("");
-  const escapedRef = useRef(false);
-
-  const startAdding = (dateKey: string) => {
-    escapedRef.current = false;
-    setAddingDate(dateKey);
-    setAddingTitle("");
+  const report = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const c = ctlRef.current;
+    const w = cwRef.current;
+    const sl = el.scrollLeft;
+    col.current = sl / w;
+    const vis = day ? 1 : Math.max(1, Math.floor((el.clientWidth - GUTTER_W) / w));
+    const i0 = day ? Math.round(sl / w) : Math.floor((sl + 2) / w);
+    const s0 = c.weekRange.start;
+    const ti = daysBetween(s0, c.todayKey);
+    setCalendarViewport({
+      anchor: addDaysKey(s0, day ? i0 : Math.floor((sl + 1) / w) + 3),
+      todayDir: ti < i0 ? "left" : ti > i0 + vis - 1 ? "right" : "in",
+    });
+    onVisibleRange(addDaysKey(s0, i0), addDaysKey(s0, i0 + vis - 1));
   };
 
-  const commitAdd = () => {
-    if (addingTitle.trim() && addingDate) {
-      onAddTodo(addingTitle.trim(), addingDate);
+  // 이동 요청: 고른 날짜(주간은 그 주 첫날)로
+  useLayoutEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const c = ctlRef.current;
+    const i = daysBetween(c.weekRange.start, c.date);
+    const visible = i * cw >= el.scrollLeft - 1 && (i + 1) * cw <= el.scrollLeft + el.clientWidth - GUTTER_W + 1;
+    if (c.jump.force || !visible) {
+      el.scrollLeft = (day ? i : daysBetween(c.weekRange.start, weekStartOf(c.date, c.weekStart))) * cw;
     }
-    setAddingDate(null);
-    setAddingTitle("");
+    if (!el.dataset.y) {
+      el.scrollTop = 8.5 * HOUR_H;
+      el.dataset.y = "1";
+    }
+    report();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ctl.jump.seq, day, width > 0]);
+
+  const onScroll = () => {
+    if (tick.current) return;
+    tick.current = true;
+    requestAnimationFrame(() => {
+      tick.current = false;
+      const el = scrollRef.current;
+      if (!el) return;
+      const w = cwRef.current;
+      if (!extending.current) {
+        if (el.scrollLeft < w * 7) {
+          extending.current = true;
+          pendingShift.current += ctlRef.current.extend("week", -1);
+        } else if (el.scrollLeft + el.clientWidth > el.scrollWidth - w * 7) {
+          extending.current = true;
+          ctlRef.current.extend("week", 1);
+        }
+      }
+      report();
+    });
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      escapedRef.current = false;
-      commitAdd();
-    } else if (e.key === "Escape") {
-      escapedRef.current = true;
-      setAddingDate(null);
-      setAddingTitle("");
-    }
-  };
-
-  const handleBlur = () => {
-    if (escapedRef.current) {
-      escapedRef.current = false;
-      return;
-    }
-    commitAdd();
+  /* ---------- 그리기 ---------- */
+  const draggingId = preview?.todo?.id ?? null;
+  const weekendOf = (d: string) => {
+    const w = fromDateKey(d).getDay();
+    return w === 0 ? "we sun" : w === 6 ? "we sat" : "";
   };
 
   return (
     <div
-      ref={gridRef}
-      style={{
-        display: "grid",
-        flex: 1,
-        minHeight: 0,
-        gridTemplateColumns: "repeat(7, minmax(0, 1fr))",
-        gridTemplateRows: numSpanRows > 0
-          ? `auto ${Array(numSpanRows).fill(`${SPAN_ROW_HEIGHT}px`).join(' ')} 1fr`
-          : 'auto 1fr',
-        columnGap: 6,
-        rowGap: 0,
-      }}
+      ref={scrollRef}
+      className={`cal-scroll${day ? " dayv" : ""}`}
+      style={{ "--cw": `${cw}px` } as CSSProperties}
+      onScroll={onScroll}
+      tabIndex={-1}
     >
-      {/* ── Row 1: Column headers ── */}
-      {days.map((d, ci) => {
-        const k = toDateKey(d);
-        const isToday = k === todayKey;
-        const count = (byDate[k] ?? []).length;
-        const border = isToday
-          ? "1px solid rgba(94, 106, 210, 0.4)"
-          : "1px solid var(--color-divider-soft)";
-        return (
-          <div
-            key={`hdr-${k}`}
-            style={{
-              gridColumn: ci + 1,
-              gridRow: 1,
-              padding: "14px 10px 8px",
-              background: isToday ? "rgba(94, 106, 210, 0.07)" : "var(--color-tile-2)",
-              borderTop: border,
-              borderLeft: border,
-              borderRight: border,
-              borderTopLeftRadius: "var(--r-sm)",
-              borderTopRightRadius: "var(--r-sm)",
-              display: "flex",
-              alignItems: "flex-start",
-              justifyContent: "space-between",
-            }}
-          >
-            <div>
-              <p
-                className="t-eyebrow"
-                style={{
-                  color: isToday ? "var(--color-primary-on-dark)" : "var(--color-body-muted)",
-                  margin: "0 0 2px",
-                }}
-              >
-                {t(DAY_ABBR_KEYS[d.getDay()])}
-              </p>
-              <p
-                style={{
-                  margin: 0,
-                  fontSize: 20,
-                  fontFamily: "var(--font-display)",
-                  fontWeight: 600,
-                  letterSpacing: "-0.04em",
-                  color: isToday ? "var(--color-primary-on-dark)" : "var(--color-ink)",
-                }}
-              >
-                {d.getDate()}
-              </p>
-            </div>
-            {count > 0 ? (
-              <span style={{ fontSize: 12, color: "var(--color-body-muted)", fontVariantNumeric: "tabular-nums" }}>
-                {count}
-              </span>
-            ) : null}
+      <div className="cal-wk" style={{ "--n": n } as CSSProperties}>
+        <div className="cal-wtop">
+          <div className="cal-wrow">
+            <div className="cal-corner cal-tz">{gmtLabel()}</div>
+            {days.map((d) => {
+              const x = fromDateKey(d);
+              const cls = [
+                "cal-dh",
+                weekendOf(d),
+                d === ctl.todayKey ? "today" : "",
+                d < ctl.todayKey ? "past" : "",
+                d === ctl.date ? "sel" : "",
+                preview?.over === d && !preview.todo?.startTime ? "drop" : "",
+              ]
+                .filter(Boolean)
+                .join(" ");
+              return (
+                <div key={d} className={cls} data-drop={d}>
+                  <button type="button" aria-label={fmtLongDay(locale, d)} onClick={() => ctl.pick(d)}>
+                    <span className="cal-dw">
+                      {x.getDate() === 1 || day ? <b>{fmtMonthShort(locale, d)}</b> : null}
+                      {formatKey(locale, d, { weekday: day ? "long" : "short" })}
+                      {retroDays.has(d) ? (
+                        <span className="cal-bm" title={t("cal.retroMark")}>
+                          <Bookmark size={11} aria-label={t("cal.retroMark")} />
+                        </span>
+                      ) : null}
+                    </span>
+                    <span className="cal-dn">{x.getDate()}</span>
+                  </button>
+                </div>
+              );
+            })}
           </div>
-        );
-      })}
-
-      {/* ── DayCell: 헤더 아래 전체 영역(span 행 + content 행) 커버 ── */}
-      {days.map((d, ci) => {
-        const k = toDateKey(d);
-        const isToday = k === todayKey;
-        const items = (byDate[k] ?? []).filter(
-          item => !spanIds.has(item.id) && item.id !== resizingRegularId,
-        );
-        const isAdding = addingDate === k;
-        const border = isToday
-          ? "1px solid rgba(94, 106, 210, 0.4)"
-          : "1px solid var(--color-divider-soft)";
-        const local = colLocalSpanRows[ci];
-        const gridRow = numSpanRows > 0 ? `2 / ${numSpanRows + 3}` : 2;
-        const paddingTop = local > 0 ? local * SPAN_ROW_HEIGHT + 6 : 6;
-        return (
-          <DayCell
-            key={k}
-            dateKey={k}
-            onDropTodo={onDropTodo}
-            style={{
-              gridColumn: ci + 1,
-              gridRow,
-              paddingTop,
-              paddingLeft: 10,
-              paddingRight: 10,
-              paddingBottom: 14,
-              minHeight: 240,
-              background: isToday ? "rgba(94, 106, 210, 0.07)" : "var(--color-tile-2)",
-              borderBottom: border,
-              borderLeft: border,
-              borderRight: border,
-              borderBottomLeftRadius: "var(--r-sm)",
-              borderBottomRightRadius: "var(--r-sm)",
-              display: "flex",
-              flexDirection: "column",
-              gap: 5,
-            }}
-          >
-            {items.map(item => (
-              <WeekChip
-                key={item.id}
-                todo={item}
-                onSelect={onSelect}
-                onResizeStart={startResize}
-              />
-            ))}
-            <div
-              style={{ flex: 1, minHeight: 40, cursor: isAdding ? "default" : "text" }}
-              onClick={() => { if (!isAdding) startAdding(k); }}
-            >
-              {isAdding ? (
-                <input
-                  autoFocus
-                  value={addingTitle}
-                  onChange={e => setAddingTitle(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  onBlur={handleBlur}
-                  placeholder={t("calendar.addCard.placeholder")}
-                  style={{
-                    width: "100%",
-                    fontSize: 12,
-                    padding: "6px 8px",
-                    borderRadius: "var(--r-sm)",
-                    background: "var(--color-tile-3)",
-                    border: "1px solid var(--color-primary)",
-                    color: "var(--color-ink)",
-                    outline: "none",
-                    boxSizing: "border-box",
-                  }}
-                />
-              ) : null}
+          <div className="cal-wrow ad">
+            <div className="cal-corner cal-lb">{t("cal.allday")}</div>
+            <div className="cal-adg" data-adg="" data-adg-start={first} data-adg-n={n}>
+              {allday.map((td) => {
+                if (isMultiDay(td)) {
+                  const a = td.dateKey < first ? 0 : daysBetween(first, td.dateKey);
+                  const b = td.dueDate! > last ? n - 1 : daysBetween(first, td.dueDate!);
+                  return (
+                    <EventCard
+                      key={td.id}
+                      todo={td}
+                      variant="allday"
+                      cut={{ left: td.dateKey < first, right: td.dueDate! > last }}
+                      style={{ gridColumn: `${a + 1} / ${b + 2}` }}
+                      dragging={draggingId === td.id}
+                      onOpen={onOpen}
+                      onPointerDown={drag.startMove}
+                    />
+                  );
+                }
+                return (
+                  <EventCard
+                    key={td.id}
+                    todo={td}
+                    variant="allday"
+                    style={{ gridColumn: daysBetween(first, td.dateKey) + 1 }}
+                    dragging={draggingId === td.id}
+                    onOpen={onOpen}
+                    onPointerDown={drag.startMove}
+                  />
+                );
+              })}
+              {days.map((d, i) => (
+                <CalendarOverlaySlot key={`ov-${d}`} dateKey={d} variant="allday" column={i + 1} />
+              ))}
             </div>
-          </DayCell>
-        );
-      })}
-
-      {/* ── Span chips (DayCell 뒤에 렌더링 → 시각적으로 위에 표시) ── */}
-      {spanEventsWithRows.map(evt => (
-        <WeekSpanChip
-          key={`span-${evt.todo.id}`}
-          evt={evt}
-          onSelect={onSelect}
-          onResizeStart={startResize}
-        />
-      ))}
+          </div>
+        </div>
+        <div className="cal-wrow">
+          <div className="cal-corner">
+            <TimeGutter />
+          </div>
+          {days.map((d) => (
+            <DayTimeline
+              key={d}
+              dateKey={d}
+              events={placedByDay.get(d) ?? noEvents}
+              isToday={d === ctl.todayKey}
+              past={d < ctl.todayKey}
+              weekend={!!weekendOf(d)}
+              nowMin={nowMin}
+              faintNow={weekStartOf(d, ctl.weekStart) === todayWeek}
+              over={preview?.over === d && !!preview.todo && isOnDay(preview.todo, d) && !!preview.todo.startTime}
+              draggingId={draggingId}
+              creating={preview?.create?.dateKey === d ? preview.create : null}
+              onOpen={onOpen}
+              onStartMove={drag.startMove}
+              onStartResize={drag.startResize}
+              onStartCreate={drag.startCreate}
+            />
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

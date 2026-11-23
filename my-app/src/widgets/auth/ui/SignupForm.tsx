@@ -1,15 +1,29 @@
 import { useState, type FormEvent } from "react";
+import type { RequestCodeResult } from "@/app/model/types";
 import { useArchiveApp } from "@/app/providers/useArchiveApp";
 import type { AuthRoute } from "@/app/router/authRoute";
 import { USE_API } from "@/shared/api";
 import { isMultiTzCountry } from "@/shared/lib/geo";
-import { useTranslation } from "@/shared/lib/i18n";
-import { Checkbox, PasswordField, TextField } from "@/shared/ui";
+import { useTranslation, type TranslationKey } from "@/shared/lib/i18n";
+import { PasswordField, TextField } from "@/shared/ui";
+import { CODE_LENGTH } from "../model/code";
 import { useEmailVerification } from "../model/useEmailVerification";
+import { AuthAlert, AuthHeading, AuthSteps, AuthSwitch } from "./AuthParts";
+import { CodeBoxes } from "./CodeBoxes";
 import { CountryRegionFields } from "./CountryRegionFields";
 import { OAuthButtons } from "./OAuthButtons";
 
 type Step = "email" | "verify" | "profile";
+
+const REQUEST_CODE_ERROR_KEY: Record<
+  Extract<RequestCodeResult, { ok: false }>["error"],
+  TranslationKey
+> = {
+  "already-registered": "auth.signup.error.alreadyRegistered",
+  cooldown: "auth.signup.error.cooldown",
+  "delivery-failed": "auth.signup.error.deliveryFailed",
+  unavailable: "auth.signup.error.unavailable",
+};
 
 interface SignupFormProps {
   onAuthNavigate: (route: AuthRoute) => void;
@@ -26,6 +40,8 @@ export function SignupForm({ onAuthNavigate }: SignupFormProps) {
     () => new URLSearchParams(window.location.search).get("email") ?? "",
   );
   const [code, setCode] = useState("");
+  // 시도 횟수 초과/만료 → 새 코드를 받기 전까지 코드 입력을 잠근다.
+  const [codeLocked, setCodeLocked] = useState(false);
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -45,11 +61,7 @@ export function SignupForm({ onAuthNavigate }: SignupFormProps) {
     try {
       const result = await requestEmailCode(email);
       if (!result.ok) {
-        if (result.error === "already-registered") {
-          setError(t("auth.signup.error.alreadyRegistered"));
-        } else {
-          setError(t("auth.signup.error.cooldown"));
-        }
+        setError(t(REQUEST_CODE_ERROR_KEY[result.error]));
         return;
       }
       startCooldown();
@@ -68,8 +80,28 @@ export function SignupForm({ onAuthNavigate }: SignupFormProps) {
     try {
       const result = await verifyEmailCode(email, code);
       if (!result.ok) {
-        if (result.error === "expired") setError(t("auth.signup.error.expired"));
-        else setError(t("auth.signup.error.invalidCode"));
+        switch (result.error) {
+          case "expired":
+          case "not-requested":
+          case "attempts-exceeded":
+            // 기존 코드는 더 이상 쓸 수 없음 → 입력을 비우고 잠근 뒤 재전송을 바로 허용
+            setError(
+              t(
+                result.error === "attempts-exceeded"
+                  ? "auth.signup.error.attemptsExceeded"
+                  : "auth.signup.error.expired",
+              ),
+            );
+            setCode("");
+            setCodeLocked(true);
+            resetCooldown();
+            break;
+          case "unavailable":
+            setError(t("auth.signup.error.unavailable"));
+            break;
+          default:
+            setError(t("auth.signup.error.invalidCode"));
+        }
         return;
       }
       setStep("profile");
@@ -85,9 +117,13 @@ export function SignupForm({ onAuthNavigate }: SignupFormProps) {
     try {
       const result = await requestEmailCode(email);
       if (!result.ok) {
-        setError(t("auth.signup.error.cooldown"));
+        setError(t(REQUEST_CODE_ERROR_KEY[result.error]));
+        // 서버 쿨다운 중이면 재전송 버튼을 타이머로 잠근다
+        if (result.error === "cooldown") startCooldown();
         return;
       }
+      setCode("");
+      setCodeLocked(false);
       startCooldown();
     } finally {
       setSubmitting(false);
@@ -138,80 +174,95 @@ export function SignupForm({ onAuthNavigate }: SignupFormProps) {
     }
   };
 
+  const goBackToEmail = () => {
+    setError(null);
+    setCode("");
+    setCodeLocked(false);
+    setStep("email");
+  };
+
+  const stepNo = step === "email" ? 1 : step === "verify" ? 2 : 3;
+  const title =
+    step === "email"
+      ? t("auth.signup.title")
+      : step === "verify"
+        ? t("auth.verify.title")
+        : t("auth.onboarding.title");
+
   return (
     <>
-      <StepProgress step={step} />
+      <AuthHeading title={title} />
+      <AuthSteps current={stepNo} />
 
       {step === "email" ? (
-        <form className="auth-form" onSubmit={(e) => void submitEmail(e)}>
-          <TextField
-            type="email"
-            autoComplete="email"
-            label={t("auth.signup.email")}
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            error={error ?? undefined}
-            required
-          />
-          <button type="submit" className="auth-submit" disabled={submitting}>
-            {submitting ? t("auth.signup.emailSending") : t("auth.signup.emailNext")}
-          </button>
-
-          <div className="auth-divider">{t("auth.divider.or")}</div>
+        <>
+          <form className="auth-form" onSubmit={(e) => void submitEmail(e)}>
+            {error ? <AuthAlert>{error}</AuthAlert> : null}
+            <TextField
+              type="email"
+              autoComplete="email"
+              label={t("auth.signup.email")}
+              placeholder={t("auth.field.emailPlaceholder")}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              aria-invalid={Boolean(error)}
+              autoFocus
+              required
+            />
+            <button type="submit" className="auth-submit" disabled={submitting}>
+              {submitting ? t("auth.signup.emailSending") : t("auth.signup.emailNext")}
+            </button>
+          </form>
           <OAuthButtons onAuthNavigate={onAuthNavigate} />
-        </form>
+        </>
       ) : null}
 
       {step === "verify" ? (
         <form className="auth-form" onSubmit={(e) => void submitCode(e)}>
-          <TextField
-            type="text"
-            inputMode="text"
-            autoCapitalize="characters"
-            autoComplete="off"
-            pattern="[A-Za-z0-9]{6}"
-            maxLength={6}
-            label={t("auth.signup.code")}
-            value={code}
-            // 백엔드 인증코드는 영숫자 6자(예: PW1YOT) — 대문자로 정규화
-            onChange={(e) =>
-              setCode(
-                e.target.value.replace(/[^A-Za-z0-9]/g, "").toUpperCase().slice(0, 6),
-              )
-            }
-            hint={email}
-            error={error ?? undefined}
-            autoFocus
-            required
-          />
-          <button type="submit" className="auth-submit" disabled={submitting || code.length !== 6}>
+          <p className="auth-lead">{t("auth.verify.lead", { email })}</p>
+          {error ? <AuthAlert>{error}</AuthAlert> : null}
+          <CodeBoxes value={code} onChange={setCode} disabled={codeLocked} autoFocus />
+          <button
+            type="submit"
+            className="auth-submit"
+            disabled={submitting || codeLocked || code.length !== CODE_LENGTH}
+          >
             {submitting ? t("auth.login.submitting") : t("auth.signup.codeVerify")}
           </button>
-          <button
-            type="button"
-            className="auth-secondary"
-            onClick={() => void resendCode()}
-            disabled={cooldownLeft > 0 || submitting}
-          >
-            {cooldownLeft > 0
-              ? t("auth.signup.codeResendIn", { n: cooldownLeft })
-              : t("auth.signup.codeResend")}
-          </button>
+          <div className="auth-row">
+            <button type="button" className="auth-link" onClick={goBackToEmail}>
+              {t("auth.signup.back")}
+            </button>
+            {cooldownLeft > 0 ? (
+              <span className="auth-muted" aria-live="polite">
+                {t("auth.signup.codeResendIn", { n: cooldownLeft })}
+              </span>
+            ) : (
+              <button
+                type="button"
+                className="auth-link"
+                onClick={() => void resendCode()}
+                disabled={submitting}
+              >
+                {t("auth.signup.codeResend")}
+              </button>
+            )}
+          </div>
           {/* mock 모드에서만: 코드를 콘솔에서 확인하라는 안내. API 모드는 메일 발송 */}
-          {!USE_API ? (
-            <p className="auth-console-hint">{t("auth.consoleHint")}</p>
-          ) : null}
+          {!USE_API ? <p className="auth-note">{t("auth.consoleHint")}</p> : null}
         </form>
       ) : null}
 
       {step === "profile" ? (
         <form className="auth-form" onSubmit={(e) => void submitProfile(e)}>
+          {error && !(passwordConfirm && password !== passwordConfirm) ? <AuthAlert>{error}</AuthAlert> : null}
           <TextField
             type="text"
             label={t("auth.signup.displayName")}
             placeholder={t("auth.signup.displayNamePlaceholder")}
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
+            autoFocus
             required
           />
           <PasswordField
@@ -230,7 +281,7 @@ export function SignupForm({ onAuthNavigate }: SignupFormProps) {
             error={
               passwordConfirm && password !== passwordConfirm
                 ? t("auth.signup.passwordMismatch")
-                : error ?? undefined
+                : undefined
             }
             required
           />
@@ -240,16 +291,12 @@ export function SignupForm({ onAuthNavigate }: SignupFormProps) {
             onCountryChange={setCountry}
             onRegionChange={setRegion}
           />
-          <Checkbox
-            checked={termsAccepted}
-            onChange={(e) => setTermsAccepted(e.target.checked)}
-            label={t("auth.signup.terms")}
-          />
-          <Checkbox
-            checked={rememberMe}
-            onChange={(e) => setRememberMe(e.target.checked)}
-            label={t("auth.login.rememberMe")}
-          />
+          <div className="auth-row">
+            <AuthSwitch checked={termsAccepted} onChange={setTermsAccepted} label={t("auth.signup.terms")} />
+          </div>
+          <div className="auth-row">
+            <AuthSwitch checked={rememberMe} onChange={setRememberMe} label={t("auth.login.rememberMe")} />
+          </div>
           <button
             type="submit"
             className="auth-submit"
@@ -268,47 +315,12 @@ export function SignupForm({ onAuthNavigate }: SignupFormProps) {
         </form>
       ) : null}
 
-      <p className="auth-footer">
-        {t("auth.signup.haveAccount")}
-        <button
-          type="button"
-          className="auth-link"
-          onClick={() => onAuthNavigate("login")}
-        >
+      <p className="auth-foot">
+        {t("auth.signup.haveAccount")}{" "}
+        <button type="button" className="auth-link" onClick={() => onAuthNavigate("login")}>
           {t("auth.signup.loginLink")}
         </button>
       </p>
     </>
-  );
-}
-
-function StepProgress({ step }: { step: Step }) {
-  const { t } = useTranslation();
-  const steps: Array<{ id: Step; label: string }> = [
-    { id: "email", label: t("auth.signup.step1") },
-    { id: "verify", label: t("auth.signup.step2") },
-    { id: "profile", label: t("auth.signup.step3") },
-  ];
-  const currentIdx = steps.findIndex((s) => s.id === step);
-  return (
-    <div className="auth-step-progress" role="list">
-      {steps.map((s, idx) => {
-        const active = idx === currentIdx;
-        const done = idx < currentIdx;
-        return (
-          <span key={s.id} className="auth-step-row">
-            <span
-              className="auth-step-dot"
-              data-active={active ? "true" : undefined}
-              data-done={done ? "true" : undefined}
-            />
-            <span className="auth-step-label" data-active={active ? "true" : undefined}>
-              {s.label}
-            </span>
-            {idx < steps.length - 1 ? <span className="auth-step-sep">›</span> : null}
-          </span>
-        );
-      })}
-    </div>
   );
 }

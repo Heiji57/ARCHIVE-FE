@@ -1,0 +1,11 @@
+{
+  "cwd": "my-app",
+  "setup": [
+    "pnpm install",
+    "if [ -f \"$SUPERSET_ROOT_PATH/my-app/.env.local\" ]; then cp -n \"$SUPERSET_ROOT_PATH/my-app/.env.local\" .env.local; fi"
+  ],
+  "teardown": [],
+  "run": [
+    "pnpm dev"
+  ]
+}

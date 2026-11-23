@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI 비서 시안 15</title>
+<meta name="description" content="Gemini · ChatGPT · Claude 에서 흔한 구성을 빌려 만든 AI 비서 시안 15개를 시작 화면부터 비교한다.">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="shared/shared.css">
+<style>
+  body{height:auto;min-height:100%}
+  .wrap{padding:28px 24px 64px;max-width:1480px}
+  h1{margin:0 0 6px;font-size:18px;font-weight:600;letter-spacing:-.2px}
+  .lead{margin:0 0 20px;color:var(--ink3);font-size:13px;max-width:84ch;line-height:1.6}
+  .tabs{position:sticky;top:0;z-index:2;display:flex;gap:4px;flex-wrap:wrap;padding:10px 0;background:var(--canvas);border-bottom:1px solid var(--line);margin-bottom:20px}
+  .tabs a{padding:5px 10px;border-radius:6px;font-size:13px;color:var(--ink3)}
+  .tabs a:hover{background:var(--s3);color:var(--ink)}
+  .tabs a b{font-family:var(--mono);color:var(--ink4);margin-right:6px;font-weight:400}
+  section{margin:0 0 36px;scroll-margin-top:60px}
+  .hd{display:flex;align-items:baseline;gap:12px;margin:0 0 8px}
+  h2{margin:0;font-size:14px;font-weight:600}
+  h2 span{font-family:var(--mono);color:var(--ink4);font-weight:400;margin-right:8px}
+  .hd p{margin:0;flex:1;font-size:12px;color:var(--ink3);line-height:1.5}
+  .hd a{font-size:12px;color:var(--primary-h);white-space:nowrap}
+  .hd a:hover{text-decoration:underline}
+  iframe{display:block;width:100%;height:780px;border:1px solid var(--line);border-radius:10px;background:var(--canvas)}
+  section.cur{opacity:.8}
+  .grp{margin:40px 0 18px;font-size:16px;font-weight:600}
+  .hd .ln{display:flex;gap:12px}
+  .hd .ln a{cursor:pointer}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>AI 비서 시안 15</h1>
+  <p class="lead">Gemini, ChatGPT, Claude 에서 흔히 쓰는 구성을 참고해 각각 다섯 개씩 만들었습니다. 로고, 고유 색, 글꼴, 문구는 쓰지 않았고 화면 짜임만 빌려 ARCHIVE 다크 셸로 새로 그렸습니다. 모든 시안은 부탁하기 전 시작 화면으로 열립니다. "부탁 보내 보기"를 누르면 예시 부탁을 보내 진행 표시와 결과를 보여 주고, "시작 화면"으로 되돌립니다. 안에서 직접 부탁해도 됩니다. 실제 AI 가 아니라 규칙으로 흉내 낸 프로토타입입니다.</p>
+  <nav class="tabs" id="tabs"></nav>
+  <div id="list"></div>
+</div>
+<script>
+  const G = [
+    ['Gemini 참고', [
+      ['g1', '두 줄 인사', '가운데 두 줄 인사(이름은 라벤더 한 색), 알약 모양 입력 바 안에 "할 일" "회고" 도구와 말하기. 진행은 "생각한 과정"이 문장으로 쌓이고 끝나면 접힘.'],
+      ['g2', '부탁 카드', '인사 아래 입력 바와 부탁 카드 네 장(누르면 바로 보냄). 진행은 한 줄 상태.'],
+      ['g3', '아래 입력 바', '인사와 오늘 현황이 위에, 입력 바는 처음부터 아래에 붙어 있음. 진행은 채워지는 막대.'],
+      ['g4', '오늘 브리핑', '인사 아래 오늘 일정 목록 카드, 그 아래 입력 바와 "남은 일 옮기기" "오늘 회고 쓰기". 진행은 보고 있는 자료.'],
+      ['g5', '도구 부르기', '입력 바 안에 @캘린더 @할 일 @회고 @GitHub 와 "빠르게/꼼꼼하게". 진행 표시 없이 결과가 적히는 모습.'],
+    ]],
+    ['ChatGPT 참고', [
+      ['c1', '가운데 질문', '"무엇을 도와드릴까요?"와 둥근 입력창, 아래 할 일 버튼 네 개. 답은 말풍선 없이 쓰고 아래에 복사 · 다시 · 좋아요. 진행은 "몇 초 동안 생각함" 한 줄.'],
+      ['c2', '도구 메뉴', '입력창의 "도구"를 누르면 할 일 만들기 · 회고 쓰기 · 일정 옮기기 · 캘린더 정리 메뉴(처음엔 열린 채). 진행은 도구 실행 줄마다 결과.'],
+      ['c3', '맥락 붙이기', '입력창 위에 "오늘 할 일 5개" "커밋 4개" "어제 회고"가 붙어 있고 빼고 넣을 수 있음. 진행은 보고 있는 자료.'],
+      ['c4', '예약한 일', '입력창 아래 "매일 오후 6시, 오늘 회고 초안 쓰기" 같은 예약 목록과 켜고 끄기. 진행은 시간 기록.'],
+      ['c5', '캔버스', '처음부터 왼쪽 대화, 오른쪽 빈 캔버스. 결과는 캔버스에 적히고 거기서 고쳐 저장.'],
+    ]],
+    ['Claude 참고', [
+      ['k1', '시간대 인사', '"좋은 오후예요, developer님"과 큰 카드형 입력창(짧게/자세히), 아래 최근 대화. 내 메시지는 이니셜과 함께 왼쪽. 진행은 생각한 과정.'],
+      ['k2', '연결된 도구', '입력창 아래 비서가 쓸 수 있는 도구(캘린더 · 할 일 · 회고 · GitHub)와 권한을 켜고 끄기. 진행은 도구 실행 줄.'],
+      ['k3', '결과물 옆 칸', '시작 화면에 최근 결과물 카드. 답을 받으면 결과물이 오른쪽 칸에 열리고 거기서 적히는 모습을 봄.'],
+      ['k4', '알려 둔 것', '"회고는 한 일, 배운 점, 내일 순서로" 같은 메모를 비서에게 적어 두는 칸과 비서가 볼 수 있는 자료 수. 진행은 한 줄 상태.'],
+      ['k5', '꼼꼼히 찾기', '"꼼꼼히 찾기"와 찾아볼 범위(오늘 · 1주 · 1달). 진행은 번호 붙은 자료 목록, 답에 그 번호가 붙음.'],
+    ]],
+  ];
+  document.getElementById('tabs').innerHTML = G.flatMap(([, l]) => l).map(([id, n]) => `<a href="#${id}"><b>${id.toUpperCase()}</b>${n}</a>`).join('');
+  document.getElementById('list').innerHTML = G.map(([g, l]) => `<h2 class="grp">${g}</h2>` + l.map(([id, n, d]) => `<section id="${id}">
+    <div class="hd"><h2><span>${id.toUpperCase()}</span>${n}</h2><p>${d}</p><span class="ln"><a data-go="${id}:1">부탁 보내 보기</a><a data-go="${id}:0">시작 화면</a><a href="d-ai.html?ai=${id}">이걸로 보기 →</a></span></div>
+    <iframe src="d-ai.html?ai=${id}" title="${id}. ${n}" loading="lazy" style="height:720px"></iframe></section>`).join('')).join('');
+  document.addEventListener('click', (e) => { const a = e.target.closest('[data-go]'); if (!a) return; e.preventDefault(); const [id, d] = a.dataset.go.split(':'); document.querySelector(`#${id} iframe`).src = `d-ai.html?ai=${id}${d === '1' ? '&demo=1' : ''}`; });
+</script>
+</body>
+</html>

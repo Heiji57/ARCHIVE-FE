@@ -15,7 +15,7 @@ import type {
   VerifyCodeResult,
 } from "@/app/model/types";
 import type { OAuthProvider, User } from "@/entities/user/model/types";
-import { API_BASE_URL } from "./config";
+import { API_V2_BASE_URL } from "./config";
 import { refreshAccessToken, request } from "./client";
 import { ApiError } from "./errors";
 import { toUser } from "./mappers";
@@ -35,6 +35,8 @@ async function fetchMe(opts?: {
 }
 
 // ─── 이메일 인증 (회원가입 흐름) ──────────────────────────────────────────────
+// send/confirm 은 auth v2 를 사용한다 (body 는 v1 과 동일, 에러코드만 세분화).
+// v1 코드(AUTH_TOKEN_INVALID)도 롤백 대비로 계속 처리한다.
 
 export async function apiRequestEmailCode(
   email: string,
@@ -44,13 +46,22 @@ export async function apiRequestEmailCode(
       method: "POST",
       auth: false,
       body: { email },
+      baseUrl: API_V2_BASE_URL,
     });
     return { ok: true };
   } catch (e) {
-    if (e instanceof ApiError && e.httpStatus === 429) {
-      return { ok: false, error: "cooldown" };
+    if (e instanceof ApiError) {
+      switch (e.code) {
+        case "AUTH_EMAIL_SEND_COOLDOWN":
+        case "AUTH_TOKEN_INVALID": // v1: 쿨다운을 이 코드로 반환
+          return { ok: false, error: "cooldown" };
+        case "EMAIL_DELIVERY_FAILED":
+          return { ok: false, error: "delivery-failed" };
+      }
+      if (e.httpStatus === 429) return { ok: false, error: "cooldown" };
     }
-    return { ok: false, error: "cooldown" };
+    // CACHE_UNAVAILABLE / INTERNAL_ERROR / 네트워크 오류 등
+    return { ok: false, error: "unavailable" };
   }
 }
 
@@ -63,10 +74,24 @@ export async function apiVerifyEmailCode(
       method: "POST",
       auth: false,
       body: { email, code: code.trim() },
+      baseUrl: API_V2_BASE_URL,
     });
     return { ok: true };
-  } catch {
-    return { ok: false, error: "invalid-code" };
+  } catch (e) {
+    if (e instanceof ApiError) {
+      switch (e.code) {
+        case "AUTH_EMAIL_CODE_EXPIRED":
+          return { ok: false, error: "expired" };
+        case "AUTH_EMAIL_CODE_ATTEMPTS_EXCEEDED":
+          return { ok: false, error: "attempts-exceeded" };
+        case "AUTH_EMAIL_CODE_INVALID":
+        case "AUTH_TOKEN_INVALID": // v1: 오답/만료/시도초과를 모두 이 코드로 반환
+        case "VALIDATION_ERROR":
+          return { ok: false, error: "invalid-code" };
+      }
+    }
+    // CACHE_UNAVAILABLE / INTERNAL_ERROR / 네트워크 오류 등
+    return { ok: false, error: "unavailable" };
   }
 }
 
@@ -227,6 +252,9 @@ export async function apiRestoreSession(): Promise<User | null> {
 }
 
 // ─── OAuth (팝업 + postMessage) ──────────────────────────────────────────────
+// authorize / link-init 은 auth v2 로 시작한다. 콜백 URL 은 v1 그대로
+// (/api/v1/auth/oauth/{provider}/callback — provider 에 등록된 값)이며, 콜백이
+// 보내는 oauth_error 의 error 에 세분화된 코드가 올 수 있다 (oauthErrorMessageKey 참고).
 
 interface OAuthMessage {
   type: "oauth_success" | "oauth_onboarding_required" | "oauth_error";
@@ -237,7 +265,7 @@ interface OAuthMessage {
 export function apiOAuthLogin(provider: OAuthProvider): Promise<OAuthResult> {
   return new Promise((resolve) => {
     const popup = window.open(
-      `${API_BASE_URL}/auth/oauth/${provider}/authorize`,
+      `${API_V2_BASE_URL}/auth/oauth/${provider}/authorize`,
       "oauth",
       "width=520,height=640",
     );
@@ -336,7 +364,10 @@ export async function apiLinkOAuth(
   try {
     const init = await request<
       components["schemas"]["OAuthLinkInitResponse"]
-    >(`/auth/oauth/${provider}/link/init`, { method: "POST" });
+    >(`/auth/oauth/${provider}/link/init`, {
+      method: "POST",
+      baseUrl: API_V2_BASE_URL,
+    });
     authorizeUrl = init.authorizeUrl;
   } catch (e) {
     if (e instanceof ApiError) {
@@ -344,6 +375,7 @@ export async function apiLinkOAuth(
         return { ok: false, error: "account-already-linked" };
       if (e.code === "AUTH_OAUTH_PROVIDER_ALREADY_LINKED")
         return { ok: false, error: "provider-already-linked" };
+      if (e.code === "CACHE_UNAVAILABLE") return { ok: false, error: e.code };
     }
     return { ok: false, error: "init-failed" };
   }

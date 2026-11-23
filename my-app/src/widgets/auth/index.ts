@@ -5,4 +5,4 @@ export { ForgotPasswordForm } from "./ui/ForgotPasswordForm";
 export { ResetPasswordForm } from "./ui/ResetPasswordForm";
 export { OnboardingForm } from "./ui/OnboardingForm";
 export { OAuthButtons } from "./ui/OAuthButtons";
-export { AccountTypeForm } from "./ui/AccountTypeForm";
+export { LocaleToggle } from "./ui/LocaleToggle";

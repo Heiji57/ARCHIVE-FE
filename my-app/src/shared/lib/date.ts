@@ -1,10 +1,23 @@
 import type { Locale } from "@/app/model/settings";
 
-const LOCALE_TAG: Record<Locale, string> = {
+/** 앱 locale → Intl 포맷용 BCP-47 태그. */
+export const LOCALE_TAG: Record<Locale, string> = {
   ko: "ko-KR",
   en: "en-US",
   zh: "zh-CN",
+  "zh-TW": "zh-TW",
   ja: "ja-JP",
+  es: "es-ES",
+  fr: "fr-FR",
+  de: "de-DE",
+  pt: "pt-BR",
+  it: "it-IT",
+  ru: "ru-RU",
+  vi: "vi-VN",
+  th: "th-TH",
+  id: "id-ID",
+  hi: "hi-IN",
+  tr: "tr-TR",
 };
 
 function pad(value: number) {
@@ -198,7 +211,7 @@ export function dateOfISOWeek(year: number, week: number): Date {
   );
 }
 
-export function formatMonthLabel(date: Date, locale: Locale = "ko") {
+export function formatMonthLabel(date: Date, locale: Locale) {
   return new Intl.DateTimeFormat(LOCALE_TAG[locale], {
     year: "numeric",
     month: "long",
@@ -209,7 +222,7 @@ export function formatYearMonth(date: Date) {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}`;
 }
 
-export function formatFullDate(date: Date, locale: Locale = "ko") {
+export function formatFullDate(date: Date, locale: Locale) {
   return new Intl.DateTimeFormat(LOCALE_TAG[locale], {
     year: "numeric",
     month: "long",
@@ -336,14 +349,6 @@ export function toPeriodKey(
   }
 }
 
-/** True if a "done" todo should be hidden from the Todo board (24h after completion). */
-export function isHiddenAfterDone(completedAt: string | null | undefined, now = Date.now()) {
-  if (!completedAt) return false;
-  const t = new Date(completedAt).getTime();
-  if (Number.isNaN(t)) return false;
-  return now - t >= 24 * 60 * 60 * 1000;
-}
-
 /**
  * 현재 시각 기준으로 다음 30분 경계를 시작 시간으로, 1시간 후를 종료 시간으로 반환.
  * 예: 3:12 → { startTime: "03:30", endTime: "04:30" }
@@ -368,4 +373,26 @@ export function computeAutoTodoTime(): { startTime: string; endTime: string } {
     startTime: `${pad(startH)}:${pad(startM)}`,
     endTime: `${pad(endH)}:${pad(endM)}`,
   };
+}
+
+/**
+ * "YYYY-MM-DD" → "MM.DD" (예: "2026-09-01" → "09.01"). 주제 뷰의 watermark 배너·레일
+ * 카드 전용 축약 포맷 — Intl 포맷터를 새로 안 쓰고 date_key 문자열을 그대로 슬라이스한다.
+ */
+export function formatMonthDayFromDateKey(dateKey: string): string {
+  return dateKey.slice(5).replace("-", ".");
+}
+
+/** ISO 시각을 현재 기준 상대 표현으로 (예: "2분 전", "3 hours ago"). */
+export function formatRelativeTime(iso: string, locale: Locale): string {
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
+  const sec = Math.round(diffMs / 1000);
+  const min = Math.round(sec / 60);
+  const hr = Math.round(min / 60);
+  const day = Math.round(hr / 24);
+  if (Math.abs(sec) < 60) return rtf.format(-sec, "second");
+  if (Math.abs(min) < 60) return rtf.format(-min, "minute");
+  if (Math.abs(hr) < 24) return rtf.format(-hr, "hour");
+  return rtf.format(-day, "day");
 }

@@ -19,6 +19,6 @@ export function translate(
   key: TranslationKey,
   vars?: Vars,
 ): string {
-  const dict = DICTIONARIES[locale] ?? DICTIONARIES.ko;
+  const dict = DICTIONARIES[locale] ?? DICTIONARIES.en;
   return interpolate(dict[key] ?? key, vars);
 }

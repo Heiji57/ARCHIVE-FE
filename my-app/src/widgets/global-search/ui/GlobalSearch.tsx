@@ -1,23 +1,44 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Search, X } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { ChevronRight, Search } from "lucide-react";
 import { useArchiveApp } from "@/app/providers/useArchiveApp";
-import type { JournalEntry } from "@/entities/entry/model/types";
+import { useTodayKey } from "@/app/providers/useToday";
 import type { AppRoute } from "@/app/model/types";
-import type { GlobalSearchResult } from "@/shared/api";
+import type { JournalEntry } from "@/entities/entry/model/types";
+import { entryDisplayTitle } from "@/entities/entry/lib/summaryTitle";
 import type { Todo } from "@/entities/todo/model/types";
-import { useTranslation } from "@/shared/lib/i18n";
+import type { GlobalSearchResult } from "@/shared/api";
+import { useTranslation, type TranslationKey } from "@/shared/lib/i18n";
 import { useDebouncedValue } from "@/shared/lib/useDebouncedValue";
+import { ICON_STROKE } from "@/shared/ui/icons";
+import { usePaletteCommands, type PaletteCommand } from "../model/commands";
+import {
+  PALETTE_TABS,
+  buildPaletteGroups,
+  cyclePaletteTab,
+  relativeDay,
+  type PaletteTab,
+} from "../model/palette";
 
 interface Props {
-  onNavigate?: (route: AppRoute) => void;
+  open: boolean;
+  onClose: () => void;
+  onNavigate: (route: AppRoute) => void;
 }
 
+const TAB_KEY: Record<PaletteTab, TranslationKey> = {
+  all: "shell.cp.tab.all",
+  todo: "shell.cp.tab.todo",
+  retro: "shell.cp.tab.retro",
+  cmd: "shell.cp.tab.cmd",
+};
+const GROUP_KEY: Record<"todo" | "retro" | "cmd", TranslationKey> = {
+  todo: "shell.cp.tab.todo",
+  retro: "shell.cp.tab.retro",
+  cmd: "shell.cp.tab.cmd",
+};
+
 // 서버 결과와 로컬 결과를 id 기준으로 중복 제거하며 병합한다(서버 우선).
-function mergeById<T extends { id: string }>(
-  primary: T[],
-  secondary: T[],
-  limit: number,
-): T[] {
+function mergeById<T extends { id: string }>(primary: T[], secondary: T[], limit: number): T[] {
   const seen = new Set<string>();
   const merged: T[] = [];
   for (const item of [...primary, ...secondary]) {
@@ -29,286 +50,280 @@ function mergeById<T extends { id: string }>(
   return merged;
 }
 
-export function GlobalSearch({ onNavigate }: Props) {
-  const { state, requestFocus, globalSearch } = useArchiveApp();
+type CmdRow = PaletteCommand & { label: string };
+type Row =
+  | { kind: "todo"; item: Todo }
+  | { kind: "retro"; item: JournalEntry }
+  | { kind: "cmd"; item: CmdRow };
+
+/**
+ * 검색과 명령 팔레트(Ctrl+K). 시안 rest.js 의 범위 탭 검색(cp 4).
+ * 할 일과 회고는 GET /search(서버) + 지금 불러온 데이터(로컬)를 합쳐 찾는다. 데모에서는 로컬만.
+ */
+export function GlobalSearch({ open, onClose, onNavigate }: Props) {
   const { t } = useTranslation();
-  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    const d = ref.current;
+    if (!d) return;
+    if (open && !d.open) d.showModal();
+    if (!open && d.open) d.close();
+  }, [open]);
+  return (
+    <dialog
+      ref={ref}
+      className="cp-dlg"
+      aria-label={t("shell.cp.label")}
+      onCancel={(e) => {
+        e.preventDefault();
+        onClose();
+      }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      {open ? <PaletteBody onClose={onClose} onNavigate={onNavigate} /> : null}
+    </dialog>
+  );
+}
+
+function PaletteBody({ onClose, onNavigate }: { onClose: () => void; onNavigate: (route: AppRoute) => void }) {
+  const { state, requestFocus, globalSearch } = useArchiveApp();
+  const { t, locale } = useTranslation();
+  const today = useTodayKey();
+  const commands = usePaletteCommands();
   const [q, setQ] = useState("");
-  const inputRef = useRef<HTMLInputElement | null>(null);
+  const [tab, setTab] = useState<PaletteTab>("all");
+  const [index, setIndex] = useState(0);
+  const listRef = useRef<HTMLUListElement>(null);
 
-  useEffect(() => {
-    if (open) {
-      // Slight delay so transition feels intentional
-      const id = window.setTimeout(() => inputRef.current?.focus(), 100);
-      return () => window.clearTimeout(id);
-    }
-    // 닫힐 때 입력값 초기화(외부 open 상태와 동기화).
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setQ("");
-  }, [open]);
-
-  // Close on outside click
-  const wrapRef = useRef<HTMLDivElement | null>(null);
-  useEffect(() => {
-    if (!open) return;
-    const onDocClick = (e: MouseEvent) => {
-      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", onDocClick);
-    return () => document.removeEventListener("mousedown", onDocClick);
-  }, [open]);
-
-  // 입력마다 GET /search 를 호출하지 않도록 디바운스한다.
+  // 입력마다 GET /search 를 부르지 않도록 디바운스하고, 검색어별로 캐시한다.
   const debouncedQ = useDebouncedValue(q, 250);
-  // 서버(GET /search) 응답을 검색어별로 캐싱한다 — 이전에 검색했던 검색어로
-  // 되돌아가도(예: "ab" → "abc" → 다시 "ab") 재요청 없이 즉시 재사용한다.
-  // ref 로 보관하고, 갱신 시 setCacheVersion 으로 리렌더만 트리거한다.
-  const serverCacheRef = useRef<Map<string, GlobalSearchResult>>(new Map());
+  const cacheRef = useRef<Map<string, GlobalSearchResult>>(new Map());
   const [, setCacheVersion] = useState(0);
-  // 데모/mock 모드(서버 없음) → false, 로컬 필터로 폴백.
   const [serverMode, setServerMode] = useState(true);
   const reqRef = useRef(0);
 
   useEffect(() => {
     const needle = debouncedQ.trim();
-    if (!needle) return;
-    if (serverCacheRef.current.has(needle)) return; // 이미 캐시된 검색어 — 재요청 생략
+    if (!needle || cacheRef.current.has(needle)) return;
     const reqId = ++reqRef.current;
     void globalSearch(needle, 6)
       .then((res) => {
-        if (reqId !== reqRef.current) return; // stale 응답 무시
+        if (reqId !== reqRef.current) return;
         if (res === null) {
-          setServerMode(false); // 데모/mock → 로컬 필터로 폴백
+          setServerMode(false); // 데모/mock → 로컬 결과만
           return;
         }
         setServerMode(true);
-        const cache = serverCacheRef.current;
-        cache.set(needle, res);
-        if (cache.size > 20) {
-          // Map 은 삽입 순서를 보존하므로 가장 오래된 항목부터 제거한다.
-          const oldestKey = cache.keys().next().value;
-          if (oldestKey !== undefined) cache.delete(oldestKey);
+        cacheRef.current.set(needle, res);
+        if (cacheRef.current.size > 20) {
+          const oldest = cacheRef.current.keys().next().value;
+          if (oldest !== undefined) cacheRef.current.delete(oldest);
         }
-        setCacheVersion((v) => v + 1); // ref 갱신을 화면에 반영
+        setCacheVersion((v) => v + 1);
       })
       .catch(() => {
-        /* 네트워크 오류 — 아래 results 계산이 로컬 필터로 자동 폴백한다 */
+        /* 네트워크 오류 — 로컬 결과로 보여 준다 */
       });
   }, [debouncedQ, globalSearch]);
 
-  // 로컬 필터 — 서버(GET /search)와 동일하게 daily 회고만 대상으로 한다
-  // (주/월/연 요약은 서버 검색 범위 밖이라 로컬에서도 제외해야 두 결과가
-  // 어긋나지 않는다). 타이핑 중 즉시 미리보기 + 데모/mock 폴백 + 서버 결과와의
-  // 병합에 쓰인다.
-  const localResults = useMemo(() => {
-    const needle = q.trim().toLowerCase();
-    if (!needle) return { todos: [], entries: [] };
-    const todos = state.todos
-      .filter((todo) => todo.title.toLowerCase().includes(needle))
-      .slice(0, 6);
-    const entries = state.entries
-      .filter((e) => e.retroType === "daily")
-      .filter(
-        (e) =>
-          e.title.toLowerCase().includes(needle) ||
-          e.content.toLowerCase().includes(needle),
-      )
-      .slice(0, 6);
-    return { todos, entries };
-  }, [state.todos, state.entries, q]);
+  const needle = q.trim().toLowerCase();
+  const dailies = useMemo(() => state.entries.filter((e) => e.retroType === "daily"), [state.entries]);
+  const local = useMemo(() => {
+    if (!needle) return { todos: state.todos, entries: dailies };
+    return {
+      todos: state.todos.filter((x) => x.title.toLowerCase().includes(needle)).slice(0, 6),
+      entries: dailies
+        .filter((e) => e.title.toLowerCase().includes(needle) || e.content.toLowerCase().includes(needle))
+        .slice(0, 6),
+    };
+  }, [needle, state.todos, dailies]);
+  const server = serverMode && needle && q.trim() === debouncedQ.trim() ? cacheRef.current.get(q.trim()) : undefined;
+  const found = server
+    ? { todos: mergeById(server.todos, local.todos, 6), entries: mergeById(server.entries, local.entries, 6) }
+    : local;
 
-  // 디바운스가 현재 입력값에 따라잡은(q === debouncedQ) 검색어의 서버 응답이
-  // 캐시에 있으면 로컬 결과와 "병합"해서 보여준다(교체가 아니라 합집합, id로
-  // 중복 제거하며 서버 결과 우선) — 서버 응답이 도착하는 순간 항목이 사라지거나
-  // 리스트가 통째로 바뀌는 깜빡임을 없앤다. 아직 응답이 없거나(타이핑 중) 데모
-  // 모드면 로컬 결과만 쓴다.
-  const settled = q.trim() === debouncedQ.trim();
-  const serverResult =
-    serverMode && settled
-      ? serverCacheRef.current.get(debouncedQ.trim())
-      : undefined;
-  const results: GlobalSearchResult = serverResult
-    ? {
-        todos: mergeById(serverResult.todos, localResults.todos, 6),
-        entries: mergeById(serverResult.entries, localResults.entries, 6),
-      }
-    : localResults;
-
-  const hasResults = results.todos.length > 0 || results.entries.length > 0;
-
-  // 할 일 선택 → 캘린더로 이동해 해당 날짜/상세를 연다.
-  const goToTodo = (todo: Todo) => {
-    setOpen(false);
-    requestFocus({ kind: "todo", todoId: todo.id, dateKey: todo.dateKey });
-    onNavigate?.("calendar");
-  };
-
-  // 회고 선택 → 회고록으로 이동해 해당 회고를 연다.
-  const goToEntry = (entry: JournalEntry) => {
-    setOpen(false);
-    requestFocus({ kind: "entry", entryId: entry.id });
-    onNavigate?.("retrospectives");
-  };
-
-  // 화살표 이동을 위해 할일+회고를 화면 표시 순서(할일 먼저) 그대로 한 줄로 펼친다.
-  type FlatResult =
-    | { kind: "todo"; item: Todo }
-    | { kind: "entry"; item: JournalEntry };
-  const flatResults: FlatResult[] = useMemo(
-    () => [
-      ...results.todos.map((item): FlatResult => ({ kind: "todo", item })),
-      ...results.entries.map((item): FlatResult => ({ kind: "entry", item })),
-    ],
-    [results],
+  const cmdRows: CmdRow[] = commands.map((c) => ({ ...c, label: t(c.labelKey) }));
+  const groups = buildPaletteGroups({ q, tab, todos: found.todos, entries: found.entries, commands: cmdRows, today });
+  const rows: Row[] = groups.flatMap((g): Row[] =>
+    g.kind === "todo"
+      ? g.items.map((item) => ({ kind: "todo", item }))
+      : g.kind === "retro"
+        ? g.items.map((item) => ({ kind: "retro", item }))
+        : g.items.map((item) => ({ kind: "cmd", item })),
   );
+  const active = rows.length ? Math.min(index, rows.length - 1) : -1;
 
-  // 하이라이트된 결과 인덱스(화살표 이동). 검색어가 바뀌면 첫 항목으로 리셋.
-  const [highlightedIndex, setHighlightedIndex] = useState(0);
   useEffect(() => {
-    // 검색어 변경 시 이전 결과 기준 하이라이트를 유지하지 않도록 리셋 — 의도적.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setHighlightedIndex(0);
-  }, [q]);
-  const activeIndex =
-    flatResults.length > 0
-      ? Math.min(highlightedIndex, flatResults.length - 1)
-      : -1;
+    listRef.current?.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: "nearest" });
+  }, [active, q, tab]);
 
-  const activateAt = (index: number) => {
-    const target = flatResults[index];
-    if (!target) return;
-    if (target.kind === "todo") goToTodo(target.item);
-    else goToEntry(target.item);
+  const dayText = (dateKey: string) => {
+    const r = relativeDay(dateKey, today);
+    if (r) return t(`shell.cp.${r}`);
+    const [, m, d] = dateKey.split("-").map(Number);
+    return new Intl.DateTimeFormat(locale, { month: "short", day: "numeric" }).format(new Date(2000, m - 1, d));
+  };
+  const timeText = (hhmm: string) => {
+    const [h, m] = hhmm.split(":").map(Number);
+    return new Intl.DateTimeFormat(locale, { hour: "numeric", minute: "2-digit" }).format(new Date(2000, 0, 1, h, m));
+  };
+
+  const run = (row: Row | undefined) => {
+    if (!row) return;
+    onClose();
+    if (row.kind === "todo") {
+      requestFocus({ kind: "todo", todoId: row.item.id, dateKey: row.item.dateKey });
+      onNavigate("calendar");
+    } else if (row.kind === "retro") {
+      requestFocus({ kind: "entry", entryId: row.item.id });
+      onNavigate("retrospectives");
+    } else {
+      row.item.run();
+    }
+  };
+
+  let n = -1;
+  const rowEl = (row: Row): ReactNode => {
+    n++;
+    const i = n;
+    const { icon, label, meta } =
+      row.kind === "todo"
+        ? {
+            icon: <TodoGlyph />,
+            label: row.item.title,
+            meta: `${dayText(row.item.dateKey)}, ${row.item.startTime ? timeText(row.item.startTime) : t("shell.cp.noTime")}`,
+          }
+        : row.kind === "retro"
+          ? { icon: <DocGlyph />, label: entryDisplayTitle(row.item, locale), meta: dayText(row.item.dateKey) }
+          : {
+              icon: <ChevronRight size={16} strokeWidth={ICON_STROKE} aria-hidden="true" />,
+              label: row.item.label,
+              meta: row.item.hint ?? "",
+            };
+    return (
+      <li
+        key={`${row.kind}-${row.item.id}`}
+        role="option"
+        id={`cp-o${i}`}
+        aria-selected={i === active}
+        onMouseMove={() => i !== active && setIndex(i)}
+        onClick={() => run(row)}
+      >
+        {icon}
+        <span className="cp-l">{label}</span>
+        <small>{meta}</small>
+      </li>
+    );
   };
 
   return (
-    <div className="global-search" data-open={open} ref={wrapRef}>
-      <div className="global-search-wrap">
+    <div
+      className="cp-w"
+      onKeyDown={(e) => {
+        if (e.nativeEvent.isComposing) return;
+        if (e.key === "ArrowDown" && rows.length) {
+          e.preventDefault();
+          setIndex((active + 1) % rows.length);
+        } else if (e.key === "ArrowUp" && rows.length) {
+          e.preventDefault();
+          setIndex((active - 1 + rows.length) % rows.length);
+        } else if (e.key === "Enter") {
+          e.preventDefault();
+          run(rows[active]);
+        } else if (e.key === "Tab") {
+          e.preventDefault();
+          setTab(cyclePaletteTab(tab, e.shiftKey ? -1 : 1));
+          setIndex(0);
+        }
+      }}
+    >
+      <div className="cp-s">
+        <Search size={16} strokeWidth={2} aria-hidden="true" />
         <input
-          ref={inputRef}
-          className="global-search-input"
-          placeholder={t("search.placeholder")}
+          autoFocus
+          role="combobox"
+          aria-expanded="true"
+          aria-controls="cp-list"
+          aria-activedescendant={active >= 0 ? `cp-o${active}` : undefined}
+          aria-label={t("shell.cp.input")}
+          autoComplete="off"
+          placeholder={t("shell.cp.placeholder")}
           value={q}
-          onChange={(e) => setQ(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              activateAt(activeIndex);
-            } else if (e.key === "Escape") {
-              setOpen(false);
-            } else if (e.key === "ArrowDown") {
-              if (flatResults.length === 0) return;
-              e.preventDefault();
-              setHighlightedIndex((i) => Math.min(i + 1, flatResults.length - 1));
-            } else if (e.key === "ArrowUp") {
-              if (flatResults.length === 0) return;
-              e.preventDefault();
-              setHighlightedIndex((i) => Math.max(i - 1, 0));
-            }
+          onChange={(e) => {
+            setQ(e.target.value);
+            setIndex(0);
           }}
         />
-        {open ? (
-          <Search size={14} className="global-search-icon" />
-        ) : null}
-
-        {open && q.trim() ? (
-          <div className="global-search-results" role="listbox">
-            {!hasResults ? (
-              <div className="global-search-empty">{t("search.empty")}</div>
-            ) : (
-              <>
-                {results.todos.length > 0 ? (
-                  <>
-                    <p className="global-search-section-title">
-                      {t("search.section.todos")}
-                    </p>
-                    {results.todos.map((todo, i) => (
-                      <SearchTodoRow
-                        key={todo.id}
-                        todo={todo}
-                        highlighted={i === activeIndex}
-                        onClick={() => goToTodo(todo)}
-                      />
-                    ))}
-                  </>
-                ) : null}
-                {results.entries.length > 0 ? (
-                  <>
-                    <p className="global-search-section-title">
-                      {t("search.section.entries")}
-                    </p>
-                    {results.entries.map((entry, i) => (
-                      <SearchEntryRow
-                        key={entry.id}
-                        entry={entry}
-                        highlighted={results.todos.length + i === activeIndex}
-                        onClick={() => goToEntry(entry)}
-                      />
-                    ))}
-                  </>
-                ) : null}
-              </>
-            )}
-          </div>
-        ) : null}
+        <kbd>Esc</kbd>
       </div>
-
-      <button
-        type="button"
-        className="btn-icon"
-        aria-label={open ? t("search.close") : "Search"}
-        onClick={() => setOpen((v) => !v)}
-      >
-        {open ? <X size={16} /> : <Search size={16} />}
-      </button>
+      <div className="cp-tabs" role="tablist" aria-label={t("shell.cp.scope")}>
+        {PALETTE_TABS.map((k) => (
+          <button
+            key={k}
+            type="button"
+            role="tab"
+            tabIndex={-1}
+            aria-selected={tab === k}
+            onClick={() => {
+              setTab(k);
+              setIndex(0);
+            }}
+          >
+            {t(TAB_KEY[k])}
+          </button>
+        ))}
+      </div>
+      <ul id="cp-list" ref={listRef} role="listbox" aria-label={t("shell.cp.results")}>
+        {groups.length ? (
+          groups.map((g) => [
+            <li key={`h-${g.kind}`} className="cp-h" role="presentation">
+              {t(GROUP_KEY[g.kind])}
+            </li>,
+            ...rows.filter((r) => r.kind === g.kind).map(rowEl),
+          ])
+        ) : (
+          <li className="cp-e" role="presentation">
+            {t("shell.cp.noResult", { q: q.trim() })}
+          </li>
+        )}
+      </ul>
+      <footer className="cp-f">
+        <span>
+          <kbd>↑</kbd>
+          <kbd>↓</kbd>
+          {t("shell.cp.foot.move")}
+        </span>
+        <span>
+          <kbd>Enter</kbd>
+          {t("shell.cp.foot.open")}
+        </span>
+        <span>
+          <kbd>Tab</kbd>
+          {t("shell.cp.foot.scope")}
+        </span>
+      </footer>
     </div>
   );
 }
 
-function SearchTodoRow({
-  todo,
-  highlighted,
-  onClick,
-}: {
-  todo: Todo;
-  highlighted: boolean;
-  onClick: () => void;
-}) {
+/** 시안 rest.js 의 할 일 아이콘(둥근 네모 안 체크). */
+function TodoGlyph() {
   return (
-    <button
-      type="button"
-      className="global-search-result"
-      data-highlighted={highlighted ? "true" : undefined}
-      onClick={onClick}>
-      <div>{todo.title}</div>
-      <div className="global-search-result-meta">
-        {todo.dateKey} · {todo.status}
-      </div>
-    </button>
+    <svg className="cp-i" viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="4" y="4" width="16" height="16" rx="4" />
+      <path d="m8.5 12 2.5 2.5 4.5-5" />
+    </svg>
   );
 }
 
-function SearchEntryRow({
-  entry,
-  highlighted,
-  onClick,
-}: {
-  entry: JournalEntry;
-  highlighted: boolean;
-  onClick: () => void;
-}) {
+/** 시안 rest.js 의 회고 아이콘(접힌 문서). */
+function DocGlyph() {
   return (
-    <button
-      type="button"
-      className="global-search-result"
-      data-highlighted={highlighted ? "true" : undefined}
-      onClick={onClick}>
-      <div>{entry.title}</div>
-      <div className="global-search-result-meta">
-        {entry.dateKey} · {entry.retroType}
-      </div>
-    </button>
+    <svg className="cp-i" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M6 3h9l3 3v15H6z" />
+      <path d="M9 11h6M9 15h4" />
+    </svg>
   );
 }

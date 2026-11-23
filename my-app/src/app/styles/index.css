@@ -9,6 +9,7 @@
 @import "./tokens/spacing-radius.css";
 @import "./tokens/typography.css";
 @import "./tokens/shadows.css";
+@import "./tokens/redesign.css";
 
 /* 2. Base (reset, scrollbar, focus, selection) */
 @import "./base/reset.css";
@@ -35,6 +36,7 @@
 @import "./layout/sub-header.css";
 @import "./layout/side-panel.css";
 @import "./layout/responsive.css";
+@import "./layout/redesign-shell.css";
 
 /* 6. Widget-specific styles */
 @import "./widgets/toast.css";
@@ -42,16 +44,17 @@
 @import "./widgets/search.css";
 @import "./widgets/summary.css";
 @import "./widgets/auth.css";
-@import "./widgets/todo-filter.css";
-@import "./widgets/settings.css";
+@import "./widgets/settings-sheet.css";
 @import "./widgets/calendar.css";
 @import "./widgets/retro.css";
-@import "./widgets/topic-studio.css";
+@import "./widgets/topic-v.css";
 @import "./widgets/rich-editor.css";
 @import "./widgets/todo-board.css";
+@import "./widgets/right-panel-tabs.css";
+@import "./widgets/close-day.css";
+@import "./widgets/todo-editor.css";
 @import "./widgets/disconnect-banner.css";
 @import "./widgets/dnd.css";
-@import "./widgets/dashboard.css";
 @import "./widgets/landing.css";
 
 /* 7. Legacy aliases (apple-* back-compat) */

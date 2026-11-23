@@ -12,6 +12,13 @@ dist
 dist-ssr
 *.local
 
+# stray tsc output for the vite config source (vite.config.ts is the source of truth;
+# a compiled vite.config.js sitting next to it gets loaded by Vite instead and shadows it)
+vite.config.js
+vite.config.js.map
+vite.config.d.ts
+vite.config.d.ts.map
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

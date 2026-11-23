@@ -3,7 +3,8 @@ import { useArchiveApp } from "@/app/providers/useArchiveApp";
 import type { AuthRoute } from "@/app/router/authRoute";
 import { USE_API } from "@/shared/api";
 import { useTranslation } from "@/shared/lib/i18n";
-import { Checkbox, PasswordField, TextField } from "@/shared/ui";
+import { PasswordField, TextField } from "@/shared/ui";
+import { AuthAlert, AuthHeading, AuthSwitch } from "./AuthParts";
 import { OAuthButtons } from "./OAuthButtons";
 
 interface LoginFormProps {
@@ -42,13 +43,18 @@ export function LoginForm({ onAuthNavigate }: LoginFormProps) {
 
   return (
     <>
+      <AuthHeading title={t("auth.login.title")} lead={t("auth.login.subtitle")} />
       <form className="auth-form" onSubmit={(e) => void submit(e)}>
+        {error ? <AuthAlert>{error}</AuthAlert> : null}
         <TextField
           type="email"
           autoComplete="email"
           label={t("auth.login.email")}
+          placeholder={t("auth.field.emailPlaceholder")}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          aria-invalid={Boolean(error)}
+          autoFocus
           required
         />
         <PasswordField
@@ -56,20 +62,12 @@ export function LoginForm({ onAuthNavigate }: LoginFormProps) {
           label={t("auth.login.password")}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          error={error ?? undefined}
+          aria-invalid={Boolean(error)}
           required
         />
-        <div className="auth-row-between">
-          <Checkbox
-            checked={rememberMe}
-            onChange={(e) => setRememberMe(e.target.checked)}
-            label={t("auth.login.rememberMe")}
-          />
-          <button
-            type="button"
-            className="auth-link"
-            onClick={() => onAuthNavigate("forgot-password")}
-          >
+        <div className="auth-row">
+          <AuthSwitch checked={rememberMe} onChange={setRememberMe} label={t("auth.login.rememberMe")} />
+          <button type="button" className="auth-link" onClick={() => onAuthNavigate("forgot-password")}>
             {t("auth.login.forgotPassword")}
           </button>
         </div>
@@ -78,24 +76,17 @@ export function LoginForm({ onAuthNavigate }: LoginFormProps) {
         </button>
       </form>
 
-      <div className="auth-divider">{t("auth.divider.or")}</div>
       <OAuthButtons onAuthNavigate={onAuthNavigate} />
 
-      <p className="auth-footer">
-        {t("auth.login.noAccount")}
-        <button
-          type="button"
-          className="auth-link"
-          onClick={() => onAuthNavigate("signup")}
-        >
+      <p className="auth-foot">
+        {t("auth.login.noAccount")}{" "}
+        <button type="button" className="auth-link" onClick={() => onAuthNavigate("signup")}>
           {t("auth.login.signupLink")}
         </button>
       </p>
 
       {/* mock 모드에서만: API 모드는 실제 인증이므로 콘솔 안내가 부적절 */}
-      {!USE_API ? (
-        <p className="auth-console-hint">{t("auth.consoleHint")}</p>
-      ) : null}
+      {!USE_API ? <p className="auth-note">{t("auth.consoleHint")}</p> : null}
     </>
   );
 }

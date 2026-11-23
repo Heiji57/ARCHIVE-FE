@@ -1,313 +1,254 @@
-/* ---------- Todo split view (list pane + detail pane) ---------- */
-.todo-page {
-  padding-top: 40px;
-  padding-bottom: 32px;
-}
+/* 할 일 보드(날짜별 열). 접두 bd-
+   시안: prototypes/linear-shell/d-todos.html(인라인 스타일 .board .col .ch-h .add .list),
+   shared/planner.css(카드 6번 .cv6, 마감 표시 4번 .dl4, .empty-col). 색과 글꼴은 tokens/redesign.css 토큰만. */
 
-.todo-split {
+.bd {
+  height: 100%;
   display: flex;
-  align-items: stretch;
-  gap: 24px;
-  /* box-sizing: border-box 전역 적용 상태 — sticky 네비게이션(56px)만 빼면
-     요소 박스가 뷰포트 하단까지 정확히 채워진다. 내부 패딩(top 40 + bottom 32)은
-     border-box 안에 포함되므로 별도로 뺄 필요 없다. */
-  height: max(480px, calc(100vh - 56px));
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  min-width: 0;
+  font: 400 14px/1.45 var(--font);
+  color: var(--ink);
+  background: var(--canvas);
+}
+.bd[data-dragging],
+.bd[data-dragging] * {
+  cursor: grabbing !important;
+  user-select: none;
 }
 
-@media (max-width: 900px) {
-  .todo-split {
-    flex-direction: column;
-    height: auto;
-  }
-}
-
-/* ---------- Left: list pane ---------- */
-.todo-list-pane {
-  flex: 1 1 50%;
+/* 열 */
+.bd-col {
+  flex: 0 0 272px;
+  width: 272px;
   min-width: 0;
   min-height: 0;
   display: flex;
   flex-direction: column;
+  border-right: 1px solid var(--line);
 }
-
-.todo-list {
+.bd-col.past {
+  opacity: 0.55;
+}
+.bd-col.past:hover,
+.bd-col.past:focus-within {
+  opacity: 0.85;
+}
+.bd-col.m1 {
+  border-left: 1px solid var(--line2);
+}
+.bd-h {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 14px 12px 8px;
+}
+.bd-mtag {
+  position: absolute;
+  top: 1px;
+  left: 12px;
+  font: 600 12px var(--mono);
+  letter-spacing: 0.04em;
+  color: var(--ink3);
+}
+.bd-d {
+  flex: 1;
+  min-width: 0;
+}
+.bd-d b {
+  display: block;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+}
+.bd-d small {
+  font-size: 12px;
+  color: var(--ink3);
+}
+.bd-col.today .bd-d b {
+  color: var(--primary-h);
+}
+.bd-act {
+  flex: none;
+  padding: 3px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--ink3);
+}
+.bd-act:hover {
+  background: var(--s3);
+  color: var(--ink);
+}
+.bd-add {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: calc(100% - 24px);
+  height: 32px;
+  margin: 0 12px 8px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--s1);
+  font-size: 13px;
+  color: var(--ink3);
+  text-align: left;
+  cursor: pointer;
+}
+.bd-add:hover {
+  border-color: var(--line2);
+  background: var(--s2);
+  color: var(--ink);
+}
+.bd-list {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  margin-top: 16px;
-  border-top: 1px solid var(--color-divider-soft);
-  padding-right: 2px;
-  scrollbar-width: thin;
-  scrollbar-color: var(--color-divider-soft) transparent;
-}
-/* TodoBoard.tsx는 각 행을 `<div key={todo.id}>`로 감싸고, 상태 헤더가 있으면
-   그 안에 함께 넣는다 — 이 unstyled wrapper가 `.todo-list-header`의 sticky
-   포함 블록이 되어버려서, 헤더가 리스트 전체가 아니라 자기 행 높이만큼만
-   "붙어" 있다가 사라진다. wrapper를 레이아웃 트리에서 제거해(`display: contents`)
-   헤더가 `.todo-list`를 기준으로 정상적으로 sticky 되도록 한다.
-   (`.todo-list-empty`는 자체 박스가 필요하므로 제외한다.) */
-.todo-list > div:not(.todo-list-empty) {
-  display: contents;
-}
-
-@media (max-width: 900px) {
-  .todo-list {
-    max-height: 480px;
-  }
-}
-
-.todo-list-empty {
-  padding: 48px 12px;
-  text-align: center;
-  font-size: 12px;
-  color: var(--color-ink-muted-48);
-}
-
-.todo-list-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 9px 4px;
-  position: sticky;
-  top: 0;
-  background: var(--color-canvas);
-  z-index: 1;
-}
-.todo-list-header-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  background: var(--color-ink-muted-48);
-}
-.todo-list-header[data-status="in-progress"] .todo-list-header-dot { background: var(--color-primary); }
-.todo-list-header[data-status="done"] .todo-list-header-dot { background: var(--color-status-done); }
-.todo-list-header-label {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--color-body-muted);
-}
-.todo-list-header-count {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  color: var(--color-ink-muted-48);
-}
-
-/* ---------- Todo list row (replaces kanban card) ---------- */
-.todo-list-row {
-  display: flex;
-  gap: 12px;
-  align-items: flex-start;
-  padding: 12px 6px;
-  border-bottom: 1px solid var(--color-divider-soft);
-  border-left: 2px solid transparent;
-  cursor: pointer;
-  transition: background 100ms ease, border-color 100ms ease;
-}
-.todo-list-row:hover {
-  background: var(--color-tile-2);
-}
-.todo-list-row[data-selected="true"] {
-  background: var(--color-tile-2);
-  border-left-color: var(--color-primary);
-}
-.todo-list-row-status-btn {
-  flex: none;
-  margin-top: 1px;
-  cursor: pointer;
-  display: flex;
-}
-.todo-list-row-body {
-  flex: 1;
-  min-width: 0;
-}
-.todo-list-row-top {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-}
-.todo-list-row-title {
-  margin: 0;
-  flex: 1;
-  min-width: 0;
-  font-size: 16px;
-  font-weight: 500;
-  letter-spacing: -0.16px;
-  color: var(--color-ink);
-}
-.todo-list-row-title[data-done="true"] {
-  text-decoration: line-through;
-  color: var(--color-body-muted);
-}
-.todo-list-row-notes {
-  flex-shrink: 0;
-  margin-top: 2px;
-  color: var(--color-ink-muted-48);
-}
-.todo-list-row-meta {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 8px;
-}
-.todo-list-row-date {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-family: var(--font-mono);
-  font-size: 12px;
-  color: var(--color-body-muted);
-}
-.todo-list-row-time {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  color: var(--color-body-muted);
-}
-.todo-list-row-tag-anchor {
-  position: relative;
-  display: inline-flex;
-}
-.todo-list-row-tag-add {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  color: var(--color-body-muted);
-  background: transparent;
-  border: 1px dashed var(--color-divider-soft);
-  cursor: pointer;
-}
-.todo-list-row-tag-add:hover {
-  color: var(--color-ink);
-  border-color: var(--color-ink-muted-48);
-  background: var(--color-tile-3);
-}
-.todo-list-row-tag-popover {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  z-index: 31;
-  min-width: 220px;
-  max-width: 280px;
-  padding: 10px;
-  border-radius: var(--r-md);
-  background: var(--color-tile-3);
-  border: 1px solid var(--color-divider-soft);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.24);
-}
-
-/* ---------- Filter rows (date range + status) ----------
-   `.todo-filter-row`/`.todo-filter-btn` 기본 규칙(배경/보더/hover/[data-active])은
-   이 파일에 없다 — 기존 `TodoFilterRow.tsx`가 이미 이 클래스들을 쓰고 있었는데도
-   원본 `todo-board.css`에는 정의가 없었으므로, 다른 전역 CSS 파일(atoms 계열)에
-   이미 정의돼 있다는 뜻이다. 여기서는 그 기본 규칙을 재정의하지 않고, todo-board
-   전용 보강 규칙만 추가한다(Step 2에서 실제 정의 위치를 확인한다). */
-.todo-filter-btn svg {
-  margin-right: 4px;
-}
-.todo-filter-btn-count {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  color: var(--color-ink-muted-48);
-  margin-left: 6px;
-}
-.todo-status-filter-row {
-  margin-top: 8px;
-}
-
-/* Wrapper around a filter button that anchors a popover */
-.todo-filter-date-wrap {
-  position: relative;
-}
-
-/* ---------- Right: detail pane ---------- */
-.todo-detail-pane {
-  flex: 1 1 50%;
-  min-width: 0;
-  min-height: 0;
-  overflow: hidden;
-  background: var(--color-tile-2);
-  border-radius: var(--r-xl);
-  border: 1px solid var(--color-divider-soft);
-}
-@media (max-width: 900px) {
-  .todo-detail-pane {
-    min-height: 480px;
-  }
-}
-.todo-detail-pane-empty {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.todo-detail-empty {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  text-align: center;
-  padding: 24px;
+  gap: 6px;
+  padding: 0 12px 24px;
 }
-.todo-detail-empty-icon {
-  color: var(--color-ink-muted-48);
+.bd-list.drop {
+  background: var(--primary-a);
 }
-.todo-detail-empty-title {
-  margin: 0;
-  font-size: 16px;
-  color: var(--color-body-muted);
-}
-.todo-detail-empty-desc {
-  margin: 0;
+.bd-empty {
+  padding: 16px;
+  border: 1px dashed var(--line);
+  border-radius: var(--r2);
   font-size: 12px;
-  color: var(--color-ink-muted-48);
+  color: var(--ink4);
+  text-align: center;
 }
 
-/* ---------- Quick capture (bar above the list) ---------- */
-.quick-capture {
-  display: flex;
-  gap: 12px;
-  align-items: stretch;
-  margin-bottom: 24px;
-}
-/* 입력 박스 — 독립된 큰 라운드 컨테이너 */
-.quick-capture-input-wrap {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 14px 20px;
-  background: var(--color-tile-1);
-  border: 1px solid var(--color-divider-soft);
-  border-radius: var(--r-lg);
-}
-.quick-capture-input-wrap > svg {
-  color: var(--color-body-muted);
-  flex-shrink: 0;
-}
-.quick-capture-input {
-  flex: 1;
-  font-size: 18px;
-  min-width: 0;
-}
-/* 날짜칩 · Add 버튼 — 입력 박스와 분리된 형제, 높이 동일(stretch) */
-.quick-capture-date-wrap {
+/* 카드 6번 */
+.bd-c {
   position: relative;
-  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 9px 10px 9px 13px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--tc) 9%, var(--s1));
+  border: 1px solid color-mix(in srgb, var(--tc) 16%, var(--line));
+  cursor: grab;
+  touch-action: none;
+  transition: background 0.12s;
 }
-.quick-capture-date-btn {
-  height: 100%;
-  padding: 0 16px;
+.bd-c::before {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--tc);
 }
-.quick-capture-date-btn[data-active="true"] {
-  background: var(--color-ink);
-  color: var(--color-canvas);
-  border-color: var(--color-ink);
+.bd-c:hover {
+  background: color-mix(in srgb, var(--tc) 15%, var(--s1));
 }
-.quick-capture-submit {
-  flex-shrink: 0;
-  padding: 0 22px;
+.bd-c[data-dragging] {
+  border-color: var(--tc);
+  box-shadow: 0 0 0 1px var(--tc);
+}
+.bd-c[data-cal]::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 8px;
+  width: 6px;
+  height: 10px;
+  background: var(--cc);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 72%, 0 100%);
+}
+.bd-t {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.bd-c[data-st="done"] .bd-t {
+  color: var(--ink3);
+  text-decoration: line-through;
+  text-decoration-color: var(--ink4);
+}
+.bd-w {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font: 400 12px var(--mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink2);
+}
+.bd-w em {
+  font-style: normal;
+  color: var(--ink4);
+}
+
+/* 기간 할 일(마감 표시 4번 "열기"): 마감 쪽으로 진해지는 바탕, 오늘 선, 지나면 빗금 */
+.bd-c.sp {
+  --g: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--tc) 6%, var(--s1)),
+    color-mix(in srgb, var(--tc) var(--hp), var(--s1))
+  );
+  padding-left: 10px;
+  overflow: hidden;
+  background: var(--g);
+  border-color: color-mix(in srgb, var(--tc) 22%, var(--line));
+  border-right: 3px solid var(--tc);
+}
+.bd-c.sp::before {
+  display: none;
+}
+.bd-c.sp:hover {
+  background: linear-gradient(0deg, color-mix(in srgb, var(--ink) 3%, transparent), color-mix(in srgb, var(--ink) 3%, transparent)),
+    var(--g);
+}
+.bd-c.sp.late {
+  background:
+    repeating-linear-gradient(135deg, transparent 0 6px, color-mix(in srgb, var(--tc) 22%, transparent) 6px 8px),
+    var(--g);
+}
+.bd-c.sp.fin {
+  background: color-mix(in srgb, var(--tc) 10%, var(--s1));
+}
+.bd-c.sp .bd-w {
+  flex-wrap: wrap;
+}
+.bd-hl {
+  margin-left: auto;
+  font: 600 12px var(--font);
+  color: var(--ink2);
+  white-space: nowrap;
+}
+.bd-c[data-st="in-progress"] .bd-hl {
+  color: var(--primary-h);
+}
+.bd-c[data-st="done"] .bd-hl {
+  color: var(--done);
+}
+.bd-tdy {
+  position: absolute;
+  left: var(--p);
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: color-mix(in srgb, var(--ink) 28%, transparent);
+  pointer-events: none;
+}
+
+.bd :is(button, [role="button"]):focus-visible {
+  outline: 2px solid var(--primary-h);
+  outline-offset: 1px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bd-c {
+    transition: none;
+  }
 }

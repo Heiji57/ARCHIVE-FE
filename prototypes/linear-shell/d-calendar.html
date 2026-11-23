@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ARCHIVE 시안 D · 캘린더</title>
+<meta name="description" content="Notion Calendar 구조. 주간은 옆으로, 월간은 위아래로 끝없이 스크롤. 카드 색은 할 일 상태, 기간 할 일은 마감 깃발.">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="shared/shared.css">
+<link rel="stylesheet" href="shared/planner.css">
+<link rel="stylesheet" href="shared/usermenu.css">
+<link rel="stylesheet" href="shared/logo.css">
+<link rel="stylesheet" href="shared/rest.css">
+<link rel="stylesheet" href="shared/pet.css">
+<link rel="stylesheet" href="shared/pickers.css">
+<link rel="stylesheet" href="shared/sidevar.css">
+<link rel="stylesheet" href="shared/lab3.css">
+<link rel="stylesheet" href="shared/todomodal.css">
+<link rel="stylesheet" href="shared/lab4.css">
+<link rel="stylesheet" href="shared/rpanel.css">
+<link rel="stylesheet" href="shared/newtodo.css">
+<style>
+  main{grid-column:2;display:flex;flex-direction:column;min-width:0;min-height:0}
+  #topx{display:flex;align-items:center;gap:8px}
+  .scroll{flex:1;overflow:auto;min-height:0;overscroll-behavior:contain}
+  /* ----- 일간: 하루가 화면 하나, 옆으로 넘기면 다음 날 ----- */
+  .scroll.dayv{scroll-snap-type:x mandatory}
+  .dayv .dh{scroll-snap-align:start;scroll-margin-left:56px;flex-direction:row;justify-content:flex-start;padding:12px 16px 10px}
+  .dayv .dh button{flex-direction:row;align-items:center;gap:10px;padding:2px 8px 2px 2px}
+  .dayv .dh .dn{order:-1;font-size:20px;min-width:38px;height:38px}
+  .dayv .dh .dw{font-size:14px;color:var(--ink2)}
+  .dayv .dh .dl2{font-size:12px;color:var(--ink3);margin-left:4px}
+  .dayv .ng-col .ev{right:12px}
+  .dayv .ev .t{-webkit-line-clamp:1}
+  .dayv .ev .nt{display:block}
+  .dayv .ev:not(.xs) .tgs{margin-top:2px}
+  .dayv .ng-col{border-right:1px solid var(--line)}
+
+  /* ----- 주간: 가로로 이어지는 날짜 열 ----- */
+  .wk2{width:max-content;min-width:100%}
+  .w-top{position:sticky;top:0;z-index:6;background:var(--canvas)}
+  .w-row{display:grid;grid-template-columns:56px repeat(var(--n),var(--cw))}
+  .corner{position:sticky;left:0;z-index:5;background:var(--canvas)}
+  .tz{font-size:12px;color:var(--ink4);display:flex;align-items:flex-end;justify-content:flex-end;padding:0 8px 8px 0}
+  .dh{padding:10px 6px 8px;display:flex;flex-direction:column;align-items:center;gap:5px;min-width:0;text-align:center}
+  .dh.drop{background:var(--primary-a)}
+  .dh button{display:flex;flex-direction:column;align-items:center;gap:3px;border-radius:6px;padding:2px 6px}
+  .dh button:hover{background:var(--s2)}
+  .dh .dw{font-size:12px;color:var(--ink3);white-space:nowrap}
+  .dh .dw b{font-weight:600;color:var(--ink2);margin-right:4px}
+  .dh .dn{font:500 16px/28px var(--font);font-variant-numeric:tabular-nums;width:28px;height:28px;display:block;text-align:center;border-radius:50%;color:var(--ink)}
+  .dh.today .dn{background:var(--primary);color:#fff}
+  .dh.today .dw{color:var(--primary-h)}
+  .dh.past .dn,.dh.past .dw{color:var(--ink4)}
+  .dh.sel:not(.today) .dn{box-shadow:inset 0 0 0 1px var(--line2)}
+  .dh.we{background:var(--we)}
+  .dh.sun:not(.today) .dw{color:var(--sun)}
+  .dh.sat:not(.today) .dw{color:var(--sat)}
+  .dh.past.sun .dw,.dh.past.sat .dw{opacity:.6}
+  .dh .bm{color:var(--primary-h);display:inline-flex;vertical-align:-2px;margin-left:3px}
+  .dh .bm svg{width:11px;height:11px}
+  /* 하루 용량 막대: 계획 / 8시간, 초록은 끝낸 시간 */
+  .w-row.ad{border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+  .w-row.ad .lb{font-size:12px;color:var(--ink4);text-align:right;padding:9px 8px 0 0}
+  .adg{background:linear-gradient(90deg,var(--we) 0 var(--cw),transparent var(--cw) calc(var(--cw)*6),var(--we) calc(var(--cw)*6) calc(var(--cw)*7)) 0 0/calc(var(--cw)*7) 100% repeat-x}
+  .adg{grid-column:2/-1;display:grid;grid-template-columns:repeat(var(--n),var(--cw));grid-auto-flow:row dense;gap:4px 0;padding:6px 0;min-height:36px}
+  .adg .adb{margin:0 4px}
+
+  /* ----- 월간: 위아래로 이어지는 주 ----- */
+  .mo-h{position:sticky;top:0;z-index:4;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));background:var(--canvas);border-bottom:1px solid var(--line)}
+  .mo-h div{text-align:center;font-size:12px;color:var(--ink3);padding:9px 0}
+  .mo-g{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));grid-auto-rows:var(--rh)}
+  .mc3{border-left:1px solid var(--line);border-bottom:1px solid var(--line);padding:4px 0 6px;display:flex;flex-direction:column;gap:2px;min-width:0;overflow:hidden;transition:opacity .15s}
+  .mc3.we{background:var(--we)}
+  .mc3.sun .mn{color:var(--sun)}
+  .mc3.sat .mn{color:var(--sat)}
+  .mo-h div.we{background:var(--we)}
+  .mo-h div.sun{color:var(--sun)}
+  .mo-h div.sat{color:var(--sat)}
+  .mc3.dim > *{opacity:.4}
+  .mc3.drop{background:var(--primary-a)}
+  .mc3 .mh{display:flex;align-items:center;justify-content:center;gap:4px;padding:2px 4px 4px;position:relative}
+  .mc3 .mn{font:500 12px/1 var(--font);font-variant-numeric:tabular-nums;min-width:24px;height:24px;padding:0 6px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;color:var(--ink2)}
+  .mc3 .mn:hover{background:var(--s3)}
+  .mc3 .mn .mm{font-family:var(--font);font-weight:600;margin-right:3px;color:var(--ink)}
+  .mc3.today .mn{background:var(--primary);color:#fff}
+  .mc3.today .mn .mm{color:#fff}
+  .mc3 .bm{position:absolute;right:6px;top:4px;color:var(--primary-h)}
+  .mc3 .bm svg{width:12px;height:12px}
+  .mc3 > .me,.mc3 > .adb,.mc3 > .more{margin:0 4px}
+  .me{display:flex;align-items:center;gap:6px;height:20px;padding:0 6px;border-radius:4px;font-size:12px;min-width:0}
+  .me:hover{background:var(--s2)}
+  .me::before{content:"";flex:none;width:6px;height:6px;border-radius:2px;background:var(--tc)}
+  .me span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .me em{font:400 12px var(--mono);color:var(--ink4);font-style:normal}
+  .me[aria-current=true]{box-shadow:inset 0 0 0 1px var(--tc)}
+  .me[data-st=done] span{text-decoration:line-through;color:var(--ink3)}
+  .mc3 .adb{height:20px;font-size:12px}
+  .mc3 .adb em{display:none}
+  /* 월간의 기간 할 일: 칸을 이어 붙인 막대, 마감 칸에 깃발 */
+  .msp{position:relative;display:flex;align-items:center;gap:6px;height:20px;padding:0 6px;font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;background:color-mix(in srgb,var(--tc) 13%,var(--canvas));border-top:1px solid color-mix(in srgb,var(--tc) 30%,transparent);border-bottom:1px solid color-mix(in srgb,var(--tc) 30%,transparent)}
+  .msp.s{margin-left:4px;border-left:1px solid color-mix(in srgb,var(--tc) 30%,transparent);border-radius:10px 0 0 10px;padding-left:8px}
+  .msp.e{margin-right:4px}
+  .msp span{overflow:hidden;text-overflow:ellipsis;min-width:0}
+  .msp b{margin-left:auto;align-self:stretch;display:flex;align-items:center;padding:0 6px;margin-right:-6px;background:var(--tc);color:#fff;font:600 12px var(--mono)}
+  .msp b.soon{background:var(--warn);color:#141516}
+  .msp b.late{background:var(--danger)}
+  .msp[aria-current=true]{box-shadow:inset 0 0 0 1px var(--tc)}
+  .more{font-size:12px;color:var(--ink3);text-align:left;padding:1px 6px;border-radius:4px}
+  .more:hover{color:var(--ink);background:var(--s3)}
+
+  /* 오른쪽 패널: 선택 없을 때 하루 요약 */
+  .rp .sum{padding:12px;display:flex;flex-direction:column;gap:14px}
+  .rp .sum h3{margin:0 0 6px;font-size:12px;font-weight:600;color:var(--ink4);letter-spacing:.04em}
+  .rp .big{display:flex;gap:8px}
+  .rp .big div{flex:1;border:1px solid var(--line);border-radius:6px;padding:8px 10px;background:var(--canvas)}
+  .rp .big b{display:block;font:600 18px var(--mono)}
+  .rp .big span{font-size:12px;color:var(--ink3)}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <main aria-label="캘린더"><div class="scroll" id="view" tabindex="-1"></div></main>
+  <aside class="rp" aria-label="상세">
+    <div class="scroll" id="rpv"></div>
+    <div class="rp-f" id="rpf"><button class="btn btn-p" data-reflect><i data-ico="sparkle"></i>오늘 마무리 · 회고 초안</button></div>
+  </aside>
+</div>
+<dialog id="detail" aria-label="할 일 상세"></dialog>
+
+<script src="shared/shared.js"></script>
+<script src="shared/planner.js"></script>
+<script src="shared/logo.js"></script>
+<script src="shared/rest.js"></script>
+<script src="shared/sidevar.js"></script>
+<script src="shared/carry3.js"></script>
+<script src="shared/todomodal.js"></script>
+<script src="shared/tmodal4.js"></script>
+<script src="shared/rpanel.js"></script>
+<script src="shared/usermenu.js"></script>
+<script src="shared/pickers.js"></script>
+<script src="shared/newtodo.js"></script>
+<script>
+  const $ = (q) => document.querySelector(q), A = ARC, P = PL;
+  $('#app').insertAdjacentHTML('afterbegin', P.shell('calendar'));
+  $('#app').insertAdjacentHTML('beforeend', P.strip('하루 요약', 'retro'));
+  if (new URLSearchParams(location.search).has('embed')) { P.side = false; document.body.classList.add('embed'); }
+  A.s.view = 'week';                  /* 기본은 주간 (?view= 로 바꿈) */
+  P.rp = !!P.rpOpen;                       /* 넓은 그리드가 기본. 선택하면 오른쪽에 상세 */
+  P.detailOpts.commits = false;       /* 캘린더에는 커밋 정보 없음 */
+  const DAY = 864e5, dd = (a, b) => Math.round((A.s2d(b) - A.s2d(a)) / DAY);
+  let RH = 124;   /* 월간 한 주 높이: 한 달(5주)이 화면 높이의 80%를 채우도록 paint 에서 계산 */
+  const W = { start: null, n: 0 }, M = { start: null, n: 0 };
+  let cw = 140, lastDate = null, lastView = null, jump = true;
+
+  const ym = (s) => { const d = A.s2d(s); return `${d.getFullYear()}년 ${d.getMonth() + 1}월`; };
+
+  /* ---------- 주간 (가로 무한) ---------- */
+  function weekHTML() {
+    const days = [...Array(W.n)].map((_, i) => A.add(W.start, i)), first = days[0], last = days[days.length - 1];
+    const tw = A.weekStart(A.TODAY);
+    const head = days.map((d) => {
+      const x = A.s2d(d);
+      const wd = x.getDay(), we = wd === 0 ? 'we sun' : wd === 6 ? 'we sat' : '';
+      return `<div class="dh ${we} ${d === A.TODAY ? 'today' : ''} ${d < A.TODAY ? 'past' : ''} ${d === A.s.date ? 'sel' : ''}" data-drop="${d}">
+        <button data-pick="${d}" aria-label="${A.label(d)}"><span class="dw">${x.getDate() === 1 || A.s.view === 'day' ? `<b>${x.getMonth() + 1}월</b>` : ''}${A.DOW[x.getDay()]}${A.s.view === 'day' ? '요일' : ''}${A.retro.has(d) ? `<span class="bm" title="회고 있음">${A.ico.mark}</span>` : ''}</span><span class="dn">${x.getDate()}</span></button></div>`;
+    }).join('');
+    const ad = A.todos.filter((t) => t.date && P.pass(t) && (t.start == null || P.multi(t)) && t.date <= last && (t.until || t.date) >= first)
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .map((t) => (P.multi(t) ? P.spanBar(t, days) : P.adb(t).replace('style="', `style="grid-column:${days.indexOf(t.date) + 1};`))).join('');
+    const cols = days.map((d) => P.dayCol(d, A.weekStart(d) === tw)).join('');
+    return `<div class="wk2" style="--n:${W.n}"><div class="w-top">
+        <div class="w-row"><div class="corner tz">GMT+9</div>${head}</div>
+        <div class="w-row ad"><div class="corner lb">종일</div><div class="adg">${ad}</div></div></div>
+      <div class="w-row"><div class="corner">${P.gutter()}</div>${cols}</div></div>`;
+  }
+
+  /* ---------- 월간 (세로 무한) ---------- */
+  function monthHTML() {
+    const cells = [...Array(M.n * 7)].map((_, i) => {
+      const d = A.add(M.start, i), x = A.s2d(d), dow = x.getDay();
+      const l = A.onDay(d).filter(P.pass);
+      const spans = l.filter(P.multi).sort((a, b) => a.date.localeCompare(b.date));
+      const rest = l.filter((t) => !P.multi(t)).sort((a, b) => (a.start == null ? -1 : a.start) - (b.start == null ? -1 : b.start));
+      const room = Math.max(2, Math.floor((RH - 56) / (P.mcV === 5 ? 37 : 22))), shown = [...spans, ...rest].slice(0, room);
+      const items = shown.map((t) => {
+        if (P.mcV) return P.monthItem(t, d, dow);
+        if (P.multi(t)) {
+          const pos = d === t.date ? 's' : d === t.until ? 'e' : 'm', due = P.due(t);
+          const label = pos === 's' || dow === 0;
+          return `<div class="msp ${pos}" role="button" tabindex="0" data-id="${t.id}" data-st="${t.status}" draggable="true" aria-current="${A.s.sel === t.id}" style="--tc:${P.STC[t.status]};--cc:${P.calC(t)}" aria-label="${A.esc(t.title)}, ${P.when(t)}">${label ? `<span>${A.esc(t.title)}</span>` : ''}${pos === 'e' ? `<b class="${due.cls}" data-d="${due.txt}">마감</b>` : ''}</div>`;
+        }
+        if (t.start == null) return P.adb(t);
+        return `<div class="me" role="button" tabindex="0" data-id="${t.id}" data-st="${t.status}" draggable="true" aria-current="${A.s.sel === t.id}" style="--tc:${P.STC[t.status]};--cc:${P.calC(t)}"><span>${A.esc(t.title)}</span><em>${A.hmc(t.start)}</em></div>`;
+      }).join('');
+      const more = l.length - shown.length;
+      return `<div class="mc3 ${dow === 0 ? 'we sun' : dow === 6 ? 'we sat' : ''} ${d === A.TODAY ? 'today' : ''} ${x.getDate() <= 7 ? 'm1' : ''}" data-drop="${d}" data-m="${d.slice(0, 7)}">
+        <div class="mh"><button class="mn" data-pick="${d}" aria-label="${A.label(d)}">${x.getDate() === 1 ? `<span class="mm">${x.getMonth() + 1}월</span>` : ''}${x.getDate()}</button>${A.retro.has(d) ? `<span class="bm" title="회고 있음">${A.ico.mark}</span>` : ''}</div>
+        ${items}${more > 0 ? `<button class="more" data-week="${d}">${more}개 더</button>` : ''}</div>`;
+    }).join('');
+    return `<div class="mo-h">${A.DOW.map((w, i) => `<div class="${i === 0 ? 'we sun' : i === 6 ? 'we sat' : ''}">${w}</div>`).join('')}</div><div class="mo-g" style="--rh:${RH}px">${cells}</div>`;
+  }
+
+  /* ---------- 범위와 스크롤 위치 ---------- */
+  const resetWeek = (d) => { W.start = A.add(A.weekStart(d), -28); W.n = 70; };
+  const resetMonth = (d) => { const f = d.slice(0, 8) + '01'; M.start = A.add(A.weekStart(f), -8 * 7); M.n = 26; };
+  function jumpTo() {
+    const v = $('#view'), d = A.s.date;
+    if (A.s.view === 'week') v.scrollLeft = dd(W.start, A.weekStart(d)) * cw;
+    else if (A.s.view === 'day') v.scrollLeft = dd(W.start, d) * cw;
+    else v.scrollTop = Math.floor(dd(M.start, A.weekStart(d.slice(0, 8) + '01')) / 7) * RH;
+  }
+  function todayDir() {
+    const v = $('#view'), vw = A.s.view;
+    if (vw === 'month') { if (!M.start) return 'in'; const r0 = Math.floor(v.scrollTop / RH), n = Math.max(1, Math.floor((v.clientHeight - 34) / RH)), r = Math.floor(dd(M.start, A.TODAY) / 7); return r < r0 ? 'up' : r > r0 + n - 1 ? 'down' : 'in'; }
+    if (!W.start) return 'in';
+    const i0 = vw === 'day' ? Math.round(v.scrollLeft / cw) : Math.floor((v.scrollLeft + 2) / cw), n = vw === 'day' ? 1 : Math.max(1, Math.floor((v.clientWidth - 56) / cw)), i = dd(W.start, A.TODAY);
+    return i < i0 ? 'left' : i > i0 + n - 1 ? 'right' : 'in';
+  }
+  function onScrollUI() {
+    const v = $('#view'); P.markToday(todayDir());
+    if (A.s.view === 'day') {
+      const d = A.add(W.start, Math.round(v.scrollLeft / cw)), x = A.s2d(d);
+      $('#ttl').textContent = `${ym(d)} ${x.getDate()}일`;
+    } else if (A.s.view === 'week') {
+      const i = Math.floor((v.scrollLeft + 1) / cw);
+      $('#ttl').textContent = ym(A.add(W.start, i + 3));
+    } else {
+      const row = Math.floor((v.scrollTop + (v.clientHeight - 34) / 2) / RH), mid = A.add(M.start, row * 7 + 3), fm = mid.slice(0, 7);
+      $('#ttl').textContent = ym(mid);
+      v.querySelectorAll('.mc3').forEach((c) => c.classList.toggle('dim', c.dataset.m !== fm));
+    }
+  }
+  let ticking = false;
+  function onScroll() {
+    if (ticking) return; ticking = true;
+    requestAnimationFrame(() => {
+      ticking = false;
+      const v = $('#view');
+      if (A.s.view !== 'month') {
+        if (v.scrollLeft < cw * 7) { W.start = A.add(W.start, -28); W.n += 28; const sl = v.scrollLeft; paint(); v.scrollLeft = sl + 28 * cw; }
+        else if (v.scrollLeft + v.clientWidth > v.scrollWidth - cw * 7) { W.n += 28; const sl = v.scrollLeft; paint(); v.scrollLeft = sl; }
+      } else {
+        if (v.scrollTop < RH * 3) { M.start = A.add(M.start, -8 * 7); M.n += 8; const st = v.scrollTop; paint(); v.scrollTop = st + 8 * RH; }
+        else if (v.scrollTop + v.clientHeight > v.scrollHeight - RH * 3) { M.n += 8; const st = v.scrollTop; paint(); v.scrollTop = st; }
+      }
+      onScrollUI();
+    });
+  }
+
+  function paint() {
+    const v = $('#view'), col = v.scrollLeft / cw, row = v.scrollTop / RH, month = A.s.view === 'month';
+    if (month) RH = Math.max(96, Math.floor(((v.clientHeight - 34) * 0.8) / 5));
+    const st = month ? Math.round(row * RH) : v.scrollTop;
+    cw = A.s.view === 'day' ? Math.max(280, v.clientWidth - 56) : Math.max(128, Math.floor((v.clientWidth - 56) / 7));
+    v.style.setProperty('--cw', cw + 'px');
+    v.classList.toggle('dayv', A.s.view === 'day');
+    v.innerHTML = A.s.view === 'month' ? monthHTML() : weekHTML();
+    v.scrollLeft = Math.round(col * cw); v.scrollTop = st;
+  }
+
+  function render() {
+    const s = A.s; if (!['day', 'week', 'month'].includes(s.view)) s.view = 'week';
+    P.frame(); P.sidebar();
+    $('#app').classList.toggle('no-rp', !P.rp);   /* 할 일 상세는 모달(todomodal.js)로 */
+    $('#topx').innerHTML = P.viewSwitch(s.view);
+
+    const v = $('#view');
+    if (s.view !== lastView) { jump = true; v.scrollLeft = 0; v.scrollTop = 0; }
+    if (s.date !== lastDate) {
+      /* 미니 달력·오늘·단축키로 날짜가 바뀌면, 보이는 범위 밖일 때만 이동 */
+      const vis = s.view === 'day' ? !!W.start && dd(W.start, s.date) === Math.round(v.scrollLeft / cw)
+        : s.view === 'week'
+        ? (() => { const i = W.start ? dd(W.start, s.date) : -1; return i >= 0 && i < W.n && i * cw >= v.scrollLeft && (i + 1) * cw <= v.scrollLeft + v.clientWidth - 56; })()
+        : (() => { const i = M.start ? Math.floor(dd(M.start, s.date) / 7) : -1; return i >= 0 && i < M.n && i * RH >= v.scrollTop && (i + 1) * RH <= v.scrollTop + v.clientHeight - 34; })();
+      if (!vis) jump = true;
+    }
+    if (jump) {
+      if (s.view !== 'month' && (!W.start || dd(W.start, s.date) < 14 || dd(W.start, s.date) > W.n - 14)) resetWeek(s.date);
+      if (s.view === 'month' && (!M.start || dd(M.start, s.date) < 28 || dd(M.start, s.date) > M.n * 7 - 42)) resetMonth(s.date);
+    }
+    paint();
+    if (jump) { jumpTo(); if (s.view !== 'month' && !v.dataset.y) { v.scrollTop = (8.5 - A.H0) * A.HH; v.dataset.y = 1; } }
+    jump = false; lastDate = s.date; lastView = s.view;
+    onScrollUI();
+
+    /* 오른쪽: 선택하면 상세, 아니면 하루 요약 */
+    const t = null;   /* 선택한 할 일은 모달로 열고 오른쪽은 늘 하루 요약 */
+    $('#rpf').hidden = !!t;
+    if (t) $('#rpv').innerHTML = P.detailHTML(t);
+    else if (P.rpHTML) { $('#rpf').hidden = true; const rv = $('#rpv'), y = rv.scrollTop; rv.innerHTML = P.rpHTML(s.date, 'cal'); rv.scrollTop = y; }
+    else {
+      const l = P.sortDay(A.onDay(s.date).filter(P.pass)), st = A.stats(s.date), q = A.queue().filter(P.pass);
+      $('#rpv').innerHTML = `<div class="sum"><b style="font-size:16px">${A.label(s.date)}</b>
+        <div class="big"><div><b>${st.done}/${st.n}</b><span>완료 / 할 일</span></div><div><b>${st.plan.toFixed(1)}h</b><span>계획 시간</span></div></div>
+        <section><h3>이 날</h3>${P.list(l, 6)}</section>
+        <section><h3>배치 대기 · 캘린더로 끌어 놓기</h3>${P.list(q, 6)}</section></div>`;
+    }
+  }
+
+  $('#view').addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', paint);
+  /* "오늘"·단축키는 항상 그 날짜로 이동 (공통 핸들러보다 먼저) */
+  document.addEventListener('click', (e) => { if (e.target.closest('[data-nav="today"]')) jump = true; }, true);
+  document.addEventListener('keydown', (e) => { if (!e.target.closest('input,textarea') && ['t', 'j', 'k'].includes(e.key.toLowerCase())) jump = true; }, true);
+  document.addEventListener('click', (e) => {
+    let el;
+    if ((el = e.target.closest('[data-pick]'))) { A.s.date = el.dataset.pick; render(); return; }
+    if ((el = e.target.closest('[data-week]'))) { A.s.date = el.dataset.week; A.s.view = 'week'; jump = true; render(); return; }
+    /* 빈 시간칸 클릭: 30분 단위로 새 할 일, 새 할 일 모달에서 상세 지정 */
+    const col = e.target.closest('.ng-col');
+    if (col && !e.target.closest('[data-id]')) {
+      const y = e.clientY - col.getBoundingClientRect().top, h = Math.min(Math.floor((A.H0 + y / A.HH) * 2) / 2, A.H1 - 1);
+      P.openNew({ date: col.dataset.lane, start: h, end: h + 1 });
+    }
+  });
+  A.init(render);
+</script>
+<script src="shared/pet.js"></script>
+</body>
+</html>

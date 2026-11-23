@@ -9,6 +9,7 @@
   padding: 8px 0;
   /* 기본 폰트 사이즈 — RichEditor 컴포넌트가 inline style로 override */
   font-size: 16px;
+  /* Notion 기본 페이지 본문 폭(708px)과 동일하게 제한 — 화면 폭을 그대로 채우지 않는다 */
 }
 
 .rich-editor-content {
@@ -506,26 +507,6 @@
   color: var(--color-ink);
 }
 
-/* 확장 버튼 (헤더 우측) */
-.retro-expand-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border: 1px solid rgba(255, 255, 255, 0.13);
-  background: rgba(255, 255, 255, 0.04);
-  color: rgba(255, 255, 255, 0.7);
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 100ms;
-}
-.retro-expand-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: rgba(255, 255, 255, 0.95);
-  border-color: rgba(255, 255, 255, 0.2);
-}
-
 /* 확장 오버레이 (Portal로 body 직속) */
 .retro-expand-overlay {
   position: fixed;
@@ -1017,4 +998,38 @@
 .rich-editor--readonly .rich-editor-content .ProseMirror {
   outline: none;
   caret-color: transparent;
+}
+
+/* 할 일 체크박스 블록 */
+.rich-editor .ProseMirror ul[data-type="taskList"] {
+  list-style: none;
+  padding-left: 0;
+}
+
+.rich-editor .ProseMirror ul[data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-xs);
+}
+
+.rich-editor .ProseMirror ul[data-type="taskList"] li > label {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 4px;
+}
+
+.rich-editor .ProseMirror ul[data-type="taskList"] li > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.rich-editor .ProseMirror ul[data-type="taskList"] input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}
+
+.rich-editor .ProseMirror ul[data-type="taskList"] li::before {
+  content: none;
 }

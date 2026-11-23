@@ -20,9 +20,13 @@ import type { Session } from "@/entities/session/model/types";
 import type { RetroTemplate } from "@/entities/template";
 import type { RecurrenceRule, RecurrenceScope, TaskStatus, Todo } from "@/entities/todo/model/types";
 import type { OAuthProvider, User } from "@/entities/user/model/types";
-import type { AppSettings, Locale } from "@/app/model/settings";
+import type { AppSettings, Locale, TodoBoardRange } from "@/app/model/settings";
 
-export type AppRoute = "dashboard" | "calendar" | "todos" | "retrospectives" | "settings";
+/**
+ * 앱 화면. "ai" 는 리디자인에서 추가. "dashboard" 와 "settings" 는 경로 호환용으로만 남는다
+ * (/dashboard → 캘린더, /settings → 캘린더 위에 설정 시트). 랜딩의 데모 진입이 "settings" 를 쓴다.
+ */
+export type AppRoute = "ai" | "calendar" | "todos" | "retrospectives" | "dashboard" | "settings";
 
 /**
  * 전역 검색 등에서 특정 대상으로 "이동 + 포커스"를 요청하는 일회성 인텐트.
@@ -264,10 +268,14 @@ export interface ArchiveAppContextValue {
    */
   loadTodosForView: (from: string, to: string) => Promise<Todo[]>;
   /**
-   * 할 일 보드 "전체" 보기 로드 — 오늘 기준 앞뒤로 rangeDays 를 나눈 구간의
+   * 할 일 보드 "전체" 보기 로드 — 오늘 기준 지난 pastDays ~ 앞으로 futureDays 구간의
    * 할 일을 (필요 시 62일 청크로 나눠) 조회해 state.todos 를 교체한다. 반환값은 위와 동일.
    */
-  loadTodosForRange: (rangeDays: number) => Promise<Todo[]>;
+  loadTodosForRange: (
+    range: TodoBoardRange,
+    /** 창 밖의 특정 날짜를 함께 조회한다(날짜 선택 필터가 창을 벗어난 경우). */
+    extraDateKey?: string,
+  ) => Promise<Todo[]>;
   /**
    * 회고록 목록 페이지 조회 (GET /entries/paginated). 과거 전체 이력을 최신순으로
    * 페이지 단위 조회하고, 받은 항목을 state.entries 에 병합한다(entries/merge).
@@ -299,6 +307,15 @@ export interface ArchiveAppContextValue {
     page: number;
     size: number;
   }) => Promise<import("@/shared/api").FolderContents | null>;
+  /**
+   * 전체 폴더 목록(GET /folders) — id·이름·부모만. 검색처럼 폴더를 가로지르는
+   * 목록에서 각 결과의 소속 경로를 조립하는 데 쓴다(GET /folders/contents 는
+   * 직계 하위만 주므로 조상을 알 수 없다).
+   * 데모/mock 모드에서는 null 을 반환한다 → 호출부는 state.folders 로 폴백한다.
+   */
+  loadAllFolders: () => Promise<
+    import("@/entities/folder/model/types").FolderSummary[] | null
+  >;
   /**
    * 폴더 생성. parentFolderId 생략/null 이면 최상위. 데모/mock 은 로컬 상태에만
    * 반영(낙관적, 서버 없음).
@@ -358,8 +375,8 @@ export interface ArchiveAppContextValue {
   setCalendarAutoPushTodo: (value: boolean) => void;
   setCalendarAutoDeleteTodo: (value: boolean) => void;
   setNotificationRetention: (days: number) => void;
-  /** 할 일 보드 "전체" 보기 기간(일). FE 전용 — localStorage 에만 저장. */
-  setTodoBoardRange: (days: number) => void;
+  /** 할 일 보드 "전체" 보기 범위. FE 전용 — localStorage 에만 저장. */
+  setTodoBoardRange: (range: TodoBoardRange) => void;
   /** 리치 에디터 맞춤법 검사 표시 여부. FE 전용 — localStorage 에만 저장. */
   setSpellCheck: (value: boolean) => void;
   setAccountType: (accountType: import("@/app/model/settings").AccountType) => void;
@@ -405,6 +422,10 @@ export interface ArchiveAppContextValue {
     name: string,
     description: string,
   ) => Promise<import("@/entities/topic/model/types").Topic>;
+  updateTopic: (
+    id: string,
+    patch: { name?: string; description?: string },
+  ) => Promise<import("@/entities/topic/model/types").Topic>;
   deleteTopic: (id: string) => Promise<void>;
   generateTopicDigest: (
     topicId: string,
@@ -412,6 +433,13 @@ export interface ArchiveAppContextValue {
   getTopicDigest: (
     topicId: string,
   ) => Promise<import("@/entities/topic/model/types").TopicDigest | null>;
+  getTopicStats: (
+    topicId: string,
+  ) => Promise<import("@/entities/topic/model/types").TopicStats>;
+  getTopicSources: (
+    topicId: string,
+    params: { page?: number; size?: number },
+  ) => Promise<import("@/entities/topic/model/types").TopicSourcePage>;
   // ─── Templates ──────────────────────────────────────────────────────────
   addTemplate: (
     retroType: RetrospectiveType,
@@ -517,11 +545,22 @@ export type OAuthResult =
 
 export type RequestCodeResult =
   | { ok: true }
-  | { ok: false; error: "already-registered" | "cooldown" };
+  | {
+      ok: false;
+      error: "already-registered" | "cooldown" | "delivery-failed" | "unavailable";
+    };
 
 export type VerifyCodeResult =
   | { ok: true }
-  | { ok: false; error: "invalid-code" | "expired" | "not-requested" };
+  | {
+      ok: false;
+      error:
+        | "invalid-code"
+        | "expired"
+        | "not-requested"
+        | "attempts-exceeded"
+        | "unavailable";
+    };
 
 export type SignupResult =
   | { ok: true; user: User }

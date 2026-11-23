@@ -1,0 +1,58 @@
+/* 왼쪽 아래 사용자 메뉴 (모든 탭 공용). shared.css 토큰만 씀 */
+:root { --um-shadow: rgba(0, 0, 0, .5); --um-scrim: rgba(1, 1, 2, .6); --um-danger: #b4432f; }
+.side .um-foot { padding-top: 8px; }
+.um-btn { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 40px; padding: 4px 8px; margin: 0 -4px; border-radius: var(--r2); color: var(--ink2); text-align: left; font-size: 13px; }
+.um-btn:hover, .um-btn[aria-expanded="true"] { background: var(--s3); color: var(--ink); }
+.um-btn:focus-visible { outline: 2px solid var(--primary-h); outline-offset: 0; }
+.um-btn > svg { width: 14px; height: 14px; color: var(--ink4); flex: none; }
+.um-who { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.um-who b { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+body.sbv4 .app.no-side .um-who, body.sbv4 .app.no-side .um-btn > svg { display: none; }
+
+.um-layer { position: fixed; inset: 0; z-index: 800; pointer-events: none; }
+.um-menu { pointer-events: auto; position: fixed; left: var(--um-x); bottom: var(--um-y); width: 264px; display: flex; flex-direction: column; gap: 1px; padding: 4px; border: 1px solid var(--line2); border-radius: 10px; background: var(--s2); box-shadow: 0 12px 32px var(--um-shadow); color: var(--ink); font-size: 13px; animation: um-in .12s ease-out; }
+.um-menu.um-sub { bottom: auto; width: 232px; }
+.um-menu button { display: flex; align-items: center; gap: 12px; min-height: 32px; padding: 0 8px; border-radius: 6px; color: var(--ink2); text-align: left; }
+.um-menu button > svg { width: 15px; height: 15px; flex: none; color: var(--ink3); }
+.um-menu button > span { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.um-menu button small { font-size: 12px; color: var(--ink4); }
+.um-menu button:hover, .um-menu button[aria-expanded="true"] { background: var(--s4); color: var(--ink); }
+.um-menu button:focus-visible { outline: 2px solid var(--primary-h); outline-offset: -2px; }
+.um-menu button[aria-checked="true"] { color: var(--ink); }
+.um-menu button[aria-checked="true"] > svg:last-child { color: var(--primary-h); }
+.um-menu .um-v { flex: none; margin-left: auto; }
+.um-menu kbd { font: 12px var(--mono); color: var(--ink4); }
+.um-menu hr { margin: 4px 0; border: 0; border-top: 1px solid var(--line); }
+.um-menu .um-me { min-height: 56px; padding: 8px; }
+.um-me .um-av { width: 32px; height: 32px; font-size: 13px; flex: none; }
+.um-me b { font-size: 14px; font-weight: 600; color: var(--ink); }
+.um-me small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.um-me em { font-style: normal; font-size: 12px; color: var(--ink3); margin-top: 2px; }
+.um-bye { padding: 12px; gap: 12px; }
+.um-bye p { margin: 0; display: flex; flex-direction: column; gap: 4px; }
+.um-bye p b { font-size: 14px; }
+.um-bye p span { font-size: 13px; color: var(--ink3); line-height: 1.5; }
+.um-ft { display: flex; justify-content: flex-end; gap: 8px; }
+.um-menu .um-b { min-height: 32px; padding: 0 12px; border: 1px solid var(--line2); justify-content: center; }
+.um-menu .um-b.p { background: var(--um-danger); border-color: var(--um-danger); color: var(--ink); }
+.um-menu .um-b.p:hover { background: var(--um-danger); filter: brightness(1.1); }
+
+.um-keys-w { position: fixed; inset: 0; z-index: 820; display: grid; place-items: center; background: var(--um-scrim); padding: 16px; }
+.um-keys { width: min(420px, 100%); padding: 20px; border: 1px solid var(--line2); border-radius: 12px; background: var(--s2); box-shadow: 0 16px 40px var(--um-shadow); }
+.um-kh { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.um-kh b { font-size: 16px; font-weight: 600; }
+.um-ib { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 6px; color: var(--ink3); }
+.um-ib:hover { background: var(--s4); color: var(--ink); }
+.um-ib:focus-visible { outline: 2px solid var(--primary-h); outline-offset: 1px; }
+.um-ib svg { width: 15px; height: 15px; }
+.um-keys dl { margin: 0; display: flex; flex-direction: column; }
+.um-keys dl div { display: flex; align-items: center; justify-content: space-between; min-height: 36px; border-top: 1px solid var(--line); font-size: 13px; }
+.um-keys dt { color: var(--ink2); }
+.um-keys dd { margin: 0; display: flex; gap: 4px; }
+.um-keys kbd { min-width: 24px; padding: 2px 4px; border: 1px solid var(--line2); border-radius: 4px; background: var(--s3); font: 12px var(--mono); color: var(--ink2); text-align: center; }
+
+.um-sheet { position: fixed; inset: 0; z-index: 790; }
+.um-sheet iframe { width: 100%; height: 100%; border: 0; background: transparent; color-scheme: dark; }
+@keyframes um-in { from { opacity: 0; transform: translateY(4px); } }
+@media (prefers-reduced-motion: reduce) { .um-menu { animation: none; } }
+.um-btn:active, .um-menu button:active, .um-ib:active { transform: translateY(1px); }

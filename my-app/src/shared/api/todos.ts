@@ -8,7 +8,7 @@ import type {
   TodoStats,
 } from "@/entities/todo/model/types";
 import { request } from "./client";
-import { toTodo, toTodoStats } from "./mappers";
+import { fromRecurrenceRule, toTodo, toTodoStats } from "./mappers";
 import type { components } from "./schema";
 
 type TodoResponse = components["schemas"]["TodoResponse"];
@@ -72,7 +72,9 @@ export async function apiCreateTodo(input: {
       ...(hasTime && { timezone: input.timezone ?? null }),
       // null/undefined 는 필드 생략 → 서버가 calendarAutoPushTodo 설정으로 처리
       ...(input.pushToCalendar != null && { push_to_calendar: input.pushToCalendar }),
-      ...(input.recurrenceRule !== undefined && { recurrence_rule: input.recurrenceRule }),
+      ...(input.recurrenceRule !== undefined && {
+        recurrence_rule: input.recurrenceRule ? fromRecurrenceRule(input.recurrenceRule) : null,
+      }),
       tags: input.tags ?? [],
       ...(input.dueDate !== undefined && { due_date_key: input.dueDate }),
     },
@@ -115,7 +117,9 @@ export async function apiUpdateTodo(
   if (patch.startTime !== undefined) body.start_time = patch.startTime;
   if (patch.endTime !== undefined) body.end_time = patch.endTime;
   if (patch.timezone !== undefined) body.timezone = patch.timezone;
-  if (patch.recurrenceRule !== undefined) body.recurrence_rule = patch.recurrenceRule;
+  if (patch.recurrenceRule !== undefined) {
+    body.recurrence_rule = patch.recurrenceRule ? fromRecurrenceRule(patch.recurrenceRule) : null;
+  }
   if (patch.tags !== undefined) body.tags = patch.tags;
   if (patch.dueDate !== undefined) body.due_date_key = patch.dueDate;
   const res = await request<TodoResponse>(`/todos/${id}`, {

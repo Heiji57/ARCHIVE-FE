@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>이월과 할 일 모달</title>
+<meta name="description" content="하루 닫기의 내일로 이월 21~25와 캘린더 할 일 모달 11~15를 비교한다.">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="shared/shared.css">
+<style>
+  /* Hallmark · scope: app screen (시안 비교 페이지) · genre: atmospheric · theme: project tokens (ARCHIVE dark, shared.css) · signature: 버튼으로 시안을 바꿔 끼우는 실제 화면 · states: 8 · mode: fast · v2.0.0 */
+  /* critique: a gallery of screenshots hides behaviour; each slot is the live page so the carry-over and the modal can be clicked through. */
+  body{height:auto;min-height:100%}
+  .wrap{padding:28px 24px 64px;max-width:1480px}
+  h1{margin:0 0 6px;font-size:18px;font-weight:600;text-wrap:balance}
+  .lead{margin:0 0 20px;color:var(--ink3);font-size:13px;max-width:92ch;line-height:1.6}
+  .tabs{position:sticky;top:0;z-index:2;display:flex;gap:4px;flex-wrap:wrap;padding:10px 0;background:var(--canvas);border-bottom:1px solid var(--line);margin-bottom:20px}
+  .tabs a{padding:5px 10px;border-radius:6px;font-size:13px;color:var(--ink3)}
+  .tabs a:hover{background:var(--s3);color:var(--ink)}
+  section{margin:0 0 40px;scroll-margin-top:60px}
+  .hd{display:flex;align-items:baseline;gap:12px;margin:0 0 8px}
+  h2{margin:0;font-size:14px;font-weight:600;white-space:nowrap}
+  h2 span{font-family:var(--mono);color:var(--ink4);font-weight:400;margin-right:8px}
+  .hd p{margin:0;flex:1;font-size:12px;color:var(--ink3);line-height:1.5}
+  .st{display:flex;gap:4px;flex-wrap:wrap;margin:0 0 8px}
+  .st button{height:28px;padding:0 10px;border-radius:6px;border:1px solid var(--line2);font-size:12px;color:var(--ink3)}
+  .st button:hover{background:var(--s3);color:var(--ink)}
+  .st button[aria-pressed="true"]{border-color:var(--primary);color:var(--ink);background:var(--primary-a)}
+  .st button:focus-visible{outline:2px solid var(--primary-h);outline-offset:2px}
+  .st a{margin-left:auto;font-size:12px;color:var(--primary-h);align-self:center}
+  iframe:focus,iframe:focus-visible,iframe.kf{outline:2px solid var(--primary-h);outline-offset:2px}
+  @media (max-width:640px){.hd{flex-direction:column;gap:4px}h2{white-space:normal}.wrap{padding:20px 16px 48px}}
+  iframe{display:block;width:100%;height:780px;border:1px solid var(--line);border-radius:10px;background:var(--canvas)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>이월과 할 일 모달, 새 다섯 가지씩</h1>
+  <p class="lead">새 페이지 d-calendar2.html에 만들었습니다. 이월은 2번 "한 장씩"에서, 할 일 모달은 1번 "문서형 속성 목록"에서 파생했고, 둘 다 고치기 쉬운 쪽에 맞췄습니다. 모두 눌러서 동작합니다.</p>
+  <nav class="tabs" id="tabs"></nav>
+  <div id="list"></div>
+</div>
+<script>
+  const C = 'd-calendar2.html';
+  const L = [
+    ['co5', '하루 닫기: 내일로 이월 (2 한 장씩에서 파생 21~25)', '22번 묻고 답하기로 정했습니다. 이제 캘린더와 할 일 화면의 하루 닫기가 22번으로 열립니다. 숫자 키 1~4로 고르고, ⌫로 되돌리고, 버튼마다 고르면 생기는 일(마감 지남, Google 일정 이동)을 미리 보여 줍니다. 다 정하지 않아도 "남은 일은 내일로 하고 초안 만들기"로 끝낼 수 있습니다.', [['21 필름 줄', `${C}?co=21&close=1`], ['22 묻고 답하기 두 단계 (정함)', `${C}?co=22&close=1`], ['23 카드 + 내일 하루 용량', `${C}?co=23&close=1`], ['24 바구니에 넣기', `${C}?co=24&close=1`], ['25 정한 순서 기록', `${C}?co=25&close=1`]], 'co5'],
+    ['tm3', '캘린더: 할 일 모달 (1 문서형에서 파생 11~15)', '"i18n 문구 점검"(마감 내일)을 연 상태입니다. 다른 할 일을 눌러도 같은 창이 열립니다.', [['11 키보드 속성 줄', `${C}?tm=11&select=t4`], ['12 바뀐 값 표시 + 되돌리기', `${C}?tm=12&select=t4`], ['13 한 줄로 바꾸기', `${C}?tm=13&select=t4`], ['14 읽기, 고치기 모드', `${C}?tm=14&select=t4`], ['15 줄마다 빠른 값', `${C}?tm=15&select=t4`]], 'tm3'],
+    ['tm4', '캘린더: 할 일 상세 모달 (지금 서비스 요소로 다시 16~20)', '지금 서비스 상세 패널에 있는 요소를 그대로 넣었습니다: 제목, 상태 3단계, 태그(최근 사용, 검색, 새로 만들기, 10개, 20자), 상세 설명, 날짜(빠른 날짜 + 달력), 마감일(날짜 이후만, 지우기), 반복(자주 쓰는 반복 + 맞춤: 주기, 단위, 요일, 몇째 주, 종료일), 시간대(시작, 종료, 지우기), Google 캘린더(추가, 빼기, 동기화 상태, 재연결), 삭제(Delete 키), 반복 할 일의 적용 범위(이 일정만, 이후 전체, 모두). 캘린더 고르기는 새 사이드바에 맞춰 넣었습니다. "i18n 문구 점검"을 연 상태입니다.', [['16 한 달력으로 날짜와 마감', `${C}?tm=16&select=t4`], ['17 속성 줄 + 펼침 카드', `${C}?tm=17&select=t4`], ['18 고칠 범위를 먼저', `${C}?tm=18&select=t4`], ['19 반복을 창 안에서', `${C}?tm=19&select=t4`], ['20 하위 화면으로 넘기기', `${C}?tm=20&select=t4`]], 'tm4'],
+    ['tm6', '캘린더: 할 일 상세 모달 (17 속성 줄에서 파생 21~25)', '17번처럼 값만 한 줄씩 보이다가 누르면 펼쳐지는데, 펼쳐지는 부분을 다르게 만들었습니다. 모두 펼치면 첫 고르는 칸으로 바로 이동하고 Esc로 접힙니다. 날짜, 마감일, 반복, 태그 줄을 눌러 보세요.', [['21 줄이 그대로 커짐', `${C}?tm=21&select=t4`], ['22 옆에 붙는 칸', `${C}?tm=22&select=t4`], ['23 빠른 선택 먼저', `${C}?tm=23&select=t4`], ['24 바뀔 값 보고 적용', `${C}?tm=24&select=t4`], ['25 아래에서 올라오는 판', `${C}?tm=25&select=t4`]], 'tm6'],
+    ['tm7', '캘린더: 할 일 상세 모달 (Notion, Linear 참고 26~30)', '26번을 가운데 모달로 바꿔 정했습니다. 이제 캘린더에서 할 일을 누르면 26번이 열립니다. 값을 누르면 그 자리에 찾기 메뉴가 뜹니다. 글자를 쳐서 거르고 ↑↓와 Enter로 고릅니다. 날짜와 마감일은 "금", "9일", "11월 9일"처럼 쳐도 됩니다. 26은 가운데 창에 빈 속성을 숨기고, 27은 오른쪽 속성 칸과 활동 기록, 28은 / 또는 Ctrl K 명령 메뉴, 29와 30은 같은 날 할 일을 목록과 표에서 바로 고칩니다.', [['26 가운데 모달 + 빈 속성 숨김 (정함)', `${C}?tm=26&select=t4`], ['27 속성 칸 + 활동 기록', `${C}?tm=27&select=t4`], ['28 명령 메뉴', `${C}?tm=28&select=t4`], ['29 백로그 줄 + J/K', `${C}?tm=29&select=t4`], ['30 같은 날 표', `${C}?tm=30&select=t4`]], 'tm7'],
+    ['tm5', '같은 다섯 가지, 반복 할 일', '매일 반복하는 "일일 회고 작성"을 연 상태입니다. 제목, 설명, 태그, 시간대를 바꾸거나 삭제하면 적용 범위를 묻습니다(18번은 맨 위에서 미리 고름). 마지막 버튼은 Google 캘린더 재연결이 필요한 상태입니다.', [['16', `${C}?tm=16&select=t5`], ['17', `${C}?tm=17&select=t5`], ['18', `${C}?tm=18&select=t5`], ['19', `${C}?tm=19&select=t5`], ['20', `${C}?tm=20&select=t5`], ['17 + 재연결 필요', `${C}?tm=17&select=t5&reauth=1`]], 'tm5'],
+  ];
+  const $ = (q) => document.querySelector(q);
+  $('#tabs').innerHTML = L.map(([k, t]) => `<a href="#v${k}">${t.split(' (')[0].split(':')[0]}</a>`).join('');
+  $('#list').innerHTML = L.map(([k, t, d, st, pv]) => `<section id="v${k}"><div class="hd"><h2>${t}</h2><p>${d}</p></div>
+    <div class="st" role="group" aria-label="${t}">${st.length > 1 ? st.map(([l, u], i) => `<button type="button" data-k="${k}" data-u="${u}" aria-pressed="${i === 0}">${l}</button>`).join('') : ''}${k === 'um' ? '' : `<a id="a${k}" href="${st[0][1].replace(/&open=[^#]*/, '')}" target="_blank" rel="noopener">이걸로 보기</a>`}</div>
+    <iframe id="f${k}" title="${t}" loading="lazy" src="${st[0][1]}"></iframe></section>`).join('');
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest('.st button'); if (!b) return;
+    b.parentNode.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', x === b));
+    const f = $('#f' + b.dataset.k), u = b.dataset.u, a = $('#a' + b.dataset.k); if (a) a.href = u.replace(/&open=[^#]*/, '');
+    f.src = 'about:blank'; setTimeout(() => { f.src = u; }, 30);
+  });
+  /* 키보드로 시안 안으로 들어가면 바깥 테두리로 표시 */
+  const mark = () => document.querySelectorAll('iframe').forEach((f) => f.classList.toggle('kf', document.activeElement === f));
+  window.addEventListener('blur', () => setTimeout(mark, 0)); window.addEventListener('focus', mark);
+</script>
+</body>
+</html>

@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>월간 카드 시안</title>
+<meta name="description" content="월간 캘린더 칸 안의 할 일 카드를 다섯 가지 방식으로 비교한다.">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="shared/shared.css">
+<style>
+  body{height:auto;min-height:100%}
+  .wrap{padding:28px 24px 64px;max-width:1360px}
+  h1{margin:0 0 6px;font-size:18px;font-weight:600;letter-spacing:-.2px}
+  .lead{margin:0 0 20px;color:var(--ink3);font-size:13px;max-width:84ch;line-height:1.6}
+  .tabs{position:sticky;top:0;z-index:2;display:flex;gap:4px;flex-wrap:wrap;padding:10px 0;background:var(--canvas);border-bottom:1px solid var(--line);margin-bottom:20px}
+  .tabs a{padding:5px 10px;border-radius:6px;font-size:13px;color:var(--ink3)}
+  .tabs a:hover{background:var(--s3);color:var(--ink)}
+  .tabs a b{font-family:var(--mono);color:var(--ink4);margin-right:6px;font-weight:400}
+  section{margin:0 0 36px;scroll-margin-top:60px}
+  .hd{display:flex;align-items:baseline;gap:12px;margin:0 0 8px}
+  h2{margin:0;font-size:14px;font-weight:600}
+  h2 span{font-family:var(--mono);color:var(--ink4);font-weight:400;margin-right:8px}
+  .hd p{margin:0;flex:1;font-size:12px;color:var(--ink3);line-height:1.5}
+  .hd a{font-size:12px;color:var(--primary-h);white-space:nowrap}
+  .hd a:hover{text-decoration:underline}
+  iframe{display:block;width:100%;height:620px;border:1px solid var(--line);border-radius:10px;background:var(--canvas)}
+  section.cur{opacity:.8}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>월간 카드 시안</h1>
+  <p class="lead">실제 월간 캘린더(2026년 11월)를 시안마다 그대로 띄웠습니다. 색은 상태 3가지(진행 전 · 진행 중 · 완료)만 씁니다. 안에서 스크롤, 클릭, 끌어 놓기가 모두 됩니다. "이걸로 보기"를 누르면 실제 캘린더에 그 시안이 적용되고 기억됩니다.</p>
+  <nav class="tabs" id="tabs"></nav>
+  <div id="list"></div>
+</div>
+<script>
+  const V = [
+    [0, '이전', '점 + 제목 + 시각. 기간 할 일은 칸을 이어 붙인 막대.'],
+    [1, '칩 · 기본', '모든 할 일을 상태 색 바탕의 칩으로. 왼쪽 띠, 시각이 제목 앞. 칸이 색으로 채워져 바쁜 날이 한눈에.'],
+    [2, '플레인', '바탕 없이 상태 아이콘(○ ▶ ✓) + 제목. 기간 할 일은 칸 아래로 이어지는 밑줄. 글이 가장 잘 읽힘.'],
+    [3, '시각 배지', '왼쪽 작은 배지에 시각 / 종일 / 기간. 진행 중 · 완료는 상태 색 배지, 진행 전은 테두리 배지.'],
+    [4, '레일', '칸 안 세로선에 마디가 달린 하루 타임라인. ○ 진행 전 · ● 진행 중 · 채움 완료. 기간 할 일은 위쪽 얇은 띠.'],
+    [5, '미니 카드', '두 줄 카드(제목 / 13:00 ~ 15:30, 기간 · D-N). 정보가 가장 많지만 하루 2개까지 보이고 나머지는 "N개 더".'],
+  ];
+  document.getElementById('tabs').innerHTML = V.map(([v, n]) => `<a href="#v${v}"><b>${v}</b>${n}</a>`).join('');
+  document.getElementById('list').innerHTML = V.map(([v, n, d]) => `<section id="v${v}" class="${v === 0 ? 'cur' : ''}">
+    <div class="hd"><h2><span>${v}</span>${n}</h2><p>${d}</p><a href="d-calendar.html?view=month&mc=${v}">이걸로 보기 →</a></div>
+    <iframe src="d-calendar.html?view=month&mc=${v}&embed=1" title="${v}. ${n}" loading="lazy"></iframe></section>`).join('');
+</script>
+</body>
+</html>

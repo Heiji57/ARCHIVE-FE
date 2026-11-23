@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>상단 컨트롤 시안</title>
+<meta name="description" content="오늘 버튼, 사이드바 토글, 일·주·월 전환을 각각 다섯 가지로 비교하고 실제 캘린더에서 바로 써 본다.">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="shared/shared.css">
+<link rel="stylesheet" href="shared/planner.css">
+<style>
+  html,body{height:100%}
+  body{overflow:hidden}
+  .pg{display:grid;grid-template-columns:392px minmax(0,1fr);height:100vh}
+  .l{overflow:auto;padding:24px 20px 48px;border-right:1px solid var(--line)}
+  h1{margin:0 0 6px;font-size:18px;font-weight:600;letter-spacing:-.2px}
+  .lead{margin:0 0 20px;font-size:13px;color:var(--ink3);line-height:1.6}
+  h2{margin:26px 0 10px;font-size:13px;font-weight:600;display:flex;align-items:baseline;gap:8px}
+  h2 small{font-weight:400;color:var(--ink4);font-size:12px}
+  .opts{display:flex;flex-direction:column;gap:6px}
+  .op{display:grid;grid-template-columns:150px 1fr;gap:12px;align-items:center;padding:10px;border:1px solid var(--line);border-radius:8px;cursor:pointer;text-align:left}
+  .op:hover{border-color:var(--line2);background:var(--s1)}
+  .op[aria-checked=true]{border-color:var(--primary);background:var(--primary-a)}
+  .pv{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;min-height:44px;padding:6px;border-radius:6px;background:var(--canvas);border:1px solid var(--line)}
+  .pv.static{pointer-events:none}
+  .op b{display:block;font-size:13px;font-weight:600;margin-bottom:3px}
+  .op b span{font-family:var(--mono);color:var(--ink4);font-weight:400;margin-right:6px}
+  .op p{margin:0;font-size:12px;color:var(--ink3);line-height:1.5}
+  .r{display:flex;flex-direction:column;min-width:0}
+  .cbar{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line);font-size:12px;color:var(--ink3)}
+  .cbar code{font-family:var(--mono);color:var(--ink2)}
+  .cbar a:first-of-type{margin-left:auto}
+  .cbar{flex:none}
+  iframe{flex:1;width:100%;border:0;background:var(--canvas)}
+  /* 사이드바 스케치 */
+  .sk{position:relative;width:140px;height:40px;border-radius:5px;border:1px solid var(--line2);overflow:hidden;display:flex}
+  .sk .s{width:38px;background:var(--s3);border-right:1px solid var(--line2);position:relative}
+  .sk .m{flex:1;display:flex;align-items:flex-start;padding:4px;gap:4px}
+  .sk .m .ibtn,.sk .m button{transform:scale(.8);transform-origin:left top;white-space:nowrap}
+  .sk .h{position:absolute;right:-1px;top:0;bottom:0;width:2px;background:var(--primary)}
+  .sk .h::after{content:"‹";position:absolute;right:0;top:12px;width:9px;height:16px;background:var(--primary);color:#fff;font-size:12px;display:grid;place-items:center;border-radius:3px 0 0 3px}
+  .sk .rl{width:14px;background:var(--s3);border-right:1px solid var(--line2);display:flex;flex-direction:column;align-items:center;gap:4px;padding-top:4px}
+  .sk .rl i{width:6px;height:6px;border-radius:2px;background:var(--ink4)}
+  .sk .rl i:first-child{background:var(--primary)}
+  .sk .pk{position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--line2)}
+  .sk .pk + .ov{position:absolute;left:0;top:0;bottom:0;width:44px;background:var(--s3);box-shadow:6px 0 12px rgba(0,0,0,.6);border-right:1px solid var(--line2);opacity:.9}
+  .sk em{position:absolute;right:4px;bottom:2px;font:500 12px var(--mono);color:var(--ink4);font-style:normal}
+  @media (max-width:900px){body{overflow:auto}.pg{grid-template-columns:1fr;height:auto}.r{height:80vh}}
+</style>
+</head>
+<body>
+<div class="pg">
+  <div class="l">
+    <h1>상단 컨트롤 시안</h1>
+    <p class="lead">세 가지 컨트롤을 각각 다섯 가지로 만들었습니다. 고르면 오른쪽 실제 캘린더에 바로 들어가서 눌러 볼 수 있습니다. 왼쪽 미리보기의 일 · 주 · 월 전환도 직접 눌러 볼 수 있습니다. 0번은 비교용 현재 디자인입니다.</p>
+    <h2>오늘 버튼 <small>T 키와 같은 동작</small></h2><div class="opts" id="o-tg"></div>
+    <h2>사이드바 열고 닫기 <small>[ 키로도 토글</small></h2><div class="opts" id="o-sb"></div>
+    <h2>일 · 주 · 월 전환 <small>하나의 컨트롤에서</small></h2><div class="opts" id="o-vw"></div>
+  </div>
+  <div class="r">
+    <div class="cbar">지금 조합 <code id="combo"></code><a class="btn" id="apply" href="#">이 조합으로 캘린더 열기 (기억됨)</a><a class="btn" id="apply2" href="#">할 일에서 열기</a></div>
+    <iframe id="live" title="실제 캘린더"></iframe>
+  </div>
+</div>
+<dialog id="detail" aria-label="할 일 상세"></dialog>
+<script src="shared/shared.js"></script>
+<script src="shared/planner.js"></script>
+<script>
+  const A = ARC, P = PL, $ = (q) => document.querySelector(q);
+  const sel = { tg: P.tgV, sb: P.sbV, vw: P.vwV };
+  const TG = [
+    ['현재', '테두리 버튼 "오늘".'],
+    ['날짜 알약', '"오늘 | 11.3 화". 누르기 전에 오늘이 며칠인지 바로 보임.'],
+    ['달력 아이콘', '아이콘 안에 오늘 날짜 숫자. 자리를 가장 적게 차지함.'],
+    ['방향 안내', '오늘이 화면 안이면 흐린 점선 + 점. 밖으로 스크롤하면 라벤더로 켜지고 ← → ↑ ↓ 로 오늘 쪽을 가리킴.'],
+    ['단축키', '"오늘 T". 키캡으로 T 키를 같이 알려 줌.'],
+    ['과녁', '과녁 아이콘 + 라벤더 테두리. 항상 눈에 띄는 기준점.'],
+  ];
+  const SB = [
+    ['현재', '상단 바의 ‹ 버튼.'],
+    ['패널 아이콘', '사이드바 모양 아이콘. 열려 있으면 왼쪽 칸이 채워져서 상태가 보임.'],
+    ['가장자리 손잡이', '사이드바 오른쪽 끝에 마우스를 대면 손잡이 ‹ 가 나와 접힘. 접힌 뒤에만 상단에 » 버튼.'],
+    ['압정 + 엿보기', '압정으로 고정/해제. 접혀 있을 때 화면 왼쪽 끝에 마우스를 대면 사이드바가 위로 잠깐 열림.'],
+    ['아이콘 레일', '완전히 숨기지 않고 52px 아이콘 레일로 접힘. 접기 버튼은 사이드바 맨 위 « .'],
+    ['글자 + 단축키', '"사이드바 닫기 [" 처럼 하는 일과 단축키를 글로.'],
+  ];
+  const VW = [
+    ['현재', '일 · 주 · 월 세 버튼 묶음.'],
+    ['슬라이드', '한 줄 트랙 위를 손잡이가 미끄러져 이동. 포커스 후 ← → 키.'],
+    ['순환', '버튼 하나. 클릭하면 일간 → 주간 → 월간 순으로 돌고, 우클릭은 반대로, 휠로도 돌아감. 점 세 개로 위치 표시.'],
+    ['메뉴', '"주간 ▾" 하나를 누르면 목록이 펼쳐짐. 단축키 D W M 표시.'],
+    ['줌', '− 는 더 가까이(일간), + 는 더 멀리(월간). 가운데 눈금으로 단계.'],
+    ['다이얼', '위아래로 굴러가는 원통. 휠, 위아래 끌기, 위·아래 글자 클릭으로 돌림.'],
+  ];
+  const sideSketch = (v) => {
+    const btn = P.SIDE[v] ? P.SIDE[v]() : '';
+    if (v === 2) return `<div class="sk"><div class="s"><i class="h"></i></div><div class="m"></div><em>열림</em></div>`;
+    if (v === 3) return `<div class="sk"><i class="pk"></i><div class="ov"></div><div class="m" style="padding-left:50px">${btn}</div><em>엿보기</em></div>`;
+    if (v === 4) return `<div class="sk"><div class="rl"><i></i><i></i><i></i><i></i></div><div class="m"></div><em>접힘</em></div>`;
+    return `<div class="sk"><div class="s"></div><div class="m">${btn}</div></div>`;
+  };
+  function render() {
+    $('#o-tg').innerHTML = TG.map(([n, d], v) => `<div class="op" role="radio" tabindex="0" data-k="tg" data-v="${v}" aria-checked="${sel.tg === v}"><div class="pv static">${v === 3 ? P.TODAY[3]('in') + P.TODAY[3]('left') : P.TODAY[v]()}</div><div><b><span>${v}</span>${n}</b><p>${d}</p></div></div>`).join('');
+    $('#o-sb').innerHTML = SB.map(([n, d], v) => `<div class="op" role="radio" tabindex="0" data-k="sb" data-v="${v}" aria-checked="${sel.sb === v}"><div class="pv static">${sideSketch(v)}</div><div><b><span>${v}</span>${n}</b><p>${d}</p></div></div>`).join('');
+    $('#o-vw').innerHTML = VW.map(([n, d], v) => `<div class="op" role="radio" tabindex="0" data-k="vw" data-v="${v}" aria-checked="${sel.vw === v}"><div class="pv">${P.VIEW[v](A.s.view)}</div><div><b><span>${v}</span>${n}</b><p>${d}</p></div></div>`).join('');
+    const q = `tg=${sel.tg}&sb=${sel.sb}&vw=${sel.vw}`;
+    $('#combo').textContent = `오늘 ${sel.tg} · 사이드바 ${sel.sb} · 전환 ${sel.vw}`;
+    $('#apply').href = `d-calendar.html?${q}`; $('#apply2').href = `d-todos.html?${q}`;
+    const src = `d-calendar.html?${q}`; if ($('#live').getAttribute('src') !== src) $('#live').setAttribute('src', src);
+  }
+  A.s.view = 'week'; A.render = render;
+  document.addEventListener('click', (e) => {
+    const dv = e.target.closest('.pv [data-view]'); if (dv) { A.s.view = dv.dataset.view; render(); return; }
+    if (e.target.closest('.pv:not(.static)')) return;
+    const o = e.target.closest('.op'); if (!o) return;
+    sel[o.dataset.k] = +o.dataset.v; render();
+  });
+  render();
+</script>
+</body>
+</html>

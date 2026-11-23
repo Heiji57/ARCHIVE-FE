@@ -935,8 +935,8 @@ export interface paths {
         get: {
             parameters: {
                 query?: {
-                    /** @description 집계 범위. today = 오늘, week = 이번 ISO주(월~일), month = 이번 달. */
-                    range?: "today" | "week" | "month";
+                    /** @description 집계 범위. today = 오늘, week = 이번 ISO주(월~일), month = 이번 달, all = 전체 기간(2000-01-01 ~ 오늘). all 은 "이미 쌓인" 개수이므로 상한이 오늘이며, 아직 오지 않은 미래의 반복 Todo 발생은 세지 않는다. */
+                    range?: "today" | "week" | "month" | "all";
                     /**
                      * @description IANA timezone (예: Asia/Seoul). 로컬 day 경계 계산에 사용. 생략 시 사용자 계정 timezone 자동 사용.
                      * @example Asia/Seoul
@@ -1509,7 +1509,46 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * 전체 폴더 목록 — id·이름·부모만
+         * @description 사용자의 모든 폴더를 평평한 배열로 반환한다. 페이지네이션 없음.
+         *
+         *     용도는 **id → 이름 → 조상 사슬 해결**이다. 검색 결과처럼 폴더를
+         *     가로지르는 목록에서 각 항목의 소속 폴더 경로("A › B › C")를 조립할 때,
+         *     FE 는 한 번도 열어본 적 없는 폴더의 이름이 필요하다. `GET
+         *     /folders/contents` 는 직계 하위만 주므로 조상을 알 수 없다.
+         *
+         *     폴더 카드 뱃지용 개수(`folderCount`/`entryCount`)는 담지 않는다 —
+         *     전체 폴더에 대해 집계를 걸게 되는데 이 응답의 소비처는 그 값을 쓰지
+         *     않는다. 뱃지는 `GET /folders/contents` 가 주는 값을 그대로 쓴다.
+         *
+         *     정렬은 `name ASC, id ASC` — `GET /folders/contents` 의 폴더 정렬과 동일.
+         *
+         *     최대 2000개까지만 반환한다 — 페이지네이션 대신 두는 안전장치로,
+         *     병리적인 폴더 수에서 응답이 무한정 커지는 것만 막는다. 잘리면
+         *     클라이언트의 경로 조립이 모르는 id 에서 멈추고 부분 경로만 보여준다.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description 조회 성공 */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiResponseFolderList"];
+                    };
+                };
+                401: components["responses"]["Unauthorized_401"];
+            };
+        };
         put?: never;
         /**
          * 폴더 생성
@@ -1571,9 +1610,24 @@ export interface paths {
          *       weekly/monthly/yearly=`retro_summaries`).
          *     - `retroType` 생략 → 4개 타입을 모두 합쳐 최신순으로 정렬한 "전체" 뷰.
          *
-         *     응답은 `folders`(직계 하위 폴더)와 `entries`(직계 회고록)로 분리되어
-         *     내려온다 — 폴더와 회고록은 서로 다른 리소스라 하나의 배열로 합치지 않는다
-         *     (`GET /search` 의 `{todos, entries}` 분리와 동일한 이유).
+         *     **페이지네이션은 폴더와 회고록을 합친 하나의 시퀀스에 적용된다.**
+         *
+         *         seq = [폴더: name ASC, id ASC] ++ [회고록: dateKey DESC, id DESC]
+         *
+         *     `page`/`size` 는 이 `seq` 의 오프셋이다. 폴더 블록이 먼저 소진된 뒤
+         *     회고록이 이어진다 — 폴더 25개·회고록 100건·size 20 이면 1페이지는
+         *     폴더 20개, 2페이지는 폴더 5개 + 회고록 15건, 3페이지부터 회고록 20건씩.
+         *
+         *     `id` tie-break 는 필수다. "전체" 뷰는 두 테이블을 합치므로 같은
+         *     `dateKey` 가 여러 건 나오고, 정렬이 비결정적이면 페이지 경계에서
+         *     항목이 누락되거나 중복된다.
+         *
+         *     `retroType` 필터는 회고록에만 걸린다 — 폴더 목록·개수는 타입과 무관하다.
+         *
+         *     응답은 `folders`(이 페이지 구간의 폴더 조각)와 `entries`(폴더가 쓰고 남은
+         *     칸에 채운 회고록 조각)로 분리되어 내려온다 — 폴더와 회고록은 서로 다른
+         *     리소스라 하나의 배열로 합치지 않는다(`GET /search` 의 `{todos, entries}`
+         *     분리와 동일한 이유).
          */
         get: {
             parameters: {
@@ -2367,7 +2421,15 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** 주제 목록 조회 */
+        /**
+         * 주제 목록 조회
+         * @description 각 주제에 묶이는 회고/할 일 개수(`entry_count`/`todo_count`)와 마지막 정리 시점
+         *     (`digest_watermark_date_key`)을 함께 반환한다. pill 에 쓰는 숫자는
+         *     `entry_count + todo_count` 를 FE 가 합산한다.
+         *
+         *     카운트는 `GET /topics/{topic_id}/stats` 와 같은 매칭·캐시(TTL 300초)를 공유하므로
+         *     두 응답의 수치는 항상 일치한다.
+         */
         get: {
             parameters: {
                 query?: never;
@@ -2424,7 +2486,9 @@ export interface paths {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                topic_id: string;
+            };
             cookie?: never;
         };
         get?: never;
@@ -2453,6 +2517,137 @@ export interface paths {
         };
         options?: never;
         head?: never;
+        /**
+         * 주제 수정 (이름·설명)
+         * @description `name`/`description` 모두 선택 — 생략하면 그 필드는 변경하지 않는다.
+         *     이름을 바꿔도 기존 정리 문서(digest)는 유지되며 재생성이 트리거되지 않는다.
+         */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    topic_id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["UpdateTopicRequest"];
+                };
+            };
+            responses: {
+                /** @description 수정됨 */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiResponseTopic"];
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/topics/{topic_id}/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                topic_id: string;
+            };
+            cookie?: never;
+        };
+        /**
+         * 주제 통계 조회
+         * @description 정리 문서 생성 여부와 무관하게 항상 조회 가능하다(정리한 적 없는 주제도 통계는 나온다).
+         *
+         *     집계 대상은 정리 문서 생성 때와 **같은 매칭 규칙**(주제 이름·설명 임베딩 기반 벡터
+         *     유사도 검색)으로 이 주제에 묶이는 회고/할 일이다. 따라서:
+         *     - `todo_counts` 는 `not-start` 상태 할 일을 **포함하지 않는다**(매칭 대상이 `in-progress`/`done` 뿐).
+         *     - 문단 길이가 최소 청크 길이(20자) 미만인 아주 짧은 회고는 임베딩 청크가 없어 집계되지 않는다.
+         *     - 회고/할 일 작성 후 임베딩 배치(5분 주기)가 돌기 전까지는 반영되지 않는다.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    topic_id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiResponseTopicStats"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/topics/{topic_id}/sources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                topic_id: string;
+            };
+            cookie?: never;
+        };
+        /**
+         * 주제에 묶인 소스(회고·할 일) 목록
+         * @description "이 정리 문서가 무엇을 읽고 썼는가"를 보여주는 목록. 회고와 할 일을 한 목록에 섞어
+         *     `date_key` 내림차순으로 반환한다(동률은 `id` 내림차순).
+         *
+         *     **주의**: 정리 문서 생성 시점의 입력 소스를 저장해 두지 않으므로, 이 목록은
+         *     **요청 시점에 매칭을 다시 계산한 결과**다. 마지막 정리 이후 추가된 회고가 있으면
+         *     문서가 실제로 반영한 범위보다 넓을 수 있다 — 문서의 기준 시점은 응답의
+         *     `digest_watermark_date_key` 로 판단한다.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    page?: number;
+                    size?: number;
+                };
+                header?: never;
+                path: {
+                    topic_id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiResponseTopicSourcePage"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
         patch?: never;
         trace?: never;
     };
@@ -2465,7 +2660,21 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** 주제 정리 문서 생성/재생성 요청(비동기) */
+        /**
+         * 주제 정리 문서 생성/재생성 요청(비동기)
+         * @description `status` 를 `pending` 으로 되돌리고 백그라운드 생성을 큐에 넣는다.
+         *     **재생성 중에도, 실패한 뒤에도 직전 `content` 는 지워지지 않는다** — 새 내용은
+         *     생성에 성공했을 때만 덮어쓴다. FE 는 "정리 중 / 실패" 화면에서도 이전 문서를
+         *     그대로 보여줄 수 있다.
+         *
+         *     **재생성 범위**: 재생성도 최초 생성과 완전히 같은 경로를 탄다 — 이 주제에 매칭되는
+         *     **전체 소스를 다시 읽어** 주제 전체를 아우르는 문서로 새로 쓴다(증분 요약 아님).
+         *     따라서 재생성을 반복해도 문서가 최근 내용만 다루도록 좁아지지 않는다.
+         *
+         *     `watermark_date_key` 는 "어디까지 읽었나"(증분 커서)가 아니라 **"이 문서가 언제
+         *     기준인가"** 를 뜻한다 — FE 의 "MM.DD까지 반영됨" 배너와 `unreflected_entry_count`
+         *     계산의 기준점이다.
+         */
         post: {
             parameters: {
                 query?: never;
@@ -2539,7 +2748,22 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** 주제 정리 문서 생성 완료 SSE 구독 */
+        /**
+         * 주제 정리 진행 상황 SSE 구독
+         * @description `text/event-stream`. 생성이 끝날 때까지 진행률 이벤트를 흘리고 종료 상태에서 닫는다.
+         *     요청 시점에 이미 `completed`/`failed` 면 그 상태를 한 번 보내고 즉시 닫는다.
+         *     120초 안에 끝나지 않으면 `{"status":"timeout"}` 을 보내고 닫는다.
+         *
+         *     진행률 이벤트: `{"status":"in_progress","processed":9,"total":24}`
+         *     - `total` 은 **이번 생성에 투입되는 소스 수**(회고는 엔트리 단위 + 할 일)다. 최초·재생성
+         *       모두 주제 전체를 읽으므로 보통 `GET /topics/{topic_id}/stats` 의
+         *       `entry_counts.total + todo_counts.total` 과 일치한다. 다만 프롬프트 상한
+         *       (`TOPIC_SEARCH_LIMIT`, 종류별 기본 200 **청크**)에 걸리는 아주 큰 주제에서는 더
+         *       작을 수 있으니, FE 는 이 페이로드의 `total` 을 그대로 쓴다.
+         *     - `processed` 는 프롬프트에 접어 넣은 소스의 정확한 누계이며 배치 단위(기본 5개)로
+         *       발행된다. 소스 조합은 빠른 로컬 연산이라 이벤트가 짧은 시간에 몰리고, 가장 오래
+         *       걸리는 AI 생성 구간은 더 잘게 쪼개지지 않는다(마지막 진행률 → `completed`).
+         */
         get: {
             parameters: {
                 query?: never;
@@ -2556,7 +2780,16 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        /**
+                         * @example data: {"status":"in_progress","processed":0,"total":24}
+                         *
+                         *     data: {"status":"in_progress","processed":5,"total":24}
+                         *
+                         *     data: {"status":"completed"}
+                         */
+                        "text/event-stream": string;
+                    };
                 };
             };
         };
@@ -4457,6 +4690,8 @@ export interface components {
             original_date_key?: string | null;
             /** @description 반복 베이스 row에만 존재. 예외/일반 todo 는 null. */
             recurrence_rule?: components["schemas"]["RecurrenceRule"];
+            /** @description 가상 인스턴스(`is_virtual: true`)에만 존재 — 소속 시리즈 base 의 현재 반복 규칙. FE 가 회차 상세에서 현재 규칙을 보여주는 용도. 예외/일반/base row 는 null. */
+            series_rule?: components["schemas"]["RecurrenceRule"];
             /** @description 태그 목록 (0~10개, 각 1~20자). 없으면 빈 배열. */
             tags: string[];
             /** @description 마감일 (YYYY-MM-DD). null = 단일 날짜. */
@@ -4464,14 +4699,21 @@ export interface components {
         };
         RecurrenceRule: {
             /**
-             * @description 반복 단위.
+             * @description 반복 단위. 의미는 RFC 5545 RRULE 과 같고 시작일(todo `date_key`)이 항상 첫 회차다. `day` = N일마다, `week` = N주마다 `weekdays` 요일(주 시작 = 월요일), `month` = N개월마다 `month_week` 번째 시작일-요일, `year` = N년마다 시작일의 월/일 (2/29 시작은 윤년에만).
              * @enum {string}
              */
-            unit: "day" | "week";
+            unit: "day" | "week" | "month" | "year";
             /** @description 반복 간격 (예: unit=week, interval=2 → 2주마다). */
             interval: number;
             /** @description 반복 종료 날짜(포함, 로컬 날짜 YYYY-MM-DD). null 이면 무기한. */
             until?: string | null;
+            /** @description `unit: week` 전용 — 반복 요일(0=월 … 6=일). 생략/null 이면 시작일 요일. 다른 unit 에 보내면 422 VALIDATION_ERROR. 응답은 오름차순. */
+            weekdays?: number[] | null;
+            /**
+             * @description `unit: month` 전용·필수 — 그 달의 몇 번째 시작일-요일인지 (1~4, -1 = 마지막). 5번째 요일은 모든 달에 있지 않아 -1 로 표현한다. month 에서 생략하거나 다른 unit 에 보내면 422 VALIDATION_ERROR.
+             * @enum {integer|null}
+             */
+            month_week?: 1 | 2 | 3 | 4 | -1 | null;
         };
         WeeklyTrendDay: {
             /** @description YYYY-MM-DD (로컬 날짜). */
@@ -4488,7 +4730,7 @@ export interface components {
         };
         TodoStatsResponse: {
             /** @enum {string} */
-            range: "today" | "week" | "month";
+            range: "today" | "week" | "month" | "all";
             total: number;
             done_count: number;
             in_progress_count: number;
@@ -4564,13 +4806,22 @@ export interface components {
         };
         EntryCreateRequest: {
             date_key: string;
+            /** @description 생략하거나 공백만 보내면 서버가 "{date_key} {회고 종류}" 로 채운다. 언어는 사용자 `user_settings.locale` 기준 (ko/en/ja/zh, 그 외는 en 폴백). 예) ko + daily → "2026-09-03 일일 회고", en + yearly → "2026-09-03 Annual Retrospective". */
+            title?: string | null;
+            /** @default  */
+            content: string;
+            /** @default daily */
+            retro_type: components["schemas"]["RetroType"];
+        };
+        EntryUpsertRequest: {
+            date_key: string;
+            /** @description 빈 문자열을 보내면 생성과 같은 규칙으로 서버가 기본 제목을 채운다. */
             title: string;
             /** @default  */
             content: string;
             /** @default daily */
             retro_type: components["schemas"]["RetroType"];
         };
-        EntryUpsertRequest: components["schemas"]["EntryCreateRequest"];
         /**
          * @description 해당 회고록이 GitHub 에 push 되어 있다는 신호. push 단위는 (period_type, period_key)
          *     — 같은 period 에 entry/summary 가 같이 있으면 둘 다 동일한 push 레코드를 가리킨다.
@@ -4632,6 +4883,105 @@ export interface components {
             page: number;
             size: number;
         };
+        CreateTopicRequest: {
+            name: string;
+            /** @default  */
+            description: string;
+        };
+        /** @description 둘 다 선택 — 생략(미전송)하면 그 필드는 변경하지 않는다. */
+        UpdateTopicRequest: {
+            name?: string;
+            description?: string;
+        };
+        TopicResponse: {
+            id: string;
+            name: string;
+            description: string;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string | null;
+            /** @description 이 주제에 묶이는 회고 수. **목록(GET /topics)에서만 채워진다** — 생성/수정 단건 응답에서는 null. 매칭이 임베딩 API 를 타므로 그쪽 장애·쿼터 초과 시에도 목록 자체는 200 으로 내려오고 카운트만 null 이 된다(FE 는 숫자 없이 렌더링해야 함). */
+            entry_count?: number | null;
+            /** @description 이 주제에 묶이는 할 일 수 (목록에서만 채워짐). not-start 는 제외. entry_count 와 동일하게 장애 시 null. */
+            todo_count?: number | null;
+            /** @description 마지막 정리 시점(YYYY-MM-DD). 정리한 적 없으면 null. */
+            digest_watermark_date_key?: string | null;
+        };
+        TopicEntryCounts: {
+            daily: number;
+            weekly: number;
+            monthly: number;
+            yearly: number;
+            total: number;
+        };
+        TopicTodoCounts: {
+            /** @description 매칭 규칙상 `not-start` 상태 할 일은 포함되지 않는다. */
+            total: number;
+            /** @description status=done 인 수 */
+            completed: number;
+        };
+        TopicStatsResponse: {
+            topic_id: string;
+            entry_counts: components["schemas"]["TopicEntryCounts"];
+            todo_counts: components["schemas"]["TopicTodoCounts"];
+            /** @description 이 주제에 묶인 **할 일**의 태그별 개수, count 내림차순(동률은 tag 오름차순). 상위 20개로 잘린다 — 잘리기 전 종류 수는 tag_count_total. */
+            tag_counts: components["schemas"]["TagCount"][];
+            /** @description 태그 **종류** 총 개수(잘리기 전). 레일의 "+8" 계산에 사용. */
+            tag_count_total: number;
+            /** @description 묶인 항목(회고+할 일) 중 가장 이른 날짜. 항목이 없으면 null. */
+            period_start_date_key: string | null;
+            /** @description 묶인 항목 중 가장 늦은 날짜. 항목이 없으면 null. */
+            period_end_date_key: string | null;
+            /** @description 정리 문서의 `watermark_date_key` **이후**(초과, >) 날짜의 매칭 회고 수. 정리한 당일 회고는 반영된 것으로 보므로, 방금 정리한 직후에는 0 이 된다. 정리한 적 없으면 매칭되는 전체 회고 수. */
+            unreflected_entry_count: number;
+        };
+        TopicSourceResponse: {
+            /** @enum {string} */
+            kind: "entry" | "todo";
+            id: string;
+            title: string;
+            date_key: string;
+            /** @description 회고면 회고 종류, 할 일이면 null. */
+            retro_type: components["schemas"]["RetroType"] | null;
+        };
+        TopicSourcePageResponse: {
+            items: components["schemas"]["TopicSourceResponse"][];
+            /** @description 전체 매칭 건수(페이지 무관) */
+            total: number;
+            page: number;
+            size: number;
+            /** @description 정리 문서가 반영한 기준 시점. 이 목록은 요청 시점에 재계산한 결과이므로, 이 날짜 이후 항목은 문서에 아직 반영돼 있지 않다. */
+            digest_watermark_date_key: string | null;
+        };
+        TopicDigestResponse: {
+            id: string;
+            topic_id: string;
+            /** @enum {string} */
+            status: "pending" | "in_progress" | "completed" | "failed";
+            /** @description 마크다운 문자열. 재생성 중(pending/in_progress)이나 실패 후에도 직전 내용이 유지된다 — 성공했을 때만 교체된다. */
+            content: string | null;
+            watermark_date_key: string | null;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string | null;
+        };
+        ApiResponseTopic: components["schemas"]["ApiResponseEmpty"] & {
+            data?: components["schemas"]["TopicResponse"];
+        };
+        ApiResponseTopicList: components["schemas"]["ApiResponseEmpty"] & {
+            data?: components["schemas"]["TopicResponse"][];
+        };
+        ApiResponseTopicStats: components["schemas"]["ApiResponseEmpty"] & {
+            data?: components["schemas"]["TopicStatsResponse"];
+        };
+        ApiResponseTopicSourcePage: components["schemas"]["ApiResponseEmpty"] & {
+            data?: components["schemas"]["TopicSourcePageResponse"];
+        };
+        ApiResponseTopicDigest: components["schemas"]["ApiResponseEmpty"] & {
+            data?: components["schemas"]["TopicDigestResponse"];
+        };
         ApiResponseEntryPage: components["schemas"]["ApiResponseEmpty"] & {
             data?: components["schemas"]["EntryPageResponse"];
         };
@@ -4667,14 +5017,35 @@ export interface components {
             data?: components["schemas"]["FolderResponse"];
         };
         /**
-         * @description 폴더의 직계 하위 폴더와 직계 회고록을 타입별로 분리해서 반환한다
-         *     (`GET /search` 의 `{todos, entries}` 분리와 동일한 이유 — 서로 다른
-         *     리소스를 억지로 하나의 배열에 합치지 않는다).
+         * @description 폴더의 최소 식별 정보. 경로 조립(id → 이름 → 조상)에만 쓰이므로
+         *     개수·타임스탬프를 담지 않는다. 뱃지가 필요하면 FolderResponse 를 쓸 것.
+         */
+        FolderSummaryResponse: {
+            id: string;
+            name: string;
+            /** @description 최상위 폴더면 null. */
+            parentFolderId?: string | null;
+        };
+        FolderListResponse: {
+            folders: components["schemas"]["FolderSummaryResponse"][];
+        };
+        ApiResponseFolderList: components["schemas"]["ApiResponseEmpty"] & {
+            data?: components["schemas"]["FolderListResponse"];
+        };
+        /**
+         * @description 폴더의 직계 하위 폴더와 직계 회고록을, 둘을 합친 단일 시퀀스에 대한
+         *     페이지 조각으로 반환한다(정렬 시퀀스는 `GET /folders/contents` 참고).
+         *     두 배열을 이어붙인 것이 그 페이지의 내용이며 `len(folders) +
+         *     len(entries) <= size` 를 항상 만족한다. 타입별 분리를 유지하는 이유는
+         *     `GET /search` 의 `{todos, entries}` 와 동일하다 — 서로 다른 리소스를
+         *     억지로 하나의 배열에 합치지 않는다.
          */
         FolderContentsResponse: {
+            /** @description 이 페이지 구간에 걸친 폴더 조각(직계 하위 폴더 전부가 아니다). */
             folders: components["schemas"]["FolderResponse"][];
+            /** @description 이 페이지에서 폴더가 쓰고 남은 칸에 채운 회고록 조각. */
             entries: components["schemas"]["EntryResponse"][];
-            /** @description entries 전체 매칭 건수(페이지 무관) */
+            /** @description 폴더 총개수 + 회고록 총건수(페이지 무관). 폴더 개수는 retroType 과 무관하고, 회고록 건수에는 retroType 필터가 적용된다. */
             total: number;
             page: number;
             size: number;
@@ -4816,41 +5187,6 @@ export interface components {
         };
         ApiResponseSummaryUsage: components["schemas"]["ApiResponseEmpty"] & {
             data?: components["schemas"]["SummaryUsageResponse"];
-        };
-        TopicResponse: {
-            id: string;
-            name: string;
-            description: string;
-            /** Format: date-time */
-            created_at: string;
-            /** Format: date-time */
-            updated_at?: string | null;
-        };
-        CreateTopicRequest: {
-            name: string;
-            /** @default  */
-            description: string;
-        };
-        TopicDigestResponse: {
-            id: string;
-            topic_id: string;
-            /** @enum {string} */
-            status: "pending" | "in_progress" | "completed" | "failed";
-            content?: string | null;
-            watermark_date_key?: string | null;
-            /** Format: date-time */
-            created_at: string;
-            /** Format: date-time */
-            updated_at?: string | null;
-        };
-        ApiResponseTopic: components["schemas"]["ApiResponseEmpty"] & {
-            data?: components["schemas"]["TopicResponse"];
-        };
-        ApiResponseTopicList: components["schemas"]["ApiResponseEmpty"] & {
-            data?: components["schemas"]["TopicResponse"][];
-        };
-        ApiResponseTopicDigest: components["schemas"]["ApiResponseEmpty"] & {
-            data?: components["schemas"]["TopicDigestResponse"];
         };
         NotificationResponse: {
             id: string;
@@ -5169,6 +5505,8 @@ export interface components {
          *     - `AUTH_SESSION_NOT_FOUND` — 폐기 대상 sessionId 가 본인 소유가 아니거나 이미 만료됨
          *     - `RETRO_SUMMARY_TEMPLATE_NOT_FOUND` — 템플릿이 존재하지 않거나 본인 소유가 아니거나 활성 설정의 키와 summary_type 이 불일치
          *     - `FOLDER_NOT_FOUND` — 폴더가 존재하지 않거나 본인 소유가 아님
+         *     - `TOPIC_NOT_FOUND` — 주제가 존재하지 않거나 본인 소유가 아님
+         *     - `TOPIC_DIGEST_NOT_FOUND` — 해당 주제의 정리 문서가 아직 생성된 적 없음
          */
         NotFound_404: {
             headers: {
@@ -5199,6 +5537,9 @@ export interface components {
          *     - `RETRO_SUMMARY_TEMPLATE_LIMIT_REACHED` — (user, summary_type) 별 개수 한도 초과. `details[0]` 에 `{summaryType, limit}`
          *     - `RETRO_SUMMARY_TEMPLATE_IN_USE` — 활성 지정된 템플릿 삭제 시도
          *     - `FOLDER_NAME_DUPLICATED` — 같은 부모 폴더(최상위 포함) 아래 이름 중복
+         *     - `TOPIC_NAME_DUPLICATED` — 같은 사용자 안에서 주제 이름 중복
+         *     - `TOPIC_LIMIT_REACHED` — 주제 개수 한도(기본 20) 초과. `details[0]` 에 `{limit}`
+         *     - `TOPIC_DIGEST_ALREADY_IN_PROGRESS` — 이미 정리가 진행 중
          */
         Conflict_409: {
             headers: {

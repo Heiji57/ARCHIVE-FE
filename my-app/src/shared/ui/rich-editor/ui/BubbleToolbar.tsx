@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { BubbleMenu } from "@tiptap/react/menus";
 import type { Editor } from "@tiptap/core";
 import type { EditorState } from "@tiptap/pm/state";
+import { useTranslation } from "@/shared/lib/i18n";
 import {
   Bold,
   Code,
@@ -17,6 +18,7 @@ interface Props {
 }
 
 export function BubbleToolbar({ editor }: Props) {
+  const { t } = useTranslation();
   const [showLink, setShowLink] = useState(false);
   const [linkUrl, setLinkUrl] = useState("");
   const showLinkRef = useRef(false);
@@ -69,14 +71,14 @@ export function BubbleToolbar({ editor }: Props) {
             className="bubble-link-input"
             value={linkUrl}
             onChange={(e) => setLinkUrl(e.target.value)}
-            placeholder="URL 입력..."
+            placeholder={t("editor.bubble.urlPlaceholder")}
             onKeyDown={(e) => {
               if (e.key === "Escape") cancelLink();
             }}
             autoFocus
           />
           <button type="submit" className="bubble-btn bubble-link-confirm">
-            확인
+            {t("common.confirm")}
           </button>
         </form>
       ) : (
@@ -88,7 +90,7 @@ export function BubbleToolbar({ editor }: Props) {
               e.preventDefault();
               editor.chain().focus().toggleBold().run();
             }}
-            title="굵게 (Ctrl+B)"
+            title={t("editor.bubble.bold")}
           >
             <Bold size={14} />
           </button>
@@ -99,7 +101,7 @@ export function BubbleToolbar({ editor }: Props) {
               e.preventDefault();
               editor.chain().focus().toggleItalic().run();
             }}
-            title="기울임 (Ctrl+I)"
+            title={t("editor.bubble.italic")}
           >
             <Italic size={14} />
           </button>
@@ -110,7 +112,7 @@ export function BubbleToolbar({ editor }: Props) {
               e.preventDefault();
               editor.chain().focus().toggleStrike().run();
             }}
-            title="취소선"
+            title={t("editor.bubble.strike")}
           >
             <Strikethrough size={14} />
           </button>
@@ -121,7 +123,7 @@ export function BubbleToolbar({ editor }: Props) {
               e.preventDefault();
               editor.chain().focus().toggleCode().run();
             }}
-            title="인라인 코드"
+            title={t("editor.bubble.code")}
           >
             <Code size={14} />
           </button>
@@ -137,7 +139,7 @@ export function BubbleToolbar({ editor }: Props) {
                 openLinkInput();
               }
             }}
-            title={editor.isActive("link") ? "링크 제거" : "링크 추가"}
+            title={editor.isActive("link") ? t("editor.bubble.linkRemove") : t("editor.bubble.linkAdd")}
           >
             {editor.isActive("link") ? (
               <Link2Off size={14} />
@@ -153,7 +155,7 @@ export function BubbleToolbar({ editor }: Props) {
               e.preventDefault();
               editor.chain().focus().unsetAllMarks().run();
             }}
-            title="서식 초기화"
+            title={t("editor.bubble.clear")}
           >
             <RemoveFormatting size={14} />
           </button>

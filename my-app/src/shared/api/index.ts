@@ -1,5 +1,10 @@
 export { USE_API, API_BASE_URL } from "./config";
-export { ApiError, isApiError } from "./errors";
+export {
+  ApiError,
+  isApiError,
+  oauthErrorMessageKey,
+  integrationErrorMessageKey,
+} from "./errors";
 export {
   request,
   refreshAccessToken,
@@ -47,6 +52,7 @@ export {
 export type { EntryPage } from "./entries";
 export {
   apiCreateFolder,
+  apiListFolders,
   apiGetFolderContents,
   apiUpdateFolder,
   apiDeleteFolder,
@@ -118,9 +124,12 @@ export {
 export {
   apiListTopics,
   apiCreateTopic,
+  apiUpdateTopic,
   apiDeleteTopic,
   apiGenerateDigest,
   apiGetDigest,
+  apiGetTopicStats,
+  apiGetTopicSources,
   streamTopicDigest,
   getTopicLimitFromError,
   type TopicDigestStreamHandlers,

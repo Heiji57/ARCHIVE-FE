@@ -24,7 +24,7 @@ import {
 } from "@/app/lib/summaryFactory";
 import { getInitialAppState } from "@/app/model/initialState";
 import { appReducer } from "@/app/model/reducer";
-import type { AppSettings, Locale } from "@/app/model/settings";
+import type { AppSettings, Locale, TodoBoardRange } from "@/app/model/settings";
 import type {
   AppFocusTarget,
   ArchiveAppContextValue,
@@ -50,11 +50,13 @@ import {
   type SummaryKind,
   type SummaryReadiness,
 } from "@/entities/summary/model/types";
-import type { Todo } from "@/entities/todo/model/types";
+import type { RecurrenceRule, Todo } from "@/entities/todo/model/types";
 import type { Topic } from "@/entities/topic/model/types";
+import { boardRangeWindow } from "@/entities/todo/lib/boardRange";
 import { getTodosInRange, sortTodos } from "@/entities/todo/lib/selectors";
 import { getEntriesInRange } from "@/entities/entry/lib/selectors";
 import { DEMO_ANCHOR_DATE_KEY, isDemoMode } from "@/app/config/demo";
+import { DEMO_GITHUB_STATE, demoCommitsOn } from "@/entities/github/model/demo";
 import {
   addDays,
   computeAutoTodoTime,
@@ -66,17 +68,19 @@ import {
   startOfMonth,
   startOfWeek,
   startOfYear,
+  todayKey,
   todayKeyInTz,
   toDateKey,
 } from "@/shared/lib/date";
 import { writeSpellCheckPref } from "@/shared/lib/spellCheckPrefs";
 import { writeTodoBoardRange } from "@/shared/lib/todoRangePrefs";
 import { createId } from "@/shared/lib/id";
-import { translate } from "@/shared/lib/i18n";
+import { translate, writeLocaleChoice } from "@/shared/lib/i18n";
 import { ConfirmModal } from "@/shared/ui";
 import {
   USE_API,
   ApiError,
+  integrationErrorMessageKey,
   apiClearNotifications,
   apiCompleteOnboarding,
   apiCompleteSignup,
@@ -140,14 +144,18 @@ import {
   streamSummary,
   apiCreateFolder,
   apiGetFolderContents,
+  apiListFolders,
   apiUpdateFolder,
   apiDeleteFolder,
   apiMoveEntryToFolder,
   apiListTopics,
   apiCreateTopic,
+  apiUpdateTopic,
   apiDeleteTopic,
   apiGenerateDigest,
   apiGetDigest,
+  apiGetTopicStats,
+  apiGetTopicSources,
 } from "@/shared/api";
 import {
   MOCK_AVAILABLE_REPOS,
@@ -329,6 +337,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         todos,
         entries,
         existing,
+        state.settings.locale,
       );
 
       dispatch({ type: "entry/upsert", payload: { entry } });
@@ -591,10 +600,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // ─── API 모드 헬퍼 ──────────────────────────────────────────────────────────
   // 실패 시 일시적 토스트로 알린다 (네트워크 오류 메시지 재사용).
-  const reportApiError = () => {
+  // GitHub/Calendar v2 의 세분화 코드(권한 부족·rate limit·응답 이상)는 전용 문구로 안내하고,
+  // 권한 부족은 설정(GitHub 재연결)으로 가는 액션을 붙인다. 그 외 코드는 기존 generic 문구.
+  const reportApiError = (e?: unknown) => {
+    const locale = state.settings.locale;
+    const key = e instanceof ApiError ? integrationErrorMessageKey(e.code) : null;
+    if (key) {
+      pushNotification("warning", translate(locale, key), "", {
+        transient: true,
+        ...(e instanceof ApiError && e.code === "GITHUB_PERMISSION_DENIED"
+          ? { actionLabel: translate(locale, "nav.settings"), actionHref: "/settings" }
+          : {}),
+      });
+      return;
+    }
     pushNotification(
       "warning",
-      translate(state.settings.locale, "auth.error.network"),
+      translate(locale, "auth.error.network"),
       "",
       { transient: true },
     );
@@ -637,18 +659,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const runGitHubRefresh = () => {
-    // 데모: GitHub 연결을 제공하지 않는다(가짜 연결/목 데이터 없이 미연결 유지).
+    // 데모: 시안과 같은 데모 연결 상태(entities/github/model/demo). 서버는 부르지 않는다.
     if (isDemoMode()) {
       dispatch({
         type: "github/setLinked",
         payload: {
-          status: "not-connected",
-          repositories: [],
-          login: null,
-          pushTargetRepositoryId: null,
-          hasVerifiedEmails: false,
+          status: DEMO_GITHUB_STATE.status,
+          repositories: DEMO_GITHUB_STATE.linkedRepositories,
+          login: DEMO_GITHUB_STATE.login,
+          pushTargetRepositoryId: DEMO_GITHUB_STATE.pushTargetRepositoryId,
+          hasVerifiedEmails: DEMO_GITHUB_STATE.hasVerifiedEmails,
         },
       });
+      dispatch({ type: "github/setCommits", payload: { commits: DEMO_GITHUB_STATE.commits } });
       return;
     }
     if (!USE_API) {
@@ -736,17 +759,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   }, []);
 
-  // 할 일 보드 "전체" 보기 로드 — 오늘 기준 앞뒤로 rangeDays 를 나눈 구간을 조회한다.
+  // 할 일 보드 "전체" 보기 로드 — 오늘 기준 지난 pastDays ~ 앞으로 futureDays 구간을 조회한다.
   // 서버가 한 번에 최대 62일까지만 허용하므로(초과 시 422) 62일 이하 청크로 나눠
   // 병렬 조회한 뒤 id 기준으로 병합해 한 번에 hydrate 한다.
-  const loadTodosForRange = useCallback(async (rangeDays: number): Promise<Todo[]> => {
+  //
+  // 조회 창은 화면 필터와 같은 boardRangeWindow 를 쓴다 — 양쪽이 각자 계산하던 시절엔
+  // 받아온 경계 하루를 화면 필터가 도로 버렸다.
+  //
+  // extraDateKey: 창 밖의 특정 날짜를 함께 조회한다. hydrate/todos 는 목록을 통째로
+  // 교체하므로(삭제/이동된 항목이 남지 않게 하는 의도) 그 날짜만 따로 조회하면 창이
+  // 날아간다 — 같은 응답 집합에 실어 한 번에 hydrate 해야 한다.
+  const loadTodosForRange = useCallback(
+    async (range: TodoBoardRange, extraDateKey?: string): Promise<Todo[]> => {
     // 데모(게스트) 모드는 시드 데이터만 사용 → 서버 호출 금지.
     if (!USE_API || isDemoMode()) return [];
-    const today = new Date();
-    const back = Math.floor(rangeDays / 2);
-    const fwd = rangeDays - back;
-    const start = addDays(today, -back);
-    const end = addDays(today, fwd);
+    const { from, to } = boardRangeWindow(range, todayKey());
+    const start = fromDateKey(from);
+    const end = fromDateKey(to);
 
     const chunks: Array<{ from: string; to: string }> = [];
     let cursor = start;
@@ -756,6 +785,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const chunkEnd = new Date(chunkEndMs);
       chunks.push({ from: toDateKey(cursor), to: toDateKey(chunkEnd) });
       cursor = addDays(chunkEnd, 1);
+    }
+    if (extraDateKey && (extraDateKey < from || extraDateKey > to)) {
+      chunks.push({ from: extraDateKey, to: extraDateKey });
     }
 
     try {
@@ -772,7 +804,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       return [];
     }
 
-  }, []);
+    },
+    [],
+  );
 
   // 회고록 목록 페이지 조회 (GET /entries/paginated) — daily/weekly/monthly/yearly
   // 4개 탭 전부 이 엔드포인트 하나로 서버 페이지네이션+검색(q)한다. 받은 항목을
@@ -823,6 +857,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     [],
   );
+
+  // 전체 폴더 목록(GET /folders) — 경로 조립용. 응답을 state.folders 에 병합하지
+  // 않는다: FolderSummary 에는 folderCount/entryCount 가 없어서, 병합하면 폴더
+  // 카드 뱃지가 0 으로 덮인다. 호출부(useAllFolders)가 별도로 들고 있는다.
+  // 데모/mock 은 null(호출부가 state.folders 로 폴백). useCallback([]) 으로 안정화.
+  const loadAllFolders = useCallback(async () => {
+    if (!USE_API || isDemoMode()) return null;
+    return await apiListFolders();
+  }, []);
 
   // 통합검색(GET /search) — nav 빠른 이동용. 결과를 state 에 병합해 검색 결과를
   // 클릭했을 때(하이드레이션 범위 밖의 오래된 항목이어도) id 로 바로 조회 가능하게 한다.
@@ -911,6 +954,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     (name: string, description: string) => apiCreateTopic(name, description),
     [],
   );
+  const updateTopic = useCallback(
+    (id: string, patch: { name?: string; description?: string }) =>
+      apiUpdateTopic(id, patch),
+    [],
+  );
   const deleteTopic = useCallback((id: string) => apiDeleteTopic(id), []);
   const generateTopicDigest = useCallback(
     (topicId: string) => apiGenerateDigest(topicId),
@@ -920,6 +968,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
     (topicId: string) => apiGetDigest(topicId),
     [],
   );
+  const getTopicStats = useCallback(
+    (topicId: string) => apiGetTopicStats(topicId),
+    [],
+  );
+  const getTopicSources = useCallback(
+    (topicId: string, params: { page?: number; size?: number }) =>
+      apiGetTopicSources(topicId, params),
+    [],
+  );
+
+  // 데모/mock: 반복 규칙을 로컬 한 건에만 적는다(서버 반복 펼치기 없음).
+  const setLocalRecurrence = (id: string, rule: RecurrenceRule) => {
+    const todo = state.todos.find((t) => t.id === id);
+    if (todo) dispatch({ type: "todo/upsert", payload: { todo: { ...todo, recurrenceRule: rule } } });
+  };
 
   // ─── Context value ────────────────────────────────────────────────────────
   const sortedTodos = useMemo(() => sortTodos(state.todos), [state.todos]);
@@ -1015,8 +1078,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
     },
     updateTodoRecurrence: async (id, rule) => {
-      // 데모/mock 은 반복 확장(가상 인스턴스 생성) 로직 자체가 없어 지원하지 않는다.
-      if (!apiActive) return null;
+      // 데모/mock 은 반복 확장(가상 인스턴스 생성) 로직이 없다. 보이는 한 건에 규칙만 적어 둔다(표시용).
+      if (!apiActive) {
+        setLocalRecurrence(id, rule);
+        return null;
+      }
       // 큐를 거치지 않고 즉시 전송 — following 스코프는 서버가 새 시리즈(새 id)를
       // 만드는 1회성 명시적 액션이라 디바운스 코얼레싱 대상이 아니다.
       try {
@@ -1034,8 +1100,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
     },
     convertTodoToRecurring: async (id, rule) => {
-      // 데모/mock 은 반복 확장 로직 자체가 없어 지원하지 않는다.
-      if (!apiActive) return null;
+      // 데모/mock 은 반복 확장 로직이 없다. 보이는 한 건에 규칙만 적어 둔다(표시용, addTodo 와 같음).
+      if (!apiActive) {
+        setLocalRecurrence(id, rule);
+        return null;
+      }
       // scope 를 지정하지 않는다 — 대상이 어떤 시리즈에도 속하지 않은 단독 항목일 때만
       // 서버가 이 규칙을 받아 그 자리에서 시리즈 base 로 전환한다(recurrence_scope 무관).
       try {
@@ -1196,7 +1265,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const entry: JournalEntry = {
         id: localId,
         dateKey,
-        title: `${dateKey} 일일 회고`,
+        title: translate(state.settings.locale, "retro.title.default.daily", { date: dateKey }),
         content: template?.content ?? "",
         retroType: "daily",
         githubPush: null,
@@ -1254,13 +1323,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
         payload: { repositoryId, commitReadEnabled },
       });
       if (USE_API) {
-        void apiUpdateRepo(repositoryId, { commitReadEnabled }).catch(() => {
+        void apiUpdateRepo(repositoryId, { commitReadEnabled }).catch((e: unknown) => {
           // 롤백
           dispatch({
             type: "github/updateLinked",
             payload: { repositoryId, commitReadEnabled: !commitReadEnabled },
           });
-          reportApiError();
+          reportApiError(e);
         });
       }
     },
@@ -1292,8 +1361,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
             repositories: [...state.github.linkedRepositories, linked],
           },
         });
-      } catch {
-        reportApiError();
+      } catch (e) {
+        reportApiError(e);
       }
     },
     unlinkGitHubRepo: (repositoryId: string) => {
@@ -1305,7 +1374,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         type: "github/setLinked",
         payload: { status: "connected", repositories: next },
       });
-      if (USE_API) void apiUnlinkRepo(repositoryId).catch(() => reportApiError());
+      if (USE_API) void apiUnlinkRepo(repositoryId).catch((e: unknown) => reportApiError(e));
     },
     unlinkAllGitHubRepos: () => {
       if (requireLoginInDemo()) return;
@@ -1313,7 +1382,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         type: "github/setLinked",
         payload: { status: "connected", repositories: [] },
       });
-      if (USE_API) void apiUnlinkAllRepos().catch(() => reportApiError());
+      if (USE_API) void apiUnlinkAllRepos().catch((e: unknown) => reportApiError(e));
     },
     syncAllGitHubRepos: async () => {
       if (requireLoginInDemo()) return;
@@ -1333,8 +1402,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
           type: "github/setLinked",
           payload: { status: "connected", repositories },
         });
-      } catch {
-        reportApiError();
+      } catch (e) {
+        reportApiError(e);
       }
     },
     setPushTarget: (repositoryId: string | null) => {
@@ -1355,6 +1424,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       // 결과를 전역 state 에 저장하지 않고 직접 반환한다.
       // RetroEditor 가 로컬 useState 로 관리하므로, 다른 날짜 회고로 이동해도
       // 각 에디터 인스턴스(key=entry.id 로 재마운트)가 독립적인 커밋 목록을 가진다.
+      // 데모: 서버를 부르지 않고 데모 커밋(서버 없는 mock 빌드에서도 데모는 데모 커밋).
+      if (isDemoMode()) return demoCommitsOn(date);
       if (!USE_API) {
         return MOCK_COMMITS;
       }
@@ -1449,8 +1520,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
           payload: { status: "not-connected", googleUserId: null, lastSyncedAt: null },
         });
         return { ok: true };
-      } catch {
-        reportApiError();
+      } catch (e) {
+        reportApiError(e);
         return { ok: false };
       }
     },
@@ -1477,6 +1548,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     loadTodosForRange,
     loadEntriesPage,
     loadFolderContents,
+    loadAllFolders,
     // ─── Folders ────────────────────────────────────────────────────────────
     createFolder: async (name, parentFolderId) => {
       if (!apiActive) {
@@ -1585,6 +1657,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     dismissNotification,
     setLocale: (locale: Locale) => {
       dispatch({ type: "settings/locale", payload: { locale } });
+      writeLocaleChoice(locale);
       if (apiActive) void syncSettings({ locale });
     },
     setAutoSummary: (patch: Partial<AppSettings["autoSummary"]>) => {
@@ -1606,10 +1679,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       dispatch({ type: "settings/retention", payload: { days } });
       if (apiActive) void syncSettings({ notificationRetentionDays: days });
     },
-    setTodoBoardRange: (days) => {
+    setTodoBoardRange: (range) => {
       // FE 전용 선호도 — 서버(/settings)로 동기화하지 않고 localStorage 에만 저장한다.
-      dispatch({ type: "settings/todoBoardRange", payload: { days } });
-      writeTodoBoardRange(days);
+      dispatch({ type: "settings/todoBoardRange", payload: { range } });
+      writeTodoBoardRange(range);
     },
     setSpellCheck: (value) => {
       // FE 전용 선호도 — 서버(/settings)로 동기화하지 않고 localStorage 에만 저장한다.
@@ -1698,9 +1771,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     // ─── Topics ───────────────────────────────────────────────────────────
     loadTopics,
     createTopic,
+    updateTopic,
     deleteTopic,
     generateTopicDigest,
     getTopicDigest,
+    getTopicStats,
+    getTopicSources,
     // ─── Templates ──────────────────────────────────────────────────────────
     addTemplate: (retroType, name, content) => {
       const localId = createId("template");

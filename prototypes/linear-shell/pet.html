@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI 펫 시안</title>
+<meta name="description" content="어느 화면에서나 AI를 부르는 작은 펫 다섯 가지를 실제 화면에서 비교한다.">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="shared/shared.css">
+<link rel="stylesheet" href="shared/pet.css">
+<style>
+  /* Hallmark · scope: app screen (시안 비교 페이지) · genre: atmospheric · theme: project tokens (ARCHIVE dark, shared.css) · signature: 다섯 동물의 표정표와 실제 화면 · states: 8 · mode: fast · v2.0.0 */
+  /* critique: a pet is mostly behaviour, so the expressions sit in one table and every variant is live on the real screens. */
+  body{height:auto;min-height:100%}
+  .wrap{padding:28px 24px 64px;max-width:1480px;margin:0 auto}
+  h1{margin:0 0 6px;font-size:18px;font-weight:600;text-wrap:balance}
+  .lead{margin:0 0 24px;color:var(--ink3);font-size:13px;max-width:92ch;line-height:1.6}
+  section{margin:0 0 40px;scroll-margin-top:60px}
+  .hd{display:flex;align-items:baseline;gap:12px;margin:0 0 8px}
+  h2{margin:0;font-size:14px;font-weight:600;white-space:nowrap}
+  .hd p{margin:0;flex:1;font-size:12px;color:var(--ink3);line-height:1.5}
+  .scroll{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
+  table{width:100%;min-width:820px;border-collapse:collapse}
+  th,td{padding:12px 16px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle;font-weight:400}
+  tr:last-child td,tr:last-child th{border-bottom:0}
+  thead th{font-size:12px;color:var(--ink3)}
+  tbody th b{display:block;font-size:14px;font-weight:600}
+  tbody th small{display:block;max-width:30ch;margin-top:2px;font-size:12px;line-height:1.5;color:var(--ink3)}
+  td .pet-s,td .pet-a{margin:0}
+  .st{display:flex;gap:4px;flex-wrap:wrap;margin:0 0 8px}
+  .st button{height:32px;padding:0 12px;border-radius:6px;border:1px solid var(--line2);font-size:12px;color:var(--ink3)}
+  .st button:hover{background:var(--s3);color:var(--ink)}
+  .st button[aria-pressed="true"]{border-color:var(--primary);color:var(--ink);background:var(--primary-a)}
+  .st button:focus-visible,.st a:focus-visible{outline:2px solid var(--primary-h);outline-offset:2px}
+  .st a{margin-left:auto;font-size:12px;color:var(--primary-h);align-self:center}
+  iframe{display:block;width:100%;height:780px;border:1px solid var(--line);border-radius:10px;background:var(--canvas)}
+  iframe:focus,iframe.kf{outline:2px solid var(--primary-h);outline-offset:2px}
+  @media (max-width:640px){.hd{flex-direction:column;gap:4px}h2{white-space:normal}.wrap{padding:20px 16px 48px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>AI 펫</h1>
+  <p class="lead">AI 탭으로 가지 않아도 지금 화면에서 부탁할 수 있습니다. 누르거나 Ctrl+/ 로 부르고, 탭을 옮겨도 대화가 이어집니다. 화면 안 메뉴로 다른 탭에 가도 같은 펫이 따라옵니다.</p>
+  <section><div class="hd"><h2>다섯 동물과 표정</h2><p>평소에는 눈을 깜빡이고 마우스 쪽을 봅니다. 40초 동안 아무것도 안 하면 잠듭니다.</p></div><div class="scroll"><table id="sheet"></table></div></section>
+  <div id="list"></div>
+</div>
+<script src="shared/pet.js"></script>
+<script>
+  const INFO = { 1: ['책갈피, 구석에서 작은 카드', '오른쪽 아래에 앉아 있고 누르면 위로 카드가 열립니다.'], 2: ['서랍이, 상단 바에서 내려옴', '탭 옆 서랍에서 눈만 보이다가 뚜껑이 열리며 내려옵니다.'], 3: ['활자, 아래 명령줄', '글자로 된 얼굴 옆이 바로 입력칸입니다. 누르지 않고 바로 씁니다.'], 4: ['낱장, 걸어 다니며 끌어 놓기', '화면 아래를 걸어 다닙니다. 할 일 위에 끌어다 놓으면 그 일을 묻습니다.'], 5: ['부엉, 가장자리에서 빼꼼', '오른쪽 끝에 반쯤 숨어 있다가 긴 옆 시트로 열립니다.'] };
+  const ST = [['idle', '평소'], ['think', '생각 중'], ['done', '다 됨'], ['note', '할 말 있음'], ['sleep', '잠듦']];
+  document.querySelector('#sheet').innerHTML = `<thead><tr><th scope="col">펫</th>${ST.map(([, l]) => `<th scope="col">${l}</th>`).join('')}</tr></thead><tbody>${[1, 2, 3, 4, 5].map((n) => `<tr><th scope="row"><b>${n} ${PET.names[n]}</b><small>${INFO[n][1]}</small></th>${ST.map(([s]) => `<td data-st="${s}">${PET.face(n, s)}</td>`).join('')}</tr>`).join('')}</tbody>`;
+  const G = [['cal', '캘린더', 'd-calendar.html', '4번은 시간표 칸 위에 끌어다 놓아 보세요.'], ['todo', '할 일', 'd-todos.html', '"오늘 못 끝낸 일 내일로 옮겨줘"를 누르면 왼쪽 열이 바뀝니다.'], ['retro', '회고', 'd-retro2.html', '회고 초안을 저장하면 회고 목록에 들어갑니다.'], ['set', '설정', 'd-settings.html', '설정에서는 연동 문제를 먼저 알려 줍니다.']];
+  const $ = (q) => document.querySelector(q), url = (p, n) => `${p}?pet=${n}`;
+  $('#list').innerHTML = G.map(([k, t, p, d]) => `<section><div class="hd"><h2>${t}</h2><p>${d}</p></div><div class="st" role="group" aria-label="${t}">${[1, 2, 3, 4, 5].map((n) => `<button type="button" data-k="${k}" data-u="${url(p, n)}" aria-pressed="${n === 1}">${n} ${INFO[n][0]}</button>`).join('')}<a id="a${k}" href="${url(p, 1)}" target="_blank" rel="noopener">이걸로 보기</a></div><iframe id="f${k}" title="${t}" loading="lazy" src="${url(p, 1)}"></iframe></section>`).join('');
+  document.addEventListener('click', (e) => { const b = e.target.closest('.st button'); if (!b) return; b.parentNode.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', x === b)); const f = $('#f' + b.dataset.k); $('#a' + b.dataset.k).href = b.dataset.u; f.src = 'about:blank'; setTimeout(() => { f.src = b.dataset.u; }, 30); });
+  const mark = () => document.querySelectorAll('iframe').forEach((f) => f.classList.toggle('kf', document.activeElement === f));
+  window.addEventListener('blur', () => setTimeout(mark, 0)); window.addEventListener('focus', mark);
+</script>
+</body>
+</html>

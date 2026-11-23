@@ -1,11 +1,24 @@
 export type TaskStatus = "done" | "in-progress" | "not-start";
 
+/** 반복 요일 인덱스 — 0=월 … 6=일 (api.yaml RecurrenceRule.weekdays 와 동일). */
+export type Weekday = 0 | 1 | 2 | 3 | 4 | 5 | 6;
+/** 그 달의 몇 번째 요일인지 — 1~4, -1 = 마지막. */
+export type MonthWeek = 1 | 2 | 3 | 4 | -1;
+
+/**
+ * 반복 규칙. 의미는 RFC 5545 RRULE 과 같고 시작일(할 일 dateKey)이 항상 첫 회차다.
+ * 순수 계산(프리셋·문구)은 entities/todo/lib/recurrence.ts.
+ */
 export interface RecurrenceRule {
-  unit: "day" | "week";
+  unit: "day" | "week" | "month" | "year";
   /** 반복 간격 (1~365). 예: unit="week", interval=2 → 2주마다. */
   interval: number;
   /** 반복 종료 날짜(포함, 로컬 "YYYY-MM-DD"). null = 무기한. */
   until: string | null;
+  /** unit="week" 전용 — 반복 요일(오름차순). null/생략 = 시작일 요일. */
+  weekdays?: Weekday[] | null;
+  /** unit="month" 전용·필수 — 시작일 요일의 n번째(-1 = 마지막). */
+  monthWeek?: MonthWeek | null;
 }
 
 /**
@@ -43,6 +56,8 @@ export interface Todo {
   originalDateKey: string | null;
   /** 반복 베이스 row에만 존재(현재 목록 조회 응답엔 거의 포함되지 않음). */
   recurrenceRule: RecurrenceRule | null;
+  /** 가상 인스턴스에만 존재 — 소속 시리즈의 현재 규칙(상세 패널 표시용). 그 외 null. */
+  seriesRule?: RecurrenceRule | null;
   /** 사용자 자유 태그 목록 (각 1~20자, 최대 10개, 중복 없음). 보드 칩/상세 편집/대시보드 분포에 사용. */
   tags: string[];
   /** 마감일 (로컬 "YYYY-MM-DD"). null = 미설정. dateKey 이후여야 한다. */
@@ -56,8 +71,9 @@ export const MAX_TAG_LENGTH = 20;
 
 // ─── Dashboard stats (GET /todos/stats) ──────────────────────────────────────
 
-/** 대시보드 통계 집계 범위. */
-export type StatsRange = "today" | "week" | "month";
+/** 대시보드 통계 집계 범위. `all`은 전체 기간(2000-01-01~오늘, 상한은 오늘) — 주제 0개
+ *  첫 진입 화면의 "할 일 N개" 문구처럼 기간 필터 없는 총계가 필요할 때 쓴다. */
+export type StatsRange = "today" | "week" | "month" | "all";
 
 /** 이번 ISO주 하루치 완료 개수 (월~일 7칸). */
 export interface WeeklyTrendDay {

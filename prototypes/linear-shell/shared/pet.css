@@ -1,0 +1,141 @@
+/* Hallmark · scope: app screen (AI 펫) · genre: atmospheric · theme: project tokens (ARCHIVE dark, shared.css) · signature: 화면 한쪽에 사는 작은 픽셀 동료 · states: 8 · mode: fast · v2.0.0 */
+/* critique: the assistant was locked in one tab; a small creature on every screen makes it reachable without leaving the work, and it stays flat so it does not read as an AI badge. */
+/* waive 24b: 픽셀 단위 위치값은 3px 칸에 맞춘 것이고 카드 안쪽 여백은 기존 패널과 맞춤 */
+:root {
+  --pet-out: var(--canvas); --pet-ink: var(--canvas); --pet-shadow: 0 8px 24px rgba(0, 0, 0, .5);
+  --pet-bm-a: var(--primary-h); --pet-bm-b: var(--primary); --pet-bm-c: var(--ink);
+  --pet-dr-a: var(--ink3); --pet-dr-b: var(--ink2); --pet-dr-c: var(--canvas); --pet-dr-e: var(--ink);
+  --pet-pg-a: var(--ink2); --pet-pg-b: var(--ink3); --pet-pg-c: var(--ink3);
+  --pet-ow-a: var(--warn); --pet-ow-b: color-mix(in srgb, var(--warn) 62%, var(--canvas)); --pet-ow-c: color-mix(in srgb, var(--warn) 30%, var(--canvas)); --pet-ow-w: var(--ink);
+}
+.pet { position: fixed; z-index: 55; }
+.pet[hidden] { display: none; }
+.pet .i { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.pet-me { display: block; border-radius: var(--r); line-height: 0; }
+.pet-me:focus-visible, .pet button:focus-visible, .pet a:focus-visible, .pet input:focus-visible { outline: 2px solid var(--primary-h); outline-offset: 2px; }
+
+/* 픽셀 */
+.pet-s .pxo { fill: var(--pet-out); } .pet-s .pxe { fill: var(--pet-ink); }
+.s1 .pxa { fill: var(--pet-bm-a); } .s1 .pxb { fill: var(--pet-bm-b); } .s1 .pxc { fill: var(--pet-bm-c); }
+.s2 .pxa { fill: var(--pet-dr-a); } .s2 .pxb { fill: var(--pet-dr-b); } .s2 .pxc { fill: var(--pet-dr-c); } .s2 .pxe { fill: var(--pet-dr-e); }
+.s4 .pxa { fill: var(--pet-pg-a); } .s4 .pxb { fill: var(--pet-pg-b); } .s4 .pxl { fill: var(--pet-pg-c); }
+.s5 .pxa { fill: var(--pet-ow-a); } .s5 .pxb { fill: var(--pet-ow-b); } .s5 .pxc { fill: var(--pet-ow-c); } .s5 .pxw { fill: var(--pet-ow-w); }
+.pet-s .pxeye { translate: var(--lx, 0) var(--ly, 0); transform-box: fill-box; transform-origin: center; animation: pet-blink 4.4s steps(1) infinite; }
+.pet-s .pxl2 { visibility: hidden; }
+.pet-s { display: block; overflow: visible; animation: pet-bob 1.6s steps(1) infinite; }
+.pet-s .pxlid { transition: transform .12s steps(2); }
+.pet.open .s2 .pxlid, [data-st="note"] .s2 .pxlid { transform: translateY(-1px); }
+@keyframes pet-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(1px); } }
+@keyframes pet-blink { 0%, 93%, 100% { scale: 1 1; } 95% { scale: 1 .15; } }
+@keyframes pet-look { 0%, 100% { translate: -1px 0; } 50% { translate: 1px 0; } }
+@keyframes pet-hop { 0%, 100% { transform: translateY(0); } 25% { transform: translateY(-9px); } 50% { transform: translateY(0); } 75% { transform: translateY(-3px); } }
+@keyframes pet-legs { 0%, 100% { visibility: visible; } 50% { visibility: hidden; } }
+@keyframes pet-legs2 { 0%, 100% { visibility: hidden; } 50% { visibility: visible; } }
+@keyframes pet-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+[data-st="think"] .pet-s .pxeye { animation: pet-look .7s steps(1) infinite; }
+[data-st="done"] .pet-s { animation: pet-hop .7s steps(4) 2; } [data-st="done"] .pet-s .pxeye { animation: none; scale: 1 .5; translate: 0 -1px; }
+[data-st="note"] .pet-s { animation: pet-hop 1s steps(4) 2; } [data-st="note"] .pet-s .pxeye { animation: none; translate: 0 -1px; }
+[data-st="sleep"] .pet-s { animation: none; } [data-st="sleep"] .pet-s .pxeye { animation: none; scale: 1 .2; }
+.walk .pet-s .pxl1 { animation: pet-legs .36s steps(1) infinite; } .walk .pet-s .pxl2 { animation: pet-legs2 .36s steps(1) infinite; }
+.flip .pet-s { scale: -1 1; }
+.pet-a { margin: 0; font: 500 12px/1.15 var(--mono); color: var(--ink2); }
+[data-st="done"] .pet-a { color: var(--done); } [data-st="note"] .pet-a { color: var(--warn); } [data-st="sleep"] .pet-a { color: var(--ink3); }
+
+/* 6~10 빗금 칸: 캘린더의 추천 칸과 같은 빗금, 점선 테두리 */
+:root { --hx-line: var(--ink3); --hx-edge: var(--ink2); --hx-bg: var(--s2); --hx-eye: var(--ink); }
+.hx { --k: var(--warn); }
+[data-st] .pet-s.hx { animation: none; overflow: visible; }
+[data-st="done"] .pet-s.hx { animation: pet-hop .6s steps(4) 1; }
+.hx .hx-bg { fill: var(--hx-bg); } .hx .hx-pad { fill: var(--hx-bg); }
+.hx .hx-h { fill: none; stroke: var(--hx-line); stroke-width: 1.6; }
+.hx.sm .hx-h { stroke-width: 2.6; }
+.hx .hx-b { fill: none; stroke: var(--hx-edge); stroke-width: 1.5; }
+.hx .hx-b.solid { stroke-width: 2; stroke-linecap: round; }
+.hx.sm .hx-b { stroke-width: 2.6; }
+.hx .hx-t { fill: none; stroke: var(--ink4); stroke-width: 1.5; stroke-linecap: round; }
+.hx .hx-ey rect { fill: var(--hx-eye); } .hx .hx-me rect { fill: var(--canvas); } .hx .hx-mw { fill: var(--ink); }
+.hx .hx-k { fill: var(--hx-edge); }
+.hx .hx-fill { fill: var(--done); transform: scaleX(0); transform-box: fill-box; transform-origin: left; }
+.hx .hx-r { fill: var(--hx-edge); opacity: 0; }
+.hx.hx10 .hx-h { stroke: var(--hx-edge); stroke-width: 2.4; }
+.pet-s.hx .pxeye { translate: calc(var(--lx, 0px)) calc(var(--ly, 0px)); }
+@keyframes hx-flow { to { transform: translateX(var(--g)); } }
+@keyframes hx-ants { to { stroke-dashoffset: -17; } }
+@keyframes hx-fill { to { transform: scaleX(1); } }
+@keyframes hx-len { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(.72); } }
+@keyframes hx-row { 0%, 20% { opacity: 0; } 40%, 80% { opacity: .9; } 100% { opacity: 0; } }
+[data-st="think"] .hx .hx-h:not(.nof) { animation: hx-flow 1.1s linear infinite; }
+[data-st="think"] .hx .hx-b[stroke-dasharray] { animation: hx-ants 1.1s linear infinite; }
+[data-st="think"] .hx8 .hx-sl { transform-box: fill-box; transform-origin: top; animation: hx-len 1.2s steps(5) infinite; }
+[data-st="think"] .hx9 .hx-h { animation: none; }
+[data-st="think"] .hx9 .hx-r { animation: hx-row 1.2s steps(5) infinite; } [data-st="think"] .hx9 .r1 { animation-delay: .2s; } [data-st="think"] .hx9 .r2 { animation-delay: .4s; }
+[data-st="note"] .hx .hx-h { stroke: var(--k); stroke-width: 2.2; } [data-st="note"] .hx .hx-b:not(.solid), [data-st="note"] .hx .hx-k { stroke: var(--k); } [data-st="note"] .hx .hx-k { fill: var(--k); }
+[data-st="note"] .hx .hx-t { stroke: var(--k); }
+[data-st="done"] .hx .hx-fill { animation: hx-fill .45s ease-out forwards; }
+[data-st="done"] .hx .hx-b:not(.solid) { stroke: var(--done); stroke-dasharray: none; }
+[data-st="done"] .hx9 .hx-r { fill: var(--done); opacity: 1; }
+[data-st="done"] .hx .hx-k { fill: var(--done); }
+[data-st="sleep"] .hx { opacity: .5; }
+
+/* 카드 */
+.pet-card { display: flex; flex-direction: column; gap: 8px; width: 340px; max-width: calc(100vw - 16px); max-height: min(540px, 72vh); padding: 12px; border: 1px solid var(--ink4); border-radius: var(--r2); background: var(--s3); color: var(--ink); box-shadow: var(--pet-shadow); animation: pet-in .12s ease-out; }
+.pet-card[hidden] { display: none; }
+.pet-h { display: flex; align-items: center; gap: 8px; min-height: 24px; }
+.pet-h b { font-size: 13px; font-weight: 600; color: var(--ink); } .pet-h small { flex: 1; min-width: 0; font-size: 12px; color: var(--ink3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pet-x { display: grid; place-items: center; flex: none; width: 24px; height: 24px; border-radius: var(--r); color: var(--ink3); } .pet-x:hover { background: var(--s4); color: var(--ink); } .pet-x svg { width: 14px; height: 14px; }
+.pet-tx { flex: none; padding: 0 4px; font-size: 12px; color: var(--ink3); border-radius: 4px; } .pet-tx:hover { color: var(--ink); }
+.pet-th { display: flex; flex-direction: column; gap: 12px; min-height: 0; overflow-y: auto; overscroll-behavior: contain; } .pet-th[hidden] { display: none; }
+.pet-t { display: flex; flex-direction: column; gap: 4px; }
+.pet-q { margin: 0; font-size: 13px; color: var(--ink3); } .pet-y { margin: 0; font-size: 14px; line-height: 1.5; color: var(--ink); } .pet-y b { font-weight: 700; }
+.pet-b { margin: 0; font-size: 13px; color: var(--ink2); }
+.pet-l { display: flex; flex-direction: column; margin: 4px 0 0; padding: 0; list-style: none; border-top: 1px solid var(--line2); }
+.pet-l li { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 6px 0; border-bottom: 1px solid var(--line2); font-size: 13px; color: var(--ink); } .pet-l li span { min-width: 0; overflow-wrap: anywhere; } .pet-l small { flex: none; font-size: 12px; color: var(--ink3); }
+.pet-a2 { display: flex; align-items: center; gap: 8px; margin-top: 4px; font-size: 13px; color: var(--ink2); } .pet-a2 span { flex: 1; } .pet-a2 a { color: var(--primary-h); }
+.pet-p { height: 32px; padding: 0 16px; border-radius: var(--r); background: var(--ink); color: var(--canvas); font-size: 13px; font-weight: 600; } .pet-p:hover { background: var(--ink2); }
+.pet-me:active, .pet-p:active, .pet-qs button:active { transform: scale(.97); }
+.pet-low { display: flex; flex-direction: column; gap: 8px; } .pet-low:empty { display: none; }
+.pet-tip { margin: 0; font-size: 12px; color: var(--ink3); }
+.pet-ctx { display: flex; align-items: center; gap: 8px; margin: 0; padding: 4px 4px 4px 8px; border: 1px solid var(--line2); border-radius: var(--r); font-size: 13px; color: var(--ink); } .pet-ctx span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pet-qs { display: flex; flex-wrap: wrap; gap: 4px; } .pet-qs button { padding: 4px 8px; border: 1px solid var(--line2); border-radius: var(--r); font-size: 13px; color: var(--ink2); text-align: left; } .pet-qs button:hover { background: var(--s4); color: var(--ink); }
+.pet-in { display: flex; align-items: center; gap: 4px; padding: 4px 4px 4px 12px; border: 1px solid var(--line2); border-radius: var(--r2); background: var(--s1); } .pet-in:focus-within { border-color: var(--primary-h); }
+.pet-in input { flex: 1; min-width: 0; height: 28px; border: 0; background: none; font-size: 14px; color: var(--ink); } .pet-in input:focus-visible { outline: 0; } .pet-in input::placeholder { color: var(--ink3); }
+.pet-go { display: grid; place-items: center; flex: none; width: 28px; height: 28px; border-radius: var(--r); color: var(--ink2); } .pet-go:hover { background: var(--s4); color: var(--ink); }
+.pet-note { position: absolute; padding: 4px 8px; border: 1px solid var(--ink4); border-radius: var(--r); background: var(--s3); font-size: 13px; color: var(--ink); white-space: nowrap; animation: pet-in .12s ease-out; } .pet-note:hover { background: var(--s4); } .pet-note[hidden] { display: none; }
+
+/* 1 구석의 책갈피 */
+.pet.v1 { right: 56px; bottom: 8px; }
+.v1 .pet-card { position: absolute; right: 0; bottom: calc(100% + 8px); } .v1 .pet-note { right: calc(100% + 8px); bottom: 12px; }
+/* 2 상단 바의 서랍 */
+.pet.v2 { position: relative; z-index: auto; flex: none; height: 48px; display: flex; align-items: flex-end; }
+.v2 .pet-me { margin-bottom: -1px; } .v2 .pet-card { position: fixed; z-index: 58; top: 56px; right: 12px; } .v2 .pet-note { top: 52px; right: 0; z-index: 58; }
+.pet.v2.nobar { position: fixed; z-index: 55; right: 56px; bottom: 8px; height: auto; }
+/* 3 아래 명령줄 */
+.pet.v3 { left: 50%; bottom: 12px; width: min(560px, calc(100% - 24px)); translate: -50% 0; }
+.pet-bar { display: flex; align-items: center; gap: 8px; padding: 4px 8px; border: 1px solid var(--ink4); border-radius: var(--r2); background: var(--s3); box-shadow: var(--pet-shadow); }
+.pet-bar .pet-in { flex: 1; border: 0; background: none; padding-left: 0; }
+.v3 .pet-card { position: absolute; left: 0; right: 0; width: auto; bottom: calc(100% + 8px); } .v3 .pet-note { left: 72px; bottom: calc(100% + 4px); }
+body:has(.pet.v3) .toast { bottom: 84px; }
+/* 4 걸어 다니는 낱장 */
+.pet.v4 { left: 0; bottom: 2px; transition: transform linear; will-change: transform; }
+.v4 .pet-me { cursor: grab; touch-action: none; } .v4.drag .pet-me { cursor: grabbing; }
+.v4 .pet-card { position: absolute; left: var(--cx, -150px); bottom: calc(100% + 8px); } .v4 .pet-note { left: 0; bottom: calc(100% + 4px); }
+.pet-hit { outline: 2px solid var(--ink) !important; outline-offset: 1px; }
+/* 5 가장자리에서 빼꼼, 옆 시트 */
+.pet.v5 { right: 0; bottom: 96px; }
+.v5 .pet-me { translate: 24px 0; transition: translate .16s steps(3); }
+.v5 .pet-me:hover, .v5 .pet-me:focus-visible, .v5[data-st="note"] .pet-me { translate: 4px 0; }
+.v5 { --sheet: min(380px, calc(100vw - 56px)); }
+.v5.open .pet-me { translate: calc(-1 * var(--sheet) + 26px) 0; }
+.v5 .pet-card { position: fixed; z-index: 2; top: 0; right: 0; bottom: 0; width: var(--sheet); max-width: none; max-height: none; padding: 16px; border-width: 0 0 0 1px; border-radius: 0; animation: none; transition: transform .18s ease-out; }
+.v5:not(.open) .pet-card { transform: translateX(100%); }
+.v5 .pet-th { flex: 1; } .v5 .pet-note { right: 56px; bottom: 12px; }
+@media (max-width: 760px) {
+  .pet.v1 { right: 12px; } .pet.v2 { position: fixed; z-index: 55; right: 12px; bottom: 8px; height: auto; } .v2 .pet-note { top: auto; bottom: calc(100% + 4px); }
+  .v2 .pet-card { top: auto; bottom: 64px; right: 8px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pet-s, .pet-s .pxeye, .pet-card, .pet-note, .hx .hx-h, .hx .hx-b, .hx .hx-sl, .hx .hx-r { animation: none !important; }
+  [data-st="done"] .hx .hx-fill { animation: none; transform: scaleX(1); }
+  .pet.v4, .v5 .pet-me, .v5 .pet-card, .pet-s .pxlid { transition: none; }
+  .pet-me:active, .pet-p:active, .pet-qs button:active { transform: none; }
+}

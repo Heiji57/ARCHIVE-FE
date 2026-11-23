@@ -1,0 +1,16 @@
+/* Hallmark · scope: component (로고) · genre: atmospheric · theme: project tokens (ARCHIVE dark, shared.css) · signature: 서비스 안의 요소에서 가져온 표식 · states: 1 · mode: fast · v2.0.0 */
+/* critique: the logo was an empty indigo square; each mark now comes from something the product actually has. */
+.lg-m { display: block; flex: none; }
+.ws .lg-m { width: 20px; height: 20px; color: var(--ink); }
+.lgw-low, .lgw-title { letter-spacing: -.1px; font-size: 14px; }
+.lgw-cap { letter-spacing: .02em; font-weight: 700; }
+.lgw-mono { font-family: var(--mono); letter-spacing: 0; font-weight: 500; }
+.lgw-dots { letter-spacing: .12em; }
+.lgw-week { display: inline-flex; gap: 2px; letter-spacing: 0; }
+.lgw-week i { display: grid; place-items: center; width: 16px; height: 18px; border: 1px solid var(--line2); border-radius: 3px; background: none; font-size: 12px; font-style: normal; font-weight: 600; line-height: 1; color: var(--ink2); }
+.lgw-week i.on { border-color: var(--primary-h); background: var(--primary-a); color: var(--ink); }
+.ws .lg-m.lg-c { width: 20px; height: 20px; }
+/* 사이드바 로고: 아이콘 높이와 글자 높이를 맞춤 */
+.ws { gap: 8px; font-size: 16px; letter-spacing: .06em; }
+.ws .lgw-dots { letter-spacing: .06em; }
+.ws .lg-m { width: 20px; height: 20px; }
